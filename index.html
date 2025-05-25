@@ -6,6 +6,7 @@
     <title>Études Incrémentales</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 font-inter">
     <div class="container mx-auto p-4 max-w-3xl">
@@ -55,16 +56,16 @@
                     <div class="generator-item p-3 border rounded-md bg-slate-50">
                         <div class="flex flex-col sm:flex-row justify-between items-center">
                             <div>
-                                <h4 class="font-semibold text-sky-700">Lecture</h4>
-                                <p class="text-sm text-slate-600">Produit: <span id="gen-0-prod">1</span> Connaissance/s</p>
-                                <p class="text-sm text-slate-600">Possédés: <span id="gen-0-owned">0</span></p>
+                                <h4 class="font-semibold text-sky-700">Chargement...</h4>
+                                <p class="text-sm text-slate-600">Produit: <span id="gen-0-prod">...</span> Connaissance/s</p>
+                                <p class="text-sm text-slate-600">Possédés: <span id="gen-0-owned">...</span></p>
                             </div>
                             <button id="buy-gen-0" class="mt-2 sm:mt-0 px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600 transition duration-150 disabled:opacity-50">
-                                Acheter (Coût: <span id="gen-0-cost">10</span>)
+                                Acheter (Coût: <span id="gen-0-cost">...</span>)
                             </button>
                         </div>
                     </div>
-                     </div>
+                </div>
             </div>
 
             <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-upgrades" role="tabpanel" aria-labelledby="tab-upgrades">
@@ -76,14 +77,14 @@
 
             <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-prestige" role="tabpanel" aria-labelledby="tab-prestige">
                 <h3 class="text-xl font-semibold mb-3 text-amber-600">Prestige</h3>
-                <p class="mb-3">Atteignez 1e308 Points de Connaissance pour débloquer le prestige.</p>
+                <p class="mb-3">Atteignez <span id="prestige-threshold-display">1e308</span> Points de Connaissance pour débloquer le prestige.</p>
                 <button id="prestige-button" class="px-6 py-3 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition duration-150 disabled:opacity-50" disabled>
                     Prestige pour <span id="prestige-gain">0</span> Diplômes
                 </button>
                 <div class="mt-4">
                     <h4 class="font-semibold text-amber-700">Bonus de Prestige</h4>
-                    <p class="text-slate-600">Chaque Diplôme augmente la production de Connaissances.</p>
-                    </div>
+                    <p class="text-slate-600">Chaque Diplôme augmente la production de Connaissances de <span id="prestige-bonus-percentage">1</span>%.</p>
+                </div>
             </div>
 
             <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-options" role="tabpanel" aria-labelledby="tab-options">
@@ -116,7 +117,8 @@
         </main>
 
         <footer class="mt-8 text-center text-sm text-slate-500">
-            <p>&copy; 2025 Études Incrémentales. Inspiré par la communauté des jeux incrémentaux.</p>
+            <p>&copy; 2024 Études Incrémentales. Inspiré par la communauté des jeux incrémentaux.</p>
+            <p>Vérifiez la console du navigateur (F12) pour les erreurs si le jeu ne s'affiche pas correctement.</p>
         </footer>
 
     </div>
@@ -126,7 +128,6 @@
         <div class="tooltip-arrow" data-popper-arrow></div>
     </div>
 
-    <script src="https://cdn.tailwindcss.com"></script>
     <script src="break_infinity.min.js"></script>
     <script src="game.js"></script>
 </body>
