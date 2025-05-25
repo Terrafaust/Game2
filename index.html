@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jeu Incrémental Éducatif</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Styles de base pour le corps et la police */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Couleur de fond par défaut (thème jour) */
+            color: #333;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            overflow: hidden; /* Empêche le défilement non désiré */
+        }
+        /* Thème nuit */
+        body.dark-theme {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+        /* Styles pour les couleurs des ressources */
+        .resource-bp { color: #22c55e; } /* Vert pour Bons Points */
+        .resource-img { color: #a855f7; } /* Violet pour Images */
+        .resource-prof { color: #3b82f6; } /* Bleu pour Professeurs */
+        .resource-pa { color: #fbbf24; } /* Jaune/Or pour Points d'Ascension */
+
+        /* Styles pour les boutons d'achat */
+        .buy-button {
+            @apply flex flex-col items-center justify-center p-4 rounded-lg shadow-md transition-all duration-200 ease-in-out;
+            @apply border-4; /* Bordure épaisse */
+        }
+        .buy-button.can-afford {
+            @apply border-green-500 bg-white hover:bg-green-50;
+        }
+        .buy-button.cannot-afford {
+            @apply border-red-500 bg-gray-100 cursor-not-allowed;
+        }
+        .buy-button.dark-theme.can-afford {
+            @apply bg-gray-700 hover:bg-gray-600 border-green-500;
+        }
+        .buy-button.dark-theme.cannot-afford {
+            @apply bg-gray-800 border-red-500;
+        }
+
+        /* Styles pour le modal */
+        .modal-overlay {
+            @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            @apply bg-white p-8 rounded-lg shadow-xl max-w-lg w-full mx-4;
+        }
+        .modal-content.dark-theme {
+            @apply bg-gray-800 text-white;
+        }
+
+        /* Styles pour les notifications */
+        .notification-container {
+            @apply fixed top-4 right-4 z-50 flex flex-col items-end space-y-2;
+        }
+        .notification {
+            @apply bg-gray-800 text-white px-4 py-2 rounded-md shadow-lg opacity-0 transition-opacity duration-300 ease-out;
+        }
+        .notification.show {
+            @apply opacity-90;
+        }
+        .notification.dark-theme {
+            @apply bg-gray-700;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+    <div id="notification-container" class="notification-container"></div>
+
+    <header class="bg-blue-600 text-white p-4 shadow-lg z-10">
+        <div class="container mx-auto flex flex-wrap justify-around items-center gap-4">
+            <div id="resource-section-main" class="flex flex-wrap items-center gap-x-8 gap-y-2">
+                <div id="resource-bp-display" class="hidden flex-col items-start">
+                    <span class="text-xl font-bold resource-bp">Bons Points: <span id="bp-value">0</span></span>
+                    <span class="text-sm opacity-80">bp/s: <span id="bp-per-sec-value">0</span></span>
+                </div>
+                <div id="resource-img-display" class="hidden flex-col items-start">
+                    <span class="text-xl font-bold resource-img">Images: <span id="img-value">0</span></span>
+                </div>
+                <div id="resource-prof-display" class="hidden flex-col items-start">
+                    <span class="text-xl font-bold resource-prof">Professeurs: <span id="prof-value">0</span></span>
+                </div>
+            </div>
+            <div id="resource-section-pa" class="hidden flex-wrap items-center gap-x-8 gap-y-2 ml-auto">
+                <div id="resource-pa-display" class="flex-col items-start">
+                    <span class="text-xl font-bold resource-pa">Points d'Ascension: <span id="pa-value">0</span></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex flex-1 overflow-hidden">
+        <aside class="w-1/4 bg-gray-100 p-4 shadow-lg overflow-y-auto hidden md:block dark:bg-gray-900 dark:text-gray-200">
+            <h2 class="text-2xl font-bold mb-4 text-center">Constructions</h2>
+            <div id="multi-buy-options" class="hidden mb-4 p-2 bg-gray-200 rounded-lg dark:bg-gray-700">
+                <span class="text-lg font-semibold block mb-2">Quantité d'achat:</span>
+                <div class="flex justify-around space-x-2">
+                    <button id="buy-x1" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors active-buy-mode" data-buy-mode="1">x1</button>
+                    <button id="buy-x10" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors" data-buy-mode="10">x10</button>
+                    <button id="buy-x100" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors" data-buy-mode="100">x100</button>
+                    <button id="buy-xMax" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors" data-buy-mode="max">xMax</button>
+                </div>
+            </div>
+
+            <div id="buildings-section" class="space-y-4">
+                <button id="buy-student" class="buy-button can-afford w-full">
+                    <span class="text-xl font-semibold">Élève</span>
+                    <span class="text-lg resource-bp">Coût: <span id="student-cost">10</span> BP</span>
+                    <div class="text-sm mt-2">
+                        <span class="block">Quantité: <span id="student-quantity">0</span></span>
+                        <span class="block">bp/s: <span id="student-bps">0.5</span></span>
+                    </div>
+                    <div id="automate-student-container" class="hidden mt-2">
+                        <input type="checkbox" id="automate-student" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <label for="automate-student" class="ml-2 text-sm">Automatiser</label>
+                    </div>
+                </button>
+
+                <button id="buy-class" class="buy-button cannot-afford w-full hidden">
+                    <span class="text-xl font-semibold">Classe</span>
+                    <span class="text-lg resource-bp">Coût: <span id="class-cost">300</span> BP</span>
+                    <div class="text-sm mt-2">
+                        <span class="block">Quantité: <span id="class-quantity">0</span></span>
+                        <span class="block">bp/s: <span id="class-bps">25</span></span>
+                    </div>
+                    <div id="automate-class-container" class="hidden mt-2">
+                        <input type="checkbox" id="automate-class" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <label for="automate-class" class="ml-2 text-sm">Automatiser</label>
+                    </div>
+                </button>
+            </div>
+
+            <hr class="my-6 border-gray-300 dark:border-gray-700">
+
+            <h2 class="text-2xl font-bold mb-4 text-center">Achats</h2>
+            <div id="purchases-section" class="space-y-4">
+                <button id="buy-image" class="buy-button cannot-afford w-full hidden">
+                    <span class="text-xl font-semibold">Image</span>
+                    <span class="text-lg resource-bp">Coût: <span id="image-cost">1000</span> BP</span>
+                    <div class="text-sm mt-2">
+                        <span class="block">Quantité: <span id="image-quantity">0</span></span>
+                    </div>
+                    <div id="automate-image-container" class="hidden mt-2">
+                        <input type="checkbox" id="automate-image" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <label for="automate-image" class="ml-2 text-sm">Automatiser</label>
+                    </div>
+                </button>
+
+                <button id="buy-professor" class="buy-button cannot-afford w-full hidden">
+                    <span class="text-xl font-semibold">Professeur</span>
+                    <span class="text-lg resource-img">Coût: <span id="professor-cost">1</span> Images</span>
+                    <div class="text-sm mt-2">
+                        <span class="block">Quantité: <span id="professor-quantity">0</span></span>
+                    </div>
+                    <div id="automate-professor-container" class="hidden mt-2">
+                        <input type="checkbox" id="automate-professor" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                        <label for="automate-professor" class="ml-2 text-sm">Automatiser</label>
+                    </div>
+                </button>
+            </div>
+            <p class="text-xs text-gray-500 mt-4 text-center">ID Utilisateur: <span id="user-id">Chargement...</span></p>
+        </aside>
+
+        <div id="game-content" class="flex-1 flex items-center justify-center p-4 overflow-y-auto dark:bg-gray-800">
+            </div>
+
+        <aside class="w-1/4 bg-gray-100 p-4 shadow-lg overflow-y-auto hidden md:block dark:bg-gray-900 dark:text-gray-200">
+            <h2 class="text-2xl font-bold mb-4 text-center">Menu</h2>
+            <div class="space-y-4">
+                <button id="open-settings-modal" class="w-full bg-blue-500 text-white py-3 rounded-lg shadow-md hover:bg-blue-600 transition-colors hidden">
+                    <i class="fas fa-cog mr-2"></i> Réglages
+                </button>
+
+                <button id="open-skills-modal" class="w-full bg-purple-500 text-white py-3 rounded-lg shadow-md hover:bg-purple-600 transition-colors hidden">
+                    <i class="fas fa-brain mr-2"></i> Compétences
+                </button>
+
+                <button id="open-ascension-modal" class="w-full bg-yellow-500 text-white py-3 rounded-lg shadow-md hover:bg-yellow-600 transition-colors hidden">
+                    <i class="fas fa-redo-alt mr-2"></i> Ascension
+                </button>
+            </div>
+        </aside>
+    </main>
+
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal-content dark:bg-gray-800 dark:text-gray-200">
+            <h3 class="text-2xl font-bold mb-6 text-center">Réglages</h3>
+            <div class="space-y-4">
+                <div id="theme-option" class="flex justify-between items-center bg-gray-100 p-4 rounded-lg dark:bg-gray-700">
+                    <span class="text-lg font-semibold">Thème Jour / Nuit</span>
+                    <button id="toggle-theme" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 transition-colors">
+                        Jour / Nuit
+                    </button>
+                    <span id="theme-cost" class="text-sm text-gray-600 dark:text-gray-400 hidden ml-4">Coût: 10 Images</span>
+                </div>
+
+                <div id="multi-buy-x10-x100-option" class="flex justify-between items-center bg-gray-100 p-4 rounded-lg dark:bg-gray-700 hidden">
+                    <span class="text-lg font-semibold">Achat multiple x10 et x100</span>
+                    <button id="buy-multi-x10-x100" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">
+                        Acheter (10 PA)
+                    </button>
+                </div>
+
+                <div id="multi-buy-xMax-option" class="flex justify-between items-center bg-gray-100 p-4 rounded-lg dark:bg-gray-700 hidden">
+                    <span class="text-lg font-semibold">Achat multiple xMax</span>
+                    <button id="buy-multi-xMax" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 transition-colors">
+                        Acheter (100 PA)
+                    </button>
+                </div>
+            </div>
+            <button id="close-settings-modal" class="mt-8 w-full bg-red-500 text-white py-3 rounded-lg shadow-md hover:bg-red-600 transition-colors">
+                Fermer
+            </button>
+        </div>
+    </div>
+
+    <div id="ascension-modal" class="modal-overlay hidden">
+        <div class="modal-content dark:bg-gray-800 dark:text-gray-200">
+            <h3 class="text-2xl font-bold mb-4 text-center">Ascension</h3>
+            <p class="mb-4">
+                L'ascension vous permet de recommencer le jeu avec des avantages.
+            </p>
+            <p class="mb-2">
+                <span class="font-bold text-red-500">Vous perdrez:</span> Toutes vos Images, Constructions, Achats et Professeurs.
+            </p>
+            <p class="mb-2">
+                <span class="font-bold text-green-500">Vous gagnerez:</span> <span id="ascension-pa-gain" class="resource-pa font-bold">0</span> Points d'Ascension.
+            </p>
+            <p class="mb-4">
+                <span class="font-bold text-green-500">Nouveau bonus de production:</span> Multiplicateur de <span id="ascension-multiplier" class="resource-bp font-bold">1x</span> sur les Bons Points par seconde.
+            </p>
+            <div class="flex items-center mb-6">
+                <input type="checkbox" id="dont-show-ascension-warning" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                <label for="dont-show-ascension-warning" class="ml-2 text-sm text-gray-700 dark:text-gray-300">Ne plus afficher cet avertissement</label>
+            </div>
+            <div class="flex justify-between space-x-4">
+                <button id="confirm-ascension" class="flex-1 bg-green-500 text-white py-3 rounded-lg shadow-md hover:bg-green-600 transition-colors">
+                    Confirmer l'Ascension
+                </button>
+                <button id="cancel-ascension" class="flex-1 bg-red-500 text-white py-3 rounded-lg shadow-md hover:bg-red-600 transition-colors">
+                    Annuler
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="skills-modal" class="modal-overlay hidden">
+        <div class="modal-content dark:bg-gray-800 dark:text-gray-200">
+            <h3 class="text-2xl font-bold mb-6 text-center">Arbre de Compétences</h3>
+            <div id="skill-tree-container" class="grid grid-cols-3 gap-4">
+                </div>
+            <button id="close-skills-modal" class="mt-8 w-full bg-red-500 text-white py-3 rounded-lg shadow-md hover:bg-red-600 transition-colors">
+                Fermer
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bignumber.js/9.0.2/bignumber.min.js"></script>
+    <script type="module" src="script.js"></script>
+</body>
+</html>
