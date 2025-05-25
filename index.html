@@ -7,128 +7,148 @@
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sky: tailwind.colors.sky,
+                        amber: tailwind.colors.amber,
+                        purple: tailwind.colors.purple,
+                        green: tailwind.colors.green,
+                        red: tailwind.colors.red,
+                        slate: tailwind.colors.slate,
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-slate-100 text-slate-800 font-inter">
-    <div class="container mx-auto p-4 max-w-3xl">
+<body class="bg-slate-100 text-slate-800 font-inter antialiased">
+    <div class="container mx-auto p-4 max-w-4xl min-h-screen flex flex-col">
 
-        <header class="mb-6 text-center">
-            <h1 class="text-4xl font-bold text-sky-700">Études Incrémentales</h1>
+        <header class="mb-6 py-4">
+            <h1 class="text-4xl sm:text-5xl font-bold text-sky-700 text-center">Études Incrémentales</h1>
         </header>
 
-        <section id="resources" class="mb-6 p-4 bg-white rounded-lg shadow">
-            <h2 class="text-2xl font-semibold mb-3 text-sky-600">Ressources</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <section id="resources-overview" class="mb-6 p-4 bg-white rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold mb-4 text-sky-600 border-b pb-2">Tableau de Bord</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
                 <div>
-                    <p class="text-lg">Points de Connaissance: <span id="knowledge-points" class="font-bold text-sky-500">0</span></p>
+                    <p class="text-sm text-slate-500">Connaissances</p>
+                    <p class="text-2xl font-bold text-sky-500" id="knowledge-points">0</p>
+                    <p class="text-xs text-slate-400"><span id="kps-display">0</span> /s</p>
                 </div>
                 <div>
-                    <p class="text-lg">Diplômes: <span id="prestige-points" class="font-bold text-amber-500">0</span></p>
+                    <p class="text-sm text-slate-500">Diplômes (Prestige)</p>
+                    <p class="text-2xl font-bold text-amber-500" id="prestige-points">0</p>
                 </div>
                 <div>
-                    <p class="text-lg">Points de Sagesse: <span id="ascension-points" class="font-bold text-purple-500">0</span></p>
+                    <p class="text-sm text-slate-500">Sagesse (Ascension)</p>
+                    <p class="text-2xl font-bold text-purple-500" id="ascension-points">0</p>
                 </div>
             </div>
         </section>
 
-        <nav id="tabs" class="mb-6">
-            <div class="border-b border-gray-200">
+        <nav id="tabs-navigation" class="mb-6 sticky top-0 bg-slate-100 z-10 py-2 -mx-4 px-4 shadow-sm">
+            <div class="border-b border-slate-300">
                 <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="main-tabs" role="tablist">
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg ui-tab active-tab" id="tab-generators" type="button" role="tab" aria-controls="panel-generators" aria-selected="true">Générateurs</button>
-                    </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg ui-tab" id="tab-upgrades" type="button" role="tab" aria-controls="panel-upgrades" aria-selected="false">Améliorations</button>
-                    </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg ui-tab" id="tab-prestige" type="button" role="tab" aria-controls="panel-prestige" aria-selected="false">Prestige</button>
-                    </li>
-                    <li role="presentation">
-                        <button class="inline-block p-4 border-b-2 rounded-t-lg ui-tab" id="tab-options" type="button" role="tab" aria-controls="panel-options" aria-selected="false">Options</button>
-                    </li>
+                    <li class="mr-2" role="presentation"><button class="ui-tab active-tab" id="tab-generators" type="button" role="tab" aria-controls="panel-generators" aria-selected="true">Générateurs</button></li>
+                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-upgrades" type="button" role="tab" aria-controls="panel-upgrades" aria-selected="false">Améliorations</button></li>
+                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-prestige" type="button" role="tab" aria-controls="panel-prestige" aria-selected="false">Prestige</button></li>
+                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-achievements" type="button" role="tab" aria-controls="panel-achievements" aria-selected="false" title="Bientôt disponible">Succès</button></li>
+                    <li role="presentation"><button class="ui-tab" id="tab-options" type="button" role="tab" aria-controls="panel-options" aria-selected="false">Options</button></li>
                 </ul>
             </div>
         </nav>
 
-        <main id="tab-content">
-            <div class="p-4 bg-white rounded-lg shadow tab-panel active-panel" id="panel-generators" role="tabpanel" aria-labelledby="tab-generators">
-                <h3 class="text-xl font-semibold mb-3 text-sky-600">Générateurs de Connaissances</h3>
-                <div id="generators-container" class="space-y-4">
-                    <div class="generator-item p-3 border rounded-md bg-slate-50">
-                        <div class="flex flex-col sm:flex-row justify-between items-center">
-                            <div>
-                                <h4 class="font-semibold text-sky-700">Chargement...</h4>
-                                <p class="text-sm text-slate-600">Produit: <span id="gen-0-prod">...</span> Connaissance/s</p>
-                                <p class="text-sm text-slate-600">Possédés: <span id="gen-0-owned">...</span></p>
-                            </div>
-                            <button id="buy-gen-0" class="mt-2 sm:mt-0 px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600 transition duration-150 disabled:opacity-50">
-                                Acheter (Coût: <span id="gen-0-cost">...</span>)
+        <main id="tab-content-container" class="flex-grow">
+            <section class="tab-panel active-panel" id="panel-generators" role="tabpanel" aria-labelledby="tab-generators">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-sky-600">Générateurs de Connaissances</h3>
+                    <div id="generators-container" class="space-y-3 sm:space-y-4">
+                        <div class="p-3 border rounded-lg bg-slate-50 text-center text-slate-500">Chargement des générateurs...</div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="tab-panel hidden" id="panel-upgrades" role="tabpanel" aria-labelledby="tab-upgrades">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-sky-600">Améliorations</h3>
+                    <div id="upgrades-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <p class="text-slate-500 col-span-full text-center py-8">Le système d'améliorations est en cours de développement.</p>
+                        </div>
+                </div>
+            </section>
+
+            <section class="tab-panel hidden" id="panel-prestige" role="tabpanel" aria-labelledby="tab-prestige">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-amber-600">Prestige : Obtenir des Diplômes</h3>
+                    <div class="space-y-4">
+                        <p class="text-slate-600">Lorsque vous accumulez suffisamment de Connaissances (<span id="prestige-threshold-display" class="font-semibold">1e308</span>), vous pouvez choisir de prestigier.</p>
+                        <p class="text-slate-600">Prestigier réinitialisera votre progression actuelle en Connaissances et générateurs de base, mais vous octroiera des <strong class="text-amber-600">Diplômes</strong>.</p>
+                        <p class="text-slate-600">Chaque Diplôme augmente <strong class="text-green-600">définitivement</strong> votre production de Connaissances de <span id="prestige-bonus-percentage" class="font-semibold">1</span>% (multiplicatif).</p>
+                        
+                        <div class="mt-6 text-center">
+                            <p class="text-lg mb-2">Vous pouvez obtenir : <span id="prestige-gain" class="font-bold text-amber-500 text-2xl">0</span> Diplômes</p>
+                            <button id="prestige-button" class="px-8 py-3 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition duration-150 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
+                                Lancer le Prestige
                             </button>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-upgrades" role="tabpanel" aria-labelledby="tab-upgrades">
-                <h3 class="text-xl font-semibold mb-3 text-sky-600">Améliorations</h3>
-                <div id="upgrades-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <p class="text-slate-500">Les améliorations seront bientôt disponibles.</p>
-                </div>
-            </div>
-
-            <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-prestige" role="tabpanel" aria-labelledby="tab-prestige">
-                <h3 class="text-xl font-semibold mb-3 text-amber-600">Prestige</h3>
-                <p class="mb-3">Atteignez <span id="prestige-threshold-display">1e308</span> Points de Connaissance pour débloquer le prestige.</p>
-                <button id="prestige-button" class="px-6 py-3 bg-amber-500 text-white rounded-md hover:bg-amber-600 transition duration-150 disabled:opacity-50" disabled>
-                    Prestige pour <span id="prestige-gain">0</span> Diplômes
-                </button>
-                <div class="mt-4">
-                    <h4 class="font-semibold text-amber-700">Bonus de Prestige</h4>
-                    <p class="text-slate-600">Chaque Diplôme augmente la production de Connaissances de <span id="prestige-bonus-percentage">1</span>%.</p>
-                </div>
-            </div>
-
-            <div class="p-4 bg-white rounded-lg shadow tab-panel hidden" id="panel-options" role="tabpanel" aria-labelledby="tab-options">
-                <h3 class="text-xl font-semibold mb-3 text-sky-600">Options</h3>
-                <div class="space-y-4">
-                    <div>
-                        <button id="save-button" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-150">
-                            Sauvegarder
-                        </button>
-                        <span id="save-status" class="ml-2 text-sm text-slate-500"></span>
-                    </div>
-                    <div>
-                        <button id="load-button" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition duration-150">
-                            Charger
-                        </button>
-                    </div>
-                    <div>
-                        <button id="reset-button" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-150">
-                            Réinitialiser (Attention!)
-                        </button>
-                    </div>
-                    <div class="mt-4">
-                        <p class="text-sm text-slate-500">Notation des nombres : <span id="number-notation-display">Scientifique</span></p>
-                        <button id="toggle-notation-button" class="text-sm px-3 py-1 bg-slate-200 rounded-md hover:bg-slate-300 transition duration-150">
-                            Changer de notation
-                        </button>
+            <section class="tab-panel hidden" id="panel-achievements" role="tabpanel" aria-labelledby="tab-achievements">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-green-600">Succès</h3>
+                    <div id="achievements-container" class="text-center py-8">
+                         <p class="text-slate-500">Les succès et leurs récompenses seront bientôt disponibles !</p>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            <section class="tab-panel hidden" id="panel-options" role="tabpanel" aria-labelledby="tab-options">
+                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold mb-4 text-slate-600">Options & Paramètres</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-medium mb-2 text-slate-700">Sauvegarde des données</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <button id="save-button" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-150">Sauvegarder Manuellement</button>
+                                <button id="load-button" class="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600 transition duration-150">Charger la Sauvegarde</button>
+                                <button id="reset-button" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-150">Réinitialiser le Jeu</button>
+                            </div>
+                            <p id="save-status" class="mt-2 text-sm text-slate-500 h-5"></p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium mb-2 text-slate-700">Notation des Nombres</h4>
+                            <div class="flex items-center gap-3">
+                                <p class="text-sm text-slate-600">Actuelle : <span id="number-notation-display" class="font-semibold">Scientifique</span></p>
+                                <button id="toggle-notation-button" class="text-sm px-3 py-1 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition duration-150">Changer</button>
+                            </div>
+                        </div>
+                         <div>
+                            <h4 class="font-medium mb-2 text-slate-700">Progression Hors Ligne</h4>
+                             <p class="text-sm text-slate-600">La production continue lorsque le jeu est fermé (basé sur le temps écoulé et votre KPS moyen).</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
 
-        <footer class="mt-8 text-center text-sm text-slate-500">
-            <p>&copy; 2024 Études Incrémentales. Inspiré par la communauté des jeux incrémentaux.</p>
-            <p>Vérifiez la console du navigateur (F12) pour les erreurs si le jeu ne s'affiche pas correctement.</p>
+        <footer class="mt-auto pt-8 pb-4 text-center text-sm text-slate-500">
+            <p>&copy; <span id="current-year">2024</span> Études Incrémentales. Tous droits réservés.</p>
+            <p>Vérifiez la console (F12) pour les erreurs. Inspiré par la communauté des jeux incrémentaux.</p>
         </footer>
-
     </div>
 
-    <div id="tooltip" class="absolute z-50 hidden px-3 py-2 text-sm font-medium text-white bg-gray-900 rounded-lg shadow-sm opacity-0 tooltip dark:bg-gray-700 transition-opacity duration-300">
-        Tooltip content
-        <div class="tooltip-arrow" data-popper-arrow></div>
-    </div>
+    <div id="customConfirmModalContainer"></div>
 
     <script src="break_infinity.min.js"></script>
     <script src="game.js"></script>
+    <script>
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+    </script>
 </body>
 </html>
