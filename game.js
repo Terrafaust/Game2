@@ -3,7 +3,7 @@
 
 // --- Vérification initiale des dépendances ---
 if (typeof Decimal === 'undefined') {
-    console.error("ERREUR CRITIQUE: break_infinity.min.js n'a pas été chargé. Le jeu ne peut pas démarrer.");
+    console.error("ERREUR CRITIQUE: break_infinity.js n'a pas été chargé. Le jeu ne peut pas démarrer.");
     // Afficher un message à l'utilisateur directement sur la page si possible
     document.body.innerHTML = '<div style="font-family: Arial, sans-serif; text-align: center; padding: 50px; color: red;"><h1>Erreur Critique</h1><p>Un composant essentiel du jeu (Decimal) n\'a pas pu être chargé. Veuillez vérifier votre connexion internet, les éventuels bloqueurs de scripts, et la console du navigateur (F12) pour plus de détails. Essayez de recharger la page.</p></div>';
     throw new Error("Decimal library not found. Game cannot start.");
@@ -15,6 +15,7 @@ const TICK_RATE = 1000 / 20; // 20 ticks par seconde pour la boucle de jeu princ
 const AUTOSAVE_INTERVAL_DEFAULT = 30000; // 30 secondes
 const INFINITY_THRESHOLD = new Decimal("1e308");
 const KNOWLEDGE_START_AFTER_PRESTIGE = new Decimal(10);
+const MAX_OFFLINE_TIME = 24 * 60 * 60; // Maximum 24h de progression hors ligne
 
 // --- État du Jeu (Game State) ---
 let game = {}; // Sera initialisé par loadGame ou resetGameToInitialState
@@ -219,18 +220,13 @@ function checkAllUnlocks() {
 // --- Logique de Prestige (Prestige Logic) ---
 function getPrestigeProductionMultiplier() {
     if (game.prestigePoints.equals(0)) return new Decimal(1);
-    // Roadmap: "Chaque Diplôme augmente définitivement votre production de Connaissances de 1% (multiplicatif)."
-    // Interprétation: (1.01) ^ nombre de diplômes. C'est un vrai multiplicatif.
-    // Ou si c'est (1 + 0.01 * diplomes), c'est un bonus additif au multiplicateur.
-    // La roadmap dit "(multiplicatif)" à la fin, ce qui est ambigu.
-    // Optons pour (1 + 0.01 * diplômes) pour l'instant, c'est plus courant et plus simple à équilibrer au début.
+    // Chaque Diplôme augmente la production de 1%
     return game.prestigePoints.times(0.01).add(1);
 }
 
 function getPrestigePointsGain() {
     // Formule Roadmap: floor(sqrt(connaissances / 1e10))
     if (game.knowledgePoints.lt(new Decimal("1e10"))) return new Decimal(0);
-    // Le seuil pour POUVOIR prestigier est INFINITY_THRESHOLD, mais la formule de gain s'applique dès 1e10 connaissances.
     return game.knowledgePoints.div(new Decimal("1e10")).sqrt().floor().max(0);
 }
 
@@ -525,7 +521,7 @@ function loadGame() {
 
 
             // Calcul de la progression hors ligne
-            const timeDiffSeconds = (Date.now() - (game.lastUpdate || Date.now())) / 1000;
+            const timeDiffSeconds = Math.min((Date.now() - (game.lastUpdate || Date.now())) / 1000, MAX_OFFLINE_TIME);
             if (game.options.offlineProgressEnabled && timeDiffSeconds > 5) { // Plus de 5s d'absence
                 const offlineKPS = getTotalKnowledgePerSecond(); // KPS avant d'ajouter la production offline
                 if (offlineKPS.gt(0)) {
@@ -534,7 +530,10 @@ function loadGame() {
                     if (game.stats && game.stats.totalKnowledgeGained) {
                         game.stats.totalKnowledgeGained = game.stats.totalKnowledgeGained.add(offlineGains);
                     }
-                    showNotification(`Bienvenue ! Vous avez gagné ${formatNumber(offlineGains)} Connaissances pendant votre absence (${Math.floor(timeDiffSeconds)}s).`, "info");
+                    const duration = timeDiffSeconds < 60 ? `${Math.floor(timeDiffSeconds)}s` :
+                                   timeDiffSeconds < 3600 ? `${Math.floor(timeDiffSeconds/60)}m` :
+                                   `${Math.floor(timeDiffSeconds/3600)}h`;
+                    showNotification(`Bienvenue ! Vous avez gagné ${formatNumber(offlineGains)} Connaissances pendant votre absence (${duration}).`, "info");
                 }
             }
         } else {
@@ -581,6 +580,9 @@ function confirmAndResetGame() {
 
 // --- Boucle de Jeu (Game Loop) ---
 let lastTick = 0;
+let uiUpdateCounter = 0;
+const UI_UPDATE_FREQUENCY = 5; // Met à jour l'UI tous les 5 ticks pour optimiser les performances
+
 function gameLoop(timestamp) {
     if (!game || !game.options) { // Attendre que `game` soit initialisé
         requestAnimationFrame(gameLoop);
@@ -605,8 +607,12 @@ function gameLoop(timestamp) {
         if (game.stats) game.stats.timePlayed += deltaTime;
     }
     
-    // Mise à jour de l'UI (peut être moins fréquente que la logique de jeu si besoin d'optimisation)
-    updateUI();
+    // Mise à jour de l'UI (moins fréquente pour optimiser)
+    uiUpdateCounter++;
+    if (uiUpdateCounter >= UI_UPDATE_FREQUENCY) {
+        updateUI();
+        uiUpdateCounter = 0;
+    }
     
     lastTick = now;
     requestAnimationFrame(gameLoop); // Boucle continue
@@ -727,12 +733,14 @@ function showCustomConfirm(title, message, onConfirm, modalTitle = "Confirmation
         modal.classList.remove('opacity-0');
         dialog.classList.remove('scale-95', 'opacity-0');
         dialog.classList.add('scale-100', 'opacity-100');
+        modal.classList.add('opacity-100');
         cancelBtn.focus(); // Mettre le focus sur annuler par défaut
     });
 
     const closeModal = () => {
         dialog.classList.remove('scale-100', 'opacity-100');
         dialog.classList.add('scale-95', 'opacity-0');
+        modal.classList.remove('opacity-100');
         modal.classList.add('opacity-0');
         setTimeout(() => container.innerHTML = '', 150);
     };
@@ -771,6 +779,7 @@ function main() {
     // Configurer la sauvegarde automatique
     if (game.options && game.options.autosaveInterval > 0) {
         setInterval(saveGame, game.options.autosaveInterval);
+        console.log(`Sauvegarde automatique configurée toutes les ${game.options.autosaveInterval/1000} secondes.`);
     }
 
     // Mettre à jour l'année dans le footer
