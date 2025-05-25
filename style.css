@@ -3,107 +3,150 @@
 /* Configuration de base et polices (Inter est chargé via Google Fonts dans index.html) */
 body {
     font-family: 'Inter', sans-serif;
-    /* antialiased est appliqué via Tailwind dans index.html */
-    /* text-slate-800 et bg-slate-100 sont appliqués via Tailwind */
 }
 
 /* Styles pour les onglets de navigation */
 .ui-tab {
-    @apply inline-block p-3 sm:p-4 border-b-2 rounded-t-lg transition-colors duration-150 ease-in-out;
-    /* Classes de base Tailwind pour les onglets */
-    @apply border-transparent text-slate-500 hover:text-sky-600 hover:border-sky-300;
-    /* Ajout pour le focus visible pour l'accessibilité */
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-100;
+    /* Classes équivalentes à @apply mais en CSS standard */
+    display: inline-block;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid transparent;
+    border-radius: 0.5rem 0.5rem 0 0;
+    transition: color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+    color: #64748b; /* text-slate-500 */
+}
+
+.ui-tab:hover {
+    color: #0284c7; /* text-sky-600 */
+    border-color: #7dd3fc; /* border-sky-300 */
+}
+
+.ui-tab:focus {
+    outline: none;
+}
+
+.ui-tab:focus-visible {
+    box-shadow: 0 0 0 2px #f8fafc, 0 0 0 4px #0ea5e9; /* ring-sky-500 */
 }
 
 .ui-tab.active-tab {
-    /* Classes Tailwind pour l'onglet actif */
-    @apply text-sky-700 border-sky-600 font-semibold;
+    color: #0369a1; /* text-sky-700 */
+    border-color: #0284c7; /* border-sky-600 */
+    font-weight: 600;
 }
 
 /* Styles pour les éléments de générateur */
 .generator-item {
-    /* Les styles de base sont appliqués via Tailwind dans game.js lors de la création de l'élément */
-    /* Exemple : p-3 sm:p-4 border border-slate-200 rounded-lg bg-slate-50 shadow-sm */
-    /* On peut ajouter des transitions ou des effets de survol spécifiques ici si besoin */
-    @apply transition-all duration-150 ease-in-out;
+    transition: all 0.15s ease-in-out;
 }
 
 .generator-item:hover {
-    @apply shadow-lg border-slate-300;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border-color: #cbd5e1; /* border-slate-300 */
 }
 
 /* Boutons */
 button, input[type="button"], input[type="submit"] {
-    /* Style de focus global pour les boutons pour une meilleure accessibilité */
-    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-opacity-75;
+    transition: all 0.15s ease-in-out;
+}
+
+button:focus, input[type="button"]:focus, input[type="submit"]:focus {
+    outline: none;
+}
+
+button:focus-visible, input[type="button"]:focus-visible, input[type="submit"]:focus-visible {
+    box-shadow: 0 0 0 2px #f8fafc, 0 0 0 4px #0ea5e9;
 }
 
 /* Amélioration visuelle pour les boutons désactivés */
 button:disabled, input:disabled {
-    @apply cursor-not-allowed shadow-none bg-slate-300 hover:bg-slate-300 text-slate-500;
-    /* Tailwind gère déjà disabled:opacity-50, mais on peut forcer d'autres styles */
+    cursor: not-allowed;
+    box-shadow: none;
+    background-color: #cbd5e1 !important; /* bg-slate-300 */
+    color: #64748b !important; /* text-slate-500 */
 }
-/* Spécificité pour les boutons colorés désactivés pour qu'ils ne reprennent pas le style de base slate */
+
+/* Spécificité pour les boutons colorés désactivés */
 .bg-sky-500:disabled, .bg-amber-500:disabled, .bg-green-500:disabled, .bg-red-500:disabled {
-    @apply bg-opacity-50 border-opacity-50 text-white text-opacity-70;
-     /* Conserver une partie de la couleur de fond mais la rendre moins vive */
+    opacity: 0.5;
     filter: saturate(50%);
 }
 
-
-/* Conteneur principal */
-.container {
-    /* max-w-4xl et mx-auto sont dans index.html */
-    /* min-h-screen et flex flex-col sont dans index.html pour le layout sticky footer */
-}
-
-/* Footer */
-footer {
-    /* mt-auto est dans index.html pour le sticky footer */
-}
-
-/* Modales (si des styles spécifiques sont nécessaires au-delà de Tailwind) */
-/* Exemple :
-#customConfirmModal {
-    backdrop-filter: blur(2px); // Effet de flou derrière la modale
-}
-*/
-
 /* Animations et transitions subtiles */
 .smooth-transition {
-    @apply transition-all duration-200 ease-in-out;
+    transition: all 0.2s ease-in-out;
 }
 
-/* Styles pour les notifications (si implémentées en CSS pur) */
+/* Styles pour les notifications */
 .notification-toast {
-    @apply fixed bottom-5 right-5 p-4 rounded-lg shadow-xl text-white text-sm z-50;
-    /* Les couleurs de fond (bg-green-500, bg-red-500, etc.) seront ajoutées dynamiquement */
-    /* Animation d'apparition/disparition (exemple) */
+    position: fixed;
+    bottom: 1.25rem;
+    right: 1.25rem;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    color: white;
+    font-size: 0.875rem;
+    z-index: 50;
     animation: fadeInOut 3.5s ease-in-out forwards;
 }
 
 @keyframes fadeInOut {
     0% { transform: translateY(100%); opacity: 0; }
-    15% { transform: translateY(0); opacity: 1; } /* Apparition rapide */
-    85% { transform: translateY(0); opacity: 1; } /* Maintien */
-    100% { transform: translateY(100%); opacity: 0; } /* Disparition */
+    15% { transform: translateY(0); opacity: 1; }
+    85% { transform: translateY(0); opacity: 1; }
+    100% { transform: translateY(100%); opacity: 0; }
 }
 
-/* Scrollbar personnalisée (optionnel, pour un look plus épuré) */
-/* ::-webkit-scrollbar {
+/* Scrollbar personnalisée (optionnel) */
+::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
-::-webkit-scrollbar-track {
-    background: #f1f5f9; // bg-slate-100
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb {
-    background: #94a3b8; // bg-slate-400
-    border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #64748b; // bg-slate-500
-} */
 
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* Styles supplémentaires pour améliorer l'expérience */
+.tab-panel {
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Amélioration du responsive pour mobile */
+@media (max-width: 640px) {
+    .ui-tab {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Effet de pulsation pour les boutons importants */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+#prestige-button:not(:disabled) {
+    animation: pulse 2s infinite;
+}
+
+#prestige-button:not(:disabled):hover {
+    animation: none;
+    transform: scale(1.05);
+}
