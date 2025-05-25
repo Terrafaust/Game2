@@ -1,0 +1,97 @@
+/* style.css */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Styles pour les onglets */
+.ui-tab {
+    border-color: transparent;
+    color: #64748b; /* slate-500 */
+}
+
+.ui-tab:hover {
+    border-color: #e5e7eb; /* gray-200 */
+    color: #334155; /* slate-700 */
+}
+
+.ui-tab.active-tab {
+    color: #0284c7; /* sky-600 */
+    border-color: #0284c7; /* sky-600 */
+    font-weight: 600;
+}
+
+.tab-panel {
+    /* Les panneaux sont affichés/cachés par JS en ajoutant/supprimant la classe 'hidden' de Tailwind */
+}
+
+/* Style pour les boutons désactivés (complément à Tailwind) */
+button:disabled {
+    cursor: not-allowed;
+    /* L'opacité est déjà gérée par disabled:opacity-50 de Tailwind */
+}
+
+/* Ajustements pour le design responsive si nécessaire au-delà de Tailwind */
+@media (max-width: 640px) {
+    /* Exemple : ajuster la taille de la police pour les petits écrans si besoin */
+    /* h1 {
+        font-size: 2rem;
+    } */
+}
+
+/* Styles pour les tooltips (si vous implémentez une logique de tooltip personnalisée) */
+/* Tailwind a déjà des classes pour les tooltips, mais si vous construisez le vôtre: */
+/*
+#tooltip {
+    position: absolute;
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    z-index: 1000;
+    pointer-events: none; // Important pour que le tooltip ne bloque pas les interactions avec les éléments en dessous
+}
+*/
+
+/* Styles pour les animations subtiles */
+.transition-all {
+    transition-property: all;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+.transition-opacity {
+    transition-property: opacity;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 150ms;
+}
+
+/* S'assurer que le conteneur principal ne dépasse pas une certaine largeur et est centré */
+.container {
+    /* max-width: 960px; /* Ou la largeur que vous préférez */
+    /* margin-left: auto;
+    margin-right: auto; */
+    /* Géré par Tailwind: mx-auto max-w-3xl */
+}
+
+/* Couleurs douces (exemples, à adapter selon vos préférences) */
+/* Ces couleurs sont principalement définies via les classes Tailwind dans le HTML */
+/*
+:root {
+    --color-primary: #3b82f6; // blue-500
+    --color-secondary: #10b981; // emerald-500
+    --color-background: #f3f4f6; // gray-100
+    --color-text: #1f2937; // gray-800
+}
+*/
+
+/* Style pour les éléments de générateur (exemple) */
+.generator-item {
+    /* Tailwind gère déjà cela avec p-3 border rounded-md bg-slate-50 */
+}
+
+.generator-item:hover {
+    /* box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); */
+    /* Peut être ajouté avec des classes shadow-md de Tailwind au survol si désiré */
+}
+
