@@ -270,8 +270,8 @@
         }
     </style>
 </head>
-<body class="flex min-h-screen bg-gray-100 text-gray-800">
-    <div id="side-menu" class="w-64 bg-white border-r border-gray-200 p-6 shadow-xl flex flex-col gap-6 sticky top-0 self-start h-screen overflow-y-auto rounded-tr-xl rounded-br-xl">
+<body class="flex flex-col md:flex-row min-h-screen bg-gray-100 text-gray-800">
+    <div id="side-menu" class="w-full md:w-64 flex-shrink-0 bg-white border-r border-gray-200 p-6 shadow-xl overflow-y-auto h-auto md:h-screen rounded-b-xl md:rounded-tr-xl md:rounded-br-xl">
         <h2 class="text-center mb-6 text-green-600 text-3xl font-extrabold tracking-tight">Achats</h2>
         
         <div id="purchaseMultiplierSelection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-inner text-center hidden">
@@ -321,8 +321,8 @@
         <button id="resetSkillsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-red-500 text-white mt-2 hover:bg-red-600 shadow-md">Réinitialiser Compétences</button>
     </div>
 
-    <div id="main-content" class="flex-grow flex flex-col items-center pt-12 px-4 pb-8">
-        <div class="container text-center bg-white border border-gray-200 p-8 rounded-xl shadow-xl max-w-xl w-full">
+    <div id="main-content" class="flex-grow flex flex-col items-center pt-12 px-4 pb-8 w-full max-w-7xl mx-auto">
+        <div class="container text-center bg-white border border-gray-200 p-8 rounded-xl shadow-xl w-full">
             <div class="flex flex-wrap justify-around mb-6 text-lg">
                 <div class="flex-1 min-w-[200px] text-left p-1">
                     <p class="text-xl font-bold text-gray-800">Bons points : <span id="bonsPoints" class="text-green-500 font-extrabold">0</span> <span class="text-gray-500 text-sm font-normal ml-1">(<span id="totalBpsInline">0</span> bp/s)</span></p>
@@ -473,8 +473,6 @@
 
     <script>
         // Ensure BreakInfinity.Decimal is available
-        // Corrected: BreakInfinity.Decimal is not the correct way to access it.
-        // The library typically exposes 'Decimal' directly to the global scope.
         const Decimal = window.Decimal; 
 
         /**
