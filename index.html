@@ -3,153 +3,2458 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Études Incrémentales</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>Jeu Incrémental - Cahier d'Étude</title>
+    <script src="https://cdn.jsdelivr.net/npm/break_infinity.js@1.0.0/break_infinity.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles to override or extend Tailwind for specific game elements */
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Dark theme styles */
+        body.dark-theme {
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+        }
+
+        body.dark-theme .bg-white {
+            background-color: #3a3a3a;
+            border-color: #555;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-theme .text-green-600 {
+            color: #76FF03; /* Light green for titles in dark mode */
+        }
+
+        body.dark-theme button {
+            background-color: #4a4a4a;
+            color: #f0f0f0;
+            border-color: #777;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        body.dark-theme button:hover {
+            background-color: #5a5a5a;
+        }
+
+        body.dark-theme button.border-green-500 {
+            border-color: #76FF03; /* Light green for affordable buttons in dark mode */
+        }
+
+        body.dark-theme button.border-red-500 {
+            border-color: #FF4500; /* Orange-red for unaffordable buttons in dark mode */
+        }
+
+        body.dark-theme .text-green-500 {
+            color: #76FF03; /* Light green */
+        }
+
+        body.dark-theme .text-purple-600 {
+            color: #DA70D6; /* Magenta */
+        }
+
+        body.dark-theme .text-gray-800 {
+            color: #f0f0f0; /* White */
+        }
+        
+        body.dark-theme .text-blue-600 {
+            color: #0000FF; /* Blue */
+            font-weight: bold;
+        }
+        body.dark-theme .text-red-500 {
+            color: #FF6347; /* Red/Orange for warnings */
+            font-weight: bold;
+        }
+        body.dark-theme .text-blue-500 {
+            color: #007BFF; /* Blue for info */
+            font-weight: bold;
+        }
+
+        /* Specific button styles */
+        button {
+            transition: background-color 0.3s ease, transform 0.1s ease, border-color 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.automation-active {
+            background-color: #28a745; /* Green */
+            color: white;
+            border-color: #218838;
+        }
+        button.automation-active:hover {
+            background-color: #218838;
+        }
+
+        /* Notification styles */
+        #notifications-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 1000;
+        }
+
+        .notification-item {
+            background-color: #333;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            animation: fadeInOut 1.5s forwards;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(100%); }
+            10% { opacity: 1; transform: translateX(0); }
+            90% { opacity: 1; transform: translateX(0); }
+            100% { opacity: 0; transform: translateX(100%); }
+        }
+
+        /* Skill tree specific styles */
+        .skill-node {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 0.8em;
+            font-weight: bold;
+            border: 3px solid;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease-in-out;
+            padding: 5px;
+            box-sizing: border-box;
+            z-index: 1;
+        }
+
+        .skill-node:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .skill-node.locked {
+            background-color: #e0e0e0;
+            border-color: #a0a0a0;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .skill-node.unlocked {
+            /* These colors will be overridden by specific branch colors */
+            background-color: #D4EDDA;
+            border-color: #28A745;
+            color: #218838;
+        }
+
+        /* Specific colors for branches */
+        .skill-branch.pedagogie .skill-node.unlocked {
+            background-color: #D4EDDA; border-color: #28A745; color: #218838;
+        }
+        .skill-branch.rationnalisme .skill-node.unlocked {
+            background-color: #CCE5FF; border-color: #007BFF; color: #0056b3;
+        }
+        .skill-branch.science .skill-node.unlocked {
+            background-color: #FFF3CD; border-color: #FFC107; color: #B8860B;
+        }
+
+        .skill-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding-bottom: 25px;
+        }
+
+        .skill-wrapper:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 25px;
+            background-color: #a0a0a0;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        /* Tooltip for skills */
+        .skill-node .tooltip-text {
+            visibility: hidden;
+            width: 250px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 10;
+            bottom: 110%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.8em;
+            line-height: 1.4;
+        }
+
+        .skill-node .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+
+        .skill-node:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .skill-cost {
+            font-size: 0.8em;
+            color: #8A2BE2;
+        }
+        .skill-effect-description {
+            font-size: 0.75em;
+            margin-top: 5px;
+        }
+        .skill-flavor-text {
+            font-size: 0.7em;
+            font-style: italic;
+            color: #ccc;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen bg-gray-100 text-gray-800">
+    <div id="side-menu" class="w-64 bg-white border-r border-gray-200 p-5 shadow-md flex flex-col gap-5 sticky top-0 self-start h-screen overflow-y-auto">
+        <h2 class="text-center mb-5 text-green-600 text-2xl font-bold">Achats</h2>
+        
+        <div id="purchaseMultiplierSelection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm text-center hidden">
+            <h3 class="text-lg font-semibold mb-2">Quantité d'achat</h3>
+            <div class="flex justify-around mt-2">
+                <button id="setMultiplierX1" class="multiplier-button px-3 py-2 text-sm rounded-md border border-gray-300 bg-white active">x1</button>
+                <button id="setMultiplierX10" class="multiplier-button px-3 py-2 text-sm rounded-md border border-gray-300 bg-white">x10</button>
+                <button id="setMultiplierX100" class="multiplier-button px-3 py-2 text-sm rounded-md border border-gray-300 bg-white">x100</button>
+                <button id="setMultiplierXMax" class="multiplier-button px-3 py-2 text-sm rounded-md border border-gray-300 bg-white hidden">xMax</button>
+            </div>
+        </div>
+
+        <div id="achatEleveSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm hidden">
+            <button id="acheterEleveButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Élève : <span class="text-green-500">10 BP</span></button>
+            <p class="mt-2 text-sm">Quantité : <span id="nombreEleves" class="font-semibold">0</span></p>
+            <p class="text-xs text-gray-500 mt-1" title="Production de bons points par seconde par élève : 0.5">bp/s élèves : <span id="elevesBpsPerItem">0</span></p>
+        </div>
+
+        <div id="achatClasseSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm hidden">
+            <button id="acheterClasseButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Salle de classe : <span class="text-gray-800">30 Élèves</span></button>
+            <p class="text-sm text-gray-600 mt-1">L'achat d'une classe augmente le prix des élèves.</p>
+            <p class="mt-2 text-sm">Quantité : <span id="nombreClasses" class="font-semibold">0</span></p>
+            <p class="text-xs text-gray-500 mt-1" title="Production de bons points par seconde par classe : 25">bp/s classes : <span id="classesBpsPerItem">0</span></p>
+        </div>
+
+        <div id="achatImageSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm hidden">
+            <button id="acheterImageButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Image : <span class="text-green-500">1000 BP</span></button>
+        </div>
+
+        <div id="achatProfesseurSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm hidden">
+            <button id="acheterProfesseurButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Professeur : <span class="text-purple-600">2 I</span></button>
+            <p class="mt-2 text-sm">Quantité : <span id="professeurs" class="font-semibold">0</span></p>
+        </div>
+
+        <div id="automationSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm hidden">
+            <h3 class="text-lg font-semibold mb-2 text-green-600">Automatisation</h3>
+            <button id="autoEleveButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2">Automatiser Élèves : <span class="text-blue-600">100 PA</span></button>
+            <button id="autoImageButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2">Automatiser Images : <span class="text-blue-600">10 000 PA</span></button>
+            <button id="autoProfesseurButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2">Automatiser Professeurs : <span class="text-blue-600">100 000 PA</span></button>
+        </div>
+
+        <button id="skillsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2 hidden">Compétences</button>
+        <button id="settingsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2 hidden">Paramètres</button>
+        <button id="ascensionMenuButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-blue-600 bg-blue-600 text-white mt-2 hidden">Menu Ascension</button>
+        <button id="ascensionButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-blue-600 bg-blue-600 text-white mt-2 hidden">Ascension</button>
+        <button id="questsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800 mt-2 hidden">Quêtes</button>
+        <button id="resetSkillsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-red-500 text-white mt-2 hidden">Réinitialiser Compétences</button>
+    </div>
+
+    <div id="main-content" class="flex-grow flex flex-col items-center pt-12 px-4">
+        <div class="container text-center bg-white border border-gray-200 p-8 rounded-xl shadow-lg max-w-xl w-full">
+            <div class="flex flex-wrap justify-around mb-4 text-lg">
+                <div class="flex-1 min-w-[200px] text-left p-1">
+                    <p>Bons points : <span id="bonsPoints" class="text-green-500 font-bold">0</span> <span class="text-gray-500 text-sm font-normal ml-1">(<span id="totalBpsInline">0</span> bp/s)</span></p>
+                    <p id="imagesDisplay" class="hidden">Images : <span id="imagesCount" class="text-purple-600 font-bold">0</span></p>
+                </div>
+                <div class="flex-1 min-w-[200px] text-left p-1">
+                    <p id="ascensionBonusDisplay" class="hidden text-blue-600 font-bold text-sm mb-2">Bonus d'Ascension : <span id="ascensionBonusValue" class="text-blue-600">1.00x</span></p>
+                    <p id="currentAscensionPointsDisplay" class="hidden">Points d'Ascension : <span id="ascensionPointsCount" class="text-blue-600">0</span> <span class="text-gray-500 text-sm font-normal ml-1">(Total: <span id="totalPAEarnedSpanInline">0</span> PA)</span></p>
+                    <p id="ascensionCountDisplay" class="hidden">Ascensions : <span id="ascensionCountSpan" class="text-blue-600">0</span></p>
+                </div>
+            </div>
+
+            <button id="etudierButton" class="px-6 py-3 text-xl font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Étudier sagement (+1 BP)</button>
+        </div>
+
+        <div id="skillTreeContainer" class="w-full max-w-6xl mt-8 p-6 bg-white rounded-xl shadow-lg hidden flex-col items-center">
+            <h1 class="text-green-600 text-3xl font-bold mb-5">Arbre de Compétences</h1>
+            <p id="availableProfessorsDisplay" class="text-lg font-bold mb-5 text-purple-600">Professeurs disponibles : <span id="availableProfessorsCount" class="text-purple-600">0</span></p>
+            <div id="skills-grid" class="grid grid-cols-1 md:grid-cols-3 gap-5 w-full justify-items-center">
+                </div>
+        </div>
+
+        <div id="settingsContainer" class="w-full max-w-xl mt-8 p-6 bg-white rounded-xl shadow-lg hidden flex-col items-center">
+            <h1 class="text-green-600 text-3xl font-bold mb-5">Paramètres</h1>
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="themeToggleButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Débloquer option Thème (10 I)</button>
+            </div>
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full">
+                <button id="resetProgressionButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-red-500 text-white">Réinitialiser la Progression (10 I)</button>
+            </div>
+        </div>
+
+        <div id="ascensionMenuContainer" class="w-full max-w-xl mt-8 p-6 bg-white rounded-xl shadow-lg hidden flex-col items-center">
+            <h1 class="text-green-600 text-3xl font-bold mb-5">Menu Ascension</h1>
+            <p class="mb-4 text-lg">Points d'Ascension disponibles : <span id="ascensionMenuPACount" class="text-blue-600 font-bold">0</span></p>
+            
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="acheterEcoleButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Acheter une école : <span id="coutEcole" class="text-blue-600">15 PA</span></button>
+                <p class="mt-2 text-sm">Quantité : <span id="nombreEcoles" class="font-semibold">0</span></p>
+                <p class="text-xs text-gray-500 mt-1">Multiplicateur actuel : <span id="ecoleMultiplier" class="font-semibold">1.0x</span></p>
+            </div>
+
+            <div id="achatLyceeSection" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4 hidden">
+                <button id="acheterLyceeButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Lycée : <span class="text-blue-600">50 PA</span></button>
+                <p class="mt-2 text-sm">Quantité : <span id="nombreLyceesDisplay" class="font-semibold">0</span></p>
+                <p class="text-xs text-gray-500 mt-1">Multiplicateur actuel des écoles : <span id="lyceeMultiplierDisplay" class="font-semibold">1.0x</span></p>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="unlockMultiPurchaseButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Débloquer Achat Multiple : <span class="text-blue-600">10 PA</span></button>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="unlockMaxPurchaseButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Débloquer Achat Multiple Max : <span class="text-blue-600">100 PA</span></button>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="unlockNewSettingsButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Débloquer de nouveaux réglages : <span class="text-blue-600">10 PA</span></button>
+            </div>
+
+            <div class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <button id="unlockAutomationCategoryButton" class="w-full py-3 text-lg font-semibold rounded-lg border-2 border-gray-300 bg-white text-gray-800">Débloquer Automatisation : <span class="text-blue-600">1000 PA</span></button>
+            </div>
+        </div>
+
+        <div id="questsContainer" class="w-full max-w-xl mt-8 p-6 bg-white rounded-xl shadow-lg hidden flex-col items-center">
+            <h1 class="text-green-600 text-3xl font-bold mb-5">Quêtes</h1>
+            <div id="activeQuests" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full mb-4">
+                <h3 class="text-xl font-semibold mb-3 text-green-600">Quêtes Actives</h3>
+                <div id="questsList"></div>
+            </div>
+            <div id="completedQuests" class="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm w-full">
+                <h3 class="text-xl font-semibold mb-3 text-green-600">Quêtes Terminées</h3>
+                <div id="completedQuestsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notifications-container"></div>
+
+    <div id="confirmElevePurchaseModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm w-11/12">
+            <h3 class="text-red-500 text-2xl font-bold mb-4">Attention !</h3>
+            <p id="eleveWarningMessage" class="mb-4">Le prochain élève coûtera 10 fois le prix normal car c'est le premier d'un nouveau groupe de 30.</p>
+            <p class="mb-6">Voulez-vous vraiment continuer ?</p>
+            <div class="flex justify-around gap-4">
+                <button id="confirmElevePurchaseYes" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-green-500 bg-white text-gray-800">Oui</button>
+                <button id="confirmElevePurchaseNo" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-white text-gray-800">Non</button>
+            </div>
+            <div class="flex items-center justify-start mt-4 text-sm text-gray-600">
+                <input type="checkbox" id="disableEleveWarningCheckbox" class="mr-2">
+                <label for="disableEleveWarningCheckbox">Ne plus afficher cet avertissement</label>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmResetModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm w-11/12">
+            <h3 class="text-red-500 text-2xl font-bold mb-4">Réinitialiser la progression ?</h3>
+            <p class="mb-6">Cela réinitialisera tout votre jeu et coûtera 10 images. Êtes-vous sûr ?</p>
+            <div class="flex justify-around gap-4">
+                <button id="confirmResetYes" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-green-500 bg-white text-gray-800">Oui</button>
+                <button id="confirmResetNo" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-white text-gray-800">Non</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmAscensionModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-20 hidden">
+        <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-lg w-11/12">
+            <h3 id="ascensionModalTitle" class="text-red-500 text-2xl font-bold mb-4">Ascensionner ?</h3>
+            <div id="firstAscensionWarning" class="text-left mb-6 hidden">
+                <p class="text-blue-500 mb-2">C'est votre première Ascension ! Voici ce que cela implique :</p>
+                <ul class="list-disc list-inside text-sm text-gray-700">
+                    <li class="mb-1"><span class="text-red-500 font-bold">Vous perdrez toutes vos constructions</span> (élèves, classes, professeurs).</li>
+                    <li class="mb-1"><span class="text-red-500 font-bold">Vous perdrez toutes les compétences</span> débloquées.</li>
+                    <li class="mb-1"><span class="text-red-500 font-bold">Vous perdrez toutes vos monnaies</span> (Bons Points, Images).</li>
+                    <li class="mb-1"><span class="text-blue-500 font-bold">Vous conserverez la monnaie <span class="text-blue-600">PA (Points d'Ascension)</span>.</span></li>
+                    <li class="mb-1"><span class="text-blue-500 font-bold">Vous obtiendrez <span id="paGainedDisplay" class="text-blue-600">X PA</span> basés sur le nombre de professeurs que vous avez au moment de l'Ascension.</span></li>
+                    <li><span class="text-blue-500 font-bold">Vous débloquerez un <span class="text-blue-600">Bonus d'Ascension</span> permanent</span> qui augmentera votre production totale de Bons Points par seconde. Ce bonus est calculé comme suit :<br>
+                        <span class="font-bold">1 + (Nombre total d'ascensions) x (PA totaux gagnés) x 0.05</span>.
+                    </li>
+                </ul>
+                <p class="text-blue-500 mt-4">Il est recommandé de faire votre première Ascension à environ <span class="text-blue-600">35 PA</span> pour un bon départ !</p>
+                <div class="flex items-center justify-start mt-4 text-sm text-gray-600">
+                    <input type="checkbox" id="disableAscensionWarningCheckbox" class="mr-2">
+                    <label for="disableAscensionWarningCheckbox">Ne plus afficher cet avertissement pour les prochaines Ascensions</label>
+                </div>
+            </div>
+            <p id="subsequentAscensionWarning" class="mb-6 hidden">Vous êtes sur le point d'Ascensionner ! Cela réinitialisera votre progression actuelle mais vous rapportera des Points d'Ascension.</p>
+            <div class="flex justify-around gap-4">
+                <button id="confirmAscensionYes" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-green-500 bg-white text-gray-800">Oui</button>
+                <button id="confirmAscensionNo" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-white text-gray-800">Non</button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        sky: tailwind.colors.sky,
-                        amber: tailwind.colors.amber,
-                        purple: tailwind.colors.purple,
-                        green: tailwind.colors.green,
-                        red: tailwind.colors.red,
-                        slate: tailwind.colors.slate,
+        // Ensure BreakInfinity.Decimal is available
+        const Decimal = BreakInfinity.Decimal;
+
+        /**
+         * Formats a number for display, using scientific notation for very large numbers,
+         * locale-specific formatting for large numbers, and fixed decimals for smaller numbers.
+         * Works with BreakInfinity.Decimal objects.
+         * @param {Decimal} num The BreakInfinity.Decimal object to format.
+         * @param {number} [decimalPlaces=0] The number of decimal places to show for smaller numbers.
+         * @returns {string} The formatted number string.
+         */
+        function formatNumber(num, decimalPlaces = 0) {
+            // Use scientific notation for numbers >= 10,000 (1e4)
+            if (num.abs().gte('1e4')) {
+                return num.toExponential(2); // e.g., 1.23e+9
+            }
+            // For numbers between 1,000 and 10,000, use toFixed and then locale string for thousands separators
+            else if (num.abs().gte(1000)) {
+                // Convert to Number for toLocaleString, acknowledging potential minor precision loss for display only
+                return parseFloat(num.toFixed(decimalPlaces)).toLocaleString('fr-FR', {
+                    minimumFractionDigits: decimalPlaces,
+                    maximumFractionDigits: decimalPlaces
+                });
+            }
+            // For smaller numbers, use toFixed for consistent decimal places
+            else {
+                return num.toFixed(decimalPlaces);
+            }
+        }
+
+        // Game Variables - Initialized with Decimal(0)
+        let bonsPoints = new Decimal(0);
+        let bonsPointsParSecondeEleves = new Decimal(0);
+        let bonsPointsParSecondeClasses = new Decimal(0);
+        let totalBonsPointsParSeconde = new Decimal(0);
+        let nombreEleves = new Decimal(0);
+        const coutEleveBase = new Decimal(10);
+        let coutEleveActuel;
+        let nombreClasses = new Decimal(0);
+        let images = new Decimal(0);
+        let nombreProfesseurs = new Decimal(0);
+        let professorsUsedForSkills = new Decimal(0);
+        let multiplicateurProfesseur = new Decimal(1);
+        let s15Clicks = new Decimal(0); // Counter for "Clonage des connaissances" skill
+        let ascensionPoints = new Decimal(0); // Available Ascension Points
+        let ascensionCount = new Decimal(0); // Total number of ascensions performed
+        let totalPAEarned = new Decimal(0); // Total PA earned across all ascensions
+        let ascensionUnlocked = false; // Flag for Ascension button visibility
+        let disableAscensionWarning = false; // New: to disable ascension warning
+        let firstAscensionPerformed = false; // New: to track if an ascension has already occurred
+
+        // Ascension Menu Variables
+        let schoolCount = new Decimal(0);
+        const coutEcoleBase = new Decimal(15);
+        let coutEcoleActuel;
+        let schoolMultiplier = new Decimal(1); // School multiplier (now includes lycee effect)
+        let newSettingsUnlocked = false; // Flag for "Unlock new settings"
+        let multiPurchaseOptionUnlocked = false; // Flag for "Multiple purchase" option (x1, x10, x100)
+        let maxPurchaseOptionUnlocked = false; // New: Flag for "Multiple purchase max" (xMax)
+        let currentPurchaseMultiplier = 1; // New: current purchase multiplier (can be 1, 10, 100, or 'max')
+
+        // Lycées Variables (New Feature)
+        let lyceesUnlocked = false;
+        let nombreLycees = new Decimal(0);
+        const coutLyceeBase = new Decimal(50);
+        let coutLyceeActuel;
+
+        // Automation Variables
+        let automationCategoryUnlocked = false; // New: Flag to unlock Automation category
+        let autoEleveActive = false; // New: Flag for student automation
+        let autoImageActive = false; // New: Flag for image automation
+        let autoProfesseurActive = false; // New: Flag for professor automation
+
+        // Flags for unlocking purchase sections
+        let elevesUnlocked = false;
+        let classesUnlocked = false;
+        let imagesUnlocked = false;
+        let professeursUnlocked = false;
+        let skillsButtonUnlocked = false;
+        let settingsButtonUnlocked = false;
+        let ascensionMenuButtonUnlocked = false; // New
+        let questsUnlocked = false; // New: Flag for Quests button
+
+        // Variables for student purchase confirmation system
+        let disableEleveWarning = false;
+
+        // Unlocked skills (for state persistence)
+        let unlockedSkills = {};
+
+        // Claimed bonus points
+        let bonusPointsClaimed = {
+            100: false, 300: false, 750: false, 1000: false, 2000: false,
+            5000: false, 10000: false, 20000: false, 50000: false, 100000: false
+        };
+
+        // Skill effects (to be applied on load)
+        let skillEffects = {
+            eleveBpsBonus: new Decimal(0),
+            classeMultiplierBonus: new Decimal(0),
+            eleveCostReduction: new Decimal(0),
+            classeCostReduction: new Decimal(0),
+            imageCostReduction: new Decimal(0),
+            professeurCostReduction: new Decimal(0),
+            totalBpsMultiplierBonus: new Decimal(0)
+        };
+
+        // Theme variables
+        let isDayTheme = true;
+        let themeOptionUnlocked = false;
+
+        // Pre-calculated Fibonacci sequence for Professor cost (converted to Decimal)
+        const fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170, 1836311903, 2971215073, 4807526976, 7778742049, 12586269025, 20365011074].map(num => new Decimal(num));
+
+        // Prime number sequence for Ascension Points (PA) (converted to Decimal)
+        // Index 0 is a placeholder, nombreProfesseurs 1 gives prime_PA[1]
+        const prime_PA = [0, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113].map(num => new Decimal(num));
+
+        // Quest Data (New Feature)
+        const questsData = [
+            {
+                id: 'Q1_Schools',
+                name: 'Maître des Écoles',
+                description: 'Construisez 6 Écoles pour prouver votre dévouement à l\'éducation.',
+                targetType: 'schoolCount',
+                targetValue: new Decimal(6),
+                reward: { type: 'unlockPurchase', itemId: 'lycee' },
+                rewardMessage: 'Vous avez débloqué les Lycées !',
+                unlocked: true, // Quests are visible from the start if the tab is unlocked
+                completed: false
+            }
+            // Add more quests here
+        ];
+
+        // Get HTML Elements
+        const bonsPointsSpan = document.getElementById('bonsPoints');
+        const totalBpsInlineSpan = document.getElementById('totalBpsInline');
+        const elevesBpsPerItemSpan = document.getElementById('elevesBpsPerItem');
+        const classesBpsPerItemSpan = document.getElementById('classesBpsPerItem');
+        const nombreElevesSpan = document.getElementById('nombreEleves');
+        const nombreClassesSpan = document.getElementById('nombreClasses');
+        const imagesSpan = document.getElementById('imagesCount');
+        const imagesDisplay = document.getElementById('imagesDisplay');
+        const professeursSpan = document.getElementById('professeurs');
+        const etudierButton = document.getElementById('etudierButton');
+        const acheterEleveButton = document.getElementById('acheterEleveButton');
+        const acheterClasseButton = document.getElementById('acheterClasseButton');
+        const acheterImageButton = document.getElementById('acheterImageButton');
+        const acheterProfesseurButton = document.getElementById('acheterProfesseurButton');
+        const skillsButton = document.getElementById('skillsButton');
+        const settingsButton = document.getElementById('settingsButton');
+        const ascensionButton = document.getElementById('ascensionButton');
+        const ascensionMenuButton = document.getElementById('ascensionMenuButton');
+        const questsButton = document.getElementById('questsButton');
+        const resetSkillsButton = document.getElementById('resetSkillsButton');
+        const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
+        const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
+        const ascensionCountDisplay = document.getElementById('ascensionCountDisplay');
+        const ascensionCountSpan = document.getElementById('ascensionCountSpan');
+        const totalPAEarnedSpanInline = document.getElementById('totalPAEarnedSpanInline');
+        const ascensionBonusDisplay = document.getElementById('ascensionBonusDisplay');
+        const ascensionBonusValueSpan = document.getElementById('ascensionBonusValue');
+
+        // Purchase sections for dynamic visibility
+        const achatEleveSection = document.getElementById('achatEleveSection');
+        const achatClasseSection = document.getElementById('achatClasseSection');
+        const achatImageSection = document.getElementById('achatImageSection');
+        const achatProfesseurSection = document.getElementById('achatProfesseurSection');
+        const notificationsContainer = document.getElementById('notifications-container');
+
+        // Eleve confirmation modal elements
+        const confirmElevePurchaseModal = document.getElementById('confirmElevePurchaseModal');
+        const confirmElevePurchaseYesBtn = document.getElementById('confirmElevePurchaseYes');
+        const confirmElevePurchaseNoBtn = document.getElementById('confirmElevePurchaseNo');
+        const disableEleveWarningCheckbox = document.getElementById('disableEleveWarningCheckbox');
+        const eleveWarningMessageP = document.getElementById('eleveWarningMessage');
+
+        // Skill tree elements
+        const skillTreeContainer = document.getElementById('skillTreeContainer');
+        const skillsGrid = document.getElementById('skills-grid');
+        const availableProfessorsCountSpan = document.getElementById('availableProfessorsCount');
+
+        // Settings menu elements
+        const settingsContainer = document.getElementById('settingsContainer');
+        const themeToggleButton = document.getElementById('themeToggleButton');
+        const resetProgressionButton = document.getElementById('resetProgressionButton');
+
+        // Reset confirmation modal elements
+        const confirmResetModal = document.getElementById('confirmResetModal');
+        const confirmResetYesBtn = document.getElementById('confirmResetYes');
+        const confirmResetNoBtn = document.getElementById('confirmResetNo');
+
+        // Ascension confirmation modal elements
+        const confirmAscensionModal = document.getElementById('confirmAscensionModal');
+        const confirmAscensionYesBtn = document.getElementById('confirmAscensionYes');
+        const confirmAscensionNoBtn = document.getElementById('confirmAscensionNo');
+        const ascensionModalTitle = document.getElementById('ascensionModalTitle');
+        const firstAscensionWarningDiv = document.getElementById('firstAscensionWarning');
+        const subsequentAscensionWarningDiv = document.getElementById('subsequentAscensionWarning');
+        const disableAscensionWarningCheckboxAscension = document.getElementById('disableAscensionWarningCheckbox');
+        const paGainedDisplay = document.getElementById('paGainedDisplay');
+
+        // Ascension menu elements
+        const ascensionMenuContainer = document.getElementById('ascensionMenuContainer');
+        const ascensionMenuPACountSpan = document.getElementById('ascensionMenuPACount');
+        const acheterEcoleButton = document.getElementById('acheterEcoleButton');
+        const coutEcoleSpan = document.getElementById('coutEcole');
+        const nombreEcolesSpan = document.getElementById('nombreEcoles');
+        const ecoleMultiplierSpan = document.getElementById('ecoleMultiplier');
+        const unlockNewSettingsButton = document.getElementById('unlockNewSettingsButton');
+        const unlockMultiPurchaseButton = document.getElementById('unlockMultiPurchaseButton');
+        const unlockMaxPurchaseButton = document.getElementById('unlockMaxPurchaseButton');
+        const unlockAutomationCategoryButton = document.getElementById('unlockAutomationCategoryButton');
+
+        // Lycées elements (New)
+        const achatLyceeSection = document.getElementById('achatLyceeSection');
+        const acheterLyceeButton = document.getElementById('acheterLyceeButton');
+        const nombreLyceesDisplay = document.getElementById('nombreLyceesDisplay');
+        const lyceeMultiplierDisplay = document.getElementById('lyceeMultiplierDisplay');
+
+        // Purchase multiplier elements
+        const purchaseMultiplierSelection = document.getElementById('purchaseMultiplierSelection');
+        const setMultiplierX1 = document.getElementById('setMultiplierX1');
+        const setMultiplierX10 = document.getElementById('setMultiplierX10');
+        const setMultiplierX100 = document.getElementById('setMultiplierX100');
+        const setMultiplierXMax = document.getElementById('setMultiplierXMax');
+
+        // Automation section elements
+        const automationSection = document.getElementById('automationSection');
+        const autoEleveButton = document.getElementById('autoEleveButton');
+        const autoImageButton = document.getElementById('autoImageButton');
+        const autoProfesseurButton = document.getElementById('autoProfesseurButton');
+
+        // Quests elements (New)
+        const questsContainer = document.getElementById('questsContainer');
+        const questsListDiv = document.getElementById('questsList');
+        const completedQuestsListDiv = document.getElementById('completedQuestsList');
+
+        // --- Game State Save and Load Functions ---
+        function saveGameState() {
+            const gameState = {
+                // Convert Decimal objects to strings for saving
+                bonsPoints: bonsPoints.toString(),
+                nombreEleves: nombreEleves.toString(),
+                nombreClasses: nombreClasses.toString(),
+                images: images.toString(),
+                nombreProfesseurs: nombreProfesseurs.toString(),
+                professorsUsedForSkills: professorsUsedForSkills.toString(),
+                disableEleveWarning,
+                unlockedSkills: Object.keys(unlockedSkills),
+                elevesUnlocked,
+                classesUnlocked,
+                imagesUnlocked,
+                professeursUnlocked,
+                skillsButtonUnlocked,
+                settingsButtonUnlocked,
+                ascensionUnlocked,
+                s15Clicks: s15Clicks.toString(),
+                bonusPointsClaimed: bonusPointsClaimed,
+                isDayTheme,
+                themeOptionUnlocked,
+                ascensionPoints: ascensionPoints.toString(),
+                ascensionCount: ascensionCount.toString(),
+                totalPAEarned: totalPAEarned.toString(),
+                disableAscensionWarning,
+                firstAscensionPerformed,
+                schoolCount: schoolCount.toString(),
+                schoolMultiplier: schoolMultiplier.toString(),
+                newSettingsUnlocked,
+                multiPurchaseOptionUnlocked,
+                maxPurchaseOptionUnlocked,
+                currentPurchaseMultiplier,
+                automationCategoryUnlocked,
+                autoEleveActive,
+                autoImageActive,
+                autoProfesseurActive,
+                lyceesUnlocked,
+                nombreLycees: nombreLycees.toString(),
+                questsUnlocked,
+                questsData: questsData.map(q => ({ id: q.id, unlocked: q.unlocked, completed: q.completed }))
+            };
+            localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
+        }
+
+        function loadGameState() {
+            const savedState = localStorage.getItem('incrementalGameSave');
+            if (savedState) {
+                const gameState = JSON.parse(savedState);
+                // Convert strings back to Decimal objects
+                bonsPoints = new Decimal(gameState.bonsPoints || 0);
+                nombreEleves = new Decimal(gameState.nombreEleves || 0);
+                nombreClasses = new Decimal(gameState.nombreClasses || 0);
+                images = new Decimal(gameState.images || 0);
+                nombreProfesseurs = new Decimal(gameState.nombreProfesseurs || 0);
+                professorsUsedForSkills = new Decimal(gameState.professorsUsedForSkills || 0);
+                disableEleveWarning = gameState.disableEleveWarning || false;
+                elevesUnlocked = gameState.elevesUnlocked || false;
+                classesUnlocked = gameState.classesUnlocked || false;
+                imagesUnlocked = gameState.imagesUnlocked || false;
+                professeursUnlocked = gameState.professeursUnlocked || false;
+                skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
+                settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
+                ascensionUnlocked = gameState.ascensionUnlocked || false;
+                s15Clicks = new Decimal(gameState.s15Clicks || 0);
+                ascensionPoints = new Decimal(gameState.ascensionPoints || 0);
+                ascensionCount = new Decimal(gameState.ascensionCount || 0);
+                totalPAEarned = new Decimal(gameState.totalPAEarned || 0);
+                disableAscensionWarning = gameState.disableAscensionWarning || false;
+                firstAscensionPerformed = gameState.firstAscensionPerformed || false;
+                schoolCount = new Decimal(gameState.schoolCount || 0);
+                schoolMultiplier = new Decimal(gameState.schoolMultiplier || 1);
+                newSettingsUnlocked = gameState.newSettingsUnlocked || false;
+                multiPurchaseOptionUnlocked = gameState.multiPurchaseOptionUnlocked || false;
+                maxPurchaseOptionUnlocked = gameState.maxPurchaseOptionUnlocked || false;
+                currentPurchaseMultiplier = gameState.currentPurchaseMultiplier || 1;
+                automationCategoryUnlocked = gameState.automationCategoryUnlocked || false;
+                autoEleveActive = gameState.autoEleveActive || false;
+                autoImageActive = gameState.autoImageActive || false;
+                autoProfesseurActive = gameState.autoProfesseurActive || false;
+                lyceesUnlocked = gameState.lyceesUnlocked || false;
+                nombreLycees = new Decimal(gameState.nombreLycees || 0);
+                questsUnlocked = gameState.questsUnlocked || false;
+
+                unlockedSkills = {};
+                if (gameState.unlockedSkills) {
+                    gameState.unlockedSkills.forEach(skillId => {
+                        unlockedSkills[skillId] = true;
+                    });
+                }
+
+                if (gameState.bonusPointsClaimed) {
+                    Object.assign(bonusPointsClaimed, gameState.bonusPointsClaimed);
+                }
+                
+                if (gameState.isDayTheme !== undefined) {
+                    isDayTheme = gameState.isDayTheme;
+                    if (!isDayTheme) {
+                        document.body.classList.add('dark-theme');
+                    } else {
+                        document.body.classList.remove('dark-theme');
                     }
+                }
+                if (gameState.themeOptionUnlocked !== undefined) {
+                    themeOptionUnlocked = gameState.themeOptionUnlocked;
+                }
+
+                if (gameState.questsData) {
+                    gameState.questsData.forEach(savedQuest => {
+                        const quest = questsData.find(q => q.id === savedQuest.id);
+                        if (quest) {
+                            quest.unlocked = savedQuest.unlocked;
+                            quest.completed = savedQuest.completed;
+                        }
+                    });
+                }
+
+                applyAllSkillEffects(); // Apply unlocked skill effects on load
+            }
+            // Ensure section visibility is updated after state loading
+            updateSectionVisibility();
+            renderQuests(); // Render quests after loading state
+        }
+
+        // --- Skill Data Definition (20 per family) ---
+        const skillsData = [
+            // Pédagogie Branch (20 skills)
+            { id: 'P1', name: 'Méthodes Actives', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.1 BP/s par élève.', flavorText: 'Techniques d\'enseignement engageantes qui stimulent l\'apprentissage.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.1) }, prerequisites: [], row: 0, col: 0 },
+            { id: 'P2', name: 'Apprentissage Collaboratif', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.1 BP/s par élève.', flavorText: 'Les élèves apprennent mieux en interagissant et en s\'aidant mutuellement.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.1) }, prerequisites: ['P1'], row: 1, col: 0 },
+            { id: 'P3', name: 'Gestion de Classe Optimale', family: 'Pédagogie', description: 'Augmente la production des classes de 5%.', flavorText: 'Optimisation de l\'environnement d\'apprentissage pour minimiser les distractions.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['P2'], row: 2, col: 0 },
+            { id: 'P4', name: 'Motivation Intrinsèque', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.2 BP/s par élève.', flavorText: 'Développe l\'envie naturelle d\'apprendre chez les élèves, au-delà des récompenses.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.2) }, prerequisites: ['P3'], row: 3, col: 0 },
+            { id: 'P5', name: 'Pédagogie Différenciée', family: 'Pédagogie', description: 'Adapte les méthodes d\'enseignement aux besoins et rythmes de chaque élève. Augmente la production des classes de 10%.', flavorText: 'Adapte les méthodes d\'enseignement aux besoins et rythmes de chaque élève.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['P4'], row: 4, col: 0 },
+            { id: 'P6', name: 'Évaluation Formative', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.15 BP/s par élève.', flavorText: 'Des retours constants pour guider l\'apprentissage et identifier les lacunes.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.15) }, prerequisites: ['P5'], row: 5, col: 0 },
+            { id: 'P7', name: 'Inclusion Scolaire', family: 'Pédagogie', description: 'Augmente la production des classes de 7%.', flavorText: 'Création d\'un environnement où chaque élève, quelle que soit sa différence, peut réussir.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.07) }, prerequisites: ['P6'], row: 6, col: 0 },
+            { id: 'P8', name: 'Compétences Transversales', family: 'Pédagogie', description: 'Augmente la production totale de BP/s de 5%.', flavorText: 'Développement de capacités comme la pensée critique et la résolution de problèmes.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['P7'], row: 7, col: 0 },
+            { id: 'P9', name: 'Apprentissage par Projet', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.25 BP/s par élève.', flavorText: 'Les élèves apprennent en réalisant des projets concrets, stimulant l\'autonomie.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.25) }, prerequisites: ['P8'], row: 8, col: 0 },
+            { id: 'P10', name: 'Mentorats Pédagogiques', family: 'Pédagogie', description: 'Augmente la production des classes de 12%.', flavorText: 'Les élèves plus avancés aident leurs peers, renforçant la compréhension de tous.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.12) }, prerequisites: ['P9'], row: 9, col: 0 },
+            { id: 'P11', name: 'Curriculum Adaptatif', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.3 BP/s par élève.', flavorText: 'Un programme scolaire qui s\'ajuste aux progrès et aux besoins individuels.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.3) }, prerequisites: ['P10'], row: 10, col: 0 },
+            { id: 'P12', name: 'Neurosciences Éducatives', family: 'Pédagogie', description: 'Augmente la production des classes de 15%.', flavorText: 'Appliquer les découvertes sur le cerveau pour optimiser les stratégies d\'enseignement.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['P11'], row: 11, col: 0 },
+            { id: 'P13', name: 'Gamification de l\'Apprentissage', family: 'Pédagogie', description: 'Augmente la production totale de BP/s de 7%.', flavorText: 'Intégration d\'éléments de jeu pour rendre l\'apprentissage plus engageant et amusant.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.07) }, prerequisites: ['P12'], row: 12, col: 0 },
+            { id: 'P14', name: 'Pédagogie Inversée', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.35 BP/s par élève.', flavorText: 'Les élèves apprennent à la maison et pratiquent en classe, maximisant l\'interaction.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.35) }, prerequisites: ['P13'], row: 13, col: 0 },
+            { id: 'P15', name: 'Apprentissage par le Service', family: 'Pédagogie', description: 'Augmente la production des classes de 18%.', flavorText: 'Les élèves s\'engagent dans des projets communautaires, développant des compétences civiques.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.18) }, prerequisites: ['P14'], row: 14, col: 0 },
+            { id: 'P16', name: 'Maîtrise des Émotions', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.4 BP/s par élève.', flavorText: 'Enseigner aux élèves à gérer leurs émotions pour un apprentissage plus serein.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.4) }, prerequisites: ['P15'], row: 15, col: 0 },
+            { id: 'P17', name: 'Leadership Éducatif', family: 'Pédagogie', description: 'Augmente la production totale de BP/s de 10%.', flavorText: 'Former les élèves à prendre des initiatives et à guider leurs peers.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['P16'], row: 16, col: 0 },
+            { id: 'P18', name: 'Citoyenneté Numérique', family: 'Pédagogie', description: 'Augmente la production des classes de 20%.', flavorText: 'Préparer les élèves à naviguer de manière responsable et éthique dans le monde numérique.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.20) }, prerequisites: ['P17'], row: 17, col: 0 },
+            { id: 'P19', name: 'Innovation Pédagogique', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.5 BP/s par élève.', flavorText: 'Recherche et implémentation de nouvelles approches révolutionnaires en éducation.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.5) }, prerequisites: ['P18'], row: 18, col: 0 },
+            { id: 'P20', name: 'Écosystème d\'Apprentissage', family: 'Pédagogie', description: 'Augmente la production totale de BP/s de 15%.', flavorText: 'Création d\'un environnement d\'apprentissage holistique et interconnecté.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['P19'], row: 19, col: 0 },
+
+            // Rationnalisme Branch (20 skills)
+            { id: 'R1', name: 'Analyse des Données', family: 'Rationnalisme', description: 'Réduit le coût des élèves de 10%.', flavorText: 'Utilisation des statistiques pour identifier les goulots d\'étranglement et améliorer l\'efficacité.', effect: { type: 'eleveCostReduction', value: new Decimal(0.10) }, prerequisites: [], row: 0, col: 1 },
+            { id: 'R2', name: 'Optimisation des Processus', family: 'Rationnalisme', description: 'Réduit le coût des classes de 5%.', flavorText: 'Rationalisation des flux de travail pour une meilleure utilisation des ressources.', effect: { type: 'classeCostReduction', value: new Decimal(0.05) }, prerequisites: ['R1'], row: 1, col: 1 },
+            { id: 'R3', name: 'Planification Stratégique', family: 'Rationnalisme', description: 'Augmente la production totale de BP/s de 5%.', flavorText: 'Élaboration de plans à long terme pour une croissance durable et prévisible.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['R2'], row: 2, col: 1 },
+            { id: 'R4', name: 'Efficacité Logistique', family: 'Rationnalisme', description: 'Réduit le coût des images de 5%.', flavorText: 'Amélioration de la chaîne d\'approvisionnement pour les ressources rares.', effect: { type: 'imageCostReduction', value: new Decimal(0.05) }, prerequisites: ['R3'], row: 3, col: 1 },
+            { id: 'R5', name: 'Gestion des Risques', family: 'Rationnalisme', description: 'Réduit le coût des professeurs de 10%.', flavorText: 'Anticipation et atténuation des problèmes potentiels pour une progression fluide.', effect: { type: 'professeurCostReduction', value: new Decimal(0.10) }, prerequisites: ['R4'], row: 4, col: 1 },
+            { id: 'R6', name: 'Audit Financier', family: 'Rationnalisme', description: 'Réduit le coût des élèves de 15%.', flavorText: 'Examen minutieux des dépenses pour maximiser l\'investissement dans l\'éducation.', effect: { type: 'eleveCostReduction', value: new Decimal(0.15) }, prerequisites: ['R5'], row: 5, col: 1 },
+            { id: 'R7', name: 'Standardisation des Procédures', family: 'Rationnalisme', description: 'Réduit le coût des classes de 7%.', flavorText: 'Mise en place de méthodes uniformes pour une efficacité accrue.', effect: { type: 'classeCostReduction', value: new Decimal(0.07) }, prerequisites: ['R6'], row: 6, col: 1 },
+            { id: 'R8', name: 'Automatisation Administrative', family: 'Rationnalisme', description: 'Augmente la production totale de BP/s de 7%.', flavorText: 'Utilisation de la technologie pour réduire les tâches répétitives et libérer des ressources.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.07) }, prerequisites: ['R7'], row: 7, col: 1 },
+            { id: 'R9', name: 'Gestion de Projet Agile', family: 'Rationnalisme', description: 'Réduit le coût des images de 10%.', flavorText: 'Approche flexible et itérative pour la réalisation de projets éducatifs.', effect: { type: 'imageCostReduction', value: new Decimal(0.10) }, prerequisites: ['R8'], row: 8, col: 1 },
+            { id: 'R10', name: 'Benchmarking Éducatif', family: 'Rationnalisme', description: 'Réduit le coût des professeurs de 15%.', flavorText: 'Comparaison des performances avec les meilleures pratiques pour identifier les axes d\'amélioration.', effect: { type: 'professeurCostReduction', value: new Decimal(0.15) }, prerequisites: ['R9'], row: 9, col: 1 },
+            { id: 'R11', name: 'Modélisation Prédictive', family: 'Rationnalisme', description: 'Réduit le coût des élèves de 20%.', flavorText: 'Utilisation de modèles statistiques pour anticiper les besoins futurs et optimiser les allocations.', effect: { type: 'eleveCostReduction', value: new Decimal(0.20) }, prerequisites: ['R10'], row: 10, col: 1 },
+            { id: 'R12', name: 'Optimisation des Ressources', family: 'Rationnalisme', description: 'Réduit le coût des classes de 10%.', flavorText: 'Maximisation de l\'utilisation de chaque ressource disponible pour l\'éducation.', effect: { type: 'classeCostReduction', value: new Decimal(0.10) }, prerequisites: ['R11'], row: 11, col: 1 },
+            { id: 'R13', name: 'Chaîne de Valeur Éducative', family: 'Rationnalisme', description: 'Augmente la production totale de BP/s de 10%.', flavorText: 'Analyse de toutes les étapes du processus éducatif pour trouver des gains d\'efficacité.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['R12'], row: 12, col: 1 },
+            { id: 'R14', name: 'Contrôle Qualité', family: 'Rationnalisme', description: 'Réduit le coût des images de 15%.', flavorText: 'Assurance que les standards d\'excellence sont maintenus à chaque niveau de l\'enseignement.', effect: { type: 'imageCostReduction', value: new Decimal(0.15) }, prerequisites: ['R13'], row: 13, col: 1 },
+            { id: 'R15', name: 'Gestion de Crise', family: 'Rationnalisme', description: 'Réduit le coût des professeurs de 20%.', flavorText: 'Préparation et réponse efficaces aux défis imprévus qui pourraient affecter l\'éducation.', effect: { type: 'professeurCostReduction', value: new Decimal(0.20) }, prerequisites: ['R14'], row: 14, col: 1 },
+            { id: 'R16', name: 'Ingénierie des Coûts', family: 'Rationnalisme', description: 'Réduit le coût des élèves de 25%.', flavorText: 'Conception de systèmes éducatifs pour minimiser les dépenses sans compromettre la qualité.', effect: { type: 'eleveCostReduction', value: new Decimal(0.25) }, prerequisites: ['R15'], row: 15, col: 1 },
+            { id: 'R17', name: 'Optimisation Fiscale', family: 'Rationnalisme', description: 'Réduit le coût des classes de 12%.', flavorText: 'Gestion intelligente des fonds pour maximiser les investissements dans les infrastructures éducatives.', effect: { type: 'classeCostReduction', value: new Decimal(0.12) }, prerequisites: ['R16'], row: 16, col: 1 },
+            { id: 'R18', name: 'Synergies Opérationnelles', family: 'Rationnalisme', description: 'Augmente la production totale de BP/s de 12%.', flavorText: 'Identification et exploitation des complémentarités entre les différentes composantes du système éducatif.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.12) }, prerequisites: ['R17'], row: 17, col: 1 },
+            { id: 'R19', name: 'Modèle Économique Scalable', family: 'Rationnalisme', description: 'Réduit le coût des images de 20%.', flavorText: 'Conception d\'un modèle financier permettant une croissance rapide et durable de l\'impact éducatif.', effect: { type: 'imageCostReduction', value: new Decimal(0.20) }, prerequisites: ['R18'], row: 18, col: 1 },
+            { id: 'R20', name: 'Rationnalisme Absolu', family: 'Rationnalisme', description: 'Réduit le coût des professeurs de 25%.', flavorText: 'Atteinte de l\'efficacité et de la logique maximales dans toutes les facettes de l\'éducation.', effect: { type: 'professeurCostReduction', value: new Decimal(0.25) }, prerequisites: ['R19'], row: 19, col: 1 },
+
+            // Science Branch (20 skills)
+            { id: 'S1', name: 'Recherche Fondamentale', family: 'Science', description: 'Augmente la production des élèves de 0.05 BP/s par élève.', flavorText: 'Exploration des principes de base de l\'apprentissage et de la cognition.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.05) }, prerequisites: [], row: 0, col: 2 },
+            { id: 'S2', name: 'Développement Expérimental', family: 'Science', description: 'Augmente la production des classes de 5%.', flavorText: 'Application pratique des découvertes pour créer de nouvelles méthodes pédagogiques.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['S1'], row: 1, col: 2 },
+            { id: 'S3', name: 'Laboratoire d\'Innovation', family: 'Science', description: 'Augmente la production des élèves de 0.1 BP/s par élève.', flavorText: 'Un espace dédié à la conception et au test de nouvelles approches éducatives.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.1) }, prerequisites: ['S2'], row: 2, col: 2 },
+            { id: 'S4', name: 'Théorie du Chaos Appliquée', family: 'Science', description: 'Augmente la production totale de BP/s de 10%.', flavorText: 'Comprendre les systèmes complexes pour prédire et influencer les résultats d\'apprentissage.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['S3'], row: 3, col: 2 },
+            { id: 'S5', name: 'Neuro-Pédagogie', family: 'Science', description: 'Augmente la production des classes de 15%.', flavorText: 'Fusion de la science du cerveau et des méthodes d\'enseignement pour un apprentissage optimisé.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['S4'], row: 4, col: 2 },
+            { id: 'S6', name: 'Bio-Ingénierie Cognitive', family: 'Science', description: 'Augmente la production des élèves de 0.2 BP/s par élève.', flavorText: 'Application des principes biologiques pour améliorer les fonctions cérébrales liées à l\'apprentissage.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.2) }, prerequisites: ['S5'], row: 5, col: 2 },
+            { id: 'S7', name: 'Modélisation Comportementale', family: 'Science', description: 'Augmente la production des classes de 8%.', flavorText: 'Prédiction des réactions des élèves face à différentes méthodes pédagogiques.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.08) }, prerequisites: ['S6'], row: 6, col: 2 },
+            { id: 'S8', name: 'Psychologie Expérimentale', family: 'Science', description: 'Augmente la production totale de BP/s de 6%.', flavorText: 'Étude des processus mentaux et des comportements pour optimiser l\'environnement d\'apprentissage.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.06) }, prerequisites: ['S7'], row: 7, col: 2 },
+            { id: 'S9', name: 'Intelligence Artificielle Éducative', family: 'Science', description: 'Augmente la production des élèves de 0.3 BP/s par élève.', flavorText: 'Développement de systèmes IA pour personnaliser l\'enseignement et le tutorat.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.3) }, prerequisites: ['S8'], row: 8, col: 2 },
+            { id: 'S10', name: 'Génétique de l\'Apprentissage', family: 'Science', description: 'Augmente la production des classes de 18%.', flavorText: 'Comprendre l\'influence des facteurs génétiques sur les capacités d\'apprentissage.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.18) }, prerequisites: ['S9'], row: 9, col: 2 },
+            { id: 'S11', name: 'Nanotechnologie Éducative', family: 'Science', description: 'Augmente la production des élèves de 0.35 BP/s par élève.', flavorText: 'Utilisation de la nanotechnologie pour créer des outils d\'apprentissage avancés.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.35) }, prerequisites: ['S10'], row: 10, col: 2 },
+            { id: 'S12', name: 'Réalité Virtuelle Pédagogique', family: 'Science', description: 'Augmente la production des classes de 20%.', flavorText: 'Création d\'environnements d\'apprentissage immersifs pour une meilleure rétention.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.20) }, prerequisites: ['S11'], row: 11, col: 2 },
+            { id: 'S13', name: 'Robotique Éducative', family: 'Science', description: 'Augmente la production totale de BP/s de 8%.', flavorText: 'Développement de robots assistants pour l\'enseignement et l\'interaction avec les élèves.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.08) }, prerequisites: ['S12'], row: 12, col: 2 },
+            { id: 'S14', name: 'Interface Cerveau-Machine', family: 'Science', description: 'Augmente la production des élèves de 0.4 BP/s par élève.', flavorText: 'Connexion directe entre le cerveau et les systèmes d\'apprentissage pour une acquisition de connaissances accélérée.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.4) }, prerequisites: ['S13'], row: 13, col: 2 },
+            { id: 'S15', name: 'Clonage des Connaissances', family: 'Science', description: 'Augmente la production des classes de 22%. (Bonus spécial au 10ème clic)', flavorText: 'Techniques avancées pour dupliquer et transférer des connaissances entre les entités éducatives.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.22) }, prerequisites: ['S14'], row: 14, col: 2 },
+            { id: 'S16', name: 'Synthèse de l\'Expérience', family: 'Science', description: 'Augmente la production des élèves de 0.45 BP/s par élève.', flavorText: 'Création artificielle d\'expériences d\'apprentissage pour une immersion totale et rapide.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.45) }, prerequisites: ['S15'], row: 15, col: 2 },
+            { id: 'S17', name: 'Théorie Unifiée de l\'Apprentissage', family: 'Science', description: 'Augmente la production totale de BP/s de 10%.', flavorText: 'Une théorie englobante qui explique tous les aspects de l\'acquisition des connaissances.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['S16'], row: 16, col: 2 },
+            { id: 'S18', name: 'Manipulation Quantique Pédagogique', family: 'Science', description: 'Augmente la production des classes de 25%.', flavorText: 'Exploitation des principes quantiques pour des avancées sans précédent en éducation.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.25) }, prerequisites: ['S17'], row: 17, col: 2 },
+            { id: 'S19', name: 'Conscience Artificielle', family: 'Science', description: 'Développement d\'entités conscientes capables d\'apprendre et d\'enseigner de manière autonome.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.5) }, prerequisites: ['S18'], row: 18, col: 2 },
+            { id: 'S20', name: 'Singularité Éducative', family: 'Science', description: 'Augmente la production totale de BP/s de 15%.', flavorText: 'Le point où l\'intelligence éducative dépasse l\'entendement humain, transformant l\'apprentissage pour toujours.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['S19'], row: 19, col: 2 }
+        ];
+
+        function resetSkillEffects() {
+            skillEffects = {
+                eleveBpsBonus: new Decimal(0),
+                classeMultiplierBonus: new Decimal(0),
+                eleveCostReduction: new Decimal(0),
+                classeCostReduction: new Decimal(0),
+                imageCostReduction: new Decimal(0),
+                professeurCostReduction: new Decimal(0),
+                totalBpsMultiplierBonus: new Decimal(0)
+            };
+        }
+
+        function applyAllSkillEffects() {
+            resetSkillEffects(); // Reset before applying
+            skillsData.forEach(skill => {
+                if (unlockedSkills[skill.id]) {
+                    if (skill.effect) {
+                        switch (skill.effect.type) {
+                            case 'eleveBpsBonus':
+                                skillEffects.eleveBpsBonus = skillEffects.eleveBpsBonus.add(skill.effect.value);
+                                break;
+                            case 'classeMultiplierBonus':
+                                skillEffects.classeMultiplierBonus = skillEffects.classeMultiplierBonus.add(skill.effect.value);
+                                break;
+                            case 'eleveCostReduction':
+                                skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(skill.effect.value);
+                                break;
+                            case 'classeCostReduction':
+                                skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(skill.effect.value);
+                                break;
+                            case 'imageCostReduction':
+                                skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(skill.effect.value);
+                                break;
+                            case 'professeurCostReduction':
+                                skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(skill.effect.value);
+                                break;
+                            case 'totalBpsMultiplierBonus':
+                                skillEffects.totalBpsMultiplierBonus = skillEffects.totalBpsMultiplierBonus.add(skill.effect.value);
+                                break;
+                        }
+                    }
+                }
+            });
+            // Recalculate productions and costs after applying effects
+            bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus));
+            // School multiplier is applied after the sum of eleves and classes bps
+            bonsPointsParSecondeClasses = nombreClasses.mul(25).mul(multiplicateurProfesseur).mul(new Decimal(1).add(skillEffects.classeMultiplierBonus));
+            coutEleveActuel = calculateNextEleveCost(); // Recalculate student cost with reduction
+        }
+
+        // Function to display a discreet notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.classList.add('notification-item');
+            notification.textContent = message;
+            notificationsContainer.appendChild(notification);
+
+            // Remove notification after 1.5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 1500);
+        }
+
+        // Function to calculate the cost of the next student
+        function calculateNextEleveCost() {
+            let baseCostForNextEleve = new Decimal(0);
+            let elevesInCurrentCycle = nombreEleves.mod(30);
+
+            if (elevesInCurrentCycle.lt(10)) {
+                baseCostForNextEleve = new Decimal(10);
+            } else if (elevesInCurrentCycle.lt(20)) {
+                baseCostForNextEleve = new Decimal(12);
+            } else { // elevesInCurrentCycle >= 20
+                baseCostForNextEleve = new Decimal(15);
+            }
+
+            let finalCost = baseCostForNextEleve;
+
+            // Apply the class multiplier if classes exist
+            if (nombreClasses.gt(0)) {
+                finalCost = finalCost.mul(nombreClasses.add(1));
+            } else { // If no classes purchased
+                // Check for the specific 100th student penalty (every 100th student)
+                if (nombreEleves.add(1).mod(100).eq(0)) { // This means the *next* student is the 100th, 200th, etc.
+                    finalCost = finalCost.mul(100); // Apply the x100 penalty
+                } else if (elevesInCurrentCycle.eq(0) && nombreEleves.gt(0)) { // Every 30th student (if not 100th and no classes)
+                    finalCost = finalCost.mul(10);
+                }
+            }
+
+            // Apply skill cost reduction
+            finalCost = finalCost.mul(new Decimal(1).sub(skillEffects.eleveCostReduction));
+
+            return Decimal.max(1, finalCost);
+        }
+
+        // Function to calculate the cost of the next Professor (Fibonacci)
+        function calculateNextProfessorCost() {
+            let nextProfIndex = nombreProfesseurs.add(1);
+            let cost;
+            // Use the pre-calculated sequence. If index exceeds size, use the last value.
+            if (nextProfIndex.lt(fibonacciSequence.length)) {
+                cost = fibonacciSequence[nextProfIndex.toNumber()];
+            } else {
+                cost = fibonacciSequence[fibonacciSequence.length - 1];
+            }
+            return Decimal.max(1, cost.mul(new Decimal(1).sub(skillEffects.professeurCostReduction))); // Apply cost reduction
+        }
+
+        // Function to calculate the cost of the next School
+        function calculateNextEcoleCost() {
+            return coutEcoleBase.mul(new Decimal(1.5).pow(schoolCount)).floor();
+        }
+
+        // Function to calculate the cost of the next Lycée (New)
+        function calculateNextLyceeCost() {
+            return coutLyceeBase.mul(new Decimal(1.2).pow(nombreLycees)).floor();
+        }
+
+        // Function to update the visual state of purchase buttons (border color)
+        function updateButtonStates() {
+            // Élève
+            if (bonsPoints.gte(calculateNextEleveCost())) {
+                acheterEleveButton.classList.remove('border-red-500');
+                acheterEleveButton.classList.add('border-green-500');
+            } else {
+                acheterEleveButton.classList.remove('border-green-500');
+                acheterEleveButton.classList.add('border-red-500');
+            }
+
+            // Salle de classe
+            let classeCostEleves = classeElevesCost();
+            if (nombreEleves.gte(classeCostEleves)) {
+                acheterClasseButton.classList.remove('border-red-500');
+                acheterClasseButton.classList.add('border-green-500');
+            } else {
+                acheterClasseButton.classList.remove('border-green-500');
+                acheterClasseButton.classList.add('border-red-500');
+            }
+
+            // Image
+            let imageCost = new Decimal(1000).mul(new Decimal(1).sub(skillEffects.imageCostReduction));
+            if (bonsPoints.gte(imageCost)) {
+                acheterImageButton.classList.remove('border-red-500');
+                acheterImageButton.classList.add('border-green-500');
+            } else {
+                acheterImageButton.classList.remove('border-green-500');
+                acheterImageButton.classList.add('border-red-500');
+            }
+
+            // Professeur
+            let professeurCost = calculateNextProfessorCost();
+            if (images.gte(professeurCost)) {
+                acheterProfesseurButton.classList.remove('border-red-500');
+                acheterProfesseurButton.classList.add('border-green-500');
+            } else {
+                acheterProfesseurButton.classList.remove('border-green-500');
+                acheterProfesseurButton.classList.add('border-red-500');
+            }
+            // Update Professor button text with current cost
+            acheterProfesseurButton.innerHTML = `Professeur : <span class="text-purple-600">${formatNumber(professeurCost, 0)} I</span>`;
+
+            // Ascension Button (always enabled if visible, as it's a reset)
+            if (ascensionUnlocked) {
+                ascensionButton.classList.remove('border-red-500');
+                ascensionButton.classList.add('border-blue-600');
+            } else {
+                ascensionButton.classList.remove('border-blue-600');
+                ascensionButton.classList.add('border-red-500');
+            }
+
+            // Ascension Menu Button (visible if ascensionUnlocked)
+            if (ascensionUnlocked) {
+                ascensionMenuButton.classList.remove('border-red-500');
+                ascensionMenuButton.classList.add('border-blue-600');
+            } else {
+                ascensionMenuButton.classList.remove('border-blue-600');
+                ascensionMenuButton.classList.add('border-red-500');
+            }
+
+            // Acheter Ecole Button (in Ascension Menu)
+            if (ascensionPoints.gte(calculateNextEcoleCost())) {
+                acheterEcoleButton.classList.remove('border-red-500');
+                acheterEcoleButton.classList.add('border-green-500');
+            } else {
+                acheterEcoleButton.classList.remove('border-green-500');
+                acheterEcoleButton.classList.add('border-red-500');
+            }
+            coutEcoleSpan.textContent = `${formatNumber(calculateNextEcoleCost(), 0)} PA`;
+
+            // Acheter Lycee Button (in Ascension Menu, new)
+            if (lyceesUnlocked) {
+                if (ascensionPoints.gte(calculateNextLyceeCost())) {
+                    acheterLyceeButton.classList.remove('border-red-500');
+                    acheterLyceeButton.classList.add('border-green-500');
+                } else {
+                    acheterLyceeButton.classList.remove('border-green-500');
+                    acheterLyceeButton.classList.add('border-red-500');
+                }
+                acheterLyceeButton.innerHTML = `Lycée : <span class="text-blue-600">${formatNumber(calculateNextLyceeCost(), 0)} PA</span>`;
+            }
+
+            // Unlock Multi Purchase Button (in Ascension Menu)
+            if (multiPurchaseOptionUnlocked) {
+                unlockMultiPurchaseButton.style.display = 'none';
+            } else if (ascensionPoints.gte(10)) {
+                unlockMultiPurchaseButton.classList.remove('border-red-500');
+                unlockMultiPurchaseButton.classList.add('border-green-500');
+            } else {
+                unlockMultiPurchaseButton.classList.remove('border-green-500');
+                unlockMultiPurchaseButton.classList.add('border-red-500');
+            }
+
+            // Unlock Max Purchase Button (in Ascension Menu)
+            if (maxPurchaseOptionUnlocked) {
+                unlockMaxPurchaseButton.style.display = 'none';
+                setMultiplierXMax.classList.remove('hidden'); // Show xMax button if unlocked
+            } else if (ascensionPoints.gte(100)) {
+                unlockMaxPurchaseButton.classList.remove('border-red-500');
+                unlockMaxPurchaseButton.classList.add('border-green-500');
+            } else {
+                unlockMaxPurchaseButton.classList.remove('border-green-500');
+                unlockMaxPurchaseButton.classList.add('border-red-500');
+            }
+
+            // Unlock New Settings Button (in Ascension Menu)
+            if (newSettingsUnlocked) {
+                unlockNewSettingsButton.style.display = 'none'; // Hide if already unlocked
+            } else if (ascensionPoints.gte(10)) {
+                unlockNewSettingsButton.classList.remove('border-red-500');
+                unlockNewSettingsButton.classList.add('border-green-500');
+            } else {
+                unlockNewSettingsButton.classList.remove('border-green-500');
+                unlockNewSettingsButton.classList.add('border-red-500');
+            }
+
+            // Unlock Automation Category Button (in Ascension Menu)
+            if (automationCategoryUnlocked) {
+                unlockAutomationCategoryButton.style.display = 'none';
+            } else if (ascensionPoints.gte(1000)) {
+                unlockAutomationCategoryButton.classList.remove('border-red-500');
+                unlockAutomationCategoryButton.classList.add('border-green-500');
+            } else {
+                unlockAutomationCategoryButton.classList.remove('border-green-500');
+                unlockAutomationCategoryButton.classList.add('border-red-500');
+            }
+
+            // Automation buttons in Automation Section
+            updateAutomationButtonStates();
+
+            updateSettingsButtonStates(); // Update settings button states
+            updateMultiplierButtons(); // Update multiplier buttons state
+        }
+
+        // Helper function for class cost
+        function classeElevesCost() {
+            return new Decimal(30).mul(new Decimal(1).sub(skillEffects.classeCostReduction));
+        }
+
+        // Function to update the visual state of multiplier buttons
+        function updateMultiplierButtons() {
+            setMultiplierX1.classList.remove('active', 'bg-green-500', 'text-white');
+            setMultiplierX10.classList.remove('active', 'bg-green-500', 'text-white');
+            setMultiplierX100.classList.remove('active', 'bg-green-500', 'text-white');
+            setMultiplierXMax.classList.remove('active', 'bg-green-500', 'text-white');
+
+            setMultiplierX1.classList.add('bg-white', 'text-gray-800');
+            setMultiplierX10.classList.add('bg-white', 'text-gray-800');
+            setMultiplierX100.classList.add('bg-white', 'text-gray-800');
+            setMultiplierXMax.classList.add('bg-white', 'text-gray-800');
+
+
+            if (currentPurchaseMultiplier === 1) {
+                setMultiplierX1.classList.add('active', 'bg-green-500', 'text-white');
+            } else if (currentPurchaseMultiplier === 10) {
+                setMultiplierX10.classList.add('active', 'bg-green-500', 'text-white');
+            } else if (currentPurchaseMultiplier === 100) {
+                setMultiplierX100.classList.add('active', 'bg-green-500', 'text-white');
+            } else if (currentPurchaseMultiplier === 'max') {
+                setMultiplierXMax.classList.add('active', 'bg-green-500', 'text-white');
+            }
+        }
+
+        // Function to update the state of automation buttons
+        function updateAutomationButtonStates() {
+            // Eleve Automation
+            if (autoEleveActive) {
+                autoEleveButton.textContent = "Désactiver Automatisation Élèves";
+                autoEleveButton.classList.add('automation-active');
+                autoEleveButton.classList.remove('border-green-500', 'border-red-500');
+            } else {
+                autoEleveButton.textContent = `Automatiser Élèves : ${formatNumber(new Decimal(100), 0)} PA`;
+                autoEleveButton.classList.remove('automation-active');
+                if (ascensionPoints.gte(100)) {
+                    autoEleveButton.classList.remove('border-red-500');
+                    autoEleveButton.classList.add('border-green-500');
+                } else {
+                    autoEleveButton.classList.remove('border-green-500');
+                    autoEleveButton.classList.add('border-red-500');
+                }
+            }
+
+            // Image Automation
+            if (autoImageActive) {
+                autoImageButton.textContent = "Désactiver Automatisation Images";
+                autoImageButton.classList.add('automation-active');
+                autoImageButton.classList.remove('border-green-500', 'border-red-500');
+            } else {
+                autoImageButton.textContent = `Automatiser Images : ${formatNumber(new Decimal(10000), 0)} PA`;
+                autoImageButton.classList.remove('automation-active');
+                if (ascensionPoints.gte(10000)) {
+                    autoImageButton.classList.remove('border-red-500');
+                    autoImageButton.classList.add('border-green-500');
+                } else {
+                    autoImageButton.classList.remove('border-green-500');
+                    autoImageButton.classList.add('border-red-500');
+                }
+            }
+
+            // Professeur Automation
+            if (autoProfesseurActive) {
+                autoProfesseurButton.textContent = "Désactiver Automatisation Professeurs";
+                autoProfesseurButton.classList.add('automation-active');
+                autoProfesseurButton.classList.remove('border-green-500', 'border-red-500');
+            } else {
+                autoProfesseurButton.textContent = `Automatiser Professeurs : ${formatNumber(new Decimal(100000), 0)} PA`;
+                autoProfesseurButton.classList.remove('automation-active');
+                if (ascensionPoints.gte(100000)) {
+                    autoProfesseurButton.classList.remove('border-red-500');
+                    autoProfesseurButton.classList.add('border-green-500');
+                } else {
+                    autoProfesseurButton.classList.remove('border-green-500');
+                    autoProfesseurButton.classList.add('border-red-500');
                 }
             }
         }
-    </script>
-</head>
-<body class="bg-slate-100 text-slate-800 font-inter antialiased">
-    <div class="container mx-auto p-4 max-w-4xl min-h-screen flex flex-col">
 
-        <header class="mb-6 py-4">
-            <h1 class="text-4xl sm:text-5xl font-bold text-sky-700 text-center">Études Incrémentales</h1>
-        </header>
+        // Function to show student purchase warning modal
+        function showEleveWarningModal() {
+            confirmElevePurchaseModal.classList.remove('hidden');
+        }
 
-        <section id="resources-overview" class="mb-6 p-4 bg-white rounded-xl shadow-lg">
-            <h2 class="text-2xl font-semibold mb-4 text-sky-600 border-b pb-2">Tableau de Bord</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
-                <div>
-                    <p class="text-sm text-slate-500">Connaissances</p>
-                    <p class="text-2xl font-bold text-sky-500" id="knowledge-points">0</p>
-                    <p class="text-xs text-slate-400"><span id="kps-display">0</span> /s</p>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-500">Diplômes (Prestige)</p>
-                    <p class="text-2xl font-bold text-amber-500" id="prestige-points">0</p>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-500">Sagesse (Ascension)</p>
-                    <p class="text-2xl font-bold text-purple-500" id="ascension-points">0</p>
-                </div>
-            </div>
-        </section>
+        // Function to hide student purchase warning modal
+        function hideEleveWarningModal() {
+            confirmElevePurchaseModal.classList.add('hidden');
+        }
 
-        <nav id="tabs-navigation" class="mb-6 sticky top-0 bg-slate-100 z-10 py-2 -mx-4 px-4 shadow-sm">
-            <div class="border-b border-slate-300">
-                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="main-tabs" role="tablist">
-                    <li class="mr-2" role="presentation"><button class="ui-tab active-tab" id="tab-generators" type="button" role="tab" aria-controls="panel-generators" aria-selected="true">Générateurs</button></li>
-                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-upgrades" type="button" role="tab" aria-controls="panel-upgrades" aria-selected="false">Améliorations</button></li>
-                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-prestige" type="button" role="tab" aria-controls="panel-prestige" aria-selected="false">Prestige</button></li>
-                    <li class="mr-2" role="presentation"><button class="ui-tab" id="tab-achievements" type="button" role="tab" aria-controls="panel-achievements" aria-selected="false" title="Bientôt disponible">Succès</button></li>
-                    <li role="presentation"><button class="ui-tab" id="tab-options" type="button" role="tab" aria-controls="panel-options" aria-selected="false">Options</button></li>
-                </ul>
-            </div>
-        </nav>
+        // Generic purchase logic
+        function performPurchase(itemType, quantityRequested, isAutomated = false) {
+            let quantityToBuy = new Decimal(0);
+            let totalCost = new Decimal(0);
+            let tempResource = new Decimal(0);
+            let tempItemCount = new Decimal(0);
+            let costPerItem = new Decimal(0);
 
-        <main id="tab-content-container" class="flex-grow">
-            <section class="tab-panel active-panel" id="panel-generators" role="tabpanel" aria-labelledby="tab-generators">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-sky-600">Générateurs de Connaissances</h3>
-                    <div id="generators-container" class="space-y-3 sm:space-y-4">
-                        <div class="p-3 border rounded-lg bg-slate-50 text-center text-slate-500">Chargement des générateurs...</div>
-                    </div>
-                </div>
-            </section>
+            // Define a threshold for approximation (e.g., 1 million)
+            const APPROXIMATION_THRESHOLD = new Decimal('1e6'); 
 
-            <section class="tab-panel hidden" id="panel-upgrades" role="tabpanel" aria-labelledby="tab-upgrades">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-sky-600">Améliorations</h3>
-                    <div id="upgrades-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                        <p class="text-slate-500 col-span-full text-center py-8">Le système d'améliorations est en cours de développement.</p>
-                        </div>
-                </div>
-            </section>
+            if (itemType === 'eleve') {
+                tempResource = bonsPoints;
+                tempItemCount = nombreEleves;
+            } else if (itemType === 'classe') {
+                tempResource = nombreEleves; // Cost in students
+                tempItemCount = nombreClasses;
+            } else if (itemType === 'image') {
+                tempResource = bonsPoints;
+                tempItemCount = images;
+            } else if (itemType === 'professeur') {
+                tempResource = images;
+                tempItemCount = nombreProfesseurs;
+            } else if (itemType === 'ecole') {
+                tempResource = ascensionPoints;
+                tempItemCount = schoolCount;
+            } else if (itemType === 'lycee') { // New item type
+                tempResource = ascensionPoints;
+                tempItemCount = nombreLycees;
+            }
 
-            <section class="tab-panel hidden" id="panel-prestige" role="tabpanel" aria-labelledby="tab-prestige">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-amber-600">Prestige : Obtenir des Diplômes</h3>
-                    <div class="space-y-4">
-                        <p class="text-slate-600">Lorsque vous accumulez suffisamment de Connaissances (<span id="prestige-threshold-display" class="font-semibold">1e308</span>), vous pouvez choisir de prestigier.</p>
-                        <p class="text-slate-600">Prestigier réinitialisera votre progression actuelle en Connaissances et générateurs de base, mais vous octroiera des <strong class="text-amber-600">Diplômes</strong>.</p>
-                        <p class="text-slate-600">Chaque Diplôme augmente <strong class="text-green-600">définitivement</strong> votre production de Connaissances de <span id="prestige-bonus-percentage" class="font-semibold">1</span>% (multiplicatif).</p>
-                        
-                        <div class="mt-6 text-center">
-                            <p class="text-lg mb-2">Vous pouvez obtenir : <span id="prestige-gain" class="font-bold text-amber-500 text-2xl">0</span> Diplômes</p>
-                            <button id="prestige-button" class="px-8 py-3 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition duration-150 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none" disabled>
-                                Lancer le Prestige
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            if (quantityRequested === 'max') {
+                // If resource is very large, use approximation
+                if (tempResource.gte(APPROXIMATION_THRESHOLD)) {
+                    // Calculate cost of the next item for approximation
+                    if (itemType === 'eleve') {
+                        costPerItem = calculateNextEleveCostForSimulation(tempItemCount);
+                    } else if (itemType === 'classe') {
+                        costPerItem = classeElevesCost();
+                    } else if (itemType === 'image') {
+                        costPerItem = new Decimal(1000).mul(new Decimal(1).sub(skillEffects.imageCostReduction));
+                    } else if (itemType === 'professeur') {
+                        costPerItem = calculateNextProfessorCostForSimulation(tempItemCount);
+                    } else if (itemType === 'ecole') {
+                        costPerItem = calculateNextEcoleCostForSimulation(tempItemCount);
+                    } else if (itemType === 'lycee') { // New lycée cost
+                        costPerItem = calculateNextLyceeCostForSimulation(tempItemCount);
+                    }
 
-            <section class="tab-panel hidden" id="panel-achievements" role="tabpanel" aria-labelledby="tab-achievements">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-green-600">Succès</h3>
-                    <div id="achievements-container" class="text-center py-8">
-                         <p class="text-slate-500">Les succès et leurs récompenses seront bientôt disponibles !</p>
-                    </div>
-                </div>
-            </section>
+                    if (costPerItem.gt(0)) { // Avoid division by zero
+                        quantityToBuy = tempResource.div(costPerItem).floor();
+                        totalCost = quantityToBuy.mul(costPerItem);
+                    } else {
+                        quantityToBuy = new Decimal(0);
+                        totalCost = new Decimal(0);
+                    }
+                } else { // For smaller numbers, use iterative calculation for precision
+                    let currentTempItemCount = tempItemCount;
+                    while (true) {
+                        if (itemType === 'eleve') {
+                            costPerItem = calculateNextEleveCostForSimulation(currentTempItemCount);
+                        } else if (itemType === 'classe') {
+                            costPerItem = classeElevesCost();
+                        } else if (itemType === 'image') {
+                            costPerItem = new Decimal(1000).mul(new Decimal(1).sub(skillEffects.imageCostReduction));
+                        } else if (itemType === 'professeur') {
+                            costPerItem = calculateNextProfessorCostForSimulation(currentTempItemCount);
+                        } else if (itemType === 'ecole') {
+                            costPerItem = calculateNextEcoleCostForSimulation(currentTempItemCount);
+                        } else if (itemType === 'lycee') { // New item type
+                            costPerItem = calculateNextLyceeCostForSimulation(currentTempItemCount);
+                        }
 
-            <section class="tab-panel hidden" id="panel-options" role="tabpanel" aria-labelledby="tab-options">
-                <div class="bg-white p-4 sm:p-6 rounded-xl shadow-lg">
-                    <h3 class="text-xl font-semibold mb-4 text-slate-600">Options & Paramètres</h3>
-                    <div class="space-y-6">
-                        <div>
-                            <h4 class="font-medium mb-2 text-slate-700">Sauvegarde des données</h4>
-                            <div class="flex flex-wrap gap-2">
-                                <button id="save-button" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition duration-150">Sauvegarder Manuellement</button>
-                                <button id="load-button" class="px-4 py-2 bg-sky-500 text-white rounded-md hover:bg-sky-600 transition duration-150">Charger la Sauvegarde</button>
-                                <button id="reset-button" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition duration-150">Réinitialiser le Jeu</button>
+                        if (tempResource.gte(costPerItem)) {
+                            tempResource = tempResource.sub(costPerItem);
+                            totalCost = totalCost.add(costPerItem);
+                            quantityToBuy = quantityToBuy.add(1);
+                            currentTempItemCount = currentTempItemCount.add(1);
+                        } else {
+                            // If not enough for the full requested quantity, buy what's affordable
+                            break;
+                        }
+                    }
+                }
+            } else { // Specific quantity purchase (x1, x10, x100)
+                quantityToBuy = new Decimal(quantityRequested);
+                let currentTempItemCount = tempItemCount;
+                for (let i = new Decimal(0); i.lt(quantityToBuy); i = i.add(1)) {
+                    if (itemType === 'eleve') {
+                        costPerItem = calculateNextEleveCostForSimulation(currentTempItemCount);
+                    } else if (itemType === 'classe') {
+                        costPerItem = classeElevesCost();
+                    } else if (itemType === 'image') {
+                        costPerItem = new Decimal(1000).mul(new Decimal(1).sub(skillEffects.imageCostReduction));
+                    } else if (itemType === 'professeur') {
+                        costPerItem = calculateNextProfessorCostForSimulation(currentTempItemCount);
+                    } else if (itemType === 'ecole') {
+                        costPerItem = calculateNextEcoleCostForSimulation(currentTempItemCount);
+                    } else if (itemType === 'lycee') { // New item type
+                        costPerItem = calculateNextLyceeCostForSimulation(currentTempItemCount);
+                    }
+
+                    if (tempResource.gte(costPerItem)) {
+                        tempResource = tempResource.sub(costPerItem);
+                        totalCost = totalCost.add(costPerItem);
+                        currentTempItemCount = currentTempItemCount.add(1);
+                    } else {
+                        // If not enough for the full requested quantity, buy what's affordable
+                        quantityToBuy = i;
+                        break;
+                    }
+                }
+            }
+
+            if (quantityToBuy.gt(0)) {
+                if (itemType === 'eleve') {
+                    bonsPoints = bonsPoints.sub(totalCost);
+                    nombreEleves = nombreEleves.add(quantityToBuy);
+                    bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus));
+                    coutEleveActuel = calculateNextEleveCost(); // Recalculate for display
+                    acheterEleveButton.innerHTML = `Élève : <span class="text-green-500">${formatNumber(coutEleveActuel, 0)} BP</span>`;
+                } else if (itemType === 'classe') {
+                    nombreEleves = nombreEleves.sub(totalCost);
+                    nombreClasses = nombreClasses.add(quantityToBuy);
+                    bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus));
+                    bonsPointsParSecondeClasses = nombreClasses.mul(25).mul(multiplicateurProfesseur).mul(new Decimal(1).add(skillEffects.classeMultiplierBonus));
+                    coutEleveActuel = calculateNextEleveCost(); // Recalculate for display
+                    acheterEleveButton.innerHTML = `Élève : <span class="text-green-500">${formatNumber(coutEleveActuel, 0)} BP</span>`;
+                } else if (itemType === 'image') {
+                    bonsPoints = bonsPoints.sub(totalCost);
+                    images = images.add(quantityToBuy);
+                } else if (itemType === 'professeur') {
+                    images = images.sub(totalCost);
+                    nombreProfesseurs = nombreProfesseurs.add(quantityToBuy);
+                    multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
+                    bonsPointsParSecondeClasses = nombreClasses.mul(25).mul(multiplicateurProfesseur).mul(new Decimal(1).add(skillEffects.classeMultiplierBonus));
+                } else if (itemType === 'ecole') {
+                    ascensionPoints = ascensionPoints.sub(totalCost);
+                    schoolCount = schoolCount.add(quantityToBuy);
+                    // Recalculate schoolMultiplier as it now depends on Lycees
+                    schoolMultiplier = (new Decimal(1).add(new Decimal(0.5).mul(schoolCount))).mul(new Decimal(1).add(new Decimal(0.2).mul(nombreLycees)));
+                    coutEcoleActuel = calculateNextEcoleCost(); // Update for display
+                } else if (itemType === 'lycee') { // New item type: Lycée
+                    ascensionPoints = ascensionPoints.sub(totalCost);
+                    nombreLycees = nombreLycees.add(quantityToBuy);
+                    // Recalculate schoolMultiplier as Lycees affect it
+                    schoolMultiplier = (new Decimal(1).add(new Decimal(0.5).mul(schoolCount))).mul(new Decimal(1).add(new Decimal(0.2).mul(nombreLycees)));
+                    coutLyceeActuel = calculateNextLyceeCost(); // Update for display
+                }
+
+                if (!isAutomated) {
+                    showNotification(`Acheté ${formatNumber(quantityToBuy, 0)} ${itemType}(s) !`);
+                }
+                mettreAJourAffichage();
+                checkUnlockConditions();
+                updateButtonStates();
+                saveGameState();
+            } else if (!isAutomated) {
+                showNotification(`Pas assez de ressources pour acheter ${itemType} !`);
+            }
+        }
+
+        // Helper function to calculate cost for simulation (avoids modifying global state)
+        function calculateNextEleveCostForSimulation(currentEleves) {
+            let baseCostForNextEleve = new Decimal(0);
+            let elevesInCurrentCycle = currentEleves.mod(30);
+
+            if (elevesInCurrentCycle.lt(10)) {
+                baseCostForNextEleve = new Decimal(10);
+            } else if (elevesInCurrentCycle.lt(20)) {
+                baseCostForNextEleve = new Decimal(12);
+            } else {
+                baseCostForNextEleve = new Decimal(15);
+            }
+
+            let finalCost = baseCostForNextEleve;
+
+            if (nombreClasses.gt(0)) {
+                finalCost = finalCost.mul(nombreClasses.add(1));
+            } else {
+                if (currentEleves.add(1).mod(100).eq(0)) {
+                    finalCost = finalCost.mul(100);
+                } else if (elevesInCurrentCycle.eq(0) && currentEleves.gt(0)) {
+                    finalCost = finalCost.mul(10);
+                }
+            }
+            finalCost = finalCost.mul(new Decimal(1).sub(skillEffects.eleveCostReduction));
+            return Decimal.max(1, finalCost);
+        }
+
+        // Helper function for professor cost simulation
+        function calculateNextProfessorCostForSimulation(currentProfessors) {
+            let nextProfIndex = currentProfessors.add(1);
+            let cost;
+            if (nextProfIndex.lt(fibonacciSequence.length)) {
+                cost = fibonacciSequence[nextProfIndex.toNumber()];
+            } else {
+                cost = fibonacciSequence[fibonacciSequence.length - 1];
+            }
+            return Decimal.max(1, cost.mul(new Decimal(1).sub(skillEffects.professeurCostReduction)));
+        }
+
+        // Helper function for ecole cost simulation
+        function calculateNextEcoleCostForSimulation(currentSchools) {
+            return coutEcoleBase.mul(new Decimal(1.5).pow(currentSchools)).floor();
+        }
+
+        // Helper function for lycee cost simulation (New)
+        function calculateNextLyceeCostForSimulation(currentLycees) {
+            return coutLyceeBase.mul(new Decimal(1.2).pow(currentLycees)).floor();
+        }
+
+        // --- Skill Tree Functions ---
+        function renderSkillTree() {
+            skillsGrid.innerHTML = ''; // Clear existing tree
+
+            const branches = {
+                'Pédagogie': document.createElement('div'),
+                'Rationnalisme': document.createElement('div'),
+                'Science': document.createElement('div')
+            };
+
+            // Initialize branches and add them to the grid
+            for (const family in branches) {
+                const branchDiv = branches[family];
+                branchDiv.classList.add('skill-branch', family.toLowerCase(), 'flex', 'flex-col', 'items-center', 'gap-5', 'p-4', 'border', 'border-gray-200', 'rounded-xl', 'bg-gray-50', 'shadow-sm', 'w-full', 'box-border');
+                const h3 = document.createElement('h3');
+                h3.textContent = family;
+                h3.classList.add('text-gray-800', 'mb-2', 'text-xl', 'font-semibold', 'text-center');
+                branchDiv.appendChild(h3);
+                skillsGrid.appendChild(branchDiv);
+            }
+
+            // Group skills by family and row for ordered rendering
+            const skillsByFamilyAndRow = {};
+            skillsData.forEach(skill => {
+                if (!skillsByFamilyAndRow[skill.family]) {
+                    skillsByFamilyAndRow[skill.family] = {};
+                }
+                if (!skillsByFamilyAndRow[skill.family][skill.row]) {
+                    skillsByFamilyAndRow[skill.family][skill.row] = [];
+                }
+                skillsByFamilyAndRow[skill.family][skill.row].push(skill);
+            });
+
+            // Create skill nodes
+            for (const family in branches) {
+                const branchDiv = branches[family];
+                const rows = skillsByFamilyAndRow[family] ? Object.keys(skillsByFamilyAndRow[family]).sort((a, b) => a - b) : [];
+
+                rows.forEach(row => {
+                    const skillsInRow = skillsByFamilyAndRow[family][row].sort((a, b) => a.col - b.col); // Sort by column
+
+                    skillsInRow.forEach(skill => {
+                        const skillWrapper = document.createElement('div');
+                        skillWrapper.classList.add('skill-wrapper');
+
+                        const skillNameDisplay = document.createElement('div');
+                        skillNameDisplay.classList.add('skill-name-display', 'text-base', 'font-bold', 'mb-1', 'text-center', 'text-gray-600');
+                        skillNameDisplay.textContent = skill.name;
+                        skillWrapper.appendChild(skillNameDisplay);
+
+                        const skillNode = document.createElement('div');
+                        skillNode.id = `skill-${skill.id}`;
+                        skillNode.classList.add('skill-node');
+
+                        const isUnlocked = unlockedSkills[skill.id];
+                        const availableProfessors = nombreProfesseurs.sub(professorsUsedForSkills); // Available professors
+                        const canActivate = availableProfessors.gt(0); // Cost is 1 professor
+                        const prerequisitesMet = skill.prerequisites.every(prereqId => unlockedSkills[prereqId]);
+
+                        // Attach click handler to all skills
+                        skillNode.addEventListener('click', () => handleSkillClick(skill.id));
+
+                        if (isUnlocked) {
+                            skillNode.classList.add('unlocked');
+                        } else if (canActivate && prerequisitesMet) {
+                            skillNode.classList.add('border-green-500', 'bg-white', 'text-gray-800', 'can-afford'); // Use can-afford to indicate activable
+                        } else {
+                            skillNode.classList.add('locked');
+                            // Allow "pointer" cursor for S15 even if locked, to indicate bonus clickability
+                            if (skill.id === 'S15') {
+                                skillNode.style.cursor = 'pointer';
+                            }
+                        }
+
+                        skillNode.innerHTML += `
+                            <div class="tooltip-text">
+                                <strong>${skill.name}</strong><br>
+                                <span class="skill-effect-description">${skill.description}</span><br>
+                                <span class="skill-flavor-text">${skill.flavorText}</span>
+                                ${!isUnlocked ? '<br><span class="skill-cost text-purple-600">Coût : 1 Professeur</span>' : ''}
+                                ${!isUnlocked && !prerequisitesMet ? '<br><span class="text-red-500">Prérequis non remplis</span>' : ''}
+                                ${!isUnlocked && !canActivate && skill.id !== 'S15' ? '<br><span class="text-red-500">Pas de professeur disponible</span>' : ''}
                             </div>
-                            <p id="save-status" class="mt-2 text-sm text-slate-500 h-5"></p>
-                        </div>
-                        <div>
-                            <h4 class="font-medium mb-2 text-slate-700">Notation des Nombres</h4>
-                            <div class="flex items-center gap-3">
-                                <p class="text-sm text-slate-600">Actuelle : <span id="number-notation-display" class="font-semibold">Scientifique</span></p>
-                                <button id="toggle-notation-button" class="text-sm px-3 py-1 bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition duration-150">Changer</button>
-                            </div>
-                        </div>
-                         <div>
-                            <h4 class="font-medium mb-2 text-slate-700">Progression Hors Ligne</h4>
-                             <p class="text-sm text-slate-600">La production continue lorsque le jeu est fermé (basé sur le temps écoulé et votre KPS moyen).</p>
-                        </div>
+                        `;
+                        skillWrapper.appendChild(skillNode);
+                        branchDiv.appendChild(skillWrapper);
+                    });
+                });
+            }
+            updateImagesDisplay(); // Update image display
+            updateProfessorsDisplay(); // Update available professors display
+        }
+
+        // Function to handle skill click (unlock or bonus)
+        function handleSkillClick(skillId) {
+            const skill = skillsData.find(s => s.id === skillId);
+
+            if (!skill) {
+                showNotification("Compétence introuvable.");
+                return;
+            }
+
+            // Special bonus logic for "Clonage des Connaissances" (S15)
+            if (skillId === 'S15') {
+                s15Clicks = s15Clicks.add(1);
+                if (s15Clicks.gte(10)) {
+                    bonsPoints = bonsPoints.add(new Decimal(10000000));
+                    images = images.add(new Decimal(1000));
+                    nombreClasses = nombreClasses.add(new Decimal(10));
+                    nombreEleves = nombreEleves.add(new Decimal(200));
+                    showNotification("BONUS ÉNORME ! Clonage des connaissances a rapporté gros !");
+                    s15Clicks = new Decimal(0); // Reset counter to trigger again
+                    mettreAJourAffichage(); // Update display immediately after bonus
+                    saveGameState(); // Save state after bonus
+                    return; // Exit function after handling S15 bonus
+                }
+            }
+
+            // Normal skill unlock logic (only if not already unlocked)
+            if (!unlockedSkills[skillId]) {
+                const prerequisitesMet = skill.prerequisites.every(prereqId => unlockedSkills[prereqId]);
+                if (!prerequisitesMet) {
+                    showNotification("Prérequis non remplis pour cette compétence.");
+                    return;
+                }
+
+                const availableProfessors = nombreProfesseurs.sub(professorsUsedForSkills);
+                if (availableProfessors.gt(0)) {
+                    professorsUsedForSkills = professorsUsedForSkills.add(1); // Use one professor
+                    unlockedSkills[skill.id] = true;
+                    showNotification(`Compétence débloquée : ${skill.name} !`);
+                    saveGameState();
+                    applyAllSkillEffects(); // Apply effects immediately
+                    renderSkillTree(); // Re-render tree to update visual states
+                    mettreAJourAffichage(); // Update main game display
+                } else {
+                    showNotification("Pas assez de professeurs disponibles pour débloquer cette compétence !");
+                }
+            } else {
+                // If skill is already unlocked and not S15, do nothing
+                if (skillId !== 'S15') {
+                    showNotification("Compétence déjà débloquée.");
+                }
+            }
+        }
+
+        // Update image display
+        function updateImagesDisplay() {
+            imagesSpan.textContent = formatNumber(images, 0);
+        }
+
+        // Update available professors display
+        function updateProfessorsDisplay() {
+            availableProfessorsCountSpan.textContent = formatNumber(nombreProfesseurs.sub(professorsUsedForSkills), 0);
+        }
+
+        // Event listener for "Compétences" button
+        skillsButton.addEventListener('click', () => {
+            if (skillTreeContainer.classList.contains('flex')) {
+                skillTreeContainer.classList.remove('flex');
+                skillTreeContainer.classList.add('hidden');
+                resetSkillsButton.classList.add('hidden'); // Hide reset button when tree is hidden
+            } else {
+                renderSkillTree(); // Ensure tree is rendered up-to-date
+                skillTreeContainer.classList.remove('hidden');
+                skillTreeContainer.classList.add('flex');
+                resetSkillsButton.classList.remove('hidden'); // Show reset button when tree is visible
+                settingsContainer.classList.add('hidden'); // Hide settings if open
+                ascensionMenuContainer.classList.add('hidden'); // Hide ascension menu if open
+                automationSection.classList.add('hidden'); // Hide automation if open
+                questsContainer.classList.add('hidden'); // Hide quests if open
+            }
+        });
+
+        // Event listener for "Paramètres" button
+        settingsButton.addEventListener('click', () => {
+            if (settingsContainer.classList.contains('flex')) {
+                settingsContainer.classList.remove('flex');
+                settingsContainer.classList.add('hidden');
+            } else {
+                settingsContainer.classList.remove('hidden');
+                settingsContainer.classList.add('flex');
+                // Hide other menus if open
+                skillTreeContainer.classList.add('hidden');
+                resetSkillsButton.classList.add('hidden');
+                ascensionMenuContainer.classList.add('hidden');
+                automationSection.classList.add('hidden');
+                questsContainer.classList.add('hidden');
+                updateSettingsButtonStates(); // Update theme button text
+            }
+        });
+
+        // Event listener for "Menu Ascension" button (New)
+        ascensionMenuButton.addEventListener('click', () => {
+            if (ascensionMenuContainer.classList.contains('flex')) {
+                ascensionMenuContainer.classList.remove('flex');
+                ascensionMenuContainer.classList.add('hidden');
+            } else {
+                ascensionMenuContainer.classList.remove('hidden');
+                ascensionMenuContainer.classList.add('flex');
+                // Hide other menus if open
+                skillTreeContainer.classList.add('hidden');
+                resetSkillsButton.classList.add('hidden');
+                settingsContainer.classList.add('hidden');
+                automationSection.classList.add('hidden');
+                questsContainer.classList.add('hidden');
+                mettreAJourAffichage(); // Update ascension menu display
+            }
+        });
+
+        // Event listener for "Quêtes" button (New)
+        questsButton.addEventListener('click', () => {
+            if (questsContainer.classList.contains('flex')) {
+                questsContainer.classList.remove('flex');
+                questsContainer.classList.add('hidden');
+            } else {
+                questsContainer.classList.remove('hidden');
+                questsContainer.classList.add('flex');
+                // Hide other menus
+                skillTreeContainer.classList.add('hidden');
+                resetSkillsButton.classList.add('hidden');
+                settingsContainer.classList.add('hidden');
+                ascensionMenuContainer.classList.add('hidden');
+                automationSection.classList.add('hidden');
+                renderQuests(); // Render quests when opening the tab
+            }
+        });
+
+        // Event listener for "Ascension" button
+        ascensionButton.addEventListener('click', () => {
+            const paGained = calculatePAGained(); // Calculate PA gained for display
+            paGainedDisplay.textContent = `${formatNumber(paGained, 0)} PA`; // Update the display in the modal
+
+            if (ascensionCount.eq(0) && !disableAscensionWarning) {
+                // First ascension and warning not disabled
+                ascensionModalTitle.textContent = "Première Ascension !";
+                firstAscensionWarningDiv.classList.remove('hidden');
+                subsequentAscensionWarningDiv.classList.add('hidden');
+                disableAscensionWarningCheckboxAscension.checked = disableAscensionWarning; // Update checkbox state
+            } else {
+                // Subsequent ascensions or warning disabled
+                ascensionModalTitle.textContent = "Ascensionner ?";
+                firstAscensionWarningDiv.classList.add('hidden');
+                subsequentAscensionWarningDiv.classList.remove('hidden');
+            }
+            confirmAscensionModal.classList.remove('hidden');
+        });
+
+        // Helper function to calculate PA gained
+        function calculatePAGained() {
+            let paGained = new Decimal(0);
+            if (nombreProfesseurs.lt(prime_PA.length)) {
+                paGained = prime_PA[nombreProfesseurs.toNumber()];
+            } else {
+                paGained = prime_PA[prime_PA.length - 1]; // Fallback to last prime if out of bounds
+            }
+            return paGained;
+        }
+
+        // Event listener for "Yes" button of Ascension confirmation modal
+        confirmAscensionYesBtn.addEventListener('click', () => {
+            // Update disableAscensionWarning state before performing ascension
+            if (ascensionCount.eq(0)) { // Only if it's the first ascension
+                disableAscensionWarning = disableAscensionWarningCheckboxAscension.checked;
+            }
+            performAscension();
+            confirmAscensionModal.classList.add('hidden');
+        });
+
+        // Event listener for "No" button of Ascension confirmation modal
+        confirmAscensionNoBtn.addEventListener('click', () => {
+            confirmAscensionModal.classList.add('hidden');
+            showNotification("Ascension annulée.");
+        });
+
+        // Event listener for "Réinitialiser Compétences" button
+        resetSkillsButton.addEventListener('click', () => {
+            // Using a custom modal for confirmation instead of browser's confirm()
+            const customConfirmModal = document.createElement('div');
+            customConfirmModal.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-50', 'flex', 'justify-center', 'items-center', 'z-40');
+            customConfirmModal.innerHTML = `
+                <div class="bg-white p-8 rounded-xl shadow-lg text-center max-w-sm w-11/12">
+                    <h3 class="text-red-500 text-2xl font-bold mb-4">Réinitialiser les compétences ?</h3>
+                    <p class="mb-6">Êtes-vous sûr de vouloir réinitialiser toutes les compétences ? Vous perdrez les professeurs assignés.</p>
+                    <div class="flex justify-around gap-4">
+                        <button id="customConfirmYes" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-green-500 bg-white text-gray-800">Oui</button>
+                        <button id="customConfirmNo" class="flex-1 py-3 text-lg font-semibold rounded-lg border-2 border-red-500 bg-white text-gray-800">Non</button>
                     </div>
                 </div>
-            </section>
-        </main>
+            `;
+            document.body.appendChild(customConfirmModal);
 
-        <footer class="mt-auto pt-8 pb-4 text-center text-sm text-slate-500">
-            <p>&copy; <span id="current-year">2024</span> Études Incrémentales. Tous droits réservés.</p>
-            <p>Vérifiez la console (F12) pour les erreurs. Inspiré par la communauté des jeux incrémentaux.</p>
-        </footer>
-    </div>
+            document.getElementById('customConfirmYes').addEventListener('click', () => {
+                professorsUsedForSkills = new Decimal(0);
+                unlockedSkills = {};
+                s15Clicks = new Decimal(0); // Also reset S15 click counter
+                saveGameState();
+                applyAllSkillEffects();
+                renderSkillTree();
+                mettreAJourAffichage();
+                showNotification("Compétences réinitialisées !");
+                customConfirmModal.remove();
+            });
 
-    <div id="customConfirmModalContainer"></div>
+            document.getElementById('customConfirmNo').addEventListener('click', () => {
+                showNotification("Réinitialisation des compétences annulée.");
+                customConfirmModal.remove();
+            });
+        });
 
-    <!-- Chargement de break_infinity depuis CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/break_infinity.js@2.0.0/dist/break_infinity.min.js"></script>
-    <script src="game.js"></script>
-    <script>
-        document.getElementById('current-year').textContent = new Date().getFullYear();
+        // Event listener for "Étudier sagement" button
+        etudierButton.addEventListener('click', () => {
+            bonsPoints = bonsPoints.add(new Decimal(1).add(totalBonsPointsParSeconde.mul(0.1))); // New gain calculation
+            mettreAJourAffichageBonsPoints();
+            checkUnlockConditions();
+            updateButtonStates();
+            saveGameState();
+        });
+
+        // Event listener for "Acheter un élève" button
+        acheterEleveButton.addEventListener('click', () => {
+            let elevesInCurrentCycle = nombreEleves.mod(30);
+            let is100thStudent = nombreEleves.add(1).mod(100).eq(0);
+            let is30thStudent = nombreEleves.gt(0) && elevesInCurrentCycle.eq(0);
+
+            let needsWarning = false;
+            let warningMessage = "";
+
+            if (nombreClasses.eq(0)) { // Only show warnings if no classes are purchased
+                if (is100thStudent) {
+                    needsWarning = true;
+                    warningMessage = "Le prochain élève coûtera 100 fois le prix normal car c'est le 100ème élève sans avoir acheté de classe.";
+                } else if (is30thStudent) {
+                    needsWarning = true;
+                    warningMessage = "Le prochain élève coûtera 10 fois le prix normal car c'est le premier d'un nouveau groupe de 30.";
+                }
+            }
+
+            if (needsWarning && !disableEleveWarning) {
+                eleveWarningMessageP.textContent = warningMessage;
+                showEleveWarningModal();
+            } else {
+                performPurchase('eleve', currentPurchaseMultiplier);
+            }
+        });
+
+        // Event listener for "Yes" button of student confirmation modal
+        confirmElevePurchaseYesBtn.addEventListener('click', () => {
+            hideEleveWarningModal();
+            performPurchase('eleve', currentPurchaseMultiplier);
+        });
+
+        // Event listener for "No" button of student confirmation modal
+        confirmElevePurchaseNoBtn.addEventListener('click', () => {
+            hideEleveWarningModal();
+            showNotification("Achat d'élève annulé.");
+        });
+
+        // Event listener for "Don't show this warning again" checkbox
+        disableEleveWarningCheckbox.addEventListener('change', (event) => {
+            disableEleveWarning = event.target.checked;
+            saveGameState();
+        });
+
+        // Event listener for "Acheter une salle de classe" button
+        acheterClasseButton.addEventListener('click', () => {
+            performPurchase('classe', currentPurchaseMultiplier);
+        });
+
+        // Event listener for "Acheter une image" button
+        acheterImageButton.addEventListener('click', () => {
+            performPurchase('image', currentPurchaseMultiplier);
+        });
+
+        // Event listener for "Acheter un professeur" button
+        acheterProfesseurButton.addEventListener('click', () => {
+            performPurchase('professeur', currentPurchaseMultiplier);
+        });
+
+        // --- Settings Menu Functions ---
+        themeToggleButton.addEventListener('click', () => {
+            if (!themeOptionUnlocked) {
+                if (images.gte(10)) {
+                    images = images.sub(10);
+                    themeOptionUnlocked = true;
+                    showNotification("Option Thème débloquée !");
+                    // Activate theme immediately after purchase
+                    isDayTheme = !isDayTheme;
+                    if (!isDayTheme) {
+                        document.body.classList.add('dark-theme');
+                    } else {
+                        document.body.classList.remove('dark-theme');
+                    }
+                    updateSettingsButtonStates(); // Update button text
+                    mettreAJourAffichage(); // Update image display
+                    saveGameState();
+                } else {
+                    showNotification("Pas assez d'images pour débloquer l'option Thème (coût : 10 I) !");
+                }
+            } else {
+                isDayTheme = !isDayTheme;
+                if (!isDayTheme) {
+                    document.body.classList.add('dark-theme');
+                } else {
+                    document.body.classList.remove('dark-theme');
+                }
+                updateSettingsButtonStates(); // Update button text
+                saveGameState();
+                showNotification(`Thème passé en mode ${isDayTheme ? 'Jour' : 'Nuit'}.`);
+            }
+        });
+
+        resetProgressionButton.addEventListener('click', () => {
+            if (images.gte(10)) {
+                confirmResetModal.classList.remove('hidden');
+            } else {
+                showNotification("Pas assez d'images pour réinitialiser la progression (coût : 10 I) !");
+            }
+        });
+
+        confirmResetYesBtn.addEventListener('click', () => {
+            if (images.gte(10)) {
+                images = images.sub(10); // Deduct cost
+                hardResetGame(); // Call full reset
+                showNotification("Progression réinitialisée avec succès !");
+            } else {
+                showNotification("Erreur: Pas assez d'images pour réinitialiser la progression.");
+            }
+            confirmResetModal.classList.add('hidden');
+        });
+
+        confirmResetNoBtn.addEventListener('click', () => {
+            confirmResetModal.classList.add('hidden');
+            showNotification("Réinitialisation annulée.");
+        });
+
+        // --- Ascension Menu Functions ---
+        acheterEcoleButton.addEventListener('click', () => {
+            performPurchase('ecole', currentPurchaseMultiplier);
+        });
+
+        // Event listener for "Acheter un Lycée" button (New)
+        acheterLyceeButton.addEventListener('click', () => {
+            performPurchase('lycee', currentPurchaseMultiplier);
+        });
+
+        unlockMultiPurchaseButton.addEventListener('click', () => {
+            if (multiPurchaseOptionUnlocked) {
+                showNotification("L'achat multiple est déjà débloqué !");
+                return;
+            }
+            if (ascensionPoints.gte(10)) {
+                ascensionPoints = ascensionPoints.sub(10);
+                multiPurchaseOptionUnlocked = true;
+                showNotification("Option 'Achat multiple' débloquée (x1, x10, x100) !");
+                mettreAJourAffichage();
+                updateButtonStates();
+                saveGameState();
+            } else {
+                showNotification("Pas assez de PA pour débloquer l'achat multiple (coût : 10 PA) !");
+            }
+        });
+
+        unlockMaxPurchaseButton.addEventListener('click', () => {
+            if (maxPurchaseOptionUnlocked) {
+                showNotification("L'achat multiple max est déjà débloqué !");
+                return;
+            }
+            if (ascensionPoints.gte(100)) {
+                ascensionPoints = ascensionPoints.sub(100);
+                maxPurchaseOptionUnlocked = true;
+                showNotification("Option 'Achat multiple Max' débloquée !");
+                mettreAJourAffichage();
+                updateButtonStates();
+                saveGameState();
+            } else {
+                showNotification("Pas assez de PA pour débloquer l'achat multiple Max (coût : 100 PA) !");
+            }
+        });
+
+        unlockNewSettingsButton.addEventListener('click', () => {
+            if (newSettingsUnlocked) {
+                showNotification("Les nouveaux réglages sont déjà débloqués !");
+                return;
+            }
+            if (ascensionPoints.gte(10)) {
+                ascensionPoints = ascensionPoints.sub(10);
+                newSettingsUnlocked = true;
+                showNotification("Nouveaux réglages débloqués !");
+                mettreAJourAffichage();
+                updateButtonStates();
+                saveGameState();
+            } else {
+                showNotification("Pas assez de PA pour débloquer de nouveaux réglages (coût : 10 PA) !");
+            }
+        });
+
+        unlockAutomationCategoryButton.addEventListener('click', () => {
+            if (automationCategoryUnlocked) {
+                showNotification("La catégorie Automatisation est déjà débloquée !");
+                return;
+            }
+            if (ascensionPoints.gte(1000)) {
+                ascensionPoints = ascensionPoints.sub(1000);
+                automationCategoryUnlocked = true;
+                showNotification("Catégorie 'Automatisation' débloquée !");
+                mettreAJourAffichage();
+                updateButtonStates();
+                saveGameState();
+            } else {
+                showNotification("Pas assez de PA pour débloquer la catégorie Automatisation (coût : 1000 PA) !");
+            }
+        });
+
+        // --- Automation Functions ---
+        autoEleveButton.addEventListener('click', () => {
+            if (autoEleveActive) {
+                autoEleveActive = false;
+                showNotification("Automatisation Élèves désactivée.");
+            } else {
+                if (ascensionPoints.gte(100)) {
+                    ascensionPoints = ascensionPoints.sub(100);
+                    autoEleveActive = true;
+                    showNotification("Automatisation Élèves activée !");
+                } else {
+                    showNotification("Pas assez de PA pour activer l'automatisation des élèves (coût : 100 PA) !");
+                }
+            }
+            mettreAJourAffichage();
+            updateAutomationButtonStates();
+            saveGameState();
+        });
+
+        autoImageButton.addEventListener('click', () => {
+            if (autoImageActive) {
+                autoImageActive = false;
+                showNotification("Automatisation Images désactivée.");
+            } else {
+                if (ascensionPoints.gte(10000)) {
+                    ascensionPoints = ascensionPoints.sub(10000);
+                    autoImageActive = true;
+                    showNotification("Automatisation Images activée !");
+                } else {
+                    showNotification("Pas assez de PA pour activer l'automatisation des images (coût : 10 000 PA) !");
+                }
+            }
+            mettreAJourAffichage();
+            updateAutomationButtonStates();
+            saveGameState();
+        });
+
+        autoProfesseurButton.addEventListener('click', () => {
+            if (autoProfesseurActive) {
+                autoProfesseurActive = false;
+                showNotification("Automatisation Professeurs désactivée.");
+            } else {
+                if (ascensionPoints.gte(100000)) {
+                    ascensionPoints = ascensionPoints.sub(100000);
+                    autoProfesseurActive = true;
+                    showNotification("Automatisation Professeurs activée !");
+                } else {
+                    showNotification("Pas assez de PA pour activer l'automatisation des professeurs (coût : 100 000 PA) !");
+                }
+            }
+            mettreAJourAffichage();
+            updateAutomationButtonStates();
+            saveGameState();
+        });
+
+        // Function to perform Ascension
+        function performAscension() {
+            if (nombreProfesseurs.gte(1)) { // Ascension is possible from 1 professor
+                const paGained = calculatePAGained(); // Use the helper function
+
+                ascensionPoints = ascensionPoints.add(paGained); // Add to available PA
+                totalPAEarned = totalPAEarned.add(paGained); // Add to total PA earned
+                ascensionCount = ascensionCount.add(1); // Increment ascension count
+                firstAscensionPerformed = true; // Mark that an ascension has occurred
+
+                showNotification(`Ascension réussie ! Vous avez gagné ${formatNumber(paGained, 0)} Points d'Ascension !`);
+                
+                softResetGame(); // Soft reset
+            } else {
+                showNotification("Il faut au moins 1 professeur pour Ascensionner.");
+            }
+        }
+
+        // Soft reset function (for Ascension)
+        function softResetGame() {
+            bonsPoints = new Decimal(0);
+            bonsPointsParSecondeEleves = new Decimal(0);
+            bonsPointsParSecondeClasses = new Decimal(0);
+            totalBonsPointsParSeconde = new Decimal(0);
+            nombreEleves = new Decimal(0);
+            coutEleveActuel = new Decimal(10);
+            nombreClasses = new Decimal(0);
+            images = new Decimal(0);
+            nombreProfesseurs = new Decimal(0);
+            professorsUsedForSkills = new Decimal(0);
+            multiplicateurProfesseur = new Decimal(1);
+            s15Clicks = new Decimal(0);
+            elevesUnlocked = false;
+            classesUnlocked = false;
+            imagesUnlocked = false;
+            professeursUnlocked = false;
+            skillsButtonUnlocked = false;
+            settingsButtonUnlocked = false;
+            ascensionUnlocked = false; // Ascension button becomes hidden again
+            ascensionMenuButtonUnlocked = ascensionCount.gte(1); // Remains unlocked if already ascended once
+            disableEleveWarning = false; // Reset to false for student warnings
+            unlockedSkills = {};
+            bonusPointsClaimed = {
+                100: false, 300: false, 750: false, 1000: false, 2000: false,
+                5000: false, 10000: false, 20000: false, 50000: false, 100000: false
+            };
+            // isDayTheme and themeOptionUnlocked are NOT reset here
+            // disableAscensionWarning is NOT reset here to persist
+            // firstAscensionPerformed is NOT reset here to persist
+            // schoolCount, coutEcoleActuel, schoolMultiplier, newSettingsUnlocked, multiPurchaseOptionUnlocked, maxPurchaseOptionUnlocked, currentPurchaseMultiplier, automationCategoryUnlocked, autoEleveActive, autoImageActive, autoProfesseurActive are NOT reset here.
+            nombreLycees = new Decimal(0); // Reset lycees
+            lyceesUnlocked = false; // Reset lycees unlock
+            questsUnlocked = false; // Reset quests unlock
+            questsData.forEach(q => { q.completed = false; q.unlocked = true; }); // Reset quest completion state
+
+            // Hide all dynamically unlocked sections
+            achatEleveSection.classList.add('hidden');
+            achatClasseSection.classList.add('hidden');
+            achatImageSection.classList.add('hidden');
+            achatProfesseurSection.classList.add('hidden');
+            skillsButton.classList.add('hidden');
+            resetSkillsButton.classList.add('hidden');
+            settingsButton.classList.add('hidden');
+            ascensionButton.classList.add('hidden'); // Hide Ascension button
+            skillTreeContainer.classList.add('hidden');
+            settingsContainer.classList.add('hidden');
+            ascensionMenuContainer.classList.add('hidden'); // Hide ascension menu
+            automationSection.classList.add('hidden'); // Hide automation
+            achatLyceeSection.classList.add('hidden'); // Hide Lycées section
+            questsContainer.classList.add('hidden'); // Hide quests container
+
+            document.body.classList.remove('dark-theme'); // Visually reset theme to default day theme
+            if (!isDayTheme) { // If theme was dark, update it to reflect isDayTheme
+                document.body.classList.add('dark-theme');
+            }
+
+            mettreAJourAffichage();
+            saveGameState(); // Save state after reset
+        }
+
+        // Hard reset function (for "Réinitialiser la Progression")
+        function hardResetGame() {
+            softResetGame(); // Resets most variables
+            ascensionPoints = new Decimal(0); // Also reset PA
+            ascensionCount = new Decimal(0); // Reset ascension count
+            totalPAEarned = new Decimal(0); // Reset total PA
+            ascensionUnlocked = false; // Reset Ascension flag
+            isDayTheme = true; // Reset theme to default
+            themeOptionUnlocked = false; // Reset theme option unlock state
+            disableAscensionWarning = false; // Reset ascension warning flag
+            firstAscensionPerformed = false; // Reset first ascension flag
+            schoolCount = new Decimal(0); // Reset schools
+            coutEcoleActuel = new Decimal(15); // Reset school cost
+            schoolMultiplier = new Decimal(1); // Reset school multiplier
+            newSettingsUnlocked = false; // Reset new settings unlock
+            multiPurchaseOptionUnlocked = false; // Reset multi purchase option
+            maxPurchaseOptionUnlocked = false; // Reset max purchase option
+            currentPurchaseMultiplier = 1; // Reset purchase multiplier
+            automationCategoryUnlocked = false; // Reset automation category
+            autoEleveActive = false; // Reset student automation
+            autoImageActive = false; // Reset image automation
+            autoProfesseurActive = false; // Reset professor automation
+            nombreLycees = new Decimal(0); // Reset lycees
+            lyceesUnlocked = false; // Reset lycees unlock
+            questsUnlocked = false; // Reset quests unlock
+            questsData.forEach(q => { q.completed = false; q.unlocked = true; }); // Reset quest completion state
+
+            document.body.classList.remove('dark-theme'); // Ensure theme is visually reset
+            saveGameState();
+        }
+
+        function updateSettingsButtonStates() {
+            if (themeOptionUnlocked) {
+                themeToggleButton.textContent = isDayTheme ? "Passer au thème nuit" : "Passer au thème jour";
+                themeToggleButton.classList.remove('border-red-500');
+                themeToggleButton.classList.add('border-green-500');
+            } else {
+                themeToggleButton.textContent = "Débloquer option Thème (10 I)";
+                if (images.gte(10)) {
+                    themeToggleButton.classList.remove('border-red-500');
+                    themeToggleButton.classList.add('border-green-500');
+                } else {
+                    themeToggleButton.classList.remove('border-green-500');
+                    themeToggleButton.classList.add('border-red-500');
+                }
+            }
+
+            if (images.gte(10)) {
+                resetProgressionButton.classList.remove('border-red-500');
+                resetProgressionButton.classList.add('border-green-500');
+            } else {
+                resetProgressionButton.classList.remove('border-green-500');
+                resetProgressionButton.classList.add('border-red-500');
+            }
+        }
+
+        // Function to update resource and production display
+        function mettreAJourAffichage() {
+            // Calculate Ascension multiplier
+            let ascensionMultiplier = new Decimal(1);
+            if (ascensionCount.gt(0) && totalPAEarned.gt(0)) {
+                ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.05)); // Updated formula
+            } else if (ascensionCount.gt(0)) { // If ascensions but 0 PA (rare case)
+                ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(0.05)); // Simplified for 0 PA
+            }
+            
+            // Apply school multiplier last on total production
+            // schoolMultiplier already includes lycee effect
+            schoolMultiplier = (new Decimal(1).add(new Decimal(0.5).mul(schoolCount))).mul(new Decimal(1).add(new Decimal(0.2).mul(nombreLycees)));
+
+            totalBonsPointsParSeconde = (bonsPointsParSecondeEleves.add(bonsPointsParSecondeClasses)).mul(new Decimal(1).add(skillEffects.totalBpsMultiplierBonus)).mul(ascensionMultiplier).mul(schoolMultiplier);
+
+            bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
+            totalBpsInlineSpan.textContent = formatNumber(totalBonsPointsParSeconde, 1);
+            elevesBpsPerItemSpan.textContent = formatNumber(nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus)), 1);
+            classesBpsPerItemSpan.textContent = formatNumber(nombreClasses.mul(25).mul(multiplicateurProfesseur).mul(new Decimal(1).add(skillEffects.classeMultiplierBonus)), 1);
+            nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
+            nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
+            imagesSpan.textContent = formatNumber(images, 0);
+            professeursSpan.textContent = formatNumber(nombreProfesseurs, 0);
+            ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0); // Update available PA display
+            ascensionCountSpan.textContent = formatNumber(ascensionCount, 0); // Update ascension count display
+            totalPAEarnedSpanInline.textContent = formatNumber(totalPAEarned, 0);
+
+            // Ascension menu display
+            ascensionMenuPACountSpan.textContent = formatNumber(ascensionPoints, 0);
+            nombreEcolesSpan.textContent = formatNumber(schoolCount, 0);
+            ecoleMultiplierSpan.textContent = `${formatNumber(schoolMultiplier, 1)}x`; // schoolMultiplier already includes lycee effect
+
+            // Lycées display (New)
+            nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
+            lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(new Decimal(0.2).mul(nombreLycees)), 1)}x`;
+
+            // Display ascension bonus
+            if (ascensionCount.gt(0)) {
+                ascensionBonusDisplay.classList.remove('hidden');
+                ascensionBonusValueSpan.textContent = `${formatNumber(ascensionMultiplier, 2)}x`;
+            } else {
+                ascensionBonusDisplay.classList.add('hidden');
+            }
+
+            // Display images count only if images >= 1
+            if (images.gte(1)) {
+                imagesDisplay.classList.remove('hidden');
+            } else {
+                imagesDisplay.classList.add('hidden');
+            }
+            // Display available PA only if ascensionPoints >= 1 or if ascension is unlocked
+            if (ascensionPoints.gte(1) || ascensionUnlocked) {
+                currentAscensionPointsDisplay.classList.remove('hidden');
+            } else {
+                currentAscensionPointsDisplay.classList.add('hidden');
+            }
+            // Display ascension count and total PA only if ascensionCount > 0
+            if (ascensionCount.gt(0)) {
+                ascensionCountDisplay.classList.remove('hidden');
+            } else {
+                ascensionCountDisplay.classList.add('hidden');
+            }
+
+            updateButtonStates(); // Update all purchase and settings buttons
+        }
+
+        // Specific function to update only bonsPoints display (to avoid full recalculation on every click)
+        function mettreAJourAffichageBonsPoints() {
+            bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
+        }
+
+        // Function to check and unlock purchase sections and menu buttons
+        function checkUnlockConditions() {
+            // Unlock student section
+            if (!elevesUnlocked && bonsPoints.gte(coutEleveActuel)) {
+                elevesUnlocked = true;
+                showNotification("Nouvel achat débloqué : Élèves !");
+            }
+
+            // Unlock class section
+            if (!classesUnlocked && nombreEleves.gte(30)) {
+                classesUnlocked = true;
+                showNotification("Nouvel achat débloqué : Salles de classe !");
+            }
+
+            // Unlock image section
+            if (!imagesUnlocked && bonsPoints.gte(1000)) {
+                imagesUnlocked = true;
+                showNotification("Nouvel achat débloqué : Images !");
+            }
+
+            // Unlock professor section
+            if (!professeursUnlocked && images.gte(calculateNextProfessorCost())) { // Check with the cost of the first professor
+                professeursUnlocked = true;
+                showNotification("Nouvel achat débloqué : Professeurs !");
+            }
+
+            // Unlock Skills button (when first image is acquired)
+            if (!skillsButtonUnlocked && images.gte(1)) {
+                skillsButtonUnlocked = true;
+                showNotification("Nouvelle section débloquée : Compétences !");
+            }
+
+            // Unlock Settings button (when first image is acquired, like skills)
+            if (!settingsButtonUnlocked && images.gte(1)) {
+                settingsButtonUnlocked = true;
+                showNotification("Nouvelle section débloquée : Paramètres !");
+            }
+
+            // Unlock Ascension button (when 1 professor is reached)
+            if (!ascensionUnlocked && nombreProfesseurs.gte(1)) {
+                ascensionUnlocked = true;
+                showNotification("Nouvelle option débloquée : Ascension !");
+            }
+
+            // Unlock Ascension Menu button (after the first ascension)
+            if (!ascensionMenuButtonUnlocked && ascensionCount.gte(1)) {
+                ascensionMenuButtonUnlocked = true;
+                showNotification("Nouveau menu débloqué : Ascension !");
+            }
+
+            // Unlock Quests button (New)
+            if (!questsUnlocked && ascensionPoints.gte(100)) {
+                questsUnlocked = true;
+                showNotification("Nouvelle section débloquée : Quêtes !");
+            }
+
+            // Update section visibility after potentially unlocking new sections
+            updateSectionVisibility();
+            renderQuests(); // Check and render quests on every update
+
+            // --- New bonus points ---
+            const bonusThresholds = [
+                { threshold: 100, amount: 100 },
+                { threshold: 300, amount: 100 },
+                { threshold: 750, amount: 100 },
+                { threshold: 1000, amount: 200 },
+                { threshold: 2000, amount: 200 },
+                { threshold: 5000, amount: 250 },
+                { threshold: 10000, amount: 300 },
+                { threshold: 20000, amount: 350 },
+                { threshold: 50000, amount: 400 },
+                { threshold: 100000, amount: 500 }
+            ];
+
+            bonusThresholds.forEach(bonus => {
+                // Convert bonus.threshold to Decimal for comparison
+                if (bonsPoints.gte(new Decimal(bonus.threshold)) && !bonusPointsClaimed[bonus.threshold]) {
+                    bonsPoints = bonsPoints.add(new Decimal(bonus.amount));
+                    bonusPointsClaimed[bonus.threshold] = true;
+                    showNotification(`Bonus de ${formatNumber(new Decimal(bonus.amount), 0)} BP atteint !`);
+                    mettreAJourAffichageBonsPoints(); // Update BP display immediately
+                    saveGameState(); // Save state after bonus
+                }
+            });
+        }
+
+        // New function to update the display property of sections
+        function updateSectionVisibility() {
+            if (elevesUnlocked) {
+                achatEleveSection.classList.remove('hidden');
+            }
+            if (classesUnlocked) {
+                achatClasseSection.classList.remove('hidden');
+            }
+            if (imagesUnlocked) {
+                achatImageSection.classList.remove('hidden');
+            }
+            if (professeursUnlocked) {
+                achatProfesseurSection.classList.remove('hidden');
+            }
+            if (skillsButtonUnlocked) {
+                skillsButton.classList.remove('hidden');
+            }
+            if (settingsButtonUnlocked) {
+                settingsButton.classList.remove('hidden');
+            }
+            if (ascensionUnlocked) {
+                ascensionButton.classList.remove('hidden');
+            }
+            if (ascensionMenuButtonUnlocked) {
+                ascensionMenuButton.classList.remove('hidden');
+            }
+            if (multiPurchaseOptionUnlocked) {
+                purchaseMultiplierSelection.classList.remove('hidden');
+            } else {
+                purchaseMultiplierSelection.classList.add('hidden');
+            }
+            if (maxPurchaseOptionUnlocked) {
+                setMultiplierXMax.classList.remove('hidden');
+            } else {
+                setMultiplierXMax.classList.add('hidden');
+            }
+            if (automationCategoryUnlocked) {
+                automationSection.classList.remove('hidden');
+            } else {
+                automationSection.classList.add('hidden');
+            }
+            if (lyceesUnlocked) { // New: Show Lycee purchase section
+                achatLyceeSection.classList.remove('hidden');
+            } else {
+                achatLyceeSection.classList.add('hidden');
+            }
+            if (questsUnlocked) { // New: Show Quests button
+                questsButton.classList.remove('hidden');
+            } else {
+                questsButton.classList.add('hidden');
+            }
+        }
+
+        // Function to render quests (New)
+        function renderQuests() {
+            questsListDiv.innerHTML = '';
+            completedQuestsListDiv.innerHTML = '';
+
+            questsData.forEach(quest => {
+                // Check quest completion (only if not already completed)
+                if (!quest.completed) {
+                    let isCompleted = false;
+                    if (quest.targetType === 'schoolCount' && schoolCount.gte(quest.targetValue)) {
+                        isCompleted = true;
+                    }
+                    // Add other quest target types here if needed
+
+                    if (isCompleted) {
+                        quest.completed = true;
+                        // Apply reward
+                        if (quest.reward.type === 'unlockPurchase' && quest.reward.itemId === 'lycee') {
+                            lyceesUnlocked = true;
+                            showNotification(quest.rewardMessage);
+                            updateSectionVisibility(); // Ensure the new purchase section appears
+                        }
+                        // Add other reward types here
+                        saveGameState(); // Save game state after quest completion
+                    }
+                }
+
+                const questDiv = document.createElement('div');
+                questDiv.classList.add('bg-gray-50', 'border', 'border-gray-200', 'p-4', 'rounded-lg', 'shadow-sm', 'w-full', 'mb-4');
+                questDiv.innerHTML = `
+                    <h4 class="text-lg font-semibold mb-2">${quest.name}</h4>
+                    <p class="text-sm">${quest.description}</p>
+                    <p class="mt-2 text-sm">Progrès : <span class="text-blue-500 font-bold">${formatNumber(schoolCount, 0)}/${formatNumber(quest.targetValue, 0)}</span></p>
+                `;
+
+                if (quest.completed) {
+                    questDiv.classList.remove('bg-gray-50', 'border-gray-200');
+                    questDiv.classList.add('bg-green-100', 'border-green-500'); // Light green for completed quests
+                    questDiv.innerHTML += `<p class="text-green-600 font-bold mt-2">Complétée !</p>`;
+                    completedQuestsListDiv.appendChild(questDiv);
+                } else {
+                    questsListDiv.appendChild(questDiv);
+                }
+            });
+            mettreAJourAffichage(); // Update display after potential unlocks
+        }
+
+        // Event Listeners for multiplier buttons
+        setMultiplierX1.addEventListener('click', () => {
+            currentPurchaseMultiplier = 1;
+            updateMultiplierButtons();
+            updateButtonStates(); // Update purchase buttons visual state
+            saveGameState();
+        });
+        setMultiplierX10.addEventListener('click', () => {
+            currentPurchaseMultiplier = 10;
+            updateMultiplierButtons();
+            updateButtonStates();
+            saveGameState();
+        });
+        setMultiplierX100.addEventListener('click', () => {
+            currentPurchaseMultiplier = 100;
+            updateMultiplierButtons();
+            updateButtonStates();
+            saveGameState();
+        });
+        setMultiplierXMax.addEventListener('click', () => {
+            currentPurchaseMultiplier = 'max';
+            updateMultiplierButtons();
+            updateButtonStates();
+            saveGameState();
+        });
+
+        // Automatic production loop (every second)
+        setInterval(() => {
+            bonsPoints = bonsPoints.add(totalBonsPointsParSeconde);
+            mettreAJourAffichageBonsPoints();
+            checkUnlockConditions();
+            updateButtonStates();
+            saveGameState();
+
+            // Automation of purchases
+            if (autoEleveActive) {
+                performPurchase('eleve', 'max', true); // true for isAutomated
+            }
+            if (autoImageActive) {
+                performPurchase('image', 'max', true);
+            }
+            if (autoProfesseurActive) {
+                performPurchase('professeur', 'max', true);
+            }
+
+        }, 1000);
+
+        // Initialization on page load
+        window.onload = function () {
+            loadGameState();
+            // Initialize costs that depend on loaded state
+            coutEleveActuel = calculateNextEleveCost();
+            coutEcoleActuel = calculateNextEcoleCost(); // Initialize school cost
+            coutLyceeActuel = calculateNextLyceeCost(); // Initialize lycee cost (New)
+            
+            acheterEleveButton.innerHTML = `Élève : <span class="text-green-500">${formatNumber(coutEleveActuel, 0)} BP</span>`;
+            acheterClasseButton.innerHTML = `Salle de classe : <span class="text-gray-800">30 Élèves</span>`;
+            acheterImageButton.innerHTML = `Image : <span class="text-green-500">${formatNumber(new Decimal(1000), 0)} BP</span>`;
+            acheterProfesseurButton.innerHTML = `Professeur : <span class="text-purple-600">${formatNumber(calculateNextProfessorCost(), 0)} I</span>`; // Initialize professor cost
+            
+            mettreAJourAffichage();
+            checkUnlockConditions();
+            disableEleveWarningCheckbox.checked = disableEleveWarning;
+            updateMultiplierButtons(); // Ensure multiplier buttons are correctly highlighted on load
+            updateAutomationButtonStates(); // Ensure automation buttons are correctly highlighted on load
+        };
     </script>
 </body>
 </html>
