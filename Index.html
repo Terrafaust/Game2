@@ -64,9 +64,9 @@
         </div>
     </header>
 
-    <main class="flex flex-1 overflow-hidden">
+    <main class="flex flex-col md:flex-row flex-1 overflow-hidden">
 
-        <aside id="gauche-panneau" class="w-64 bg-gray-100 p-4 shadow-lg overflow-y-auto rounded-tr-lg rounded-br-lg md:block hidden">
+        <aside id="gauche-panneau" class="w-full md:w-64 bg-gray-100 p-4 shadow-lg overflow-y-auto rounded-tr-lg rounded-br-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-700">Constructions</h2>
             <div id="constructions" class="space-y-4 mb-6">
                 <div class="bg-white p-3 rounded-lg shadow-md border-2 border-transparent transition-colors duration-200" id="eleve-card">
@@ -125,7 +125,7 @@
             <p class="text-sm text-gray-600 mt-2">Gagne <span id="etudier-gain-display">1</span> Bons Points</p>
         </section>
 
-        <aside id="droite-panneau" class="w-64 bg-gray-100 p-4 shadow-lg overflow-y-auto rounded-tl-lg rounded-bl-lg md:block hidden">
+        <aside id="droite-panneau" class="w-full md:w-64 bg-gray-100 p-4 shadow-lg overflow-y-auto rounded-tl-lg rounded-bl-lg">
             <h2 class="text-xl font-semibold mb-4 text-gray-700">Menus</h2>
             <div class="space-y-4">
                 <button id="ouvrir-reglages" class="w-full py-3 px-4 rounded-md font-bold text-white bg-gray-700 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-600 focus:ring-opacity-75 transition-all duration-200 flex items-center justify-center">
