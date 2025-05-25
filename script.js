@@ -1,8 +1,3 @@
-// Importations Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
 // --- Initialisation Firebase et Authentification ---
 let app;
 let db;
@@ -18,19 +13,20 @@ const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial
 // Initialiser Firebase et gérer l'authentification
 const initFirebase = async () => {
     try {
-        app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-        auth = getAuth(app);
+        // Utilisation des objets globaux de Firebase
+        app = firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore(); // getFirestore(app)
+        auth = firebase.auth(); // getAuth(app)
 
         // Écouteur de l'état d'authentification
-        onAuthStateChanged(auth, async (user) => {
+        auth.onAuthStateChanged(async (user) => { // onAuthStateChanged(auth, ...)
             if (user) {
                 userId = user.uid;
                 console.log("Utilisateur authentifié:", userId);
             } else {
                 // Si pas d'utilisateur, et pas de token initial, se connecter anonymement
                 if (!initialAuthToken) {
-                    await signInAnonymously(auth);
+                    await auth.signInAnonymously(); // signInAnonymously(auth)
                     console.log("Connecté anonymement.");
                 }
             }
@@ -41,7 +37,7 @@ const initFirebase = async () => {
 
         // Tenter de se connecter avec le token initial si disponible
         if (initialAuthToken) {
-            await signInWithCustomToken(auth, initialAuthToken);
+            await auth.signInWithCustomToken(initialAuthToken); // signInWithCustomToken(auth, ...)
             console.log("Connecté avec le token personnalisé.");
         } else {
             console.log("Aucun token personnalisé fourni, attente de connexion anonyme.");
@@ -1141,7 +1137,7 @@ async function saveGame() {
             }
             return value;
         }));
-        await setDoc(doc(db, `artifacts/${appId}/users/${userId}/gameData/current`), serializableState);
+        await db.collection(`artifacts/${appId}/users/${userId}/gameData`).doc('current').set(serializableState); // doc(db, `artifacts/${appId}/users/${userId}/gameData/current`)
         // console.log("Jeu sauvegardé !");
     } catch (error) {
         console.error("Erreur lors de la sauvegarde du jeu:", error);
@@ -1157,10 +1153,10 @@ async function loadGame() {
         return;
     }
     try {
-        const docRef = doc(db, `artifacts/${appId}/users/${userId}/gameData/current`);
-        const docSnap = await getDoc(docRef);
+        const docRef = db.collection(`artifacts/${appId}/users/${userId}/gameData`).doc('current'); // doc(db, `artifacts/${appId}/users/${userId}/gameData/current`)
+        const docSnap = await docRef.get(); // getDoc(docRef)
 
-        if (docSnap.exists()) {
+        if (docSnap.exists) { // docSnap.exists()
             const loadedState = docSnap.data();
             // Convertir les chaînes en BigNumber
             for (const key in loadedState) {
