@@ -964,7 +964,7 @@
             { id: 'S17', name: 'Théorie Unifiée de l\'Apprentissage', family: 'Science', description: 'Augmente la production totale de BP/s de 10%.', flavorText: 'Une théorie englobante qui explique tous les aspects de l\'acquisition des connaissances.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['S16'], row: 16, col: 2 },
             { id: 'S18', name: 'Manipulation Quantique Pédagogique', family: 'Science', description: 'Augmente la production des classes de 25%.', flavorText: 'Exploitation des principes quantiques pour des avancées sans précédent en éducation.', effect: { type: 'classeMultiplierBonus', value: new Decimal(0.25) }, prerequisites: ['S17'], row: 17, col: 2 },
             { id: 'S19', name: 'Conscience Artificielle', family: 'Science', description: 'Développement d\'entités conscientes capables d\'apprendre et d\'enseigner de manière autonome.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.5) }, prerequisites: ['S18'], row: 18, col: 2 },
-            { id: 'S20', name: 'Singularité Éducative', family: 'Science', description: 'Augmente la production totale de BP/s de 15%.', flavorText: 'Le point où l\'intelligence éducative dépasse l\'entendement humain, transformant l\'apprentissage pour toujours.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['S19'], row: 19, col: 2 }
+            { id: 'S20', name: 'Singularité Éducative', family: 'Science', description: 'Augmente la production totale de BP/s de 15%.', flavorText: 'Le point où l\'intelligence éducative dépasse l\'entendement humain, transformant l\'apprentissage pour toujours.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.15) }, prerequisites: ['S19'], row: 19, col: 0 }
         ];
 
         function resetSkillEffects() {
@@ -1068,7 +1068,8 @@
             let nextProfIndex = nombreProfesseurs.add(1);
             let cost;
             // Use the pre-calculated sequence. If index exceeds size, use the last value.
-            if (nextProfIndex.lt(fibonacciSequence.length)) {
+            // Corrected comparison: convert Decimal to Number for array length comparison
+            if (nextProfIndex.toNumber() < fibonacciSequence.length) {
                 cost = fibonacciSequence[nextProfIndex.toNumber()];
             } else {
                 cost = fibonacciSequence[fibonacciSequence.length - 1]; // Fallback to the last value
@@ -1508,7 +1509,8 @@
         function calculateNextProfessorCostForSimulation(currentProfessors) {
             let nextProfIndex = currentProfessors.add(1);
             let cost;
-            if (nextProfIndex.lt(fibonacciSequence.length)) {
+            // Corrected comparison: convert Decimal to Number for array length comparison
+            if (nextProfIndex.toNumber() < fibonacciSequence.length) {
                 cost = fibonacciSequence[nextProfIndex.toNumber()];
             } else {
                 cost = fibonacciSequence[fibonacciSequence.length - 1];
@@ -1629,7 +1631,7 @@
             }
 
             // Special bonus logic for "Clonage des Connaissances" (S15)
-            if (skillId === 'S15') {
+            if (skillId === 'S20') { // Changed from S15 to S20 as per skill data
                 s15Clicks = s15Clicks.add(1);
                 if (s15Clicks.gte(10)) {
                     bonsPoints = bonsPoints.add(new Decimal(10000000));
@@ -1640,7 +1642,7 @@
                     s15Clicks = new Decimal(0); // Reset counter to trigger again
                     mettreAJourAffichage(); // Update display immediately after bonus
                     saveGameState(); // Save state after bonus
-                    return; // Exit function after handling S15 bonus
+                    return; // Exit function after handling S20 bonus
                 }
             }
 
@@ -1665,8 +1667,8 @@
                     showNotification("Pas assez de professeurs disponibles pour débloquer cette compétence !");
                 }
             } else {
-                // If skill is already unlocked and not S15, do nothing
-                if (skillId !== 'S15') {
+                // If skill is already unlocked and not S20, do nothing
+                if (skillId !== 'S20') { // Changed from S15 to S20
                     showNotification("Compétence déjà débloquée.");
                 }
             }
@@ -1839,7 +1841,7 @@
         // Event listener for "Étudier sagement" button
         etudierButton.addEventListener('click', () => {
             bonsPoints = bonsPoints.add(new Decimal(1).add(totalBonsPointsParSeconde.mul(0.1))); // New gain calculation
-            mettreAJourAffichageBonsPoints();
+            mettreAJourAffichage(); // Call full update
             checkUnlockConditions();
             updateButtonStates();
             saveGameState();
@@ -2320,11 +2322,6 @@
             updateButtonStates(); // Update all purchase and settings buttons
         }
 
-        // Specific function to update only bonsPoints display (to avoid full recalculation on every click)
-        function mettreAJourAffichageBonsPoints() {
-            bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
-        }
-
         // Function to check and unlock purchase sections and menu buttons
         function checkUnlockConditions() {
             // Unlock student section
@@ -2405,7 +2402,7 @@
                     bonsPoints = bonsPoints.add(new Decimal(bonus.amount));
                     bonusPointsClaimed[bonus.threshold] = true;
                     showNotification(`Bonus de ${formatNumber(new Decimal(bonus.amount), 0)} BP atteint !`);
-                    mettreAJourAffichageBonsPoints(); // Update BP display immediately
+                    mettreAJourAffichage(); // Update all display elements
                     saveGameState(); // Save state after bonus
                 }
             });
@@ -2515,7 +2512,7 @@
                         } else if (quest.reward.type === 'bonsPoints') {
                             bonsPoints = bonsPoints.add(quest.reward.amount);
                             showNotification(quest.rewardMessage);
-                            mettreAJourAffichageBonsPoints();
+                            mettreAJourAffichage(); // Update all display elements
                         } else if (quest.reward.type === 'ascensionPoints') {
                             ascensionPoints = ascensionPoints.add(quest.reward.amount);
                             showNotification(quest.rewardMessage);
@@ -2590,9 +2587,9 @@
         // Automatic production loop (every second)
         setInterval(() => {
             bonsPoints = bonsPoints.add(totalBonsPointsParSeconde);
-            mettreAJourAffichageBonsPoints();
-            checkUnlockConditions();
-            updateButtonStates();
+            mettreAJourAffichage(); // Call the full update function to ensure all elements are refreshed
+            checkUnlockConditions(); // This already calls updateSectionVisibility and renderQuests
+            // updateButtonStates() is called inside mettreAJourAffichage()
             saveGameState(); // Save state every second to ensure lastSaveTime is updated
 
             // Automation of purchases
