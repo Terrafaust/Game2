@@ -1,1495 +1,1215 @@
-// --- Initialisation Firebase et Authentification ---
-let app;
-let db;
-let auth;
-let userId = 'anonymous'; // Valeur par défaut avant authentification
-let isAuthReady = false; // Indicateur que l'authentification est prête
+// =============================================================================
+// Document 1: Architecture du Cœur du Jeu et Gestion des Nombres (Backend Logic)
+// Document 3: Arbre de Compétences et Automatisation (Gameplay Features)
+// Document 4: Intégration, Performance et Déploiement (Overall System)
+// =============================================================================
 
-// Variables globales fournies par l'environnement Canvas
-const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+// --- Variables Globales du Jeu ---
+let bonsPoints = 0; // Monnaie principale
+let images = 0;     // Ressource pour les professeurs et améliorations
+let professeurs = 0; // Multiplicateurs de production et débloque des fonctionnalités
+let pointsAscension = 0; // Monnaie d'ascension
 
-// Initialiser Firebase et gérer l'authentification
-const initFirebase = async () => {
-    try {
-        // Utilisation des objets globaux de Firebase
-        app = firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore(); // getFirestore(app)
-        auth = firebase.auth(); // getAuth(app)
+let bonsPointsParSeconde = 0; // Production automatique de BP
 
-        // Écouteur de l'état d'authentification
-        auth.onAuthStateChanged(async (user) => { // onAuthStateChanged(auth, ...)
-            if (user) {
-                userId = user.uid;
-                console.log("Utilisateur authentifié:", userId);
-            } else {
-                // Si pas d'utilisateur, et pas de token initial, se connecter anonymement
-                if (!initialAuthToken) {
-                    await auth.signInAnonymously(); // signInAnonymously(auth)
-                    console.log("Connecté anonymement.");
-                }
-            }
-            document.getElementById('user-id').textContent = userId;
-            isAuthReady = true; // L'authentification est prête
-            loadGame(); // Charger le jeu une fois l'authentification prête
-        });
+// Constructions
+let nbEleves = 0;
+let coutEleve = 10;
+let bpsEleveParUnite = 0.5; // BP/s par élève
 
-        // Tenter de se connecter avec le token initial si disponible
-        if (initialAuthToken) {
-            await auth.signInWithCustomToken(initialAuthToken); // signInWithCustomToken(auth, ...)
-            console.log("Connecté avec le token personnalisé.");
-        } else {
-            console.log("Aucun token personnalisé fourni, attente de connexion anonyme.");
-        }
+let nbClasses = 0;
+let coutClasse = 300;
+let bpsClasseParUnite = 25; // BP/s par classe
 
-    } catch (error) {
-        console.error("Erreur d'initialisation Firebase ou d'authentification:", error);
-        // Fallback si Firebase ne peut pas être initialisé (ex: pas de config)
-        isAuthReady = true; // Permettre au jeu de démarrer sans persistance
-        loadGame();
-    }
+// Achats Spéciaux
+let coutImage = 1000;
+let coutProfesseur = 1; // Suit la suite de Fibonacci
+
+// Ascension
+let ascensionsTotales = 0;
+let multiplicateurBonusAscension = 1; // Multiplicateur global de production de BP
+
+// Options d'Achat Multiples
+let currentBuyMultiplier = 1; // x1, x10, x100, xMax
+let multiBuyX10Unlocked = false;
+let multiBuyX100Unlocked = false;
+let multiBuyXMaxUnlocked = false;
+
+// Réglages
+let isDayTheme = true; // Thème jour/nuit
+let themeCost = 10; // Coût pour débloquer le thème
+let doNotShowAscensionWarning = false; // Ne plus afficher l'avertissement d'ascension
+
+// Nombres Premiers pour l'Ascension (les 25 premiers)
+const primeNumbers = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97];
+
+// Suite de Fibonacci pour le coût des professeurs (pré-calculée pour éviter des calculs lourds)
+const fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170];
+
+// Compétences (Skill Tree)
+const skills = {
+    pedagogie: [
+        { id: 'pedagogie1', name: 'Méthodes Actives', description: 'Augmente la production de BP des Élèves de {0}%', levels: 3, costs: [1, 2, 3], effects: [0.1, 0.2, 0.3], currentLevel: 0, unlocked: false },
+        { id: 'pedagogie2', name: 'Pédagogie Différenciée', description: 'Réduit le coût des Classes de {0}%', levels: 3, costs: [2, 4, 6], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false },
+        { id: 'pedagogie3', name: 'Motivation Intrinsèque', description: 'Augmente la production de BP de base de {0}%', levels: 3, costs: [3, 6, 9], effects: [0.1, 0.25, 0.4], currentLevel: 0, unlocked: false },
+        { id: 'pedagogie4', name: 'Évaluation Formative', description: 'Augmente le gain du bouton "Étudier Sagement" de {0}%', levels: 3, costs: [4, 8, 12], effects: [0.15, 0.3, 0.5], currentLevel: 0, unlocked: false },
+        { id: 'pedagogie5', name: 'Apprentissage Collaboratif', description: 'Augmente la production de BP des Professeurs de {0}%', levels: 3, costs: [5, 10, 15], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false }
+    ],
+    science: [
+        { id: 'science1', name: 'Recherche Fondamentale', description: 'Augmente la production de BP des Classes de {0}%', levels: 3, costs: [1, 2, 3], effects: [0.1, 0.2, 0.3], currentLevel: 0, unlocked: false },
+        { id: 'science2', name: 'Expérimentation Pratique', description: 'Réduit le coût des Images de {0}%', levels: 3, costs: [2, 4, 6], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false },
+        { id: 'science3', name: 'Théorie des Cordes', description: 'Augmente le multiplicateur d\'Ascension de {0}%', levels: 3, costs: [3, 6, 9], effects: [0.01, 0.02, 0.03], currentLevel: 0, unlocked: false },
+        { id: 'science4', name: 'Modélisation Numérique', description: 'Augmente le gain de PA par Ascension de {0}%', levels: 3, costs: [4, 8, 12], effects: [0.1, 0.2, 0.3], currentLevel: 0, unlocked: false },
+        { id: 'science5', name: 'Découverte Majeure', description: 'Augmente la production de BP de toutes les sources de {0}%', levels: 3, costs: [5, 10, 15], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false }
+    ],
+    innovation: [
+        { id: 'innovation1', name: 'Pensée Latérale', description: 'Réduit le coût des Élèves de {0}%', levels: 3, costs: [1, 2, 3], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false },
+        { id: 'innovation2', name: 'Prototypage Rapide', description: 'Augmente la vitesse d\'automatisation de {0}%', levels: 3, costs: [2, 4, 6], effects: [0.1, 0.2, 0.3], currentLevel: 0, unlocked: false },
+        { id: 'innovation3', name: 'Optimisation des Flux', description: 'Réduit le coût des automatisations de {0}%', levels: 3, costs: [3, 6, 9], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false },
+        { id: 'innovation4', name: 'Synergie Interdisciplinaire', description: 'Augmente le gain de PA de base de {0}%', levels: 3, costs: [4, 8, 12], effects: [0.1, 0.2, 0.3], currentLevel: 0, unlocked: false },
+        { id: 'innovation5', name: 'Révolution Pédagogique', description: 'Augmente toutes les productions de {0}%', levels: 3, costs: [5, 10, 15], effects: [0.05, 0.1, 0.15], currentLevel: 0, unlocked: false }
+    ]
 };
 
-// --- Configuration de BigNumber.js ---
-// Utilisation de BigNumber pour gérer les très grands nombres
-BigNumber.config({ DECIMAL_PLACES: 2, EXPONENTIAL_AT: 1e9 });
+// Automatisation
+let autoEleveActive = false;
+let autoClasseActive = false;
+let autoImageActive = false;
+let autoProfesseurActive = false;
 
-// --- État du Jeu ---
-let gameState = {
-    // Ressources
-    bonsPoints: new BigNumber(0),
-    bonsPointsPerSecond: new BigNumber(0),
-    images: new BigNumber(0),
-    professeurs: new BigNumber(0),
-    pointsAscension: new BigNumber(0),
-
-    // Constructions
-    student: {
-        quantity: new BigNumber(0),
-        baseCost: new BigNumber(10),
-        costMultiplier: new BigNumber(1.15),
-        baseBps: new BigNumber(0.5),
-        costIncreaseThreshold: 10, // Le coût commence à augmenter après le 10ème
-    },
-    classe: {
-        quantity: new BigNumber(0),
-        baseCost: new BigNumber(300),
-        costMultiplier: new BigNumber(1.15),
-        baseBps: new BigNumber(25),
-        costIncreaseThreshold: 10,
-    },
-
-    // Achats spéciaux
-    imagePurchase: {
-        cost: new BigNumber(1000), // Coût fixe
-    },
-    professorPurchase: {
-        quantity: new BigNumber(0),
-        fibonacciSequence: [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155], // Pré-calculé pour éviter les calculs coûteux avec BigNumber
-        productionMultiplier: new BigNumber(1.5),
-    },
-
-    // Ascension
-    ascension: {
-        totalAscensions: new BigNumber(0),
-        primeNumbers: [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199], // Jusqu'au 46ème nombre premier
-        bonusMultiplier: new BigNumber(1), // Multiplicateur de production BP global
-        showAscensionWarning: true,
-    },
-
-    // Réglages
-    theme: 'light', // 'light' ou 'dark'
-    hasBoughtTheme: false,
-    multiBuyMode: 1, // 1, 10, 100, 'max'
-    hasMultiBuyX10X100: false,
-    hasMultiBuyXMax: false,
-
-    // Automatisations
-    automateStudent: false,
-    automateClass: false,
-    automateImage: false,
-    automateProfessor: false,
-    automationCosts: {
-        student: new BigNumber(100),
-        classe: new BigNumber(1000),
-        image: new BigNumber(10000),
-        professor: new BigNumber(100000),
-    },
-
-    // Déblocages (palier)
-    unlocked: {
-        class: false,
-        image: false,
-        professor: false,
-        settings: false,
-        ascension: false,
-        skills: false, // Débloqué après la première ascension
-        multiBuyX10X100Option: false, // Option d'achat dans les réglages
-        multiBuyXMaxOption: false, // Option d'achat dans les réglages
-        automateStudent: false,
-        automateClass: false,
-        automateImage: false,
-        automateProfessor: false,
-    },
-
-    // Compétences (Arbre de compétences)
-    skills: {
-        // Structure: { id: { level: 0, maxLevel: X, cost: [prof_cost_level1, prof_cost_level2], effect: 'description' } }
-        // Les coûts sont en professeurs
-        "pedagogie_fondamentale": { level: 0, maxLevel: 1, cost: [1], effect: "Augmente la production des Élèves de 10%.", type: "production", target: "student", value: new BigNumber(0.1) },
-        "gestion_de_classe": { level: 0, maxLevel: 2, cost: [2, 4], effect: "Augmente la production des Classes de 15% par niveau.", type: "production", target: "class", value: new BigNumber(0.15) },
-        "optimisation_didactique": { level: 0, maxLevel: 1, cost: [3], effect: "Réduit le coût des Élèves de 5%.", type: "cost_reduction", target: "student", value: new BigNumber(0.05) },
-        "recherche_avancee": { level: 0, maxLevel: 3, cost: [5, 7, 10], effect: "Augmente le gain de PA de 10% par niveau.", type: "pa_gain", value: new BigNumber(0.1) },
-        "innovation_educative": { level: 0, maxLevel: 1, cost: [8], effect: "Réduit le coût des Images de 10%.", type: "cost_reduction", target: "image", value: new BigNumber(0.1) },
-        "mentorat_expert": { level: 0, maxLevel: 2, cost: [12, 15], effect: "Augmente la production des Professeurs de 20% par niveau (bonus BP).", type: "production", target: "professor_bp", value: new BigNumber(0.2) },
-        "synergie_interdisciplinaire": { level: 0, maxLevel: 1, cost: [18], effect: "Augmente la production totale de BP de 5%.", type: "total_production", value: new BigNumber(0.05) },
-        "developpement_continu": { level: 0, maxLevel: 1, cost: [20], effect: "Réduit le seuil d'augmentation de coût des constructions de 1.", type: "cost_threshold", target: "student", value: 1 },
-        "maitrise_numerique": { level: 0, maxLevel: 1, cost: [25], effect: "Augmente la vitesse des automatisations de 10%.", type: "automation_speed", value: new BigNumber(0.1) },
-        "vision_strategique": { level: 0, maxLevel: 1, cost: [30], effect: "Augmente le bonus d'ascension de 0.01.", type: "ascension_bonus", value: new BigNumber(0.01) },
-        "specialisation_pedagogique": { level: 0, maxLevel: 2, cost: [35, 40], effect: "Augmente la production des Élèves et Classes de 5% par niveau.", type: "production", target: "all_buildings", value: new BigNumber(0.05) },
-        "expansion_des_connaissances": { level: 0, maxLevel: 1, cost: [45], effect: "Réduit le coût des Professeurs de 5%.", type: "cost_reduction", target: "professor", value: new BigNumber(0.05) },
-        "acceleration_cognitive": { level: 0, maxLevel: 1, cost: [50], effect: "Augmente le gain de PA de 20%.", type: "pa_gain", value: new BigNumber(0.2) },
-        "perfectionnement_academique": { level: 0, maxLevel: 1, cost: [60], effect: "Augmente la production totale de BP de 10%.", type: "total_production", value: new BigNumber(0.1) },
-        "heritage_savant": { level: 0, maxLevel: 1, cost: [70], effect: "Débloque une nouvelle automatisation (si applicable, à définir).", type: "unlock_automation", target: "future_automation" }, // Exemple, à adapter
-    },
-    // Dépendances de l'arbre de compétences (si une bulle dépend d'une autre)
-    skillDependencies: {
-        "gestion_de_classe": ["pedagogie_fondamentale"],
-        "optimisation_didactique": ["pedagogie_fondamentale"],
-        "recherche_avancee": ["gestion_de_classe", "optimisation_didactique"],
-        "innovation_educative": ["recherche_avancee"],
-        "mentorat_expert": ["recherche_avancee"],
-        "synergie_interdisciplinaire": ["innovation_educative", "mentorat_expert"],
-        "developpement_continu": ["synergie_interdisciplinaire"],
-        "maitrise_numerique": ["synergie_interdisciplinaire"],
-        "vision_strategique": ["developpement_continu", "maitrise_numerique"],
-        "specialisation_pedagogique": ["vision_strategique"],
-        "expansion_des_connaissances": ["specialisation_pedagogique"],
-        "acceleration_cognitive": ["expansion_des_connaissances"],
-        "perfectionnement_academique": ["acceleration_cognitive"],
-        "heritage_savant": ["perfectionnement_academique"],
-    }
+const autoCosts = {
+    eleve: 100,
+    classe: 1000,
+    image: 10000,
+    professeur: 100000
 };
 
-// --- Références aux Éléments du DOM ---
-const dom = {
-    // Ressources
-    bpValue: document.getElementById('bp-value'),
-    bpPerSecValue: document.getElementById('bp-per-sec-value'),
-    imgValue: document.getElementById('img-value'),
-    profValue: document.getElementById('prof-value'),
-    paValue: document.getElementById('pa-value'),
-    resourceBpDisplay: document.getElementById('resource-bp-display'),
-    resourceImgDisplay: document.getElementById('resource-img-display'),
-    resourceProfDisplay: document.getElementById('resource-prof-display'),
-    resourcePaDisplay: document.getElementById('resource-pa-display'),
-    resourceSectionPa: document.getElementById('resource-section-pa'),
 
-    // Boutons de construction/achat
-    buyStudent: document.getElementById('buy-student'),
-    studentCost: document.getElementById('student-cost'),
-    studentQuantity: document.getElementById('student-quantity'),
-    studentBps: document.getElementById('student-bps'),
-    buyClass: document.getElementById('buy-class'),
-    classCost: document.getElementById('class-cost'),
-    classQuantity: document.getElementById('class-quantity'),
-    classBps: document.getElementById('class-bps'),
-    buyImage: document.getElementById('buy-image'),
-    imageCost: document.getElementById('image-cost'),
-    imageQuantity: document.getElementById('image-quantity'),
-    buyProfessor: document.getElementById('buy-professor'),
-    professorCost: document.getElementById('professor-cost'),
-    professorQuantity: document.getElementById('professor-quantity'),
+// --- Éléments du DOM (pour la mise à jour de l'interface) ---
+const bpNombreElement = document.getElementById('bp-nombre');
+const bpsElement = document.getElementById('bp-par-seconde');
+const imgNombreElement = document.getElementById('img-nombre');
+const profNombreElement = document.getElementById('prof-nombre');
+const paNombreElement = document.getElementById('pa-nombre');
 
-    // Options d'achat multiple
-    multiBuyOptions: document.getElementById('multi-buy-options'),
-    buyX1: document.getElementById('buy-x1'),
-    buyX10: document.getElementById('buy-x10'),
-    buyX100: document.getElementById('buy-x100'),
-    buyXMax: document.getElementById('buy-xMax'),
-    multiBuyButtons: [], // Rempli dynamiquement
+const acheterEleveBouton = document.getElementById('acheter-eleve');
+const eleveCoutElement = document.getElementById('eleve-cout');
+const eleveQuantiteElement = document.getElementById('eleve-quantite');
+const eleveBpsTotalElement = document.getElementById('eleve-bps-total');
+const eleveCard = document.getElementById('eleve-card');
 
-    // Panneaux latéraux
-    buildingsSection: document.getElementById('buildings-section'),
-    purchasesSection: document.getElementById('purchases-section'),
+const classeCard = document.getElementById('classe-card');
+const acheterClasseBouton = document.getElementById('acheter-classe');
+const classeCoutElement = document.getElementById('classe-cout');
+const classeQuantiteElement = document.getElementById('classe-quantite');
+const classeBpsTotalElement = document.getElementById('classe-bps-total');
 
-    // Modals et leurs boutons
-    openSettingsModal: document.getElementById('open-settings-modal'),
-    settingsModal: document.getElementById('settings-modal'),
-    closeSettingsModal: document.getElementById('close-settings-modal'),
-    toggleTheme: document.getElementById('toggle-theme'),
-    themeOption: document.getElementById('theme-option'),
-    themeCost: document.getElementById('theme-cost'),
-    multiBuyX10X100Option: document.getElementById('multi-buy-x10-x100-option'),
-    buyMultiX10X100: document.getElementById('buy-multi-x10-x100'),
-    multiBuyXMaxOption: document.getElementById('multi-buy-xMax-option'),
-    buyMultiXMax: document.getElementById('buy-multi-xMax'),
+const imageCard = document.getElementById('image-card');
+const acheterImageBouton = document.getElementById('acheter-image');
+const imageCoutElement = document.getElementById('image-cout');
+const imageQuantiteElement = document.getElementById('image-quantite');
 
-    openAscensionModal: document.getElementById('open-ascension-modal'),
-    ascensionModal: document.getElementById('ascension-modal'),
-    confirmAscension: document.getElementById('confirm-ascension'),
-    cancelAscension: document.getElementById('cancel-ascension'),
-    ascensionPaGain: document.getElementById('ascension-pa-gain'),
-    ascensionMultiplier: document.getElementById('ascension-multiplier'),
-    dontShowAscensionWarning: document.getElementById('dont-show-ascension-warning'),
+const professeurCard = document.getElementById('professeur-card');
+const acheterProfesseurBouton = document.getElementById('acheter-professeur');
+const professeurCoutElement = document.getElementById('professeur-cout');
+const professeurQuantiteElement = document.getElementById('professeur-quantite');
 
-    openSkillsModal: document.getElementById('open-skills-modal'),
-    skillsModal: document.getElementById('skills-modal'),
-    closeSkillsModal: document.getElementById('close-skills-modal'),
-    skillTreeContainer: document.getElementById('skill-tree-container'),
+const etudierSagementBtn = document.getElementById('etudier-sagement-btn');
+const etudierGainDisplay = document.getElementById('etudier-gain-display');
 
-    // Automatisations
-    automateStudentContainer: document.getElementById('automate-student-container'),
-    automateStudentCheckbox: document.getElementById('automate-student'),
-    automateClassContainer: document.getElementById('automate-class-container'),
-    automateClassCheckbox: document.getElementById('automate-class'),
-    automateImageContainer: document.getElementById('automate-image-container'),
-    automateImageCheckbox: document.getElementById('automate-image'),
-    automateProfessorContainer: document.getElementById('automate-professor-container'),
-    automateProfessorCheckbox: document.getElementById('automate-professor'),
+const imagesDiv = document.getElementById('images');
+const professeursDiv = document.getElementById('professeurs');
+const pointsAscensionDiv = document.getElementById('points-ascension');
 
-    // Notifications
-    notificationContainer: document.getElementById('notification-container'),
-};
+const boutonAscension = document.getElementById('bouton-ascension');
+const ouvrirReglagesBtn = document.getElementById('ouvrir-reglages');
+const ouvrirCompetencesBtn = document.getElementById('ouvrir-competences');
+const ouvrirAutomatisationBtn = document.getElementById('ouvrir-automatisation');
 
-// Remplir multiBuyButtons
-dom.multiBuyButtons = [dom.buyX1, dom.buyX10, dom.buyX100, dom.buyXMax];
+const reglagesModal = document.getElementById('reglages-modal');
+const fermerReglagesModalBtn = document.getElementById('fermer-reglages-modal');
+const toggleThemeBtn = document.getElementById('toggle-theme');
+const themeCostElement = document.getElementById('theme-cost');
+const acheterMultiX10X100Btn = document.getElementById('acheter-multi-x10-x100');
+const multiX10X100CostElement = document.getElementById('multi-x10-x100-cost');
+const acheterMultiXMaxBtn = document.getElementById('acheter-multi-xMax');
+const multiXMaxCostElement = document.getElementById('multi-xMax-cost');
 
-// --- Fonctions Utilitaires ---
+// Nouveaux éléments pour la sauvegarde/chargement
+const saveGameBtn = document.getElementById('save-game-btn');
+const loadGameBtn = document.getElementById('load-game-btn');
+const resetGameBtn = document.getElementById('reset-game-btn');
 
-/**
- * Formate un nombre BigNumber en notation scientifique ou abrégée.
- * @param {BigNumber} num Le nombre à formater.
- * @returns {string} Le nombre formaté.
- */
+
+const multiBuyOptionsDiv = document.getElementById('multi-buy-options');
+const buyX1Btn = document.getElementById('buy-x1');
+const buyX10Btn = document.getElementById('buy-x10');
+const buyX100Btn = document = document.getElementById('buy-x100');
+const buyXMaxBtn = document.getElementById('buy-xMax');
+
+const competencesModal = document.getElementById('competences-modal');
+const fermerCompetencesModalBtn = document.getElementById('fermer-competences-modal');
+const pedagogieBranch = document.getElementById('pedagogie-branch');
+const scienceBranch = document.getElementById('science-branch');
+const innovationBranch = document.getElementById('innovation-branch');
+
+const automatisationModal = document.getElementById('automatisation-modal');
+const fermerAutomatisationModalBtn = document.getElementById('fermer-automatisation-modal');
+const autoEleveToggle = document.getElementById('auto-eleve-toggle');
+const autoClasseToggle = document.getElementById('auto-classe-toggle');
+const autoImageToggle = document.getElementById('auto-image-toggle');
+const autoProfesseurToggle = document.getElementById('auto-professeur-toggle');
+
+const ascensionWarningModal = document.getElementById('ascension-warning-modal');
+const fermerAscensionWarningModalBtn = document.getElementById('fermer-ascension-warning-modal');
+const paGagnesAscensionElement = document.getElementById('pa-gagnes-ascension');
+const multiplicateurBonusAscensionElement = document.getElementById('multiplicateur-bonus-ascension');
+const nePlusAfficherAvertissementCheckbox = document.getElementById('ne-plus-afficher-avertissement');
+const confirmerAscensionBtn = document.getElementById('confirmer-ascension');
+
+const notificationsContainer = document.getElementById('notifications-container');
+
+
+// --- Fonctions de Formatage des Nombres ---
+// NOTE: Pour la gestion des très grands nombres (au-delà de 1e308),
+// il est fortement recommandé d'utiliser une bibliothèque dédiée comme 'break_infinity.js'
+// ou d'implémenter une logique de notation scientifique personnalisée.
+// Pour l'instant, nous utilisons Math.floor et toFixed pour la simplicité.
 function formatNumber(num) {
-    if (num.isLessThan(1000000)) { // Moins d'un million, affiche le nombre entier ou avec décimales si pertinent
-        return num.toFormat(num.isInteger() ? 0 : 2);
-    } else if (num.isLessThan(new BigNumber('1e+9'))) { // Millions
-        return num.dividedBy('1e+6').toFormat(2) + 'M';
-    } else if (num.isLessThan(new BigNumber('1e+12'))) { // Milliards
-        return num.dividedBy('1e+9').toFormat(2) + 'B';
-    } else if (num.isLessThan(new BigNumber('1e+15'))) { // Trillions
-        return num.dividedBy('1e+12').toFormat(2) + 'T';
-    } else if (num.isLessThan(new BigNumber('1e+18'))) { // Quadrillions
-        return num.dividedBy('1e+15').toFormat(2) + 'Q';
+    if (num >= 1e9) { // Milliards
+        return (num / 1e9).toFixed(2) + ' Md';
     }
-    // Pour les très grands nombres, utiliser la notation scientifique par défaut de BigNumber
-    return num.toExponential(2);
+    if (num >= 1e6) { // Millions
+        return (num / 1e6).toFixed(2) + ' M';
+    }
+    if (num >= 1e3) { // Milliers
+        return (num / 1e3).toFixed(2) + ' K';
+    }
+    return Math.floor(num).toLocaleString('fr-FR');
 }
 
-/**
- * Affiche une notification temporaire en haut à droite.
- * @param {string} message Le message de la notification.
- * @param {string} type Le type de notification (ex: 'success', 'error', 'info').
- */
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.classList.add('notification');
-    if (gameState.theme === 'dark') {
-        notification.classList.add('dark-theme');
-    }
-    // Ajouter des classes spécifiques au type si nécessaire (ex: bg-green-500 pour success)
-    if (type === 'success') notification.classList.add('bg-green-600');
-    if (type === 'error') notification.classList.add('bg-red-600');
-
-    notification.textContent = message;
-    dom.notificationContainer.appendChild(notification);
-
-    // Force le reflow pour l'animation CSS
-    notification.offsetWidth;
-    notification.classList.add('show');
-
-    setTimeout(() => {
-        notification.classList.remove('show');
-        notification.addEventListener('transitionend', () => {
-            notification.remove();
-        }, { once: true });
-    }, 2000); // Disparaît après 2 secondes
-}
-
-/**
- * Ouvre un modal spécifique.
- * @param {HTMLElement} modalElement L'élément du modal à ouvrir.
- */
-function openModal(modalElement) {
-    modalElement.classList.remove('hidden');
-    // Appliquer le thème au modal si nécessaire
-    const modalContent = modalElement.querySelector('.modal-content');
-    if (gameState.theme === 'dark') {
-        modalContent.classList.add('dark-theme');
-    } else {
-        modalContent.classList.remove('dark-theme');
-    }
-}
-
-/**
- * Ferme un modal spécifique.
- * @param {HTMLElement} modalElement L'élément du modal à fermer.
- */
-function closeModal(modalElement) {
-    modalElement.classList.add('hidden');
-}
-
-/**
- * Calcule le N-ième nombre de Fibonacci.
- * @param {number} n L'index du nombre de Fibonacci (commence à 0).
- * @returns {BigNumber} Le N-ième nombre de Fibonacci.
- */
-function getFibonacci(n) {
-    if (n < gameState.professorPurchase.fibonacciSequence.length) {
-        return new BigNumber(gameState.professorPurchase.fibonacciSequence[n]);
-    }
-    // Calculer les nombres de Fibonacci au-delà de la séquence pré-calculée
-    let a = new BigNumber(gameState.professorPurchase.fibonacciSequence[gameState.professorPurchase.fibonacciSequence.length - 2]);
-    let b = new BigNumber(gameState.professorPurchase.fibonacciSequence[gameState.professorPurchase.fibonacciSequence.length - 1]);
-    for (let i = gameState.professorPurchase.fibonacciSequence.length; i <= n; i++) {
-        let next = a.plus(b);
-        a = b;
-        b = next;
-        gameState.professorPurchase.fibonacciSequence.push(next.toNumber()); // Stocker pour référence future si nécessaire, mais attention à la taille du tableau
-    }
-    return b;
-}
-
-/**
- * Calcule le N-ième nombre premier.
- * @param {number} n L'index du nombre premier (commence à 0).
- * @returns {BigNumber} Le N-ième nombre premier.
- */
-function getPrimeNumber(n) {
-    if (n < gameState.ascension.primeNumbers.length) {
-        return new BigNumber(gameState.ascension.primeNumbers[n]);
-    }
-    // Si n est trop grand, cela nécessiterait un calcul lourd.
-    // Pour l'instant, on se limite à la liste pré-calculée.
-    console.warn(`Le nombre premier à l'index ${n} n'est pas pré-calculé.`);
-    return new BigNumber(0); // Ou gérer une erreur/un fallback
-}
-
-// --- Fonctions de Calcul des Coûts et Productions ---
-
-/**
- * Calcule le coût d'une construction ou d'un achat.
- * @param {Object} item L'objet de la construction/achat (ex: gameState.student).
- * @param {BigNumber} baseCost Le coût de base de l'élément.
- * @param {BigNumber} currentQuantity La quantité actuelle possédée de l'élément.
- * @param {BigNumber} costMultiplier Le multiplicateur de coût par achat.
- * @param {number} costIncreaseThreshold Le seuil à partir duquel le coût augmente.
- * @param {BigNumber} quantityToBuy La quantité que l'on souhaite acheter.
- * @returns {BigNumber} Le coût total pour la quantité spécifiée.
- */
-function calculateCost(item, baseCost, currentQuantity, costMultiplier, costIncreaseThreshold, quantityToBuy) {
-    let totalCost = new BigNumber(0);
-    let currentQ = currentQuantity;
-
-    // Appliquer les réductions de coût des compétences
-    let finalBaseCost = new BigNumber(baseCost);
-    if (item === gameState.student && gameState.unlocked.skills) {
-        const skill = gameState.skills["optimisation_didactique"];
-        if (skill.level > 0) {
-            finalBaseCost = finalBaseCost.multipliedBy(new BigNumber(1).minus(skill.value));
-        }
-    }
-    if (item === gameState.imagePurchase && gameState.unlocked.skills) {
-        const skill = gameState.skills["innovation_educative"];
-        if (skill.level > 0) {
-            finalBaseCost = finalBaseCost.multipliedBy(new BigNumber(1).minus(skill.value));
-        }
-    }
-    if (item === gameState.professorPurchase && gameState.unlocked.skills) {
-        const skill = gameState.skills["expansion_des_connaissances"];
-        if (skill.level > 0) {
-            finalBaseCost = finalBaseCost.multipliedBy(new BigNumber(1).minus(skill.value));
-        }
-    }
-
-
-    for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-        let cost;
-        if (currentQ.plus(i).isGreaterThanOrEqualTo(costIncreaseThreshold)) {
-            // Le coût augmente après le seuil
-            cost = finalBaseCost.multipliedBy(costMultiplier.pow(currentQ.plus(i).minus(costIncreaseThreshold)));
-        } else {
-            cost = finalBaseCost;
-        }
-        totalCost = totalCost.plus(cost);
-    }
-    return totalCost;
-}
-
-
-/**
- * Calcule la production de BP par seconde pour une construction donnée.
- * @param {Object} item L'objet de la construction (ex: gameState.student).
- * @returns {BigNumber} La production totale de BP/s pour cette construction.
- */
-function calculateBuildingBps(item) {
-    let production = item.quantity.multipliedBy(item.baseBps);
-
-    // Appliquer les bonus des compétences
-    if (gameState.unlocked.skills) {
-        if (item === gameState.student) {
-            const skill = gameState.skills["pedagogie_fondamentale"];
-            if (skill.level > 0) {
-                production = production.multipliedBy(new BigNumber(1).plus(skill.value));
-            }
-        } else if (item === gameState.classe) {
-            const skill = gameState.skills["gestion_de_classe"];
-            if (skill.level > 0) {
-                production = production.multipliedBy(new BigNumber(1).plus(skill.value.multipliedBy(skill.level)));
-            }
-        }
-        // Compétence qui affecte toutes les constructions
-        const allBuildingsSkill = gameState.skills["specialisation_pedagogique"];
-        if (allBuildingsSkill.level > 0) {
-            production = production.multipliedBy(new BigNumber(1).plus(allBuildingsSkill.value.multipliedBy(allBuildingsSkill.level)));
-        }
-    }
-    return production;
-}
-
-/**
- * Met à jour le total des bons points par seconde.
- */
-function updateBps() {
-    let totalBps = new BigNumber(0);
-
-    // Production des Élèves
-    totalBps = totalBps.plus(calculateBuildingBps(gameState.student));
-
-    // Production des Classes
-    totalBps = totalBps.plus(calculateBuildingBps(gameState.classe));
-
-    // Multiplicateur des Professeurs
-    let professorMultiplier = gameState.professorPurchase.productionMultiplier.pow(gameState.professeurs);
-    // Appliquer le bonus de compétence des professeurs
-    if (gameState.unlocked.skills) {
-        const skill = gameState.skills["mentorat_expert"];
-        if (skill.level > 0) {
-            professorMultiplier = professorMultiplier.multipliedBy(new BigNumber(1).plus(skill.value.multipliedBy(skill.level)));
-        }
-    }
-    totalBps = totalBps.multipliedBy(professorMultiplier);
-
-    // Multiplicateur d'Ascension
-    totalBps = totalBps.multipliedBy(gameState.ascension.bonusMultiplier);
-
-    // Multiplicateur de compétence de production totale
-    if (gameState.unlocked.skills) {
-        const skillTotalProd1 = gameState.skills["synergie_interdisciplinaire"];
-        if (skillTotalProd1.level > 0) {
-            totalBps = totalBps.multipliedBy(new BigNumber(1).plus(skillTotalProd1.value));
-        }
-        const skillTotalProd2 = gameState.skills["perfectionnement_academique"];
-        if (skillTotalProd2.level > 0) {
-            totalBps = totalBps.multipliedBy(new BigNumber(1).plus(skillTotalProd2.value));
-        }
-    }
-
-    gameState.bonsPointsPerSecond = totalBps;
+function formatDecimal(num) {
+    return num.toFixed(2);
 }
 
 // --- Fonctions de Mise à Jour de l'Interface Utilisateur (UI) ---
 
-/**
- * Met à jour l'affichage de toutes les ressources.
- */
-function updateResourceDisplay() {
-    dom.bpValue.textContent = formatNumber(gameState.bonsPoints);
-    dom.bpPerSecValue.textContent = formatNumber(gameState.bonsPointsPerSecond);
-    dom.imgValue.textContent = formatNumber(gameState.images);
-    dom.profValue.textContent = formatNumber(gameState.professeurs);
-    dom.paValue.textContent = formatNumber(gameState.pointsAscension);
+// Met à jour l'affichage de toutes les ressources
+function updateRessourcesDisplay() {
+    bpNombreElement.textContent = formatNumber(bonsPoints);
+    bpsElement.textContent = formatDecimal(bonsPointsParSeconde);
+    imgNombreElement.textContent = formatNumber(images);
+    profNombreElement.textContent = formatNumber(professeurs);
+    paNombreElement.textContent = formatNumber(pointsAscension);
 
-    // Afficher les ressources si débloquées
-    if (gameState.bonsPoints.isGreaterThan(0) || gameState.student.quantity.isGreaterThan(0)) {
-        dom.resourceBpDisplay.classList.remove('hidden');
-    }
-    if (gameState.images.isGreaterThan(0) || gameState.unlocked.image) {
-        dom.resourceImgDisplay.classList.remove('hidden');
-    }
-    if (gameState.professeurs.isGreaterThan(0) || gameState.unlocked.professor) {
-        dom.resourceProfDisplay.classList.remove('hidden');
-    }
-    if (gameState.pointsAscension.isGreaterThan(0) || gameState.ascension.totalAscensions.isGreaterThan(0)) {
-        dom.resourceSectionPa.classList.remove('hidden');
-    }
+    // Afficher/cacher les divs de ressources si elles ont été obtenues
+    if (images > 0) imagesDiv.classList.remove('hidden');
+    if (professeurs > 0) professeursDiv.classList.remove('hidden');
+    if (pointsAscension > 0 || ascensionsTotales > 0) pointsAscensionDiv.classList.remove('hidden');
 }
 
-/**
- * Met à jour l'affichage des boutons d'achat (coût, quantité, état).
- */
-function updateButtonDisplay() {
+// Met à jour l'affichage des constructions (Élèves, Classes)
+function updateConstructionDisplay() {
+    eleveCoutElement.textContent = formatNumber(coutEleve);
+    eleveQuantiteElement.textContent = formatNumber(nbEleves);
+    eleveBpsTotalElement.textContent = formatDecimal(nbEleves * bpsEleveParUnite);
+
+    classeCoutElement.textContent = formatNumber(coutClasse);
+    classeQuantiteElement.textContent = formatNumber(nbClasses);
+    classeBpsTotalElement.textContent = formatDecimal(nbClasses * bpsClasseParUnite);
+
+    imageCoutElement.textContent = formatNumber(coutImage);
+    imageQuantiteElement.textContent = formatNumber(images);
+
+    professeurCoutElement.textContent = formatNumber(coutProfesseur);
+    professeurQuantiteElement.textContent = formatNumber(professeurs);
+
+    // Met à jour le gain du bouton "Étudier Sagement"
+    etudierGainDisplay.textContent = formatDecimal(getEtudierSagementGain());
+
+    // Met à jour le coût des automatisations
+    document.getElementById('auto-eleve-cost').textContent = formatNumber(autoCosts.eleve);
+    document.getElementById('auto-classe-cost').textContent = formatNumber(autoCosts.classe);
+    document.getElementById('auto-image-cost').textContent = formatNumber(autoCosts.image);
+    document.getElementById('auto-professeur-cost').textContent = formatNumber(autoCosts.professeur);
+}
+
+// Met à jour l'état des boutons (couleur de bordure et désactivation)
+function updateButtonStates() {
     // Élève
-    const studentCost = calculateCost(gameState.student, gameState.student.baseCost, gameState.student.quantity, gameState.student.costMultiplier, gameState.student.costIncreaseThreshold, new BigNumber(gameState.multiBuyMode === 'max' ? 1 : gameState.multiBuyMode));
-    dom.studentCost.textContent = formatNumber(studentCost);
-    dom.studentQuantity.textContent = formatNumber(gameState.student.quantity);
-    dom.studentBps.textContent = formatNumber(calculateBuildingBps(gameState.student));
-    updateButtonState(dom.buyStudent, gameState.bonsPoints.isGreaterThanOrEqualTo(studentCost));
+    if (bonsPoints >= coutEleve) {
+        eleveCard.classList.remove('btn-border-red');
+        eleveCard.classList.add('btn-border-green');
+        acheterEleveBouton.disabled = false;
+    } else {
+        eleveCard.classList.remove('btn-border-green');
+        eleveCard.classList.add('btn-border-red');
+        acheterEleveBouton.disabled = true;
+    }
 
     // Classe
-    if (gameState.unlocked.class) {
-        dom.buyClass.classList.remove('hidden');
-        const classCost = calculateCost(gameState.classe, gameState.classe.baseCost, gameState.classe.quantity, gameState.classe.costMultiplier, gameState.classe.costIncreaseThreshold, new BigNumber(gameState.multiBuyMode === 'max' ? 1 : gameState.multiBuyMode));
-        dom.classCost.textContent = formatNumber(classCost);
-        dom.classQuantity.textContent = formatNumber(gameState.classe.quantity);
-        dom.classBps.textContent = formatNumber(calculateBuildingBps(gameState.classe));
-        updateButtonState(dom.buyClass, gameState.bonsPoints.isGreaterThanOrEqualTo(classCost));
+    if (bonsPoints >= coutClasse) {
+        classeCard.classList.remove('btn-border-red');
+        classeCard.classList.add('btn-border-green');
+        acheterClasseBouton.disabled = false;
+    } else {
+        classeCard.classList.remove('btn-border-green');
+        classeCard.classList.add('btn-border-red');
+        acheterClasseBouton.disabled = true;
     }
 
     // Image
-    if (gameState.unlocked.image) {
-        dom.buyImage.classList.remove('hidden');
-        const imageCost = gameState.imagePurchase.cost.multipliedBy(new BigNumber(gameState.multiBuyMode === 'max' ? 1 : gameState.multiBuyMode));
-        dom.imageCost.textContent = formatNumber(imageCost);
-        dom.imageQuantity.textContent = formatNumber(gameState.images);
-        updateButtonState(dom.buyImage, gameState.bonsPoints.isGreaterThanOrEqualTo(imageCost));
+    if (bonsPoints >= coutImage) {
+        imageCard.classList.remove('btn-border-red');
+        imageCard.classList.add('btn-border-green');
+        acheterImageBouton.disabled = false;
+    } else {
+        imageCard.classList.remove('btn-border-green');
+        imageCard.classList.add('btn-border-red');
+        acheterImageBouton.disabled = true;
     }
 
     // Professeur
-    if (gameState.unlocked.professor) {
-        dom.buyProfessor.classList.remove('hidden');
-        let professorCost;
-        if (gameState.multiBuyMode === 'max') {
-            // Pour xMax, le coût est calculé pour 1, la logique d'achat gérera le max
-            professorCost = getFibonacci(gameState.professorPurchase.quantity.toNumber());
-        } else {
-            professorCost = getFibonacci(gameState.professorPurchase.quantity.toNumber() + gameState.multiBuyMode - 1);
-        }
-        // Appliquer la réduction de coût des compétences
-        if (gameState.unlocked.skills) {
-            const skill = gameState.skills["expansion_des_connaissances"];
-            if (skill.level > 0) {
-                professorCost = professorCost.multipliedBy(new BigNumber(1).minus(skill.value));
-            }
-        }
-        dom.professorCost.textContent = formatNumber(professorCost);
-        dom.professorQuantity.textContent = formatNumber(gameState.professorPurchase.quantity);
-        updateButtonState(dom.buyProfessor, gameState.images.isGreaterThanOrEqualTo(professorCost));
+    if (images >= coutProfesseur) {
+        professeurCard.classList.remove('btn-border-red');
+        professeurCard.classList.add('btn-border-green');
+        acheterProfesseurBouton.disabled = false;
+    } else {
+        professeurCard.classList.remove('btn-border-green');
+        professeurCard.classList.add('btn-border-red');
+        acheterProfesseurBouton.disabled = true;
     }
 
-    // Mettre à jour l'état des boutons d'achat multiple
-    dom.multiBuyButtons.forEach(button => {
-        if (button.dataset.buyMode == gameState.multiBuyMode) {
-            button.classList.add('active-buy-mode', 'bg-blue-500', 'text-white');
-            button.classList.remove('bg-gray-300', 'text-gray-800');
-        } else {
-            button.classList.remove('active-buy-mode', 'bg-blue-500', 'text-white');
-            button.classList.add('bg-gray-300', 'text-gray-800');
-        }
-    });
+    // Boutons des réglages
+    toggleThemeBtn.disabled = images < themeCost;
+    acheterMultiX10X100Btn.disabled = pointsAscension < 10 || multiBuyX100Unlocked; // Désactive si déjà débloqué
+    acheterMultiXMaxBtn.disabled = pointsAscension < 100 || multiBuyXMaxUnlocked; // Désactive si déjà débloqué
 
-    // Mettre à jour l'affichage des automatisations
-    if (gameState.unlocked.automateStudent) dom.automateStudentContainer.classList.remove('hidden');
-    if (gameState.unlocked.automateClass) dom.automateClassContainer.classList.remove('hidden');
-    if (gameState.unlocked.automateImage) dom.automateImageContainer.classList.remove('hidden');
-    if (gameState.unlocked.automateProfessor) dom.automateProfessorContainer.classList.remove('hidden');
+    // Bouton d'ascension
+    if (professeurs >= 5) {
+        boutonAscension.classList.remove('hidden');
+    } else {
+        boutonAscension.classList.add('hidden');
+    }
 
-    dom.automateStudentCheckbox.checked = gameState.automateStudent;
-    dom.automateClassCheckbox.checked = gameState.automateClass;
-    dom.automateImageCheckbox.checked = gameState.automateImage;
-    dom.automateProfessorCheckbox.checked = gameState.automateProfessor;
-
-    // Mettre à jour l'état des boutons de réglages
-    if (gameState.unlocked.settings) {
-        dom.openSettingsModal.classList.remove('hidden');
-    }
-    if (gameState.unlocked.ascension) {
-        dom.openAscensionModal.classList.remove('hidden');
-    }
-    if (gameState.unlocked.skills) {
-        dom.openSkillsModal.classList.remove('hidden');
-    }
+    // Mettre à jour l'état des toggles d'automatisation
+    autoEleveToggle.checked = autoEleveActive;
+    autoClasseToggle.checked = autoClasseActive;
+    autoImageToggle.checked = autoImageActive;
+    autoProfesseurToggle.checked = autoProfesseurActive;
 }
 
-/**
- * Met à jour l'état visuel d'un bouton (achetable/non achetable).
- * @param {HTMLElement} button L'élément bouton.
- * @param {boolean} canAfford Indique si l'achat est possible.
- */
-function updateButtonState(button, canAfford) {
-    if (canAfford) {
-        button.classList.add('can-afford');
-        button.classList.remove('cannot-afford');
+// Affiche une notification temporaire en haut à droite
+function showNotification(message, type = 'info', duration = 2000) {
+    const notification = document.createElement('div');
+    notification.className = `p-3 rounded-lg shadow-md text-white transition-all duration-300 transform translate-x-full opacity-0`;
+
+    if (type === 'success') {
+        notification.classList.add('bg-green-500');
+    } else if (type === 'error') {
+        notification.classList.add('bg-red-500');
     } else {
-        button.classList.add('cannot-afford');
-        button.classList.remove('can-afford');
+        notification.classList.add('bg-blue-500');
     }
-    // Appliquer le thème
-    if (gameState.theme === 'dark') {
-        button.classList.add('dark-theme');
-    } else {
-        button.classList.remove('dark-theme');
-    }
-}
 
-/**
- * Met à jour le thème (jour/nuit) de l'interface.
- */
-function updateTheme() {
-    if (gameState.theme === 'dark') {
-        document.body.classList.add('dark-theme');
-        dom.settingsModal.querySelector('.modal-content').classList.add('dark-theme');
-        dom.ascensionModal.querySelector('.modal-content').classList.add('dark-theme');
-        dom.skillsModal.querySelector('.modal-content').classList.add('dark-theme');
-        // Appliquer le thème aux asides
-        document.querySelectorAll('aside').forEach(aside => {
-            aside.classList.add('dark:bg-gray-900', 'dark:text-gray-200');
-            aside.classList.remove('bg-gray-100');
-        });
-        // Appliquer le thème à la zone de contenu centrale
-        dom.gameContent.classList.add('dark:bg-gray-800');
-        // Appliquer le thème aux options d'achat multiple
-        dom.multiBuyOptions.classList.add('dark:bg-gray-700');
-        // Appliquer le thème aux séparateurs
-        document.querySelectorAll('hr').forEach(hr => hr.classList.add('dark:border-gray-700'));
-        // Appliquer le thème aux options de réglages
-        dom.themeOption.classList.add('dark:bg-gray-700');
-        dom.multiBuyX10X100Option.classList.add('dark:bg-gray-700');
-        dom.multiBuyXMaxOption.classList.add('dark:bg-gray-700');
-    } else {
-        document.body.classList.remove('dark-theme');
-        dom.settingsModal.querySelector('.modal-content').classList.remove('dark-theme');
-        dom.ascensionModal.querySelector('.modal-content').classList.remove('dark-theme');
-        dom.skillsModal.querySelector('.modal-content').classList.remove('dark-theme');
-        // Retirer le thème des asides
-        document.querySelectorAll('aside').forEach(aside => {
-            aside.classList.remove('dark:bg-gray-900', 'dark:text-gray-200');
-            aside.classList.add('bg-gray-100');
-        });
-        // Retirer le thème de la zone de contenu centrale
-        dom.gameContent.classList.remove('dark:bg-gray-800');
-        // Retirer le thème des options d'achat multiple
-        dom.multiBuyOptions.classList.remove('dark:bg-gray-700');
-        // Retirer le thème des séparateurs
-        document.querySelectorAll('hr').forEach(hr => hr.classList.remove('dark:border-gray-700'));
-        // Retirer le thème des options de réglages
-        dom.themeOption.classList.remove('dark:bg-gray-700');
-        dom.multiBuyX10X100Option.classList.remove('dark:bg-gray-700');
-        dom.multiBuyXMaxOption.classList.remove('dark:bg-gray-700');
-    }
-    // Mettre à jour l'état des boutons pour le thème
-    updateButtonDisplay();
-}
+    notification.textContent = message;
+    notificationsContainer.appendChild(notification);
 
-/**
- * Met à jour l'affichage de l'arbre de compétences.
- */
-function updateSkillTreeDisplay() {
-    dom.skillTreeContainer.innerHTML = ''; // Nettoyer l'arbre existant
-    const skills = Object.keys(gameState.skills);
+    // Animer l'entrée
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full', 'opacity-0');
+        notification.classList.add('translate-x-0', 'opacity-100');
+    }, 10); // Petit délai pour que la transition s'applique
 
-    skills.forEach(skillId => {
-        const skill = gameState.skills[skillId];
-        const canUnlock = canAffordSkill(skillId);
-        const isMaxLevel = skill.level >= skill.maxLevel;
-        const isUnlocked = isSkillUnlockedByDependencies(skillId);
-
-        const skillDiv = document.createElement('div');
-        skillDiv.classList.add('relative', 'p-4', 'rounded-lg', 'shadow-md', 'text-center', 'cursor-pointer', 'transition-all', 'duration-200', 'ease-in-out');
-        skillDiv.classList.add(gameState.theme === 'dark' ? 'bg-gray-700' : 'bg-white');
-
-        if (!isUnlocked) {
-            skillDiv.classList.add('opacity-50', 'cursor-not-allowed');
-            skillDiv.innerHTML = `<span class="text-lg font-semibold text-gray-500">Verrouillé</span>`;
-        } else if (isMaxLevel) {
-            skillDiv.classList.add('border-4', 'border-yellow-500');
-            skillDiv.innerHTML = `
-                <span class="text-lg font-semibold">${skillId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                <span class="block text-sm text-gray-400">Niveau Max</span>
-            `;
-        } else if (canUnlock) {
-            skillDiv.classList.add('border-4', 'border-green-500', 'hover:bg-green-100');
-            skillDiv.innerHTML = `
-                <span class="text-lg font-semibold">${skillId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                <span class="block text-sm text-gray-500">Coût: ${skill.cost[skill.level]} P</span>
-                <span class="block text-sm text-gray-500">Niveau ${skill.level}/${skill.maxLevel}</span>
-            `;
-            skillDiv.dataset.skillId = skillId;
-            skillDiv.addEventListener('click', () => buySkill(skillId));
-        } else {
-            skillDiv.classList.add('border-4', 'border-red-500', 'cursor-not-allowed');
-            skillDiv.innerHTML = `
-                <span class="text-lg font-semibold">${skillId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</span>
-                <span class="block text-sm text-gray-500">Coût: ${skill.cost[skill.level]} P</span>
-                <span class="block text-sm text-gray-500">Niveau ${skill.level}/${skill.maxLevel}</span>
-            `;
-        }
-
-        // Description en hover
-        const descriptionSpan = document.createElement('span');
-        descriptionSpan.classList.add('absolute', 'bottom-full', 'left-1/2', '-translate-x-1/2', 'mb-2', 'bg-gray-800', 'text-white', 'text-xs', 'p-2', 'rounded-md', 'opacity-0', 'group-hover:opacity-100', 'transition-opacity', 'duration-200', 'whitespace-nowrap', 'pointer-events-none');
-        descriptionSpan.textContent = skill.effect;
-        skillDiv.classList.add('group'); // Pour le hover
-        skillDiv.appendChild(descriptionSpan);
-
-        dom.skillTreeContainer.appendChild(skillDiv);
-    });
+    // Animer la sortie et supprimer
+    setTimeout(() => {
+        notification.classList.remove('translate-x-0', 'opacity-100');
+        notification.classList.add('translate-x-full', 'opacity-0');
+        notification.addEventListener('transitionend', () => notification.remove());
+    }, duration);
 }
 
 // --- Fonctions de Logique du Jeu ---
 
-/**
- * Gère l'achat d'une construction ou d'un achat.
- * @param {string} type Le type d'élément à acheter ('student', 'class', 'image', 'professor').
- */
-function buyItem(type) {
-    let item;
-    let currentResource;
-    let costResource;
-    let costMultiplier = new BigNumber(1);
-    let quantityToBuy = new BigNumber(gameState.multiBuyMode);
+// Calcule la production totale de Bons Points par seconde
+function calculateBPS() {
+    let totalBPS = (nbEleves * bpsEleveParUnite) + (nbClasses * bpsClasseParUnite);
 
-    switch (type) {
-        case 'student':
-            item = gameState.student;
-            currentResource = gameState.bonsPoints;
-            costResource = 'bonsPoints';
-            break;
-        case 'class':
-            item = gameState.classe;
-            currentResource = gameState.bonsPoints;
-            costResource = 'bonsPoints';
-            break;
-        case 'image':
-            item = gameState.imagePurchase;
-            currentResource = gameState.bonsPoints;
-            costResource = 'bonsPoints';
-            break;
-        case 'professor':
-            item = gameState.professorPurchase;
-            currentResource = gameState.images;
-            costResource = 'images';
-            break;
-        default:
+    // Appliquer les multiplicateurs des professeurs
+    let profMultiplier = 1 + (professeurs * 0.5);
+    // Appliquer bonus compétence "Apprentissage Collaboratif"
+    const apprentissageCollaboratifSkill = skills.pedagogie.find(s => s.id === 'pedagogie5');
+    if (apprentissageCollaboratifSkill && apprentissageCollaboratifSkill.currentLevel > 0) {
+        profMultiplier *= (1 + apprentissageCollaboratifSkill.effects[apprentissageCollaboratifSkill.currentLevel - 1]);
+    }
+    totalBPS *= profMultiplier;
+
+    // Appliquer le multiplicateur d'ascension
+    totalBPS *= multiplicateurBonusAscension;
+
+    // Appliquer les bonus des compétences générales
+    const pedagogie3Skill = skills.pedagogie.find(s => s.id === 'pedagogie3'); // Motivation Intrinsèque
+    if (pedagogie3Skill && pedagogie3Skill.currentLevel > 0) {
+        totalBPS *= (1 + pedagogie3Skill.effects[pedagogie3Skill.currentLevel - 1]);
+    }
+    const science5Skill = skills.science.find(s => s.id === 'science5'); // Découverte Majeure
+    if (science5Skill && science5Skill.currentLevel > 0) {
+        totalBPS *= (1 + science5Skill.effects[science5Skill.currentLevel - 1]);
+    }
+    const innovation5Skill = skills.innovation.find(s => s.id === 'innovation5'); // Révolution Pédagogique
+    if (innovation5Skill && innovation5Skill.currentLevel > 0) {
+        totalBPS *= (1 + innovation5Skill.effects[innovation5Skill.currentLevel - 1]);
+    }
+
+    bonsPointsParSeconde = totalBPS;
+}
+
+// Calcule le gain du bouton "Étudier Sagement"
+function getEtudierSagementGain() {
+    let baseGain = 1 + (0.1 * bonsPointsParSeconde);
+    const evaluationFormativeSkill = skills.pedagogie.find(s => s.id === 'pedagogie4');
+    if (evaluationFormativeSkill && evaluationFormativeSkill.currentLevel > 0) {
+        baseGain *= (1 + evaluationFormativeSkill.effects[evaluationFormativeSkill.currentLevel - 1]);
+    }
+    return baseGain;
+}
+
+// Fonction pour "Étudier Sagement" (gain manuel de BP)
+function etudierSagement() {
+    bonsPoints += getEtudierSagementGain();
+    updateRessourcesDisplay();
+    showNotification(`+${formatDecimal(getEtudierSagementGain())} Bons Points !`, 'success', 1000);
+}
+
+// Fonction pour acheter une construction/objet
+function buyItem(type, quantity = currentBuyMultiplier) {
+    let boughtCount = 0;
+    let currentCost = 0;
+    let originalCost = 0; // Pour référence lors du calcul de max
+
+    // Appliquer les réductions de coût des compétences
+    let costReductionEleve = 0;
+    const innovation1Skill = skills.innovation.find(s => s.id === 'innovation1');
+    if (innovation1Skill && innovation1Skill.currentLevel > 0) {
+        costReductionEleve = innovation1Skill.effects[innovation1Skill.currentLevel - 1];
+    }
+
+    let costReductionClasse = 0;
+    const pedagogie2Skill = skills.pedagogie.find(s => s.id === 'pedagogie2');
+    if (pedagogie2Skill && pedagogie2Skill.currentLevel > 0) {
+        costReductionClasse = pedagogie2Skill.effects[pedagogie2Skill.currentLevel - 1];
+    }
+
+    let costReductionImage = 0;
+    const science2Skill = skills.science.find(s => s.id === 'science2');
+    if (science2Skill && science2Skill.currentLevel > 0) {
+        costReductionImage = science2Skill.effects[science2Skill.currentLevel - 1];
+    }
+
+
+    if (quantity === 'max') {
+        quantity = calculateMaxBuy(type);
+        if (quantity === 0) {
+            showNotification(`Pas assez de ressources pour acheter plus de ${type}s !`, 'error');
             return;
-    }
-
-    let actualCost;
-    if (type === 'professor') {
-        if (gameState.multiBuyMode === 'max') {
-            quantityToBuy = new BigNumber(0);
-            let tempProfQuantity = item.quantity;
-            let tempCost = getFibonacci(tempProfQuantity.toNumber());
-            let currentImages = gameState.images;
-
-            while (currentImages.isGreaterThanOrEqualTo(tempCost)) {
-                currentImages = currentImages.minus(tempCost);
-                tempProfQuantity = tempProfQuantity.plus(1);
-                quantityToBuy = quantityToBuy.plus(1);
-                tempCost = getFibonacci(tempProfQuantity.toNumber());
-            }
-            actualCost = gameState.images.minus(currentImages); // Coût total de tous les professeurs achetés
-        } else {
-            actualCost = new BigNumber(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                actualCost = actualCost.plus(getFibonacci(item.quantity.plus(i).toNumber()));
-            }
-        }
-        // Appliquer la réduction de coût des compétences pour les professeurs
-        if (gameState.unlocked.skills) {
-            const skill = gameState.skills["expansion_des_connaissances"];
-            if (skill.level > 0) {
-                actualCost = actualCost.multipliedBy(new BigNumber(1).minus(skill.value));
-            }
-        }
-    } else if (type === 'image') {
-        actualCost = item.cost.multipliedBy(quantityToBuy);
-        // Appliquer la réduction de coût des compétences pour les images
-        if (gameState.unlocked.skills) {
-            const skill = gameState.skills["innovation_educative"];
-            if (skill.level > 0) {
-                actualCost = actualCost.multipliedBy(new BigNumber(1).minus(skill.value));
-            }
-        }
-    } else { // Student or Class
-        if (gameState.multiBuyMode === 'max') {
-            quantityToBuy = new BigNumber(0);
-            let tempQuantity = item.quantity;
-            let tempCost = calculateCost(item, item.baseCost, tempQuantity, item.costMultiplier, item.costIncreaseThreshold, new BigNumber(1));
-            let currentBonsPoints = gameState.bonsPoints;
-
-            while (currentBonsPoints.isGreaterThanOrEqualTo(tempCost)) {
-                currentBonsPoints = currentBonsPoints.minus(tempCost);
-                tempQuantity = tempQuantity.plus(1);
-                quantityToBuy = quantityToBuy.plus(1);
-                tempCost = calculateCost(item, item.baseCost, tempQuantity, item.costMultiplier, item.costIncreaseThreshold, new BigNumber(1));
-            }
-            actualCost = gameState.bonsPoints.minus(currentBonsPoints); // Coût total de toutes les unités achetées
-        } else {
-            actualCost = calculateCost(item, item.baseCost, item.quantity, item.costMultiplier, item.costIncreaseThreshold, quantityToBuy);
         }
     }
 
-    if (currentResource.isGreaterThanOrEqualTo(actualCost)) {
-        gameState[costResource] = gameState[costResource].minus(actualCost);
-        if (type === 'student' || type === 'class') {
-            item.quantity = item.quantity.plus(quantityToBuy);
+    for (let i = 0; i < quantity; i++) {
+        let canAfford = false;
+
+        if (type === 'eleve') {
+            originalCost = 10; // Base cost for eleve
+            currentCost = Math.ceil(originalCost * (1 - costReductionEleve));
+            if (nbEleves + i >= 10) currentCost = Math.ceil(currentCost * Math.pow(1.15, (nbEleves + i) - 9)); // Apply 1.15x starting from 10th
+            if (bonsPoints >= currentCost) {
+                canAfford = true;
+                bonsPoints -= currentCost;
+                nbEleves++;
+            }
+        } else if (type === 'classe') {
+            originalCost = 300; // Base cost for classe
+            currentCost = Math.ceil(originalCost * (1 - costReductionClasse));
+            if (nbClasses + i >= 10) currentCost = Math.ceil(currentCost * Math.pow(1.15, (nbClasses + i) - 9)); // Apply 1.15x starting from 10th
+            if (bonsPoints >= currentCost) {
+                canAfford = true;
+                bonsPoints -= currentCost;
+                nbClasses++;
+            }
         } else if (type === 'image') {
-            gameState.images = gameState.images.plus(quantityToBuy);
-        } else if (type === 'professor') {
-            item.quantity = item.quantity.plus(quantityToBuy);
+            originalCost = 1000; // Base cost for image
+            currentCost = Math.ceil(originalCost * (1 - costReductionImage));
+            if (bonsPoints >= currentCost) {
+                canAfford = true;
+                bonsPoints -= currentCost;
+                images++;
+            }
+        } else if (type === 'professeur') {
+            originalCost = fibonacciSequence[professeurs + i + 1] || Math.ceil(coutProfesseur * 1.618); // Use fib sequence or golden ratio
+            currentCost = originalCost; // No skill affects prof cost directly yet
+            if (images >= currentCost) {
+                canAfford = true;
+                images -= currentCost;
+                professeurs++;
+            }
         }
-        updateBps();
-        updateUI();
-        showNotification(`${formatNumber(quantityToBuy)} ${type} acheté(s)!`, 'success');
-        saveGame(); // Sauvegarder après chaque achat important
+
+        if (canAfford) {
+            boughtCount++;
+        } else {
+            if (boughtCount === 0) {
+                showNotification(`Pas assez de ressources pour acheter ${type}!`, 'error');
+            }
+            break;
+        }
+    }
+
+    if (boughtCount > 0) {
+        // Recalculer les coûts après les achats multiples pour le prochain achat unitaire
+        // Ceci est important car les coûts peuvent dépendre du nombre d'unités possédées
+        coutEleve = (nbEleves >= 10) ? Math.ceil(10 * Math.pow(1.15, nbEleves - 9) * (1 - costReductionEleve)) : Math.ceil(10 * (1 - costReductionEleve));
+        coutClasse = (nbClasses >= 10) ? Math.ceil(300 * Math.pow(1.15, nbClasses - 9) * (1 - costReductionClasse)) : Math.ceil(300 * (1 - costReductionClasse));
+        coutImage = Math.ceil(1000 * (1 - costReductionImage));
+        coutProfesseur = (professeurs < fibonacciSequence.length) ? fibonacciSequence[professeurs + 1] : Math.ceil(fibonacciSequence[fibonacciSequence.length - 1] * Math.pow(1.618, professeurs - (fibonacciSequence.length - 1)));
+
+
+        calculateBPS(); // Recalcule le BPS après l'achat
+        updateRessourcesDisplay();
+        updateConstructionDisplay();
+        updateButtonStates();
+        checkUnlocks();
+        showNotification(`Acheté ${boughtCount} ${type}(s)!`, 'success');
+    }
+}
+
+// Calcule les PA gagnés lors de l'ascension
+function calculateAscensionPA() {
+    if (professeurs <= 0) return 0;
+    let paGain = 0;
+    if (professeurs > primeNumbers.length) {
+        paGain = primeNumbers[primeNumbers.length - 1]; // Plafonne au dernier nombre premier
     } else {
-        showNotification(`Pas assez de ${costResource} pour acheter ${formatNumber(quantityToBuy)} ${type}(s).`, 'error');
+        paGain = primeNumbers[professeurs - 1]; // -1 car les tableaux sont basés sur 0
     }
+
+    // Appliquer bonus compétence "Modélisation Numérique"
+    const science4Skill = skills.science.find(s => s.id === 'science4');
+    if (science4Skill && science4Skill.currentLevel > 0) {
+        paGain *= (1 + science4Skill.effects[science4Skill.currentLevel - 1]);
+    }
+    // Appliquer bonus compétence "Synergie Interdisciplinaire"
+    const innovation4Skill = skills.innovation.find(s => s.id === 'innovation4');
+    if (innovation4Skill && innovation4Skill.currentLevel > 0) {
+        paGain *= (1 + innovation4Skill.effects[innovation4Skill.currentLevel - 1]);
+    }
+
+    return paGain;
 }
 
-/**
- * Met à jour l'état du jeu en fonction des déblocages.
- */
-function checkUnlocks() {
-    // Débloquer Classe
-    if (gameState.bonsPoints.isGreaterThanOrEqualTo(300) && !gameState.unlocked.class) {
-        gameState.unlocked.class = true;
-        showNotification("Nouvelle construction débloquée : Classe !", 'info');
+// Calcule le multiplicateur de bonus d'ascension
+function calculateAscensionMultiplier() {
+    let multiplier = 1 + (professeurs * ascensionsTotales * 0.05);
+    // Appliquer bonus compétence "Théorie des Cordes"
+    const science3Skill = skills.science.find(s => s.id === 'science3');
+    if (science3Skill && science3Skill.currentLevel > 0) {
+        multiplier += science3Skill.effects[science3Skill.currentLevel - 1]; // Ajoute directement au multiplicateur
     }
-
-    // Débloquer Images
-    if (gameState.bonsPoints.isGreaterThanOrEqualTo(1000) && !gameState.unlocked.image) {
-        gameState.unlocked.image = true;
-        showNotification("Nouvelle ressource débloquée : Images !", 'info');
-    }
-
-    // Débloquer Professeurs (après la première image)
-    if (gameState.images.isGreaterThanOrEqualTo(1) && !gameState.unlocked.professor) {
-        gameState.unlocked.professor = true;
-        showNotification("Nouvel achat débloqué : Professeurs !", 'info');
-    }
-
-    // Débloquer Réglages (après la première image)
-    if (gameState.images.isGreaterThanOrEqualTo(1) && !gameState.unlocked.settings) {
-        gameState.unlocked.settings = true;
-        showNotification("Menu 'Réglages' débloqué !", 'info');
-    }
-
-    // Débloquer Ascension (après 5 professeurs)
-    if (gameState.professeurs.isGreaterThanOrEqualTo(5) && !gameState.unlocked.ascension) {
-        gameState.unlocked.ascension = true;
-        showNotification("Mécanique d'Ascension débloquée !", 'info');
-    }
-
-    // Débloquer Compétences (après la première ascension)
-    if (gameState.ascension.totalAscensions.isGreaterThan(0) && !gameState.unlocked.skills) {
-        gameState.unlocked.skills = true;
-        showNotification("Menu 'Compétences' débloqué : Arbre de Compétences !", 'info');
-    }
-
-    // Débloquer les options d'achat multiple dans les réglages
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(10) && !gameState.unlocked.multiBuyX10X100Option) {
-        gameState.unlocked.multiBuyX10X100Option = true;
-        showNotification("Option 'Achat multiple x10 et x100' disponible dans les Réglages !", 'info');
-    }
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(100) && !gameState.unlocked.multiBuyXMaxOption) {
-        gameState.unlocked.multiBuyXMaxOption = true;
-        showNotification("Option 'Achat multiple xMax' disponible dans les Réglages !", 'info');
-    }
-
-    // Débloquer les automatisations
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.student) && !gameState.unlocked.automateStudent) {
-        dom.automateStudentContainer.classList.remove('hidden');
-    }
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.classe) && !gameState.unlocked.automateClass) {
-        dom.automateClassContainer.classList.remove('hidden');
-    }
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.image) && !gameState.unlocked.automateImage) {
-        dom.automateImageContainer.classList.remove('hidden');
-    }
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.professor) && !gameState.unlocked.automateProfessor) {
-        dom.automateProfessorContainer.classList.remove('hidden');
-    }
+    return multiplier;
 }
 
-/**
- * Gère la logique d'ascension.
- */
+// Effectue l'ascension
 function performAscension() {
-    // Calculer le gain de PA
-    const professorsCount = gameState.professeurs.toNumber();
-    let paGain = new BigNumber(0);
-    if (professorsCount > 0) {
-        paGain = getPrimeNumber(professorsCount - 1); // N-ième professeur donne le N-ième nombre premier de PA
-        // Appliquer le bonus de compétence au gain de PA
-        if (gameState.unlocked.skills) {
-            const skill1 = gameState.skills["recherche_avancee"];
-            if (skill1.level > 0) {
-                paGain = paGain.multipliedBy(new BigNumber(1).plus(skill1.value.multipliedBy(skill1.level)));
-            }
-            const skill2 = gameState.skills["acceleration_cognitive"];
-            if (skill2.level > 0) {
-                paGain = paGain.multipliedBy(new BigNumber(1).plus(skill2.value));
-            }
-        }
-    }
+    const paGained = calculateAscensionPA();
+    const newMultiplier = calculateAscensionMultiplier();
 
+    // Réinitialisation des ressources et constructions
+    bonsPoints = 0;
+    images = 0;
+    professeurs = 0;
+    nbEleves = 0;
+    nbClasses = 0;
 
-    // Calculer le nouveau multiplicateur de bonus
-    const currentBonus = gameState.ascension.bonusMultiplier;
-    let newBonusValue = new BigNumber(1).plus(new BigNumber(professorsCount).multipliedBy(gameState.ascension.totalAscensions.plus(1)).multipliedBy(0.05));
-    // Appliquer le bonus de compétence au multiplicateur d'ascension
-    if (gameState.unlocked.skills) {
-        const skill = gameState.skills["vision_strategique"];
-        if (skill.level > 0) {
-            newBonusValue = newBonusValue.plus(skill.value);
-        }
-    }
+    // Réinitialisation des coûts (sauf si les compétences les affectent)
+    // Les coûts sont recalculés par updateConstructionDisplay et buyItem
+    coutEleve = 10;
+    coutClasse = 300;
+    coutImage = 1000;
+    coutProfesseur = 1;
 
-    // Mettre à jour l'état du jeu pour l'ascension
-    gameState.pointsAscension = gameState.pointsAscension.plus(paGain);
-    gameState.ascension.totalAscensions = gameState.ascension.totalAscensions.plus(1);
-    gameState.ascension.bonusMultiplier = newBonusValue;
+    // Gain de PA et mise à jour du multiplicateur
+    pointsAscension += paGained;
+    ascensionsTotales++;
+    multiplicateurBonusAscension = newMultiplier;
 
-    // Réinitialiser le jeu (perte des ressources, constructions, etc.)
-    gameState.bonsPoints = new BigNumber(0);
-    gameState.bonsPointsPerSecond = new BigNumber(0);
-    gameState.images = new BigNumber(0);
-    gameState.professeurs = new BigNumber(0);
+    // Réinitialiser les niveaux de compétences (si l'ascension doit les réinitialiser)
+    // Pour l'instant, les compétences sont persistantes après l'ascension.
+    // Si elles doivent être réinitialisées, ajouter ici:
+    // for (const branch in skills) {
+    //     skills[branch].forEach(skill => skill.currentLevel = 0);
+    // }
 
-    gameState.student.quantity = new BigNumber(0);
-    gameState.classe.quantity = new BigNumber(0);
-    gameState.professorPurchase.quantity = new BigNumber(0);
+    // Cacher les modales après l'ascension
+    reglagesModal.classList.add('hidden');
+    competencesModal.classList.add('hidden');
+    automatisationModal.classList.add('hidden');
+    ascensionWarningModal.classList.add('hidden');
 
-    // Réinitialiser les déblocages liés à la progression normale
-    gameState.unlocked.class = false;
-    gameState.unlocked.image = false;
-    gameState.unlocked.professor = false;
-    gameState.unlocked.settings = false; // Les réglages se débloquent à nouveau avec la première image
-    gameState.unlocked.ascension = false; // L'ascension se débloque à nouveau au 5ème professeur
+    // Mettre à jour l'affichage
+    calculateBPS();
+    updateRessourcesDisplay();
+    updateConstructionDisplay();
+    updateButtonStates();
+    checkUnlocks(); // Pour ré-afficher les panneaux de compétences/automatisation
 
-    // Réinitialiser les automatisations (elles doivent être rachetées)
-    gameState.automateStudent = false;
-    gameState.automateClass = false;
-    gameState.automateImage = false;
-    gameState.automateProfessor = false;
-    dom.automateStudentCheckbox.checked = false;
-    dom.automateClassCheckbox.checked = false;
-    dom.automateImageCheckbox.checked = false;
-    dom.automateProfessorCheckbox.checked = false;
-    dom.automateStudentContainer.classList.add('hidden');
-    dom.automateClassContainer.classList.add('hidden');
-    dom.automateImageContainer.classList.add('hidden');
-    dom.automateProfessorContainer.classList.add('hidden');
-
-    // Cacher les options d'achat multiple si elles n'ont pas été rachetées avec PA
-    if (!gameState.hasMultiBuyX10X100) dom.multiBuyX10X100Option.classList.add('hidden');
-    if (!gameState.hasMultiBuyXMax) dom.multiBuyXMaxOption.classList.add('hidden');
-
-    // Réinitialiser le mode d'achat à x1
-    gameState.multiBuyMode = 1;
-    dom.buyX1.click(); // Simuler un clic pour mettre à jour l'UI
-
-    updateBps();
-    updateUI();
-    saveGame();
-    closeModal(dom.ascensionModal);
-    showNotification(`Ascension réussie ! Vous avez gagné ${formatNumber(paGain)} PA et votre multiplicateur est maintenant de ${formatNumber(newBonusValue)}x.`, 'success');
+    showNotification(`Ascension réussie ! Vous avez gagné ${formatNumber(paGained)} PA et votre production est multipliée par ${formatDecimal(newMultiplier)} !`, 'success', 5000);
+    saveGame(); // Sauvegarder après l'ascension
 }
 
-/**
- * Vérifie si une compétence peut être achetée.
- * @param {string} skillId L'ID de la compétence.
- * @returns {boolean} Vrai si la compétence peut être achetée.
- */
-function canAffordSkill(skillId) {
-    const skill = gameState.skills[skillId];
-    if (!skill || skill.level >= skill.maxLevel) return false;
+// --- Fonctions de Déblocage des Fonctionnalités ---
+function checkUnlocks() {
+    // Débloque les images
+    if (images > 0) {
+        imagesDiv.classList.remove('hidden');
+        professeurCard.classList.remove('hidden'); // Débloque l'achat de professeurs
+    }
 
-    const cost = skill.cost[skill.level];
-    return gameState.professeurs.isGreaterThanOrEqualTo(cost) && isSkillUnlockedByDependencies(skillId);
+    // Débloque les classes
+    if (bonsPoints >= 300 || nbClasses > 0) { // Si on a assez de BP ou si on a déjà des classes
+        classeCard.classList.remove('hidden');
+    }
+
+    // Débloque les panneaux de droite après la première ascension
+    if (ascensionsTotales > 0) {
+        ouvrirCompetencesBtn.classList.remove('hidden');
+        ouvrirAutomatisationBtn.classList.remove('hidden');
+    }
+
+    // Débloque les options d'achat multiple
+    if (multiBuyX10Unlocked || multiBuyX100Unlocked || multiBuyXMaxUnlocked) {
+        multiBuyOptionsDiv.classList.remove('hidden');
+    }
+    if (multiBuyX10Unlocked) buyX10Btn.classList.remove('hidden');
+    if (multiBuyX100Unlocked) buyX100Btn.classList.remove('hidden');
+    if (multiBuyXMaxUnlocked) buyXMaxBtn.classList.remove('hidden');
+
+    updateButtonStates(); // Toujours mettre à jour l'état des boutons après les déblocages
 }
 
-/**
- * Vérifie si les dépendances d'une compétence sont remplies.
- * @param {string} skillId L'ID de la compétence.
- * @returns {boolean} Vrai si toutes les dépendances sont débloquées.
- */
-function isSkillUnlockedByDependencies(skillId) {
-    const dependencies = gameState.skillDependencies[skillId];
-    if (!dependencies) return true; // Pas de dépendances
+// --- Gestion des Modales ---
+function openModal(modalElement) {
+    modalElement.classList.remove('hidden');
+}
 
-    for (const depId of dependencies) {
-        if (!gameState.skills[depId] || gameState.skills[depId].level === 0) {
-            return false; // Une dépendance n'est pas débloquée
+function closeModal(modalElement) {
+    modalElement.classList.add('hidden');
+}
+
+// --- Gestion du Thème Jour/Nuit ---
+function toggleTheme() {
+    if (images >= themeCost) {
+        if (isDayTheme) {
+            // Passer en mode Nuit
+            document.body.classList.add('bg-gray-900', 'text-gray-100');
+            document.body.classList.remove('bg-f3f4f6', 'text-374151');
+            document.getElementById('haut-panneau').classList.add('bg-gray-800', 'text-gray-100');
+            document.getElementById('haut-panneau').classList.remove('bg-white', 'text-gray-800');
+            document.getElementById('gauche-panneau').classList.add('bg-gray-700');
+            document.getElementById('gauche-panneau').classList.remove('bg-gray-100');
+            document.getElementById('droite-panneau').classList.add('bg-gray-700');
+            document.getElementById('droite-panneau').classList.remove('bg-gray-100');
+            // Mettre à jour les couleurs des cartes de construction/achat
+            document.querySelectorAll('.bg-white').forEach(el => {
+                el.classList.remove('bg-white');
+                el.classList.add('bg-gray-800');
+            });
+            document.querySelectorAll('.bg-gray-50').forEach(el => {
+                el.classList.remove('bg-gray-50');
+                el.classList.add('bg-gray-700');
+            });
+            document.querySelectorAll('.text-gray-600').forEach(el => {
+                el.classList.remove('text-gray-600');
+                el.classList.add('text-gray-300');
+            });
+            document.querySelectorAll('.text-gray-700').forEach(el => {
+                el.classList.remove('text-gray-700');
+                el.classList.add('text-gray-200');
+            });
+            document.querySelectorAll('.text-gray-800').forEach(el => {
+                el.classList.remove('text-gray-800');
+                el.classList.add('text-gray-100');
+            });
+            document.querySelectorAll('.text-gray-500').forEach(el => {
+                el.classList.remove('text-gray-500');
+                el.classList.add('text-gray-400');
+            });
+            document.querySelectorAll('.text-gray-400').forEach(el => {
+                el.classList.remove('text-gray-400');
+                el.classList.add('text-gray-500');
+            });
+            document.querySelectorAll('.shadow-md').forEach(el => {
+                el.classList.add('shadow-lg');
+            });
+            reglagesModal.querySelector('.modal-content').classList.remove('bg-white');
+            reglagesModal.querySelector('.modal-content').classList.add('bg-gray-800');
+            competencesModal.querySelector('.modal-content').classList.remove('bg-white');
+            competencesModal.querySelector('.modal-content').classList.add('bg-gray-800');
+            automatisationModal.querySelector('.modal-content').classList.remove('bg-white');
+            automatisationModal.querySelector('.modal-content').classList.add('bg-gray-800');
+            ascensionWarningModal.querySelector('.modal-content').classList.remove('bg-white');
+            ascensionWarningModal.querySelector('.modal-content').classList.add('bg-gray-800');
+
+            isDayTheme = false;
+            showNotification("Thème Nuit activé !", 'info');
+        } else {
+            // Passer en mode Jour
+            document.body.classList.remove('bg-gray-900', 'text-gray-100');
+            document.body.classList.add('bg-f3f4f6', 'text-374151');
+            document.getElementById('haut-panneau').classList.remove('bg-gray-800', 'text-gray-100');
+            document.getElementById('haut-panneau').classList.add('bg-white', 'text-gray-800');
+            document.getElementById('gauche-panneau').classList.remove('bg-gray-700');
+            document.getElementById('gauche-panneau').classList.add('bg-gray-100');
+            document.getElementById('droite-panneau').classList.remove('bg-gray-700');
+            document.getElementById('droite-panneau').classList.add('bg-gray-100');
+            // Revenir aux couleurs originales des cartes
+            document.querySelectorAll('.bg-gray-800').forEach(el => {
+                el.classList.remove('bg-gray-800');
+                el.classList.add('bg-white');
+            });
+            document.querySelectorAll('.bg-gray-700').forEach(el => {
+                el.classList.remove('bg-gray-700');
+                el.classList.add('bg-gray-50');
+            });
+            document.querySelectorAll('.text-gray-300').forEach(el => {
+                el.classList.remove('text-gray-300');
+                el.classList.add('text-gray-600');
+            });
+            document.querySelectorAll('.text-gray-200').forEach(el => {
+                el.classList.remove('text-gray-200');
+                el.classList.add('text-gray-700');
+            });
+            document.querySelectorAll('.text-gray-100').forEach(el => {
+                el.classList.remove('text-gray-100');
+                el.classList.add('text-gray-800');
+            });
+            document.querySelectorAll('.text-gray-400').forEach(el => {
+                el.classList.remove('text-gray-400');
+                el.classList.add('text-gray-500');
+            });
+            document.querySelectorAll('.text-gray-500').forEach(el => {
+                el.classList.remove('text-gray-500');
+                el.classList.add('text-gray-400');
+            });
+            document.querySelectorAll('.shadow-lg').forEach(el => {
+                el.classList.remove('shadow-lg');
+            });
+            reglagesModal.querySelector('.modal-content').classList.remove('bg-gray-800');
+            reglagesModal.querySelector('.modal-content').classList.add('bg-white');
+            competencesModal.querySelector('.modal-content').classList.remove('bg-gray-800');
+            competencesModal.querySelector('.modal-content').classList.add('bg-white');
+            automatisationModal.querySelector('.modal-content').classList.remove('bg-gray-800');
+            automatisationModal.querySelector('.modal-content').classList.add('bg-white');
+            ascensionWarningModal.querySelector('.modal-content').classList.remove('bg-gray-800');
+            ascensionWarningModal.querySelector('.modal-content').classList.add('bg-white');
+
+            isDayTheme = true;
+            showNotification("Thème Jour activé !", 'info');
         }
-    }
-    return true;
-}
-
-/**
- * Achète une compétence.
- * @param {string} skillId L'ID de la compétence à acheter.
- */
-function buySkill(skillId) {
-    const skill = gameState.skills[skillId];
-    if (!skill || skill.level >= skill.maxLevel) {
-        showNotification("Cette compétence est déjà au niveau maximum.", 'error');
-        return;
-    }
-
-    if (!isSkillUnlockedByDependencies(skillId)) {
-        showNotification("Vous devez débloquer les compétences précédentes avant d'acheter celle-ci.", 'error');
-        return;
-    }
-
-    const cost = new BigNumber(skill.cost[skill.level]);
-    if (gameState.professeurs.isGreaterThanOrEqualTo(cost)) {
-        gameState.professeurs = gameState.professeurs.minus(cost);
-        skill.level++;
-        updateBps(); // Les compétences peuvent affecter la production
-        updateUI();
-        updateSkillTreeDisplay(); // Mettre à jour l'affichage de l'arbre
-        saveGame();
-        showNotification(`Compétence '${skillId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}' améliorée au niveau ${skill.level}!`, 'success');
     } else {
-        showNotification(`Pas assez de Professeurs pour acheter cette compétence. Coût: ${formatNumber(cost)} P.`, 'error');
+        showNotification(`Vous avez besoin de ${themeCost} Images pour changer de thème.`, 'error');
+    }
+    updateButtonStates();
+}
+
+// --- Gestion des Options d'Achat Multiple ---
+function setBuyMultiplier(multiplier) {
+    currentBuyMultiplier = multiplier;
+    // Mettre en évidence le bouton actif
+    buyX1Btn.classList.remove('bg-blue-700');
+    buyX10Btn.classList.remove('bg-blue-700');
+    buyX100Btn.classList.remove('bg-blue-700');
+    buyXMaxBtn.classList.remove('bg-blue-700');
+
+    if (multiplier === 1) buyX1Btn.classList.add('bg-blue-700');
+    else if (multiplier === 10) buyX10Btn.classList.add('bg-blue-700');
+    else if (multiplier === 100) buyX100Btn.classList.add('bg-blue-700');
+    else if (multiplier === 'max') buyXMaxBtn.classList.add('bg-blue-700');
+}
+
+function calculateMaxBuy(itemType) {
+    let maxBuy = 0;
+    let tempResource = bonsPoints;
+    let tempCost = 0;
+    let currentNbEleves = nbEleves; // Use current values for calculation
+    let currentNbClasses = nbClasses;
+    let currentProfessors = professeurs;
+
+    // Apply skill cost reductions for calculation
+    let costReductionEleve = 0;
+    const innovation1Skill = skills.innovation.find(s => s.id === 'innovation1');
+    if (innovation1Skill && innovation1Skill.currentLevel > 0) {
+        costReductionEleve = innovation1Skill.effects[innovation1Skill.currentLevel - 1];
+    }
+
+    let costReductionClasse = 0;
+    const pedagogie2Skill = skills.pedagogie.find(s => s.id === 'pedagogie2');
+    if (pedagogie2Skill && pedagogie2Skill.currentLevel > 0) {
+        costReductionClasse = pedagogie2Skill.effects[pedagogie2Skill.currentLevel - 1];
+    }
+
+    let costReductionImage = 0;
+    const science2Skill = skills.science.find(s => s.id === 'science2');
+    if (science2Skill && science2Skill.currentLevel > 0) {
+        costReductionImage = science2Skill.effects[science2Skill.currentLevel - 1];
+    }
+
+    if (itemType === 'eleve') {
+        let baseEleveCost = 10;
+        while (tempResource >= tempCost) {
+            let effectiveCost = Math.ceil(baseEleveCost * (1 - costReductionEleve));
+            if (currentNbEleves + maxBuy >= 10) effectiveCost = Math.ceil(effectiveCost * Math.pow(1.15, (currentNbEleves + maxBuy) - 9));
+            if (tempResource >= effectiveCost) {
+                tempResource -= effectiveCost;
+                maxBuy++;
+            } else {
+                break;
+            }
+        }
+    } else if (itemType === 'classe') {
+        let baseClasseCost = 300;
+        while (tempResource >= tempCost) {
+            let effectiveCost = Math.ceil(baseClasseCost * (1 - costReductionClasse));
+            if (currentNbClasses + maxBuy >= 10) effectiveCost = Math.ceil(effectiveCost * Math.pow(1.15, (currentNbClasses + maxBuy) - 9));
+            if (tempResource >= effectiveCost) {
+                tempResource -= effectiveCost;
+                maxBuy++;
+            } else {
+                break;
+            }
+        }
+    } else if (itemType === 'image') {
+        tempCost = Math.ceil(1000 * (1 - costReductionImage));
+        maxBuy = Math.floor(tempResource / tempCost);
+    } else if (itemType === 'professeur') {
+        tempResource = images; // Professeurs coûtent des images
+        let fibIndex = currentProfessors + 1;
+        let currentProfCost = (fibIndex < fibonacciSequence.length) ? fibonacciSequence[fibIndex] : Math.ceil(fibonacciSequence[fibonacciSequence.length - 1] * Math.pow(1.618, fibIndex - (fibonacciSequence.length - 1)));
+
+        while (tempResource >= currentProfCost) {
+            tempResource -= currentProfCost;
+            maxBuy++;
+            fibIndex++;
+            currentProfCost = (fibIndex < fibonacciSequence.length) ? fibonacciSequence[fibIndex] : Math.ceil(fibonacciSequence[fibonacciSequence.length - 1] * Math.pow(1.618, fibIndex - (fibonacciSequence.length - 1)));
+        }
+    }
+    return maxBuy;
+}
+
+// --- Gestion des Compétences ---
+function renderSkillTree() {
+    pedagogieBranch.innerHTML = '';
+    scienceBranch.innerHTML = '';
+    innovationBranch.innerHTML = '';
+
+    for (const branchName in skills) {
+        const branchElement = document.getElementById(`${branchName}-branch`);
+        skills[branchName].forEach(skill => {
+            const skillDiv = document.createElement('div');
+            skillDiv.className = `skill-bubble bg-gray-200 p-3 rounded-lg shadow-md cursor-pointer relative group transition-all duration-200 ${skill.currentLevel === skill.levels ? 'bg-green-300' : (professeurs >= skill.costs[skill.currentLevel] ? 'border-2 border-green-500 hover:bg-green-100' : 'border-2 border-red-500')}`;
+            skillDiv.innerHTML = `
+                <h4 class="font-semibold text-gray-800">${skill.name} (Niv. ${skill.currentLevel}/${skill.levels})</h4>
+                <p class="text-sm text-gray-600">Coût: ${skill.currentLevel < skill.levels ? skill.costs[skill.currentLevel] : 'Max'} Professeurs</p>
+                <div class="skill-description absolute hidden group-hover:block bg-gray-800 text-white text-xs p-2 rounded-md bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap z-10">
+                    ${skill.description.replace('{0}', skill.effects[skill.currentLevel] * 100)}
+                </div>
+            `;
+            skillDiv.addEventListener('click', () => upgradeSkill(branchName, skill.id));
+            branchElement.appendChild(skillDiv);
+        });
     }
 }
 
-/**
- * Gère l'automatisation des achats.
- */
-function handleAutomations() {
+function upgradeSkill(branchName, skillId) {
+    const skill = skills[branchName].find(s => s.id === skillId);
+    if (!skill) return;
+
+    if (skill.currentLevel < skill.levels) {
+        const cost = skill.costs[skill.currentLevel];
+        if (professeurs >= cost) {
+            professeurs -= cost; // Les compétences coûtent des professeurs
+            skill.currentLevel++;
+            skill.unlocked = true; // Mark skill as unlocked
+            showNotification(`Compétence "${skill.name}" améliorée au niveau ${skill.currentLevel} !`, 'success');
+            calculateBPS(); // Recalculate BPS as skills can affect it
+            updateRessourcesDisplay();
+            updateButtonStates();
+            renderSkillTree(); // Re-render the tree to update display
+        } else {
+            showNotification(`Pas assez de Professeurs pour améliorer "${skill.name}". Il vous faut ${cost} Professeurs.`, 'error');
+        }
+    } else {
+        showNotification(`"${skill.name}" est déjà au niveau maximum.`, 'info');
+    }
+}
+
+// --- Gestion de l'Automatisation ---
+function toggleAutomation(itemType) {
+    let currentStatus;
+    let cost;
+    let autoToggleElement;
+
+    // Déterminer le statut actuel et le coût
+    if (itemType === 'eleve') {
+        currentStatus = autoEleveActive;
+        cost = autoCosts.eleve;
+        autoToggleElement = autoEleveToggle;
+    } else if (itemType === 'classe') {
+        currentStatus = autoClasseActive;
+        cost = autoCosts.classe;
+        autoToggleElement = autoClasseToggle;
+    } else if (itemType === 'image') {
+        currentStatus = autoImageActive;
+        cost = autoCosts.image;
+        autoToggleElement = autoImageToggle;
+    } else if (itemType === 'professeur') {
+        currentStatus = autoProfesseurActive;
+        cost = autoCosts.professeur;
+        autoToggleElement = autoProfesseurToggle;
+    }
+
+    if (currentStatus) {
+        // Si l'automatisation est active, la désactiver
+        if (itemType === 'eleve') autoEleveActive = false;
+        else if (itemType === 'classe') autoClasseActive = false;
+        else if (itemType === 'image') autoImageActive = false;
+        else if (itemType === 'professeur') autoProfesseurActive = false;
+        showNotification(`Automatisation ${itemType} désactivée.`, 'info');
+    } else {
+        // Si l'automatisation est inactive, tenter de l'activer
+        // Appliquer la réduction de coût des automatisations
+        let costReductionAuto = 0;
+        const innovation3Skill = skills.innovation.find(s => s.id === 'innovation3');
+        if (innovation3Skill && innovation3Skill.currentLevel > 0) {
+            costReductionAuto = innovation3Skill.effects[innovation3Skill.currentLevel - 1];
+        }
+        const effectiveCost = Math.ceil(cost * (1 - costReductionAuto));
+
+        if (pointsAscension >= effectiveCost) {
+            pointsAscension -= effectiveCost;
+            if (itemType === 'eleve') autoEleveActive = true;
+            else if (itemType === 'classe') autoClasseActive = true;
+            else if (itemType === 'image') autoImageActive = true;
+            else if (itemType === 'professeur') autoProfesseurActive = true;
+            showNotification(`Automatisation ${itemType} activée !`, 'success');
+        } else {
+            showNotification(`Pas assez de PA pour activer l'automatisation ${itemType}. Coût: ${effectiveCost} PA.`, 'error');
+            autoToggleElement.checked = false; // Remet le toggle à l'état précédent
+        }
+    }
+    updateRessourcesDisplay();
+    updateButtonStates();
+}
+
+// Fonction d'automatisation exécutée à chaque tick de la gameLoop
+function runAutomations() {
     // Appliquer le bonus de vitesse d'automatisation
-    let automationSpeedMultiplier = new BigNumber(1);
-    if (gameState.unlocked.skills) {
-        const skill = gameState.skills["maitrise_numerique"];
-        if (skill.level > 0) {
-            automationSpeedMultiplier = automationSpeedMultiplier.plus(skill.value);
-        }
+    let automationSpeedMultiplier = 1;
+    const innovation2Skill = skills.innovation.find(s => s.id === 'innovation2');
+    if (innovation2Skill && innovation2Skill.currentLevel > 0) {
+        automationSpeedMultiplier += innovation2Skill.effects[innovation2Skill.currentLevel - 1];
     }
 
-    // Pour simplifier, nous allons laisser les automatisations s'exécuter à chaque tick,
-    // mais une vitesse pourrait être implémentée en vérifiant un compteur interne
-    // ou en divisant le nombre d'achats par le multiplicateur.
-    // Pour l'instant, le multiplicateur pourrait être utilisé pour augmenter le nombre d'achats par tick.
+    // Chaque automatisation tente d'acheter à chaque tick, mais on peut ajouter un délai
+    // ou une chance de succès basée sur automationSpeedMultiplier si on veut un système plus complexe.
+    // Pour l'instant, cela signifie que si l'automatisation est active, elle essaie d'acheter à chaque seconde.
 
-    // Professeurs (priorité car ils boostent tout)
-    if (gameState.automateProfessor) {
-        const professorCost = new BigNumber(gameState.professorPurchase.fibonacciSequence[gameState.professorPurchase.quantity.toNumber()]);
-        // Appliquer la réduction de coût des compétences
-        let finalProfessorCost = professorCost;
-        if (gameState.unlocked.skills) {
-            const skill = gameState.skills["expansion_des_connaissances"];
-            if (skill.level > 0) {
-                finalProfessorCost = finalProfessorCost.multipliedBy(new BigNumber(1).minus(skill.value));
-            }
-        }
-        if (gameState.images.isGreaterThanOrEqualTo(finalProfessorCost)) {
-            buyItem('professor');
-        }
+    // Pour simuler la vitesse, on peut faire plusieurs tentatives d'achat par tick
+    // ou ajuster la fréquence de l'appel à runAutomations.
+    // Pour l'instant, nous allons simplement appeler buyItem une fois par tick
+    // et la "vitesse" sera gérée par l'efficacité de buyItem et les ressources disponibles.
+    // Une implémentation plus complexe pourrait gérer des "ticks" d'automatisation internes.
+
+    if (autoEleveActive) {
+        buyItem('eleve', 1); // Achète 1 élève par tick
     }
-
-    // Images
-    if (gameState.automateImage) {
-        const imageCost = gameState.imagePurchase.cost;
-        // Appliquer la réduction de coût des compétences
-        let finalImageCost = imageCost;
-        if (gameState.unlocked.skills) {
-            const skill = gameState.skills["innovation_educative"];
-            if (skill.level > 0) {
-                finalImageCost = finalImageCost.multipliedBy(new BigNumber(1).minus(skill.value));
-            }
-        }
-        if (gameState.bonsPoints.isGreaterThanOrEqualTo(finalImageCost)) {
-            buyItem('image');
-        }
+    if (autoClasseActive) {
+        buyItem('classe', 1); // Achète 1 classe par tick
     }
-
-    // Classes
-    if (gameState.automateClass) {
-        const classCost = calculateCost(gameState.classe, gameState.classe.baseCost, gameState.classe.quantity, gameState.classe.costMultiplier, gameState.classe.costIncreaseThreshold, new BigNumber(1));
-        if (gameState.bonsPoints.isGreaterThanOrEqualTo(classCost)) {
-            buyItem('class');
-        }
+    if (autoImageActive) {
+        buyItem('image', 1); // Achète 1 image par tick
     }
-
-    // Élèves
-    if (gameState.automateStudent) {
-        const studentCost = calculateCost(gameState.student, gameState.student.baseCost, gameState.student.quantity, gameState.student.costMultiplier, gameState.student.costIncreaseThreshold, new BigNumber(1));
-        if (gameState.bonsPoints.isGreaterThanOrEqualTo(studentCost)) {
-            buyItem('student');
-        }
+    if (autoProfesseurActive) {
+        buyItem('professeur', 1); // Achète 1 professeur par tick
     }
 }
 
-
-// --- Fonctions de Sauvegarde et Chargement ---
-
-/**
- * Sauvegarde l'état du jeu dans Firestore.
- */
-async function saveGame() {
-    if (!isAuthReady || !db || !userId) {
-        console.warn("Firebase non prêt ou userId non défini pour la sauvegarde.");
-        return;
-    }
-    try {
-        // Convertir les BigNumber en chaînes pour la sauvegarde
-        const serializableState = JSON.parse(JSON.stringify(gameState, (key, value) => {
-            if (value instanceof BigNumber) {
-                return value.toString();
-            }
-            return value;
-        }));
-        await db.collection(`artifacts/${appId}/users/${userId}/gameData`).doc('current').set(serializableState); // doc(db, `artifacts/${appId}/users/${userId}/gameData/current`)
-        // console.log("Jeu sauvegardé !");
-    } catch (error) {
-        console.error("Erreur lors de la sauvegarde du jeu:", error);
-    }
+// --- Sauvegarde et Chargement du Jeu ---
+function saveGame() {
+    const gameState = {
+        bonsPoints,
+        images,
+        professeurs,
+        pointsAscension,
+        nbEleves,
+        coutEleve,
+        nbClasses,
+        coutClasse,
+        coutImage,
+        coutProfesseur,
+        ascensionsTotales,
+        multiplicateurBonusAscension,
+        currentBuyMultiplier,
+        multiBuyX10Unlocked,
+        multiBuyX100Unlocked,
+        multiBuyXMaxUnlocked,
+        isDayTheme,
+        doNotShowAscensionWarning,
+        autoEleveActive,
+        autoClasseActive,
+        autoImageActive,
+        autoProfesseurActive,
+        skills: JSON.parse(JSON.stringify(skills)) // Deep copy for skills
+    };
+    localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
+    showNotification('Jeu sauvegardé !', 'success');
 }
 
-/**
- * Charge l'état du jeu depuis Firestore.
- */
-async function loadGame() {
-    if (!isAuthReady || !db || !userId) {
-        console.warn("Firebase non prêt ou userId non défini pour le chargement.");
-        return;
-    }
-    try {
-        const docRef = db.collection(`artifacts/${appId}/users/${userId}/gameData`).doc('current'); // doc(db, `artifacts/${appId}/users/${userId}/gameData/current`)
-        const docSnap = await docRef.get(); // getDoc(docRef)
+function loadGame() {
+    const savedState = localStorage.getItem('incrementalGameSave');
+    if (savedState) {
+        const gameState = JSON.parse(savedState);
+        bonsPoints = gameState.bonsPoints || 0;
+        images = gameState.images || 0;
+        professeurs = gameState.professeurs || 0;
+        pointsAscension = gameState.pointsAscension || 0;
+        nbEleves = gameState.nbEleves || 0;
+        coutEleve = gameState.coutEleve || 10;
+        nbClasses = gameState.nbClasses || 0;
+        coutClasse = gameState.coutClasse || 300;
+        coutImage = gameState.coutImage || 1000;
+        coutProfesseur = gameState.coutProfesseur || 1;
+        ascensionsTotales = gameState.ascensionsTotales || 0;
+        multiplicateurBonusAscension = gameState.multiplicateurBonusAscension || 1;
+        currentBuyMultiplier = gameState.currentBuyMultiplier || 1;
+        multiBuyX10Unlocked = gameState.multiBuyX10Unlocked || false;
+        multiBuyX100Unlocked = gameState.multiBuyX100Unlocked || false;
+        multiBuyXMaxUnlocked = gameState.multiBuyXMaxUnlocked || false;
+        isDayTheme = gameState.isDayTheme !== undefined ? gameState.isDayTheme : true;
+        doNotShowAscensionWarning = gameState.doNotShowAscensionWarning || false;
+        autoEleveActive = gameState.autoEleveActive || false;
+        autoClasseActive = gameState.autoClasseActive || false;
+        autoImageActive = gameState.autoImageActive || false;
+        autoProfesseurActive = gameState.autoProfesseurActive || false;
 
-        if (docSnap.exists) { // docSnap.exists()
-            const loadedState = docSnap.data();
-            // Convertir les chaînes en BigNumber
-            for (const key in loadedState) {
-                if (typeof loadedState[key] === 'string' && !isNaN(loadedState[key]) && loadedState[key].includes('e')) { // Heuristique simple pour les BigNumber
-                    gameState[key] = new BigNumber(loadedState[key]);
-                } else if (typeof loadedState[key] === 'object' && loadedState[key] !== null) {
-                    // Gérer les objets imbriqués comme student, class, etc.
-                    for (const subKey in loadedState[key]) {
-                        if (typeof loadedState[key][subKey] === 'string' && !isNaN(loadedState[key][subKey]) && loadedState[key][subKey].includes('e')) {
-                            gameState[key][subKey] = new BigNumber(loadedState[key][subKey]);
-                        } else if (typeof loadedState[key][subKey] === 'number' && subKey === 'costIncreaseThreshold') {
-                            gameState[key][subKey] = loadedState[key][subKey]; // Garder les nombres normaux
-                        } else if (typeof loadedState[key][subKey] === 'boolean') {
-                            gameState[key][subKey] = loadedState[key][subKey];
-                        } else if (typeof loadedState[key][subKey] === 'object' && loadedState[key][subKey] !== null) {
-                            // Gérer les objets encore plus imbriqués (ex: skills)
-                            for (const deepKey in loadedState[key][subKey]) {
-                                if (typeof loadedState[key][subKey][deepKey] === 'string' && !isNaN(loadedState[key][subKey][deepKey]) && loadedState[key][deepKey].includes('e')) {
-                                    gameState[key][subKey][deepKey] = new BigNumber(loadedState[key][subKey][deepKey]);
-                                } else if (deepKey === 'cost' && Array.isArray(loadedState[key][subKey][deepKey])) {
-                                    gameState[key][subKey][deepKey] = loadedState[key][subKey][deepKey]; // Conserver les tableaux de coûts
-                                } else if (deepKey === 'value' && typeof loadedState[key][subKey][deepKey] === 'string') {
-                                     gameState[key][subKey][deepKey] = new BigNumber(loadedState[key][subKey][deepKey]);
-                                } else {
-                                    gameState[key][subKey][deepKey] = loadedState[key][subKey][deepKey];
-                                }
-                            }
-                        } else {
-                            gameState[key][subKey] = loadedState[key][subKey];
+        // Load skills, ensuring to merge with default structure for new skills
+        if (gameState.skills) {
+            for (const branchName in skills) {
+                if (gameState.skills[branchName]) {
+                    skills[branchName].forEach(defaultSkill => {
+                        const savedSkill = gameState.skills[branchName].find(s => s.id === defaultSkill.id);
+                        if (savedSkill) {
+                            defaultSkill.currentLevel = savedSkill.currentLevel;
+                            defaultSkill.unlocked = savedSkill.unlocked;
                         }
-                    }
-                } else {
-                    gameState[key] = loadedState[key];
+                    });
                 }
             }
-            // Assurez-vous que les BigNumber sont correctement re-instanciés pour les propriétés de premier niveau
-            gameState.bonsPoints = new BigNumber(loadedState.bonsPoints || 0);
-            gameState.bonsPointsPerSecond = new BigNumber(loadedState.bonsPointsPerSecond || 0);
-            gameState.images = new BigNumber(loadedState.images || 0);
-            gameState.professeurs = new BigNumber(loadedState.professeurs || 0);
-            gameState.pointsAscension = new BigNumber(loadedState.pointsAscension || 0);
-
-            gameState.student.quantity = new BigNumber(loadedState.student.quantity || 0);
-            gameState.student.baseCost = new BigNumber(loadedState.student.baseCost || 10);
-            gameState.student.costMultiplier = new BigNumber(loadedState.student.costMultiplier || 1.15);
-            gameState.student.baseBps = new BigNumber(loadedState.student.baseBps || 0.5);
-
-            gameState.classe.quantity = new BigNumber(loadedState.classe.quantity || 0);
-            gameState.classe.baseCost = new BigNumber(loadedState.classe.baseCost || 300);
-            gameState.classe.costMultiplier = new BigNumber(loadedState.classe.costMultiplier || 1.15);
-            gameState.classe.baseBps = new BigNumber(loadedState.classe.baseBps || 25);
-
-            gameState.imagePurchase.cost = new BigNumber(loadedState.imagePurchase.cost || 1000);
-
-            gameState.professorPurchase.quantity = new BigNumber(loadedState.professorPurchase.quantity || 0);
-            gameState.professorPurchase.productionMultiplier = new BigNumber(loadedState.professorPurchase.productionMultiplier || 1.5);
-            // Reconstruire la séquence de Fibonacci si elle n'est pas complète
-            if (loadedState.professorPurchase.fibonacciSequence && loadedState.professorPurchase.fibonacciSequence.length > 0) {
-                gameState.professorPurchase.fibonacciSequence = loadedState.professorPurchase.fibonacciSequence;
-            } else {
-                // Fallback si la séquence n'est pas sauvegardée (nouvelle partie ou ancienne sauvegarde)
-                gameState.professorPurchase.fibonacciSequence = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155];
-            }
-
-
-            gameState.ascension.totalAscensions = new BigNumber(loadedState.ascension.totalAscensions || 0);
-            gameState.ascension.bonusMultiplier = new BigNumber(loadedState.ascension.bonusMultiplier || 1);
-            gameState.ascension.showAscensionWarning = loadedState.ascension.showAscensionWarning !== undefined ? loadedState.ascension.showAscensionWarning : true;
-
-            gameState.automationCosts.student = new BigNumber(loadedState.automationCosts.student || 100);
-            gameState.automationCosts.classe = new BigNumber(loadedState.automationCosts.classe || 1000);
-            gameState.automationCosts.image = new BigNumber(loadedState.automationCosts.image || 10000);
-            gameState.automationCosts.professor = new BigNumber(loadedState.automationCosts.professor || 100000);
-
-            console.log("Jeu chargé !", gameState);
-        } else {
-            console.log("Aucune donnée de jeu trouvée, démarrage d'une nouvelle partie.");
         }
-    } catch (error) {
-        console.error("Erreur lors du chargement du jeu:", error);
-    } finally {
-        updateBps();
-        updateUI();
-        gameLoopInterval = setInterval(gameLoop, 50); // Démarrer la boucle de jeu après le chargement
-        saveGameInterval = setInterval(saveGame, 10000); // Sauvegarde automatique toutes les 10 secondes
+
+        // Apply theme if saved as night mode
+        if (!isDayTheme) {
+            // Temporarily set isDayTheme to true so toggleTheme can correctly switch to night
+            isDayTheme = true;
+            toggleTheme();
+        }
+
+        showNotification('Jeu chargé !', 'success');
+        return true;
+    }
+    showNotification('Aucune sauvegarde trouvée.', 'info');
+    return false;
+}
+
+function resetGame() {
+    if (confirm('Êtes-vous sûr de vouloir réinitialiser le jeu ? Toutes vos données seront perdues !')) {
+        localStorage.removeItem('incrementalGameSave');
+        // Réinitialiser toutes les variables à leur état initial
+        bonsPoints = 0;
+        images = 0;
+        professeurs = 0;
+        pointsAscension = 0;
+        nbEleves = 0;
+        coutEleve = 10;
+        bpsEleveParUnite = 0.5;
+        nbClasses = 0;
+        coutClasse = 300;
+        bpsClasseParUnite = 25;
+        coutImage = 1000;
+        coutProfesseur = 1;
+        ascensionsTotales = 0;
+        multiplicateurBonusAscension = 1;
+        currentBuyMultiplier = 1;
+        multiBuyX10Unlocked = false;
+        multiBuyX100Unlocked = false;
+        multiBuyXMaxUnlocked = false;
+        isDayTheme = true;
+        doNotShowAscensionWarning = false;
+        autoEleveActive = false;
+        autoClasseActive = false;
+        autoImageActive = false;
+        autoProfesseurActive = false;
+
+        // Réinitialiser les compétences
+        for (const branch in skills) {
+            skills[branch].forEach(skill => {
+                skill.currentLevel = 0;
+                skill.unlocked = false;
+            });
+        }
+
+        calculateBPS();
+        updateRessourcesDisplay();
+        updateConstructionDisplay();
+        updateButtonStates();
+        checkUnlocks();
+        renderSkillTree();
+        setBuyMultiplier(1); // Reset buy multiplier display
+        showNotification('Jeu réinitialisé !', 'info');
     }
 }
 
-// --- Boucle de Jeu ---
-let lastTick = Date.now();
-let gameLoopInterval;
-let saveGameInterval;
-
+// --- Boucle de Jeu Principale ---
 function gameLoop() {
-    const now = Date.now();
-    const deltaTime = (now - lastTick) / 1000; // Delta time en secondes
-    lastTick = now;
+    // Production automatique de Bons Points
+    bonsPoints += bonsPointsParSeconde / 10; // Divisé par 10 car la boucle est maintenant toutes les 100ms
+                                            // pour une meilleure réactivité d'automatisation
+    // Exécuter les automatisations
+    runAutomations();
 
-    // Ajouter les bons points par seconde
-    gameState.bonsPoints = gameState.bonsPoints.plus(gameState.bonsPointsPerSecond.multipliedBy(deltaTime));
+    // Mise à jour de l'interface
+    updateRessourcesDisplay();
+    updateButtonStates();
+    checkUnlocks(); // Vérifie les déblocages à chaque tick
+}
 
-    // Gérer les automatisations
-    handleAutomations();
+// =============================================================================
+// Initialisation et Écouteurs d'Événements
+// =============================================================================
 
-    // Vérifier les déblocages
+document.addEventListener('DOMContentLoaded', () => {
+    // Charger le jeu au démarrage
+    loadGame();
+
+    // Initialiser l'affichage après le chargement
+    calculateBPS();
+    updateRessourcesDisplay();
+    updateConstructionDisplay();
+    updateButtonStates();
     checkUnlocks();
+    renderSkillTree(); // Rendre l'arbre de compétences au démarrage (avec les niveaux chargés)
 
-    // Mettre à jour l'interface utilisateur
-    updateUI();
-}
+    // Démarrer la boucle de jeu (mise à jour toutes les 100ms pour plus de fluidité)
+    setInterval(gameLoop, 100);
 
-/**
- * Fonction principale de mise à jour de l'UI.
- * Appelle toutes les fonctions de mise à jour de l'affichage.
- */
-function updateUI() {
-    updateResourceDisplay();
-    updateButtonDisplay();
-    updateTheme(); // S'assurer que le thème est toujours appliqué
-}
+    // Sauvegarder le jeu toutes les 10 secondes
+    setInterval(saveGame, 10000);
 
-// --- Gestionnaires d'Événements ---
+    // --- Écouteurs d'événements pour les boutons d'achat ---
+    acheterEleveBouton.addEventListener('click', () => buyItem('eleve'));
+    acheterClasseBouton.addEventListener('click', () => buyItem('classe'));
+    acheterImageBouton.addEventListener('click', () => buyItem('image'));
+    acheterProfesseurBouton.addEventListener('click', () => buyItem('professeur'));
+    etudierSagementBtn.addEventListener('click', etudierSagement);
 
-// Boutons de construction/achat
-dom.buyStudent.addEventListener('click', () => buyItem('student'));
-dom.buyClass.addEventListener('click', () => buyItem('class'));
-dom.buyImage.addEventListener('click', () => buyItem('image'));
-dom.buyProfessor.addEventListener('click', () => buyItem('professor'));
+    // --- Écouteurs d'événements pour les modales ---
+    ouvrirReglagesBtn.addEventListener('click', () => openModal(reglagesModal));
+    fermerReglagesModalBtn.addEventListener('click', () => closeModal(reglagesModal));
 
-// Boutons d'achat multiple
-dom.multiBuyButtons.forEach(button => {
-    button.addEventListener('click', () => {
-        gameState.multiBuyMode = button.dataset.buyMode === 'max' ? 'max' : parseInt(button.dataset.buyMode);
-        updateButtonDisplay(); // Mettre à jour les coûts affichés
+    boutonAscension.addEventListener('click', () => {
+        if (!doNotShowAscensionWarning) {
+            // Mettre à jour les infos de la modale d'avertissement
+            paGagnesAscensionElement.textContent = formatNumber(calculateAscensionPA());
+            multiplicateurBonusAscensionElement.textContent = `x${formatDecimal(calculateAscensionMultiplier())}`;
+            openModal(ascensionWarningModal);
+        } else {
+            performAscension();
+        }
     });
-});
-
-// Modals
-dom.openSettingsModal.addEventListener('click', () => {
-    openModal(dom.settingsModal);
-    // Afficher/cacher les options d'achat multiple dans les réglages
-    if (gameState.unlocked.multiBuyX10X100Option) {
-        dom.multiBuyX10X100Option.classList.remove('hidden');
-    } else {
-        dom.multiBuyX10X100Option.classList.add('hidden');
-    }
-    if (gameState.unlocked.multiBuyXMaxOption) {
-        dom.multiBuyXMaxOption.classList.remove('hidden');
-    } else {
-        dom.multiBuyXMaxOption.classList.add('hidden');
-    }
-    // Gérer l'affichage du coût du thème
-    if (gameState.hasBoughtTheme) {
-        dom.themeCost.classList.add('hidden');
-    } else {
-        dom.themeCost.classList.remove('hidden');
-    }
-});
-dom.closeSettingsModal.addEventListener('click', () => closeModal(dom.settingsModal));
-
-dom.openAscensionModal.addEventListener('click', () => {
-    // Pré-calculer et afficher les gains d'ascension
-    const professorsCount = gameState.professeurs.toNumber();
-    let paGain = new BigNumber(0);
-    if (professorsCount > 0) {
-        paGain = getPrimeNumber(professorsCount - 1);
-        // Appliquer le bonus de compétence au gain de PA
-        if (gameState.unlocked.skills) {
-            const skill1 = gameState.skills["recherche_avancee"];
-            if (skill1.level > 0) {
-                paGain = paGain.multipliedBy(new BigNumber(1).plus(skill1.value.multipliedBy(skill1.level)));
-            }
-            const skill2 = gameState.skills["acceleration_cognitive"];
-            if (skill2.level > 0) {
-                paGain = paGain.multipliedBy(new BigNumber(1).plus(skill2.value));
-            }
+    fermerAscensionWarningModalBtn.addEventListener('click', () => closeModal(ascensionWarningModal));
+    confirmerAscensionBtn.addEventListener('click', () => {
+        if (nePlusAfficherAvertissementCheckbox.checked) {
+            doNotShowAscensionWarning = true;
         }
-    }
+        performAscension();
+    });
 
-    let newBonusValue = new BigNumber(1).plus(new BigNumber(professorsCount).multipliedBy(gameState.ascension.totalAscensions.plus(1)).multipliedBy(0.05));
-    // Appliquer le bonus de compétence au multiplicateur d'ascension
-    if (gameState.unlocked.skills) {
-        const skill = gameState.skills["vision_strategique"];
-        if (skill.level > 0) {
-            newBonusValue = newBonusValue.plus(skill.value);
-        }
-    }
+    ouvrirCompetencesBtn.addEventListener('click', () => {
+        renderSkillTree(); // S'assurer que l'arbre est à jour avant d'ouvrir
+        openModal(competencesModal);
+    });
+    fermerCompetencesModalBtn.addEventListener('click', () => closeModal(competencesModal));
 
-    dom.ascensionPaGain.textContent = formatNumber(paGain);
-    dom.ascensionMultiplier.textContent = formatNumber(newBonusValue);
+    ouvrirAutomatisationBtn.addEventListener('click', () => openModal(automatisationModal));
+    fermerAutomatisationModalBtn.addEventListener('click', () => closeModal(automatisationModal));
 
-    // Gérer l'affichage de l'avertissement
-    if (gameState.ascension.showAscensionWarning) {
-        openModal(dom.ascensionModal);
-    } else {
-        performAscension(); // Si l'avertissement est désactivé, effectuer directement l'ascension
-    }
-});
-dom.confirmAscension.addEventListener('click', () => {
-    gameState.ascension.showAscensionWarning = !dom.dontShowAscensionWarning.checked;
-    performAscension();
-});
-dom.cancelAscension.addEventListener('click', () => closeModal(dom.ascensionModal));
-
-dom.openSkillsModal.addEventListener('click', () => {
-    updateSkillTreeDisplay(); // Mettre à jour l'arbre avant d'ouvrir
-    openModal(dom.skillsModal);
-});
-dom.closeSkillsModal.addEventListener('click', () => closeModal(dom.skillsModal));
-
-
-// Réglages
-dom.toggleTheme.addEventListener('click', () => {
-    if (!gameState.hasBoughtTheme) {
-        if (gameState.images.isGreaterThanOrEqualTo(10)) {
-            gameState.images = gameState.images.minus(10);
-            gameState.hasBoughtTheme = true;
-            dom.themeCost.classList.add('hidden');
-            showNotification("Option 'Thème Jour / Nuit' achetée !", 'success');
+    // --- Écouteurs d'événements pour les réglages ---
+    toggleThemeBtn.addEventListener('click', toggleTheme);
+    acheterMultiX10X100Btn.addEventListener('click', () => {
+        if (pointsAscension >= 10 && !multiBuyX100Unlocked) {
+            pointsAscension -= 10;
+            multiBuyX10Unlocked = true;
+            multiBuyX100Unlocked = true; // Débloque les deux en même temps
+            showNotification("Options d'achat x10 et x100 débloquées !", 'success');
+            updateButtonStates();
+            checkUnlocks();
+            saveGame(); // Sauvegarder après l'achat d'amélioration
+        } else if (multiBuyX100Unlocked) {
+            showNotification("Options x10 et x100 déjà débloquées !", 'info');
         } else {
-            showNotification("Pas assez d'Images pour acheter le thème (Coût: 10 Images).", 'error');
-            return;
+            showNotification("Pas assez de PA pour débloquer les options x10 et x100.", 'error');
         }
-    }
-    gameState.theme = gameState.theme === 'light' ? 'dark' : 'light';
-    updateTheme();
-    saveGame();
-});
-
-dom.buyMultiX10X100.addEventListener('click', () => {
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(10)) {
-        gameState.pointsAscension = gameState.pointsAscension.minus(10);
-        gameState.hasMultiBuyX10X100 = true;
-        dom.multiBuyX10X100Option.classList.add('hidden');
-        dom.multiBuyOptions.classList.remove('hidden'); // Afficher les boutons x10 et x100
-        dom.buyX10.classList.remove('hidden');
-        dom.buyX100.classList.remove('hidden');
-        showNotification("Achat multiple x10 et x100 débloqué !", 'success');
-        updateUI();
-        saveGame();
-    } else {
-        showNotification("Pas assez de Points d'Ascension (Coût: 10 PA).", 'error');
-    }
-});
-
-dom.buyMultiXMax.addEventListener('click', () => {
-    if (gameState.pointsAscension.isGreaterThanOrEqualTo(100)) {
-        gameState.pointsAscension = gameState.pointsAscension.minus(100);
-        gameState.hasMultiBuyXMax = true;
-        dom.multiBuyXMaxOption.classList.add('hidden');
-        dom.multiBuyOptions.classList.remove('hidden'); // Afficher le bouton xMax
-        dom.buyXMax.classList.remove('hidden');
-        showNotification("Achat multiple xMax débloqué !", 'success');
-        updateUI();
-        saveGame();
-    } else {
-        showNotification("Pas assez de Points d'Ascension (Coût: 100 PA).", 'error');
-    }
-});
-
-// Automatisations
-dom.automateStudentCheckbox.addEventListener('change', () => {
-    if (dom.automateStudentCheckbox.checked) {
-        if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.student)) {
-            gameState.pointsAscension = gameState.pointsAscension.minus(gameState.automationCosts.student);
-            gameState.automateStudent = true;
-            showNotification("Automatisation Élève activée !", 'success');
+    });
+    acheterMultiXMaxBtn.addEventListener('click', () => {
+        if (pointsAscension >= 100 && !multiBuyXMaxUnlocked) {
+            pointsAscension -= 100;
+            multiBuyXMaxUnlocked = true;
+            showNotification("Option d'achat xMax débloquée !", 'success');
+            updateButtonStates();
+            checkUnlocks();
+            saveGame(); // Sauvegarder après l'achat d'amélioration
+        } else if (multiBuyXMaxUnlocked) {
+            showNotification("Option xMax déjà débloquée !", 'info');
         } else {
-            dom.automateStudentCheckbox.checked = false; // Annuler le coche
-            showNotification(`Pas assez de PA pour automatiser les Élèves (Coût: ${formatNumber(gameState.automationCosts.student)} PA).`, 'error');
+            showNotification("Pas assez de PA pour débloquer l'option xMax.", 'error');
         }
-    } else {
-        gameState.automateStudent = false;
-        showNotification("Automatisation Élève désactivée.", 'info');
-    }
-    saveGame();
-    updateUI();
-});
+    });
 
-dom.automateClassCheckbox.addEventListener('change', () => {
-    if (dom.automateClassCheckbox.checked) {
-        if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.classe)) {
-            gameState.pointsAscension = gameState.pointsAscension.minus(gameState.automationCosts.classe);
-            gameState.automateClass = true;
-            showNotification("Automatisation Classe activée !", 'success');
-        } else {
-            dom.automateClassCheckbox.checked = false;
-            showNotification(`Pas assez de PA pour automatiser les Classes (Coût: ${formatNumber(gameState.automationCosts.classe)} PA).`, 'error');
+    // --- Écouteurs d'événements pour les multiplicateurs d'achat ---
+    buyX1Btn.addEventListener('click', () => setBuyMultiplier(1));
+    buyX10Btn.addEventListener('click', () => setBuyMultiplier(10));
+    buyX100Btn.addEventListener('click', () => setBuyMultiplier(100));
+    buyXMaxBtn.addEventListener('click', () => setBuyMultiplier('max'));
+
+    // Initialiser le multiplicateur d'achat à x1
+    setBuyMultiplier(1);
+
+    // --- Écouteurs d'événements pour les toggles d'automatisation ---
+    autoEleveToggle.addEventListener('change', () => { toggleAutomation('eleve'); saveGame(); });
+    autoClasseToggle.addEventListener('change', () => { toggleAutomation('classe'); saveGame(); });
+    autoImageToggle.addEventListener('change', () => { toggleAutomation('image'); saveGame(); });
+    autoProfesseurToggle.addEventListener('change', () => { toggleAutomation('professeur'); saveGame(); });
+
+    // --- Écouteurs d'événements pour la sauvegarde/chargement/réinitialisation ---
+    saveGameBtn.addEventListener('click', saveGame);
+    loadGameBtn.addEventListener('click', () => {
+        if (loadGame()) { // Only update if load was successful
+            calculateBPS();
+            updateRessourcesDisplay();
+            updateConstructionDisplay();
+            updateButtonStates();
+            checkUnlocks();
+            renderSkillTree();
+            setBuyMultiplier(currentBuyMultiplier); // Ensure correct multiplier is highlighted
         }
-    } else {
-        gameState.automateClass = false;
-        showNotification("Automatisation Classe désactivée.", 'info');
-    }
-    saveGame();
-    updateUI();
+    });
+    resetGameBtn.addEventListener('click', resetGame);
 });
-
-dom.automateImageCheckbox.addEventListener('change', () => {
-    if (dom.automateImageCheckbox.checked) {
-        if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.image)) {
-            gameState.pointsAscension = gameState.pointsAscension.minus(gameState.automationCosts.image);
-            gameState.automateImage = true;
-            showNotification("Automatisation Image activée !", 'success');
-        } else {
-            dom.automateImageCheckbox.checked = false;
-            showNotification(`Pas assez de PA pour automatiser les Images (Coût: ${formatNumber(gameState.automationCosts.image)} PA).`, 'error');
-        }
-    } else {
-        gameState.automateImage = false;
-        showNotification("Automatisation Image désactivée.", 'info');
-    }
-    saveGame();
-    updateUI();
-});
-
-dom.automateProfessorCheckbox.addEventListener('change', () => {
-    if (dom.automateProfessorCheckbox.checked) {
-        if (gameState.pointsAscension.isGreaterThanOrEqualTo(gameState.automationCosts.professor)) {
-            gameState.pointsAscension = gameState.pointsAscension.minus(gameState.automationCosts.professor);
-            gameState.automateProfessor = true;
-            showNotification("Automatisation Professeur activée !", 'success');
-        } else {
-            dom.automateProfessorCheckbox.checked = false;
-            showNotification(`Pas assez de PA pour automatiser les Professeurs (Coût: ${formatNumber(gameState.automationCosts.professor)} PA).`, 'error');
-        }
-    } else {
-        gameState.automateProfessor = false;
-        showNotification("Automatisation Professeur désactivée.", 'info');
-    }
-    saveGame();
-    updateUI();
-});
-
-
-// --- Démarrage du Jeu ---
-window.onload = initFirebase; // Initialiser Firebase au chargement de la page
