@@ -7,13 +7,20 @@
     <script src="https://cdn.jsdelivr.net/gh/Patashu/break_infinity.js/break_infinity.min.js"></script>
     <style>
         body {
-            font-family: 'Inter', sans-serif; /* Utilisation de la police Inter */
-            display: flex; /* Utilisation de flexbox pour la mise en page principale */
-            min-height: 100vh; /* S'assure que le corps prend au moins toute la hauteur de la vue */
-            background-color: #f0f2f5; /* Couleur de fond légère */
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            flex-direction: column; /* Changé pour que le footer soit en bas */
+            min-height: 100vh;
+            background-color: #f0f2f5;
             color: #333;
-            margin: 0; /* Supprime les marges par défaut du corps */
-            transition: background-color 0.5s ease, color 0.5s ease; /* Transition douce pour le thème */
+            margin: 0;
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        .main-game-wrapper { /* Nouveau wrapper pour le menu latéral et le contenu principal */
+            display: flex;
+            flex-grow: 1; /* Prend l'espace disponible */
+            width: 100%;
         }
 
         /* Styles pour le thème nuit */
@@ -29,7 +36,7 @@
         body.dark-theme #ascensionMenuContainer,
         body.dark-theme #automationContainer,
         body.dark-theme #questsContainer,
-        body.dark-theme #achievementsContainer, /* New: Achievements */
+        body.dark-theme #achievementsContainer,
         body.dark-theme .modal-content,
         body.dark-theme .achat-section {
             background-color: #3a3a3a;
@@ -43,12 +50,12 @@
         body.dark-theme #ascensionMenuContainer h1,
         body.dark-theme #automationContainer h1,
         body.dark-theme #questsContainer h1,
-        body.dark-theme #achievementsContainer h1, /* New: Achievements */
+        body.dark-theme #achievementsContainer h1,
         body.dark-theme .skill-branch h3,
         body.dark-theme #automationSection h3,
         body.dark-theme #activeQuests h3,
         body.dark-theme #completedQuests h3 {
-            color: #76FF03; /* Vert clair pour les titres en mode nuit */
+            color: #76FF03;
         }
 
         body.dark-theme button {
@@ -63,58 +70,64 @@
         }
 
         body.dark-theme button.can-afford {
-            border-color: #76FF03; /* Vert clair pour les boutons achetables en mode nuit */
+            border-color: #76FF03;
         }
 
         body.dark-theme button.cannot-afford {
-            border-color: #FF4500; /* Orange-rouge pour les non-achetables en mode nuit */
+            border-color: #FF4500;
         }
 
         body.dark-theme .bons-points-color {
-            color: #76FF03; /* Vert clair */
+            color: #76FF03;
         }
 
         body.dark-theme .images-color {
-            color: #DA70D6; /* Magenta */
+            color: #DA70D6;
         }
 
         body.dark-theme .eleves-color {
-            color: #f0f0f0; /* Blanc */
+            color: #f0f0f0;
         }
         
         body.dark-theme .ascension-points-color {
-            color: #00BFFF; /* Bleu ciel pour PA en mode nuit */
+            color: #00BFFF;
             font-weight: bold;
         }
         body.dark-theme .warning-color {
-            color: #FF6347; /* Rouge/Orange pour les avertissements */
+            color: #FF6347;
             font-weight: bold;
         }
         body.dark-theme .info-color {
-            color: #1E90FF; /* Bleu Dodger pour les informations en mode nuit */
+            color: #1E90FF;
             font-weight: bold;
         }
         body.dark-theme .achievement-unlocked {
-            background-color: #4CAF50; /* Vert pour succès débloqué */
+            background-color: #4CAF50;
             color: white;
+        }
+        body.dark-theme #page-footer { /* Style du footer en mode nuit */
+            background-color: #252525;
+            color: #aaa;
+            border-top: 1px solid #444;
         }
 
 
         /* Styles du menu latéral */
         #side-menu {
-            width: 250px; /* Largeur fixe du menu latéral */
+            width: 250px;
             background-color: #ffffff;
             border-right: 1px solid #e0e0e0;
             padding: 20px;
-            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05); /* Ombre légère sur le côté */
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
             display: flex;
             flex-direction: column;
-            gap: 15px; /* Espacement réduit entre les sections d'achat */
-            position: sticky; /* Rendre le menu collant */
-            top: 0; /* Collé en haut */
-            align-self: flex-start; /* Aligner en haut dans le conteneur flex */
-            height: 100vh; /* Prend toute la hauteur de la vue */
-            overflow-y: auto; /* Permet le défilement si le contenu dépasse */
+            gap: 15px;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            height: 100vh; /* Changé pour s'adapter au wrapper */
+            max-height: 100vh; /* Assure que le menu ne dépasse pas la hauteur de la vue */
+            overflow-y: auto;
         }
 
         #side-menu h2 {
@@ -125,7 +138,7 @@
 
         .achat-section {
             border: 1px solid #eee;
-            padding: 10px; /* Padding réduit */
+            padding: 10px;
             border-radius: 8px;
             background-color: #f9f9f9;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -134,41 +147,43 @@
         .achat-section p {
             margin-top: 5px;
             margin-bottom: 5px;
-            font-size: 0.9em; /* Taille de police légèrement réduite */
+            font-size: 0.9em;
         }
 
         .achat-section button {
-            width: 100%; /* Boutons prennent toute la largeur de la section */
-            margin-top: 8px; /* Marge réduite */
-            padding: 10px 20px; /* Padding ajusté */
-            font-size: 15px; /* Taille de police ajustée */
+            width: 100%;
+            margin-top: 8px;
+            padding: 10px 20px;
+            font-size: 15px;
         }
 
         /* Styles du contenu principal du jeu */
         #main-content {
-            flex-grow: 1; /* Prend l'espace restant */
+            flex-grow: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 30px; /* Padding réduit */
+            padding-top: 30px;
+            overflow-y: auto; /* Permet le défilement si le contenu dépasse */
+            max-height: 100vh; /* S'assure que le contenu principal ne dépasse pas la hauteur de la vue */
         }
 
         .container {
             text-align: center;
             background-color: #ffffff;
             border: 1px solid #e0e0e0;
-            padding: 20px; /* Padding réduit */
-            border-radius: 12px; /* Coins arrondis */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); /* Ombre douce */
-            max-width: 90%; /* Largeur fluide */
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 90%;
             width: 500px;
         }
 
         button {
-            padding: 10px 20px; /* Padding ajusté */
-            font-size: 16px; /* Taille de police ajustée */
+            padding: 10px 20px;
+            font-size: 16px;
             cursor: pointer;
-            margin-top: 10px; /* Marge réduite */
+            margin-top: 10px;
             background-color: white; 
             color: #333; 
             border: 2px solid #ccc; 
@@ -231,14 +246,14 @@
 
         #notifications-container {
             position: fixed;
-            bottom: 20px; /* Changed to bottom */
+            bottom: 20px;
             right: 20px;
             display: flex;
-            flex-direction: column-reverse; /* New notifications appear on top */
+            flex-direction: column-reverse;
             gap: 10px;
             z-index: 1000;
-            max-height: 300px; /* Limit height */
-            overflow-y: auto; /* Scroll if too many */
+            max-height: 300px;
+            overflow-y: auto;
         }
 
         .notification-item {
@@ -248,13 +263,13 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             opacity: 0; 
-            animation: fadeInOutSmooth 5s forwards; /* Longer duration, smoother animation */
+            animation: fadeInOutSmooth 5s forwards;
         }
 
-        @keyframes fadeInOutSmooth { /* Updated animation */
+        @keyframes fadeInOutSmooth {
             0% { opacity: 0; transform: translateX(100%); }
             10% { opacity: 1; transform: translateX(0); }
-            80% { opacity: 1; transform: translateX(0); } /* Stays visible longer */
+            80% { opacity: 1; transform: translateX(0); }
             100% { opacity: 0; transform: translateX(100%); }
         }
 
@@ -275,7 +290,7 @@
         }
         
         .ascension-points-color { 
-            color: #007BFF; /* Bleu standard pour PA */
+            color: #007BFF;
             font-weight: bold;
         }
         .warning-color {
@@ -287,7 +302,7 @@
             font-weight: bold;
         }
 
-        #confirmResetModal, #confirmAscensionModal { /* Removed confirmElevePurchaseModal */
+        #confirmResetModal, #confirmAscensionModal {
             position: fixed;
             top: 0;
             left: 0;
@@ -307,7 +322,7 @@
             border-radius: 12px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             text-align: center;
-            max-width: 450px; /* Slightly wider for more content */
+            max-width: 450px;
             width: 90%;
         }
 
@@ -348,7 +363,7 @@
             color: #007BFF; 
         }
 
-        #skillTreeContainer, #settingsContainer, #ascensionMenuContainer, #automationContainer, #questsContainer, #achievementsContainer { /* Added achievementsContainer */
+        #skillTreeContainer, #settingsContainer, #ascensionMenuContainer, #automationContainer, #questsContainer, #achievementsContainer {
             width: 100%;
             max-width: 1200px;
             margin-top: 30px;
@@ -361,7 +376,7 @@
             align-items: center;
         }
 
-        #skillTreeContainer h1, #settingsContainer h1, #ascensionMenuContainer h1, #automationContainer h1, #questsContainer h1, #achievementsContainer h1 { /* Added achievementsContainer */
+        #skillTreeContainer h1, #settingsContainer h1, #ascensionMenuContainer h1, #automationContainer h1, #questsContainer h1, #achievementsContainer h1 {
             color: #4CAF50;
             margin-bottom: 20px;
         }
@@ -375,7 +390,7 @@
 
         #skills-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* More responsive grid */
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 20px; 
             width: 100%;
             justify-items: center; 
@@ -385,7 +400,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px; /* Reduced gap */
+            gap: 15px;
             padding: 15px;
             border: 1px solid #e0e0e0;
             border-radius: 12px;
@@ -407,14 +422,14 @@
             flex-direction: column;
             align-items: center;
             position: relative; 
-            padding-bottom: 20px; /* Reduced space */
+            padding-bottom: 20px;
         }
 
         .skill-wrapper:not(:last-child)::after {
             content: '';
             position: absolute;
             width: 2px;
-            height: 20px; /* Reduced length */
+            height: 20px;
             background-color: #a0a0a0;
             bottom: 0; 
             left: 50%;
@@ -431,15 +446,15 @@
         }
 
         .skill-node {
-            width: 90px; /* Reduced size */
-            height: 90px; /* Reduced size */
+            width: 90px;
+            height: 90px;
             border-radius: 50%; 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            font-size: 0.75em; /* Adjusted font */
+            font-size: 0.75em;
             font-weight: bold;
             border: 3px solid;
             cursor: pointer;
@@ -524,9 +539,13 @@
         .skill-flavor-text {
             font-size: 0.7em;
             font-style: italic;
-            color: #ccc;
+            color: #ccc; /* Adjusted for dark theme potentially */
             margin-top: 5px;
         }
+        body.dark-theme .skill-flavor-text {
+            color: #777; /* Lighter gray for dark theme */
+        }
+
 
         .multiplier-button {
             width: 60px; 
@@ -587,7 +606,7 @@
             color: #ccc;
         }
         body.dark-theme .achievement-item.unlocked {
-            background-color: #2e7d32; /* Darker green for unlocked in dark mode */
+            background-color: #2e7d32; 
             border-color: #76FF03;
         }
         body.dark-theme .achievement-item.unlocked h4,
@@ -596,132 +615,143 @@
             color: #e8f5e9;
         }
 
+        #page-footer { /* Style du footer */
+            text-align: center;
+            padding: 15px;
+            font-size: 0.8em;
+            color: #777;
+            background-color: #e9e9e9;
+            border-top: 1px solid #ddd;
+            width: 100%; /* Assure que le footer prend toute la largeur */
+            box-sizing: border-box; /* Inclut padding et border dans la largeur totale */
+        }
 
     </style>
 </head>
 <body>
-    <div id="side-menu">
-        <h2>Achats</h2>
-        <div id="purchaseMultiplierSelection" class="achat-section" style="display: none; text-align: center;">
-            <h3>Quantité d'achat</h3>
-            <div style="display: flex; justify-content: space-around; margin-top: 10px;">
-                <button id="setMultiplierX1" class="multiplier-button active">x1</button>
-                <button id="setMultiplierX10" class="multiplier-button">x10</button>
-                <button id="setMultiplierX100" class="multiplier-button">x100</button>
-                <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> </div>
+    <div class="main-game-wrapper"> <div id="side-menu">
+            <h2>Achats</h2>
+            <div id="purchaseMultiplierSelection" class="achat-section" style="display: none; text-align: center;">
+                <h3>Quantité d'achat</h3>
+                <div style="display: flex; justify-content: space-around; margin-top: 10px;">
+                    <button id="setMultiplierX1" class="multiplier-button active">x1</button>
+                    <button id="setMultiplierX10" class="multiplier-button">x10</button>
+                    <button id="setMultiplierX100" class="multiplier-button">x100</button>
+                    <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> </div>
+            </div>
+            <div id="achatEleveSection" class="achat-section" style="display: none;">
+                <button id="acheterEleveButton">Élève : <span class="bons-points-color">10 BP</span></button>
+                <p>Quantité : <span id="nombreEleves">0</span></p>
+                <p class="production" title="Production de bons points par seconde par élève">bp/s élèves : <span id="elevesBpsPerItem">0</span></p>
+            </div>
+            <div id="achatClasseSection" class="achat-section" style="display: none;">
+                <button id="acheterClasseButton">Salle de classe : <span class="bons-points-color">100 BP</span></button> <p>Quantité : <span id="nombreClasses">0</span></p>
+                <p class="production" title="Production de bons points par seconde par classe">bp/s classes : <span id="classesBpsPerItem">0</span></p>
+            </div>
+            <div id="achatImageSection" class="achat-section" style="display: none;">
+                <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
+            </div>
+            <div id="achatProfesseurSection" class="achat-section" style="display: none;">
+                <button id="acheterProfesseurButton">Professeur : <span class="images-color">2 I</span></button>
+                <p>Quantité : <span id="professeurs">0</span></p>
+            </div>
+            <div id="automationSection" class="achat-section" style="display: none;"> <h3>Automatisation</h3>
+                <button id="autoEleveButton">Automatiser Élèves : <span class="ascension-points-color">100 PA</span></button>
+                <button id="autoClasseButton">Automatiser Classes : <span class="ascension-points-color">500 PA</span></button> <button id="autoImageButton">Automatiser Images : <span class="ascension-points-color">10 k PA</span></button>
+                <button id="autoProfesseurButton">Automatiser Professeurs : <span class="ascension-points-color">100 k PA</span></button>
+            </div>
+            <button id="skillsButton" style="display: none;">Compétences</button>
+            <button id="settingsButton" style="display: none;">Paramètres</button>
+            <button id="ascensionMenuButton" style="display: none; background-color: #007BFF; color: white;">Menu Ascension</button>
+            <button id="ascensionButton" style="display: none; background-color: #007BFF; color: white;">Ascension</button>
+            <button id="questsButton" style="display: none;">Quêtes</button>
+            <button id="achievementsButton" style="display: none;">Succès</button> <button id="resetSkillsButton" style="display: none; background-color: #f44336; color: white;">Réinitialiser Compétences</button>
         </div>
-        <div id="achatEleveSection" class="achat-section" style="display: none;">
-            <button id="acheterEleveButton">Élève : <span class="bons-points-color">10 BP</span></button>
-            <p>Quantité : <span id="nombreEleves">0</span></p>
-            <p class="production" title="Production de bons points par seconde par élève">bp/s élèves : <span id="elevesBpsPerItem">0</span></p>
-        </div>
-        <div id="achatClasseSection" class="achat-section" style="display: none;">
-            <button id="acheterClasseButton">Salle de classe : <span class="bons-points-color">100 BP</span></button> <p>Quantité : <span id="nombreClasses">0</span></p>
-            <p class="production" title="Production de bons points par seconde par classe">bp/s classes : <span id="classesBpsPerItem">0</span></p>
-        </div>
-        <div id="achatImageSection" class="achat-section" style="display: none;">
-            <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
-        </div>
-        <div id="achatProfesseurSection" class="achat-section" style="display: none;">
-            <button id="acheterProfesseurButton">Professeur : <span class="images-color">2 I</span></button>
-            <p>Quantité : <span id="professeurs">0</span></p>
-        </div>
-        <div id="automationSection" class="achat-section" style="display: none;"> <h3>Automatisation</h3>
-            <button id="autoEleveButton">Automatiser Élèves : <span class="ascension-points-color">100 PA</span></button>
-            <button id="autoClasseButton">Automatiser Classes : <span class="ascension-points-color">500 PA</span></button> <button id="autoImageButton">Automatiser Images : <span class="ascension-points-color">10 k PA</span></button>
-            <button id="autoProfesseurButton">Automatiser Professeurs : <span class="ascension-points-color">100 k PA</span></button>
-        </div>
-        <button id="skillsButton" style="display: none;">Compétences</button>
-        <button id="settingsButton" style="display: none;">Paramètres</button>
-        <button id="ascensionMenuButton" style="display: none; background-color: #007BFF; color: white;">Menu Ascension</button>
-        <button id="ascensionButton" style="display: none; background-color: #007BFF; color: white;">Ascension</button>
-        <button id="questsButton" style="display: none;">Quêtes</button>
-        <button id="achievementsButton" style="display: none;">Succès</button> <button id="resetSkillsButton" style="display: none; background-color: #f44336; color: white;">Réinitialiser Compétences</button>
-    </div>
 
-    <div id="main-content">
-        <div class="container">
-            <div class="ressources">
-                <div class="resource-group">
-                    <p>Bons points : <span id="bonsPoints" class="bons-points-color">0</span> <span class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
-                    <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount" class="images-color">0</span></p>
+        <div id="main-content">
+            <div class="container">
+                <div class="ressources">
+                    <div class="resource-group">
+                        <p>Bons points : <span id="bonsPoints" class="bons-points-color">0</span> <span class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
+                        <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount" class="images-color">0</span></p>
+                    </div>
+                    <div class="resource-group">
+                        <p id="ascensionBonusDisplay" style="display: none;">Bonus d'Ascension : <span id="ascensionBonusValue" class="ascension-points-color">1.00x</span></p>
+                        <p id="currentAscensionPointsDisplay" style="display: none;">Points d'Ascension : <span id="ascensionPointsCount" class="ascension-points-color">0</span> <span class="production-inline">(Total: <span id="totalPAEarnedSpanInline">0</span> PA)</span></p>
+                        <p id="ascensionCountDisplay" style="display: none;">Ascensions : <span id="ascensionCountSpan" class="ascension-points-color">0</span></p>
+                    </div>
                 </div>
-                <div class="resource-group">
-                    <p id="ascensionBonusDisplay" style="display: none;">Bonus d'Ascension : <span id="ascensionBonusValue" class="ascension-points-color">1.00x</span></p>
-                    <p id="currentAscensionPointsDisplay" style="display: none;">Points d'Ascension : <span id="ascensionPointsCount" class="ascension-points-color">0</span> <span class="production-inline">(Total: <span id="totalPAEarnedSpanInline">0</span> PA)</span></p>
-                    <p id="ascensionCountDisplay" style="display: none;">Ascensions : <span id="ascensionCountSpan" class="ascension-points-color">0</span></p>
+
+                <button id="etudierButton">Étudier sagement</button> </div>
+
+            <div id="skillTreeContainer">
+                <h1>Arbre de Compétences</h1>
+                <p id="availableProfessorsDisplay">Professeurs disponibles : <span id="availableProfessorsCount" class="images-color">0</span></p>
+                <div id="skills-grid">
                 </div>
             </div>
 
-            <button id="etudierButton">Étudier sagement (+1 BP)</button>
-        </div>
-
-        <div id="skillTreeContainer">
-            <h1>Arbre de Compétences</h1>
-            <p id="availableProfessorsDisplay">Professeurs disponibles : <span id="availableProfessorsCount" class="images-color">0</span></p>
-            <div id="skills-grid">
-            </div>
-        </div>
-
-        <div id="settingsContainer">
-            <h1>Paramètres</h1>
-            <div class="achat-section">
-                <button id="themeToggleButton">Débloquer option Thème (10 I)</button>
-            </div>
-            <div class="achat-section">
-                <button id="resetProgressionButton" style="background-color: #FF6347; color: white;">Réinitialiser la Progression (10 I)</button>
-            </div>
-             <div class="achat-section">
-                <label for="offlineProgressToggle">Activer progression hors ligne :</label>
-                <input type="checkbox" id="offlineProgressToggle" checked>
-            </div>
-        </div>
-
-        <div id="ascensionMenuContainer">
-            <h1>Menu Ascension</h1>
-            <p>Points d'Ascension disponibles : <span id="ascensionMenuPACount" class="ascension-points-color">0</span></p>
-            <div class="achat-section">
-                <button id="acheterEcoleButton">Acheter une école : <span id="coutEcole" class="ascension-points-color">15 PA</span></button>
-                <p>Quantité : <span id="nombreEcoles">0</span></p>
-                <p class="production">Multiplicateur BP/s : <span id="ecoleMultiplier">1.0x</span></p>
-            </div>
-            <div id="achatLyceeSection" class="achat-section" style="display: none;">
-                <button id="acheterLyceeButton">Lycée : <span class="ascension-points-color">50 PA</span></button>
-                <p>Quantité : <span id="nombreLyceesDisplay">0</span></p>
-                <p class="production">Boost multiplicateur Écoles : <span id="lyceeMultiplierDisplay">1.0x</span></p>
-            </div>
-            <div id="achatCollegeSection" class="achat-section" style="display: none;"> <button id="acheterCollegeButton">Collège : <span class="ascension-points-color">250 PA</span></button>
-                <p>Quantité : <span id="nombreCollegesDisplay">0</span></p>
-                <p class="production">Boost production Écoles : <span id="collegeMultiplierDisplay">1.0x</span></p>
-            </div>
-            <div class="achat-section">
-                <button id="unlockMultiPurchaseButton">Débloquer Achat Multiple : <span class="ascension-points-color">10 PA</span></button>
-            </div>
-            <div class="achat-section">
-                <button id="unlockMaxPurchaseButton">Débloquer Achat Multiple Max : <span class="ascension-points-color">100 PA</span></button> </div>
-            <div class="achat-section">
-                <button id="unlockNewSettingsButton">Débloquer de nouveaux réglages : <span class="ascension-points-color">10 PA</span></button>
-            </div>
-            <div class="achat-section">
-                <button id="unlockAutomationCategoryButton">Débloquer Automatisation : <span class="ascension-points-color">1 k PA</span></button> </div>
-        </div>
-
-        <div id="questsContainer" style="display: none;"> <h1>Quêtes</h1>
-            <div id="activeQuests" class="achat-section">
-                <h3>Quêtes Actives</h3>
-                <div id="questsList"></div>
-            </div>
-            <div id="completedQuests" class="achat-section">
-                <h3>Quêtes Terminées</h3>
-                <div id="completedQuestsList"></div>
-            </div>
-        </div>
-
-        <div id="achievementsContainer" style="display: none;"> <h1>Succès</h1>
-            <div id="achievementsGrid">
+            <div id="settingsContainer">
+                <h1>Paramètres</h1>
+                <div class="achat-section">
+                    <button id="themeToggleButton">Débloquer option Thème (10 I)</button>
                 </div>
-        </div>
-    </div>
+                <div class="achat-section">
+                    <button id="resetProgressionButton" style="background-color: #FF6347; color: white;">Réinitialiser la Progression (10 I)</button>
+                </div>
+                 <div class="achat-section">
+                    <label for="offlineProgressToggle">Activer progression hors ligne :</label>
+                    <input type="checkbox" id="offlineProgressToggle" checked>
+                </div>
+            </div>
+
+            <div id="ascensionMenuContainer">
+                <h1>Menu Ascension</h1>
+                <p>Points d'Ascension disponibles : <span id="ascensionMenuPACount" class="ascension-points-color">0</span></p>
+                <div class="achat-section">
+                    <button id="acheterEcoleButton">Acheter une école : <span id="coutEcole" class="ascension-points-color">15 PA</span></button>
+                    <p>Quantité : <span id="nombreEcoles">0</span></p>
+                    <p class="production">Multiplicateur BP/s : <span id="ecoleMultiplier">1.0x</span></p>
+                </div>
+                <div id="achatLyceeSection" class="achat-section" style="display: none;">
+                    <button id="acheterLyceeButton">Lycée : <span class="ascension-points-color">50 PA</span></button>
+                    <p>Quantité : <span id="nombreLyceesDisplay">0</span></p>
+                    <p class="production">Boost multiplicateur Écoles : <span id="lyceeMultiplierDisplay">1.0x</span></p>
+                </div>
+                <div id="achatCollegeSection" class="achat-section" style="display: none;"> <button id="acheterCollegeButton">Collège : <span class="ascension-points-color">250 PA</span></button>
+                    <p>Quantité : <span id="nombreCollegesDisplay">0</span></p>
+                    <p class="production">Boost production Écoles : <span id="collegeMultiplierDisplay">1.0x</span></p>
+                </div>
+                <div class="achat-section">
+                    <button id="unlockMultiPurchaseButton">Débloquer Achat Multiple : <span class="ascension-points-color">10 PA</span></button>
+                </div>
+                <div class="achat-section">
+                    <button id="unlockMaxPurchaseButton">Débloquer Achat Multiple Max : <span class="ascension-points-color">100 PA</span></button> </div>
+                <div class="achat-section">
+                    <button id="unlockNewSettingsButton">Débloquer de nouveaux réglages : <span class="ascension-points-color">10 PA</span></button>
+                </div>
+                <div class="achat-section">
+                    <button id="unlockAutomationCategoryButton">Débloquer Automatisation : <span class="ascension-points-color">1 k PA</span></button> </div>
+            </div>
+
+            <div id="questsContainer" style="display: none;"> <h1>Quêtes</h1>
+                <div id="activeQuests" class="achat-section">
+                    <h3>Quêtes Actives</h3>
+                    <div id="questsList"></div>
+                </div>
+                <div id="completedQuests" class="achat-section">
+                    <h3>Quêtes Terminées</h3>
+                    <div id="completedQuestsList"></div>
+                </div>
+            </div>
+
+            <div id="achievementsContainer" style="display: none;"> <h1>Succès</h1>
+                <div id="achievementsGrid">
+                    </div>
+            </div>
+        </div> </div> <footer id="page-footer">
+        Crée par Terrafaust & IA
+    </footer>
 
     <div id="notifications-container"></div>
 
@@ -783,40 +813,36 @@
             if (num.abs().gte(new Decimal('1e' + exponentThreshold))) {
                 return num.toExponential(2); // e.g., 1.23e+9
             }
-            // For numbers between 1,000 and the threshold, use locale string for thousands separators
             else if (num.abs().gte(1000)) {
-                // Convert to Number for toLocaleString, acknowledging potential minor precision loss for display only
-                // This is safe for numbers up to Number.MAX_SAFE_INTEGER (approx 9e15)
                 return num.toNumber().toLocaleString('fr-FR', {
                     minimumFractionDigits: decimalPlaces,
                     maximumFractionDigits: decimalPlaces
                 });
             }
-            // For smaller numbers, use toFixed for consistent decimal places
             else {
                 return num.toFixed(decimalPlaces);
             }
         }
 
 
-        // Variables du jeu - Initialisées avec Decimal(0) from break_infinity.js
+        // Game variables - Initialized with Decimal(0) from break_infinity.js
         let bonsPoints = new Decimal(0);
         let bonsPointsParSecondeEleves = new Decimal(0);
         let bonsPointsParSecondeClasses = new Decimal(0);
         let totalBonsPointsParSeconde = new Decimal(0);
         let nombreEleves = new Decimal(0);
         const coutEleveBase = new Decimal(10);
-        const coutEleveGrowth = new Decimal(1.15); // Growth factor for student cost
+        const coutEleveGrowth = new Decimal(1.15);
         let coutEleveActuel;
         let nombreClasses = new Decimal(0);
-        const coutClasseBase = new Decimal(100); // Cost in BP
-        const coutClasseGrowth = new Decimal(1.20); // Growth factor for class cost
+        const coutClasseBase = new Decimal(100);
+        const coutClasseGrowth = new Decimal(1.20);
         let coutClasseActuel;
 
         let images = new Decimal(0);
         let nombreProfesseurs = new Decimal(0);
         let professorsUsedForSkills = new Decimal(0);
-        let multiplicateurProfesseur = new Decimal(1); // Multiplies class production
+        let multiplicateurProfesseur = new Decimal(1);
         let s15Clicks = new Decimal(0); 
         let ascensionPoints = new Decimal(0); 
         let ascensionCount = new Decimal(0); 
@@ -829,7 +855,7 @@
         const coutEcoleBase = new Decimal(15);
         const coutEcoleGrowth = new Decimal(1.5);
         let coutEcoleActuel;
-        let schoolBaseMultiplier = new Decimal(0.5); // Base multiplier per school
+        let schoolBaseMultiplier = new Decimal(0.5);
 
         let newSettingsUnlocked = false; 
         let multiPurchaseOptionUnlocked = false; 
@@ -839,21 +865,20 @@
         let lyceesUnlocked = false;
         let nombreLycees = new Decimal(0);
         const coutLyceeBase = new Decimal(50);
-        const coutLyceeGrowth = new Decimal(1.3); // Adjusted growth
+        const coutLyceeGrowth = new Decimal(1.3);
         let coutLyceeActuel;
-        let lyceeSchoolBoost = new Decimal(0.2); // Lycees boost school multiplier
+        let lyceeSchoolBoost = new Decimal(0.2);
 
-        // New: Collège variables
         let collegesUnlocked = false;
         let nombreColleges = new Decimal(0);
-        const coutCollegeBase = new Decimal(250); // Cost in PA
-        const coutCollegeGrowth = new Decimal(1.4); // Growth factor
+        const coutCollegeBase = new Decimal(250);
+        const coutCollegeGrowth = new Decimal(1.4);
         let coutCollegeActuel;
-        let collegeEcoleProductionBoost = new Decimal(0.15); // Colleges boost ecole production directly
+        let collegeEcoleProductionBoost = new Decimal(0.15);
 
         let automationCategoryUnlocked = false; 
         let autoEleveActive = false; 
-        let autoClasseActive = false; // New: Auto Classes
+        let autoClasseActive = false;
         let autoImageActive = false; 
         let autoProfesseurActive = false; 
 
@@ -865,29 +890,27 @@
         let settingsButtonUnlocked = false;
         let ascensionMenuButtonUnlocked = false; 
         let questsUnlocked = false; 
-        let achievementsButtonUnlocked = false; // New: Achievements button
-
-        // Removed disableEleveWarning, as the complex cost structure is gone.
+        let achievementsButtonUnlocked = false;
 
         let unlockedSkills = {};
-        let bonusPointsClaimed = {}; // Simplified, will be populated by thresholds
+        let bonusPointsClaimed = {};
 
         let skillEffects = {
             eleveBpsBonus: new Decimal(0),
-            classeBpsBonus: new Decimal(0), // New: Direct BPS bonus for classes
+            classeBpsBonus: new Decimal(0),
             eleveCostReduction: new Decimal(0),
             classeCostReduction: new Decimal(0),
             imageCostReduction: new Decimal(0),
             professeurCostReduction: new Decimal(0),
             totalBpsMultiplierBonus: new Decimal(0),
-            clickBonsPointsBonus: new Decimal(1) // Base click is 1 BP
+            clickBonsPointsBonus: new Decimal(1) // Base click is 1 BP, skills add to this
         };
         
-        let permanentBpsBonusFromAchievements = new Decimal(0); // New: Bonus from achievements
+        let permanentBpsBonusFromAchievements = new Decimal(0);
 
         let isDayTheme = true;
         let themeOptionUnlocked = false;
-        let offlineProgressEnabled = true; // New: Toggle for offline progress
+        let offlineProgressEnabled = true;
 
         const fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170, 1836311903, 2971215073, 4807526976, 7778742049, 12586269025, 20365011074].map(num => new Decimal(num));
         const prime_PA = [0, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113].map(num => new Decimal(num));
@@ -896,7 +919,7 @@
             {
                 id: 'Q1_Schools',
                 name: 'Maître des Écoles',
-                description: 'Construisez 5 Écoles pour prouver votre dévouement à l\'éducation.', // Target adjusted
+                description: 'Construisez 5 Écoles pour prouver votre dévouement à l\'éducation.',
                 targetType: 'schoolCount',
                 targetValue: new Decimal(5),
                 reward: { type: 'unlockPurchase', itemId: 'lycee' },
@@ -910,14 +933,13 @@
                 description: 'Possédez 3 Lycées pour étendre votre influence.',
                 targetType: 'lyceeCount',
                 targetValue: new Decimal(3),
-                reward: { type: 'unlockPurchase', itemId: 'college' }, // Unlocks College
+                reward: { type: 'unlockPurchase', itemId: 'college' },
                 rewardMessage: 'Vous avez débloqué les Collèges !',
-                unlocked: false, // Starts locked
+                unlocked: false,
                 completed: false
             }
         ];
 
-        // New: Achievements Data
         const achievementsData = [
             { id: 'ACH_BP_1K', name: 'Mille Points', description: 'Atteindre 1 000 Bons Points.', condition: () => bonsPoints.gte('1e3'), rewardText: '+1% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.01); }, unlocked: false },
             { id: 'ACH_BP_1M', name: 'Millionnaire en BP', description: 'Atteindre 1 Million de Bons Points.', condition: () => bonsPoints.gte('1e6'), rewardText: '+2% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.02); }, unlocked: false },
@@ -928,7 +950,7 @@
         let unlockedAchievements = {};
 
 
-        // Récupération des éléments HTML (condensed for brevity, many are similar)
+        // HTML Element Retrievals (condensed for brevity)
         const bonsPointsSpan = document.getElementById('bonsPoints');
         const totalBpsInlineSpan = document.getElementById('totalBpsInline');
         const elevesBpsPerItemSpan = document.getElementById('elevesBpsPerItem');
@@ -948,7 +970,7 @@
         const ascensionButton = document.getElementById('ascensionButton');
         const ascensionMenuButton = document.getElementById('ascensionMenuButton');
         const questsButton = document.getElementById('questsButton');
-        const achievementsButton = document.getElementById('achievementsButton'); // New
+        const achievementsButton = document.getElementById('achievementsButton');
         const resetSkillsButton = document.getElementById('resetSkillsButton');
         const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
         const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
@@ -968,7 +990,7 @@
         const settingsContainer = document.getElementById('settingsContainer');
         const themeToggleButton = document.getElementById('themeToggleButton');
         const resetProgressionButton = document.getElementById('resetProgressionButton');
-        const offlineProgressToggle = document.getElementById('offlineProgressToggle'); // New
+        const offlineProgressToggle = document.getElementById('offlineProgressToggle');
         const confirmResetModal = document.getElementById('confirmResetModal');
         const confirmResetYesBtn = document.getElementById('confirmResetYes');
         const confirmResetNoBtn = document.getElementById('confirmResetNo');
@@ -994,10 +1016,10 @@
         const acheterLyceeButton = document.getElementById('acheterLyceeButton');
         const nombreLyceesDisplay = document.getElementById('nombreLyceesDisplay');
         const lyceeMultiplierDisplay = document.getElementById('lyceeMultiplierDisplay');
-        const achatCollegeSection = document.getElementById('achatCollegeSection'); // New
-        const acheterCollegeButton = document.getElementById('acheterCollegeButton'); // New
-        const nombreCollegesDisplay = document.getElementById('nombreCollegesDisplay'); // New
-        const collegeMultiplierDisplay = document.getElementById('collegeMultiplierDisplay'); // New
+        const achatCollegeSection = document.getElementById('achatCollegeSection');
+        const acheterCollegeButton = document.getElementById('acheterCollegeButton');
+        const nombreCollegesDisplay = document.getElementById('nombreCollegesDisplay');
+        const collegeMultiplierDisplay = document.getElementById('collegeMultiplierDisplay');
         const purchaseMultiplierSelection = document.getElementById('purchaseMultiplierSelection');
         const setMultiplierX1 = document.getElementById('setMultiplierX1');
         const setMultiplierX10 = document.getElementById('setMultiplierX10');
@@ -1005,17 +1027,17 @@
         const setMultiplierXMax = document.getElementById('setMultiplierXMax');
         const automationSection = document.getElementById('automationSection');
         const autoEleveButton = document.getElementById('autoEleveButton');
-        const autoClasseButton = document.getElementById('autoClasseButton'); // New
+        const autoClasseButton = document.getElementById('autoClasseButton');
         const autoImageButton = document.getElementById('autoImageButton');
         const autoProfesseurButton = document.getElementById('autoProfesseurButton');
         const questsContainer = document.getElementById('questsContainer');
         const questsListDiv = document.getElementById('questsList');
         const completedQuestsListDiv = document.getElementById('completedQuestsList');
-        const achievementsContainer = document.getElementById('achievementsContainer'); // New
-        const achievementsGrid = document.getElementById('achievementsGrid'); // New
+        const achievementsContainer = document.getElementById('achievementsContainer');
+        const achievementsGrid = document.getElementById('achievementsGrid');
 
 
-        // --- Fonctions de sauvegarde et de chargement ---
+        // --- Save and Load Functions ---
         function saveGameState() {
             const gameState = {
                 bonsPoints: bonsPoints.toString(),
@@ -1028,22 +1050,22 @@
                 elevesUnlocked, classesUnlocked, imagesUnlocked, professeursUnlocked,
                 skillsButtonUnlocked, settingsButtonUnlocked, ascensionUnlocked,
                 s15Clicks: s15Clicks.toString(),
-                bonusPointsClaimed: bonusPointsClaimed, // Will store by threshold string
-                isDayTheme, themeOptionUnlocked, offlineProgressEnabled, // Added offlineProgressEnabled
+                bonusPointsClaimed: bonusPointsClaimed,
+                isDayTheme, themeOptionUnlocked, offlineProgressEnabled,
                 ascensionPoints: ascensionPoints.toString(),
                 ascensionCount: ascensionCount.toString(),
                 totalPAEarned: totalPAEarned.toString(),
                 disableAscensionWarning, firstAscensionPerformed,
                 schoolCount: schoolCount.toString(),
                 newSettingsUnlocked, multiPurchaseOptionUnlocked, maxPurchaseOptionUnlocked, currentPurchaseMultiplier,
-                automationCategoryUnlocked, autoEleveActive, autoClasseActive, autoImageActive, autoProfesseurActive, // Added autoClasseActive
+                automationCategoryUnlocked, autoEleveActive, autoClasseActive, autoImageActive, autoProfesseurActive,
                 lyceesUnlocked, nombreLycees: nombreLycees.toString(),
-                collegesUnlocked, nombreColleges: nombreColleges.toString(), // Added college save
-                questsUnlocked, achievementsButtonUnlocked, // Added achievementsButtonUnlocked
+                collegesUnlocked, nombreColleges: nombreColleges.toString(),
+                questsUnlocked, achievementsButtonUnlocked,
                 questsData: questsData.map(q => ({ id: q.id, unlocked: q.unlocked, completed: q.completed })),
-                unlockedAchievements: unlockedAchievements, // Save unlocked achievements
-                permanentBpsBonusFromAchievements: permanentBpsBonusFromAchievements.toString(), // Save achievement bonus
-                lastSaveTime: Date.now() // For offline progress
+                unlockedAchievements: unlockedAchievements,
+                permanentBpsBonusFromAchievements: permanentBpsBonusFromAchievements.toString(),
+                lastSaveTime: Date.now()
             };
             localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
         }
@@ -1095,18 +1117,18 @@
                 
                 automationCategoryUnlocked = gameState.automationCategoryUnlocked || false;
                 autoEleveActive = gameState.autoEleveActive || false;
-                autoClasseActive = gameState.autoClasseActive || false; // Load autoClasseActive
+                autoClasseActive = gameState.autoClasseActive || false;
                 autoImageActive = gameState.autoImageActive || false;
                 autoProfesseurActive = gameState.autoProfesseurActive || false;
                 
                 lyceesUnlocked = gameState.lyceesUnlocked || false;
                 nombreLycees = new Decimal(gameState.nombreLycees || 0);
 
-                collegesUnlocked = gameState.collegesUnlocked || false; // Load college state
-                nombreColleges = new Decimal(gameState.nombreColleges || 0); // Load college state
+                collegesUnlocked = gameState.collegesUnlocked || false;
+                nombreColleges = new Decimal(gameState.nombreColleges || 0);
                 
                 questsUnlocked = gameState.questsUnlocked || false;
-                achievementsButtonUnlocked = gameState.achievementsButtonUnlocked || false; // Load achievements button state
+                achievementsButtonUnlocked = gameState.achievementsButtonUnlocked || false;
 
                 if (gameState.questsData) {
                     gameState.questsData.forEach(savedQuest => {
@@ -1124,19 +1146,16 @@
                 if (!isDayTheme) document.body.classList.add('dark-theme');
                 offlineProgressToggle.checked = offlineProgressEnabled;
 
-                // Offline progress calculation
                 if (gameState.lastSaveTime && offlineProgressEnabled) {
                     const elapsedTimeMs = Date.now() - gameState.lastSaveTime;
-                    const maxOfflineTimeMs = 24 * 60 * 60 * 1000; // Max 24 hours offline
+                    const maxOfflineTimeMs = 24 * 60 * 60 * 1000;
                     const effectiveOfflineTimeMs = Math.min(elapsedTimeMs, maxOfflineTimeMs);
                     
-                    // Calculate totalBPS *before* adding offline gains to bonsPoints
-                    // This requires applying skill effects first to get an accurate BPS
-                    applyAllSkillEffects(); // Ensure skillEffects are up-to-date
-                    calculateTotalBPS(); // Calculate BPS based on loaded state
+                    applyAllSkillEffects(); 
+                    calculateTotalBPS(); 
 
-                    if (totalBonsPointsParSeconde.gt(0) && effectiveOfflineTimeMs > 10000) { // Min 10s offline
-                        const offlineGainPercentage = new Decimal(0.50); // 50% offline gains
+                    if (totalBonsPointsParSeconde.gt(0) && effectiveOfflineTimeMs > 10000) {
+                        const offlineGainPercentage = new Decimal(0.50);
                         const offlineGains = totalBonsPointsParSeconde.mul(effectiveOfflineTimeMs / 1000).mul(offlineGainPercentage);
                         if (offlineGains.gt(0)) {
                             bonsPoints = bonsPoints.add(offlineGains);
@@ -1145,36 +1164,33 @@
                     }
                 }
                 
-                applyAllSkillEffects(); // Apply skill effects from loaded state
+                applyAllSkillEffects();
             }
             updateSectionVisibility();
             renderQuests();
-            renderAchievements(); // New
+            renderAchievements();
         }
 
 
-        // --- Définition des données des compétences (ajustées) ---
+        // --- Skill Data Definition (Adjusted) ---
         const skillsData = [
-            // Pédagogie Branch (Focus on Eleve/Classe BPS and Total BPS)
+            // Pédagogie Branch
             { id: 'P1', name: 'Méthodes Actives', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.1 BP/s par élève.', flavorText: 'Engagement actif.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.1) }, prerequisites: [], row: 0, col: 0 },
-            { id: 'P2', name: 'Gestion de Classe', family: 'Pédagogie', description: 'Augmente la production des classes de 2 BP/s par classe.', flavorText: 'Environnement optimisé.', effect: { type: 'classeBpsBonus', value: new Decimal(2) }, prerequisites: ['P1'], row: 1, col: 0 }, // Changed to classeBpsBonus
+            { id: 'P2', name: 'Gestion de Classe', family: 'Pédagogie', description: 'Augmente la production des classes de 2 BP/s par classe.', flavorText: 'Environnement optimisé.', effect: { type: 'classeBpsBonus', value: new Decimal(2) }, prerequisites: ['P1'], row: 1, col: 0 },
             { id: 'P3', name: 'Motivation Intrinsèque', family: 'Pédagogie', description: 'Augmente la production des élèves de 0.2 BP/s par élève.', flavorText: 'Envie naturelle d\'apprendre.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.2) }, prerequisites: ['P2'], row: 2, col: 0 },
             { id: 'P4', name: 'Curriculum Inspirant', family: 'Pédagogie', description: 'Augmente la production totale de BP/s de 5%.', flavorText: 'Un programme qui captive.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['P3'], row: 3, col: 0 },
-            // ... (P5-P20 can be added, ensure diversity in effects)
 
-            // Rationnalisme Branch (Focus on Cost Reductions and Efficiency)
+            // Rationnalisme Branch
             { id: 'R1', name: 'Analyse des Coûts', family: 'Rationnalisme', description: 'Réduit le coût des élèves de 5%.', flavorText: 'Optimisation budgétaire.', effect: { type: 'eleveCostReduction', value: new Decimal(0.05) }, prerequisites: [], row: 0, col: 1 },
             { id: 'R2', name: 'Processus Efficaces', family: 'Rationnalisme', description: 'Réduit le coût des classes de 5%.', flavorText: 'Rationalisation des flux.', effect: { type: 'classeCostReduction', value: new Decimal(0.05) }, prerequisites: ['R1'], row: 1, col: 1 },
             { id: 'R3', name: 'Logistique Optimale', family: 'Rationnalisme', description: 'Réduit le coût des images de 5%.', flavorText: 'Gestion des ressources rares.', effect: { type: 'imageCostReduction', value: new Decimal(0.05) }, prerequisites: ['R2'], row: 2, col: 1 },
             { id: 'R4', name: 'Recrutement Stratégique', family: 'Rationnalisme', description: 'Réduit le coût des professeurs de 5%.', flavorText: 'Attirer les meilleurs talents.', effect: { type: 'professeurCostReduction', value: new Decimal(0.05) }, prerequisites: ['R3'], row: 3, col: 1 },
-            // ... (R5-R20 can be added)
 
-            // Science Branch (Focus on Click Power, Unique Multipliers, Advanced Production)
-            { id: 'S1', name: 'Recherche Initiale', family: 'Science', description: 'Augmente les BP par clic de 1.', flavorText: 'Premières découvertes.', effect: { type: 'clickBonsPointsBonus', value: new Decimal(1) }, prerequisites: [], row: 0, col: 2 }, // Click bonus
+            // Science Branch
+            { id: 'S1', name: 'Recherche Initiale', family: 'Science', description: 'Augmente les BP par clic de 1.', flavorText: 'Premières découvertes.', effect: { type: 'clickBonsPointsBonus', value: new Decimal(1) }, prerequisites: [], row: 0, col: 2 },
             { id: 'S2', name: 'Synergie Scientifique', family: 'Science', description: 'Augmente la production totale de BP/s de 5%.', flavorText: 'Collaboration fructueuse.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.05) }, prerequisites: ['S1'], row: 1, col: 2 },
             { id: 'S3', name: 'Laboratoire Avancé', family: 'Science', description: 'Augmente la production des élèves de 0.15 BP/s par élève.', flavorText: 'Expérimentations poussées.', effect: { type: 'eleveBpsBonus', value: new Decimal(0.15) }, prerequisites: ['S2'], row: 2, col: 2 },
-            { id: 'S15', name: 'Clonage des Connaissances', family: 'Science', description: 'Augmente la production des classes de 5 BP/s. (Bonus spécial au 10ème clic sur ce nœud)', flavorText: 'Duplication de savoir.', effect: { type: 'classeBpsBonus', value: new Decimal(5) }, prerequisites: ['S3'], row: 3, col: 2 }, // Example, adjust prerequisites
-            // ... (S4-S20, S15 special click remains)
+            { id: 'S15', name: 'Clonage des Connaissances', family: 'Science', description: 'Augmente la production des classes de 5 BP/s. (Bonus spécial au 10ème clic sur ce nœud)', flavorText: 'Duplication de savoir.', effect: { type: 'classeBpsBonus', value: new Decimal(5) }, prerequisites: ['S3'], row: 3, col: 2 },
         ];
 
 
@@ -1207,53 +1223,48 @@
                     }
                 }
             });
-            // Ensure reductions don't exceed 90% (or similar cap)
             skillEffects.eleveCostReduction = Decimal.min(skillEffects.eleveCostReduction, 0.9);
             skillEffects.classeCostReduction = Decimal.min(skillEffects.classeCostReduction, 0.9);
             skillEffects.imageCostReduction = Decimal.min(skillEffects.imageCostReduction, 0.9);
             skillEffects.professeurCostReduction = Decimal.min(skillEffects.professeurCostReduction, 0.9);
 
-            // Recalculate costs and productions affected by skills
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
             coutClasseActuel = calculateNextClasseCost(nombreClasses);
-            calculateItemBPS(); // Recalculate BPS for items
+            calculateItemBPS();
         }
         
         function calculateItemBPS() {
-            // Base BPS for Eleve is 0.5, for Classe is 25
             bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus));
             bonsPointsParSecondeClasses = nombreClasses.mul(new Decimal(25).add(skillEffects.classeBpsBonus)).mul(multiplicateurProfesseur);
         }
 
 
-        function showNotification(message, duration = 3000) { // Default duration 3s
+        function showNotification(message, duration = 3000) {
             const notification = document.createElement('div');
             notification.classList.add('notification-item');
             notification.textContent = message;
             notificationsContainer.appendChild(notification);
 
-            // Adjust animation duration if needed, or use JS for removal
             setTimeout(() => {
-                // Add a class to fade out before removing
                 notification.style.opacity = '0';
                 notification.style.transform = 'translateX(100%)';
-                setTimeout(() => notification.remove(), 500); // Remove after fade out
+                setTimeout(() => notification.remove(), 500);
             }, duration - 500);
         }
 
-        // --- Cost Calculation Functions (Simplified) ---
+        // --- Cost Calculation Functions ---
         function calculateNextEleveCost(currentCount) {
             let cost = coutEleveBase.mul(coutEleveGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.eleveCostReduction))); // Min 10% cost
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.eleveCostReduction)));
             return Decimal.max(1, cost.floor());
         }
         function calculateNextClasseCost(currentCount) {
             let cost = coutClasseBase.mul(coutClasseGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.classeCostReduction))); // Min 10% cost
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.classeCostReduction)));
             return Decimal.max(1, cost.floor());
         }
         function calculateNextImageCost() {
-            let cost = new Decimal(1000); // Base cost for image
+            let cost = new Decimal(1000);
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction)));
             return Decimal.max(1, cost.floor());
         }
@@ -1261,9 +1272,8 @@
             let nextProfIndex = currentCount.add(1);
             let cost;
             if (nextProfIndex.lt(fibonacciSequence.length)) {
-                cost = fibonacciSequence[nextProfIndex.toNumber()]; // toNumber is safe for typical professor counts
-            } else { // Approximation for very high numbers of professors if needed
-                // For simplicity, cap at last known Fibonacci or use a growth formula
+                cost = fibonacciSequence[nextProfIndex.toNumber()];
+            } else {
                 cost = fibonacciSequence[fibonacciSequence.length - 1].mul(new Decimal(1.6).pow(nextProfIndex.sub(fibonacciSequence.length -1)));
             }
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.professeurCostReduction)));
@@ -1275,56 +1285,48 @@
         function calculateNextLyceeCost(currentCount) {
             return coutLyceeBase.mul(coutLyceeGrowth.pow(currentCount)).floor();
         }
-        function calculateNextCollegeCost(currentCount) { // New
+        function calculateNextCollegeCost(currentCount) {
             return coutCollegeBase.mul(coutCollegeGrowth.pow(currentCount)).floor();
         }
 
 
         function updateButtonStates() {
-            // Élève
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
             acheterEleveButton.innerHTML = `Élève : <span class="bons-points-color">${formatNumber(coutEleveActuel, 0)} BP</span>`;
             acheterEleveButton.classList.toggle('can-afford', bonsPoints.gte(coutEleveActuel));
             acheterEleveButton.classList.toggle('cannot-afford', bonsPoints.lt(coutEleveActuel));
 
-            // Classe
             coutClasseActuel = calculateNextClasseCost(nombreClasses);
             acheterClasseButton.innerHTML = `Salle de classe : <span class="bons-points-color">${formatNumber(coutClasseActuel, 0)} BP</span>`;
             acheterClasseButton.classList.toggle('can-afford', bonsPoints.gte(coutClasseActuel));
             acheterClasseButton.classList.toggle('cannot-afford', bonsPoints.lt(coutClasseActuel));
             
-            // Image
             let imageCost = calculateNextImageCost();
             acheterImageButton.innerHTML = `Image : <span class="bons-points-color">${formatNumber(imageCost, 0)} BP</span>`;
             acheterImageButton.classList.toggle('can-afford', bonsPoints.gte(imageCost));
             acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
 
-            // Professeur
             let professeurCost = calculateNextProfessorCost(nombreProfesseurs);
             acheterProfesseurButton.innerHTML = `Professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
-            // Ascension Button
             ascensionButton.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseurs.gte(1));
             ascensionButton.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseurs.lt(1));
             ascensionMenuButton.classList.toggle('can-afford', ascensionUnlocked);
             ascensionMenuButton.classList.toggle('cannot-afford', !ascensionUnlocked);
 
-            // Ecole
             coutEcoleActuel = calculateNextEcoleCost(schoolCount);
             acheterEcoleButton.classList.toggle('can-afford', ascensionPoints.gte(coutEcoleActuel));
             acheterEcoleButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutEcoleActuel));
             coutEcoleSpan.textContent = `${formatNumber(coutEcoleActuel, 0)} PA`;
 
-            // Lycee
             if (lyceesUnlocked) {
                 coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
                 acheterLyceeButton.innerHTML = `Lycée : <span class="ascension-points-color">${formatNumber(coutLyceeActuel, 0)} PA</span>`;
                 acheterLyceeButton.classList.toggle('can-afford', ascensionPoints.gte(coutLyceeActuel));
                 acheterLyceeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutLyceeActuel));
             }
-            // College
             if (collegesUnlocked) {
                 coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
                 acheterCollegeButton.innerHTML = `Collège : <span class="ascension-points-color">${formatNumber(coutCollegeActuel, 0)} PA</span>`;
@@ -1332,8 +1334,6 @@
                 acheterCollegeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutCollegeActuel));
             }
 
-
-            // Ascension Menu Unlocks
             unlockMultiPurchaseButton.style.display = multiPurchaseOptionUnlocked ? 'none' : 'block';
             if(!multiPurchaseOptionUnlocked) {
                 unlockMultiPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(10));
@@ -1351,7 +1351,7 @@
             }
             unlockAutomationCategoryButton.style.display = automationCategoryUnlocked ? 'none' : 'block';
             if(!automationCategoryUnlocked) {
-                unlockAutomationCategoryButton.classList.toggle('can-afford', ascensionPoints.gte(1000)); // 1k PA
+                unlockAutomationCategoryButton.classList.toggle('can-afford', ascensionPoints.gte(1000));
                 unlockAutomationCategoryButton.classList.toggle('cannot-afford', ascensionPoints.lt(1000));
             }
             
@@ -1370,7 +1370,6 @@
         }
 
         function updateAutomationButtonStates() {
-            // Eleve Automation
             if (autoEleveActive) {
                 autoEleveButton.textContent = "Désactiver Auto Élèves";
                 autoEleveButton.classList.add('automation-active');
@@ -1380,7 +1379,6 @@
                 autoEleveButton.classList.toggle('can-afford', ascensionPoints.gte(100));
                 autoEleveButton.classList.toggle('cannot-afford', ascensionPoints.lt(100));
             }
-            // Classe Automation
             if (autoClasseActive) {
                 autoClasseButton.textContent = "Désactiver Auto Classes";
                 autoClasseButton.classList.add('automation-active');
@@ -1390,22 +1388,20 @@
                 autoClasseButton.classList.toggle('can-afford', ascensionPoints.gte(500));
                 autoClasseButton.classList.toggle('cannot-afford', ascensionPoints.lt(500));
             }
-            // Image Automation
             if (autoImageActive) {
                 autoImageButton.textContent = "Désactiver Auto Images";
                 autoImageButton.classList.add('automation-active');
             } else {
-                autoImageButton.innerHTML = `Automatiser Images : <span class="ascension-points-color">${formatNumber(new Decimal(10000), 0)} PA</span>`; // 10k PA
+                autoImageButton.innerHTML = `Automatiser Images : <span class="ascension-points-color">${formatNumber(new Decimal(10000), 0)} PA</span>`;
                 autoImageButton.classList.remove('automation-active');
                 autoImageButton.classList.toggle('can-afford', ascensionPoints.gte(10000));
                 autoImageButton.classList.toggle('cannot-afford', ascensionPoints.lt(10000));
             }
-            // Professeur Automation
             if (autoProfesseurActive) {
                 autoProfesseurButton.textContent = "Désactiver Auto Profs";
                 autoProfesseurButton.classList.add('automation-active');
             } else {
-                autoProfesseurButton.innerHTML = `Automatiser Profs : <span class="ascension-points-color">${formatNumber(new Decimal(100000), 0)} PA</span>`; // 100k PA
+                autoProfesseurButton.innerHTML = `Automatiser Profs : <span class="ascension-points-color">${formatNumber(new Decimal(100000), 0)} PA</span>`;
                 autoProfesseurButton.classList.remove('automation-active');
                 autoProfesseurButton.classList.toggle('can-afford', ascensionPoints.gte(100000));
                 autoProfesseurButton.classList.toggle('cannot-afford', ascensionPoints.lt(100000));
@@ -1415,13 +1411,13 @@
         // --- Purchase Logic ---
         function performPurchase(itemType, quantityRequested, isAutomated = false) {
             let quantityToBuy = new Decimal(0);
-            let totalCostResource = new Decimal(0); // For BP or Images
-            let totalCostPA = new Decimal(0); // For PA
+            let totalCostResource = new Decimal(0);
+            let totalCostPA = new Decimal(0);
 
             let currentResource;
             let costFunction;
             let itemCounter;
-            let resourceToDecrement; // 'bonsPoints', 'images', or 'ascensionPoints'
+            let resourceToDecrement;
 
             switch(itemType) {
                 case 'eleve':
@@ -1438,8 +1434,8 @@
                     break;
                 case 'image':
                     currentResource = bonsPoints;
-                    costFunction = () => calculateNextImageCost(); // Cost is not dependent on count
-                    itemCounter = images; // Not really a counter for cost, but for owning
+                    costFunction = () => calculateNextImageCost();
+                    itemCounter = images;
                     resourceToDecrement = 'bonsPoints';
                     break;
                 case 'professeur':
@@ -1460,7 +1456,7 @@
                     itemCounter = nombreLycees;
                     resourceToDecrement = 'ascensionPoints';
                     break;
-                case 'college': // New
+                case 'college':
                     currentResource = ascensionPoints;
                     costFunction = (count) => calculateNextCollegeCost(count);
                     itemCounter = nombreColleges;
@@ -1470,7 +1466,6 @@
             }
 
             if (quantityRequested === 'max') {
-                // Iterative calculation for max, as costs can change
                 let tempItemCounter = itemCounter;
                 let canAfford = true;
                 while(canAfford) {
@@ -1484,12 +1479,12 @@
                     } else {
                         canAfford = false;
                     }
-                     if (quantityToBuy.gte(1000) && isAutomated) break; // Limit max auto-buy to 1000 per tick to prevent freezing on huge numbers
+                     if (quantityToBuy.gte(1000) && isAutomated) break;
                 }
             } else {
                 let numQuantity = new Decimal(quantityRequested);
                 let tempItemCounter = itemCounter;
-                for (let i = 0; i < numQuantity.toNumber(); i++) { // toNumber is fine for 1, 10, 100
+                for (let i = 0; i < numQuantity.toNumber(); i++) {
                     let costPerItem = costFunction(tempItemCounter);
                     if (currentResource.gte(costPerItem)) {
                         currentResource = currentResource.sub(costPerItem);
@@ -1498,32 +1493,30 @@
                         quantityToBuy = quantityToBuy.add(1);
                         tempItemCounter = tempItemCounter.add(1);
                     } else {
-                        break; // Cannot afford more
+                        break;
                     }
                 }
             }
 
             if (quantityToBuy.gt(0)) {
-                // Decrement resources
                 if (resourceToDecrement === 'bonsPoints') bonsPoints = bonsPoints.sub(totalCostResource);
                 else if (resourceToDecrement === 'images') images = images.sub(totalCostResource);
                 else if (resourceToDecrement === 'ascensionPoints') ascensionPoints = ascensionPoints.sub(totalCostPA);
 
-                // Increment item counts and apply effects
                 switch(itemType) {
                     case 'eleve': nombreEleves = nombreEleves.add(quantityToBuy); break;
                     case 'classe': nombreClasses = nombreClasses.add(quantityToBuy); break;
-                    case 'image': images = images.add(quantityToBuy); break;
+                    case 'image': images = images.add(quantityToBuy); break; // Images are a currency but also "bought"
                     case 'professeur': 
                         nombreProfesseurs = nombreProfesseurs.add(quantityToBuy);
                         multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
                         break;
                     case 'ecole': schoolCount = schoolCount.add(quantityToBuy); break;
                     case 'lycee': nombreLycees = nombreLycees.add(quantityToBuy); break;
-                    case 'college': nombreColleges = nombreColleges.add(quantityToBuy); break; // New
+                    case 'college': nombreColleges = nombreColleges.add(quantityToBuy); break;
                 }
                 
-                applyAllSkillEffects(); // Re-apply effects as costs/productions might change
+                applyAllSkillEffects();
                 if (!isAutomated) {
                     showNotification(`Acheté ${formatNumber(quantityToBuy, 0)} ${itemType}(s) !`);
                 }
@@ -1547,12 +1540,11 @@
 
             for (const familyName in branches) {
                 const branchDiv = document.createElement('div');
-                branchDiv.classList.add('skill-branch', familyName.toLowerCase());
+                branchDiv.classList.add('skill-branch', familyName.toLowerCase().replace('é', 'e')); // Handle accents for class names
                 const h3 = document.createElement('h3');
                 h3.textContent = familyName;
                 branchDiv.appendChild(h3);
 
-                // Sort skills by row, then by col for consistent rendering order
                 branches[familyName].sort((a,b) => a.row - b.row || a.col - b.col);
 
                 branches[familyName].forEach(skill => {
@@ -1576,11 +1568,16 @@
                     if (isUnlocked) {
                         skillNode.classList.add('unlocked');
                     } else if (canActivate && prerequisitesMet) {
-                        skillNode.classList.add('can-afford');
+                        // No 'can-afford' class for skills, just unlocked or locked appearance
                     } else {
                         skillNode.classList.add('locked');
-                        if (skill.id === 'S15') skillNode.style.cursor = 'pointer';
                     }
+                     // Special case for S15 to always be clickable for its unique effect
+                    if (skill.id === 'S15' && !isUnlocked) {
+                         skillNode.classList.remove('locked'); // Allow clicks even if not "unlocked" in the traditional sense
+                         skillNode.style.cursor = 'pointer'; // Ensure cursor indicates clickability
+                    }
+
 
                     skillNode.innerHTML += `
                         <div class="tooltip-text">
@@ -1606,7 +1603,7 @@
             if (skillId === 'S15') {
                 s15Clicks = s15Clicks.add(1);
                 if (s15Clicks.gte(10)) {
-                    bonsPoints = bonsPoints.add(new Decimal('1e7')); // 10 Million BP
+                    bonsPoints = bonsPoints.add(new Decimal('1e7'));
                     images = images.add(new Decimal(1000));
                     nombreClasses = nombreClasses.add(new Decimal(10));
                     nombreEleves = nombreEleves.add(new Decimal(200));
@@ -1614,9 +1611,16 @@
                     s15Clicks = new Decimal(0); 
                     mettreAJourAffichage(); 
                     saveGameState(); 
+                    // S15 doesn't become "unlocked" in the traditional sense, it's a repeatable click bonus
+                    // unless you want it to be a one-time unlock after the 10 clicks + its base effect
+                    // For now, let's assume its base effect is applied if unlocked, and click is separate.
+                    // If S15 should also be "unlocked" to apply its passive effect:
+                    // if (!unlockedSkills[skill.id]) { /* unlock logic here if needed */ }
                     return; 
                 } else {
                      showNotification(`Clic S15 : ${s15Clicks}/10`);
+                     // If S15 is not unlocked and this is just a click, don't proceed to unlock logic below
+                     if (!unlockedSkills[skill.id]) return;
                 }
             }
 
@@ -1638,7 +1642,7 @@
                 } else {
                     showNotification("Pas assez de professeurs disponibles !");
                 }
-            } else if (skillId !== 'S15') { // Only show "already unlocked" if not S15, as S15 has click effect
+            } else if (skillId !== 'S15') {
                  showNotification("Compétence déjà débloquée.");
             }
         }
@@ -1649,20 +1653,16 @@
 
         // --- Tab Switching Logic ---
         function openTab(tabContainer, buttonToSetActive) {
-            // Hide all main tab containers
             [skillTreeContainer, settingsContainer, ascensionMenuContainer, questsContainer, achievementsContainer].forEach(tc => tc.style.display = 'none');
-            // Show the target tab
             if (tabContainer) tabContainer.style.display = 'flex';
-            // Reset skills button visibility
             resetSkillsButton.style.display = (tabContainer === skillTreeContainer) ? 'block' : 'none';
-            // Update active button state (optional, if you add styling for active tab buttons)
         }
 
         skillsButton.addEventListener('click', () => openTab(skillTreeContainer, skillsButton));
         settingsButton.addEventListener('click', () => { openTab(settingsContainer, settingsButton); updateSettingsButtonStates(); });
         ascensionMenuButton.addEventListener('click', () => { openTab(ascensionMenuContainer, ascensionMenuButton); mettreAJourAffichage(); });
         questsButton.addEventListener('click', () => { openTab(questsContainer, questsButton); renderQuests(); });
-        achievementsButton.addEventListener('click', () => { openTab(achievementsContainer, achievementsButton); renderAchievements(); }); // New
+        achievementsButton.addEventListener('click', () => { openTab(achievementsContainer, achievementsButton); renderAchievements(); });
 
 
         // --- Ascension Logic ---
@@ -1689,16 +1689,13 @@
 
         function calculatePAGained() {
             let paGained = new Decimal(0);
-            if (nombreProfesseurs.gt(0)) { // Ensure at least 1 professor
-                 // Use prime_PA up to its length, then a growth formula
+            if (nombreProfesseurs.gt(0)) {
                 if (nombreProfesseurs.lt(prime_PA.length)) {
                     paGained = prime_PA[nombreProfesseurs.toNumber()];
                 } else {
-                    // Example: after primes, gain 1 PA per professor beyond the prime list length
-                    // This makes it scale indefinitely but slower than primes.
                     let basePrimePA = prime_PA[prime_PA.length - 1];
                     let additionalProfs = nombreProfesseurs.sub(prime_PA.length -1);
-                    paGained = basePrimePA.add(additionalProfs.mul(1)); // Adjust multiplier as needed
+                    paGained = basePrimePA.add(additionalProfs.mul(1));
                 }
             }
             return paGained.floor();
@@ -1717,12 +1714,22 @@
         });
         
         resetSkillsButton.addEventListener('click', () => {
-            // Custom modal for confirmation
             const customConfirmModal = document.createElement('div');
-            customConfirmModal.style.cssText = ` /* ... existing styles ... */ `; // Keep existing styles
+            // Using existing modal styles for consistency, but ensure it's unique
+            customConfirmModal.id = 'confirmSkillResetModal'; // Give it a unique ID
+            customConfirmModal.style.position = 'fixed';
+            customConfirmModal.style.top = '0';
+            customConfirmModal.style.left = '0';
+            customConfirmModal.style.width = '100%';
+            customConfirmModal.style.height = '100%';
+            customConfirmModal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+            customConfirmModal.style.display = 'flex';
+            customConfirmModal.style.justifyContent = 'center';
+            customConfirmModal.style.alignItems = 'center';
+            customConfirmModal.style.zIndex = '2001'; // Higher than other modals if necessary
+            
             customConfirmModal.innerHTML = `
-                <div class="modal-content">
-                    <h3 class="warning-color">Réinitialiser les compétences ?</h3>
+                <div class="modal-content"> <h3 class="warning-color">Réinitialiser les compétences ?</h3>
                     <p>Êtes-vous sûr ? Vous récupérerez les professeurs assignés.</p>
                     <div class="modal-buttons">
                         <button id="customConfirmYesSkills" class="can-afford">Oui</button>
@@ -1733,7 +1740,7 @@
             document.body.appendChild(customConfirmModal);
 
             document.getElementById('customConfirmYesSkills').addEventListener('click', () => {
-                professorsUsedForSkills = new Decimal(0); // Give back professors
+                professorsUsedForSkills = new Decimal(0);
                 unlockedSkills = {};
                 s15Clicks = new Decimal(0); 
                 applyAllSkillEffects();
@@ -1751,11 +1758,19 @@
 
         // --- Event Listeners for Purchases ---
         etudierButton.addEventListener('click', () => {
-            bonsPoints = bonsPoints.add(skillEffects.clickBonsPointsBonus); 
+            calculateTotalBPS(); // Ensure totalBonsPointsParSeconde is current for this click
+            const dynamicBonus = totalBonsPointsParSeconde.mul(0.1);
+            const clickValue = skillEffects.clickBonsPointsBonus.add(dynamicBonus);
+            bonsPoints = bonsPoints.add(clickValue); 
+            
+            // Mettre à jour le texte du bouton pour refléter le gain actuel
+            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(clickValue, bonsPoints.lt(1000) ? 1:0)} BP)`;
+
+
             mettreAJourAffichageBonsPoints();
-            checkUnlockConditions(); // Check for unlocks/achievements after click
+            checkUnlockConditions();
             updateButtonStates();
-            saveGameState(); // Save on click as it can be significant early game
+            saveGameState();
         });
 
         acheterEleveButton.addEventListener('click', () => performPurchase('eleve', currentPurchaseMultiplier));
@@ -1764,7 +1779,7 @@
         acheterProfesseurButton.addEventListener('click', () => performPurchase('professeur', currentPurchaseMultiplier));
         acheterEcoleButton.addEventListener('click', () => performPurchase('ecole', currentPurchaseMultiplier));
         acheterLyceeButton.addEventListener('click', () => performPurchase('lycee', currentPurchaseMultiplier));
-        acheterCollegeButton.addEventListener('click', () => performPurchase('college', currentPurchaseMultiplier)); // New
+        acheterCollegeButton.addEventListener('click', () => performPurchase('college', currentPurchaseMultiplier));
 
 
         // --- Settings Menu Functions ---
@@ -1774,7 +1789,7 @@
                     images = images.sub(10);
                     themeOptionUnlocked = true;
                     showNotification("Option Thème débloquée !");
-                    isDayTheme = !isDayTheme; // Toggle immediately
+                    isDayTheme = !isDayTheme;
                     document.body.classList.toggle('dark-theme', !isDayTheme);
                 } else {
                     showNotification("Pas assez d'images (coût : 10 I) !");
@@ -1852,7 +1867,7 @@
             }
         });
         unlockAutomationCategoryButton.addEventListener('click', () => {
-            if (ascensionPoints.gte(1000) && !automationCategoryUnlocked) { // Cost 1k PA
+            if (ascensionPoints.gte(1000) && !automationCategoryUnlocked) {
                 ascensionPoints = ascensionPoints.sub(1000);
                 automationCategoryUnlocked = true;
                 showNotification("Catégorie Automatisation débloquée !");
@@ -1871,7 +1886,7 @@
             else { showNotification("Pas assez de PA (100 PA) !"); }
             mettreAJourAffichage(); updateAutomationButtonStates(); saveGameState();
         });
-        autoClasseButton.addEventListener('click', () => { // New
+        autoClasseButton.addEventListener('click', () => {
             if (autoClasseActive) { autoClasseActive = false; showNotification("Auto Classes désactivée."); }
             else if (ascensionPoints.gte(500)) { ascensionPoints = ascensionPoints.sub(500); autoClasseActive = true; showNotification("Auto Classes activée !"); }
             else { showNotification("Pas assez de PA (500 PA) !"); }
@@ -1879,13 +1894,13 @@
         });
         autoImageButton.addEventListener('click', () => {
             if (autoImageActive) { autoImageActive = false; showNotification("Auto Images désactivée."); }
-            else if (ascensionPoints.gte(10000)) { ascensionPoints = ascensionPoints.sub(10000); autoImageActive = true; showNotification("Auto Images activée !"); } // Cost 10k
+            else if (ascensionPoints.gte(10000)) { ascensionPoints = ascensionPoints.sub(10000); autoImageActive = true; showNotification("Auto Images activée !"); }
             else { showNotification("Pas assez de PA (10 k PA) !"); }
             mettreAJourAffichage(); updateAutomationButtonStates(); saveGameState();
         });
         autoProfesseurButton.addEventListener('click', () => {
             if (autoProfesseurActive) { autoProfesseurActive = false; showNotification("Auto Profs désactivée."); }
-            else if (ascensionPoints.gte(100000)) { ascensionPoints = ascensionPoints.sub(100000); autoProfesseurActive = true; showNotification("Auto Profs activée !"); } // Cost 100k
+            else if (ascensionPoints.gte(100000)) { ascensionPoints = ascensionPoints.sub(100000); autoProfesseurActive = true; showNotification("Auto Profs activée !"); }
             else { showNotification("Pas assez de PA (100 k PA) !"); }
             mettreAJourAffichage(); updateAutomationButtonStates(); saveGameState();
         });
@@ -1906,7 +1921,7 @@
             }
         }
 
-        function softResetGame() { // For Ascension
+        function softResetGame() {
             bonsPoints = new Decimal(0);
             nombreEleves = new Decimal(0);
             nombreClasses = new Decimal(0);
@@ -1915,55 +1930,50 @@
             professorsUsedForSkills = new Decimal(0);
             multiplicateurProfesseur = new Decimal(1);
             s15Clicks = new Decimal(0);
-            // Keep: ascensionPoints, totalPAEarned, ascensionCount, firstAscensionPerformed, disableAscensionWarning
-            // Keep: theme related, PA unlocks (multiPurchase, maxPurchase, newSettings, automationCategory)
-            // Keep: unlockedAchievements and permanentBpsBonusFromAchievements
-            // Reset: item unlocks, skill unlocks, bonus points claimed
+            
             elevesUnlocked = false; classesUnlocked = false; imagesUnlocked = false; professeursUnlocked = false;
-            skillsButtonUnlocked = false; settingsButtonUnlocked = false; // ascensionUnlocked will be re-evaluated
+            skillsButtonUnlocked = false; settingsButtonUnlocked = false;
             unlockedSkills = {};
             bonusPointsClaimed = {};
             
-            // Reset dynamic unlocks based on progression
-            lyceesUnlocked = false; // Reset Lycee unlock
-            collegesUnlocked = false; // Reset College unlock
-            questsUnlocked = false; // Reset Quests button unlock
-            achievementsButtonUnlocked = false; // Reset Achievements button unlock
+            lyceesUnlocked = false;
+            collegesUnlocked = false;
+            questsUnlocked = false;
+            achievementsButtonUnlocked = false;
 
-            questsData.forEach(q => { q.completed = false; q.unlocked = (q.id === 'Q1_Schools'); }); // Reset quests, Q1 unlocked by default
+            questsData.forEach(q => { q.completed = false; q.unlocked = (q.id === 'Q1_Schools'); });
 
-            applyAllSkillEffects(); // Reset skill effects to base
-            updateSectionVisibility(); // Hide sections
-            openTab(null); // Close any open tab
+            applyAllSkillEffects();
+            updateSectionVisibility();
+            openTab(null);
             mettreAJourAffichage();
             saveGameState(); 
         }
 
-        function hardResetGame() { // For full reset setting
-            softResetGame(); // Start with a soft reset
-            // Then reset ascension progress and PA unlocks
+        function hardResetGame() {
+            softResetGame();
             ascensionPoints = new Decimal(0);
             ascensionCount = new Decimal(0);
             totalPAEarned = new Decimal(0);
             ascensionUnlocked = false;
             disableAscensionWarning = false;
             firstAscensionPerformed = false;
-            schoolCount = new Decimal(0); // Reset schools
-            nombreLycees = new Decimal(0); // Reset lycees
-            nombreColleges = new Decimal(0); // Reset colleges
+            schoolCount = new Decimal(0);
+            nombreLycees = new Decimal(0);
+            nombreColleges = new Decimal(0);
             multiPurchaseOptionUnlocked = false;
             maxPurchaseOptionUnlocked = false;
             currentPurchaseMultiplier = 1;
             newSettingsUnlocked = false;
             automationCategoryUnlocked = false;
             autoEleveActive = false; autoClasseActive = false; autoImageActive = false; autoProfesseurActive = false;
-            // Theme reset
+            
             isDayTheme = true;
             themeOptionUnlocked = false;
             document.body.classList.remove('dark-theme');
             offlineProgressEnabled = true;
             offlineProgressToggle.checked = true;
-            // Achievements reset
+            
             unlockedAchievements = {};
             permanentBpsBonusFromAchievements = new Decimal(0);
 
@@ -1985,31 +1995,26 @@
             resetProgressionButton.classList.toggle('can-afford', images.gte(10));
             resetProgressionButton.classList.toggle('cannot-afford', images.lt(10));
             
-            // Show offline progress toggle if new settings are unlocked
             offlineProgressToggle.parentElement.style.display = newSettingsUnlocked ? 'block' : 'none';
         }
         
         // --- Main Display Update ---
         function calculateTotalBPS() {
-            calculateItemBPS(); // Ensure BPS from eleves/classes is current
+            calculateItemBPS();
 
             let baseBPS = bonsPointsParSecondeEleves.add(bonsPointsParSecondeClasses);
             let skillMultiplier = new Decimal(1).add(skillEffects.totalBpsMultiplierBonus);
             
-            // Ascension Multiplier
             let ascensionMultiplier = new Decimal(1);
             if (ascensionCount.gt(0) && totalPAEarned.gt(0)) {
-                ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01)); // Adjusted formula
+                ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01));
             } else if (ascensionCount.gt(0)) { 
                 ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(0.01)); 
             }
 
-            // School System Multiplier (Écoles, Lycées, Collèges)
             let effectiveSchoolMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier));
             let lyceeBoostToSchoolMult = new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost));
             effectiveSchoolMultiplier = effectiveSchoolMultiplier.mul(lyceeBoostToSchoolMult);
-            // Collèges boost École production directly, applied before other multipliers on school part if needed, or as a general boost.
-            // For simplicity, let's make Collège boost the final school multiplier.
             let collegeBoost = new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost));
             effectiveSchoolMultiplier = effectiveSchoolMultiplier.mul(collegeBoost);
 
@@ -2018,7 +2023,7 @@
         }
 
         function mettreAJourAffichage() {
-            calculateTotalBPS();
+            calculateTotalBPS(); // Ensure BPS is current before updating display
 
             bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
             totalBpsInlineSpan.textContent = formatNumber(totalBonsPointsParSeconde, 1);
@@ -2033,10 +2038,8 @@
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
             totalPAEarnedSpanInline.textContent = formatNumber(totalPAEarned, 0);
 
-            // Ascension Menu display
             ascensionMenuPACountSpan.textContent = formatNumber(ascensionPoints, 0);
             nombreEcolesSpan.textContent = formatNumber(schoolCount, 0);
-            // Calculate the final multiplier from schools for display
             let displayedSchoolSystemMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier))
                                                 .mul(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost)))
                                                 .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost)));
@@ -2045,8 +2048,8 @@
 
             nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
             lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost)), 2)}x`;
-            nombreCollegesDisplay.textContent = formatNumber(nombreColleges, 0); // New
-            collegeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost)), 2)}x`; // New
+            nombreCollegesDisplay.textContent = formatNumber(nombreColleges, 0);
+            collegeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost)), 2)}x`;
 
 
             ascensionBonusDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
@@ -2061,6 +2064,12 @@
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
 
+            // Update "Étudier sagement" button text dynamically
+            const dynamicClickBonus = totalBonsPointsParSeconde.mul(0.1);
+            const currentClickValue = skillEffects.clickBonsPointsBonus.add(dynamicClickBonus);
+            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(currentClickValue, bonsPoints.lt(1000) ? 1:0)} BP)`;
+
+
             updateButtonStates(); 
         }
 
@@ -2069,31 +2078,28 @@
         }
 
         // --- Unlock Conditions & Bonus Points ---
-        const bonusPointThresholds = [ // BP amounts for bonus
+        const bonusPointThresholds = [
             { threshold: new Decimal('1e2'), amount: new Decimal('1e2') }, { threshold: new Decimal('1e3'), amount: new Decimal('5e2') },
             { threshold: new Decimal('1e4'), amount: new Decimal('2e3') }, { threshold: new Decimal('1e5'), amount: new Decimal('1e4') },
             { threshold: new Decimal('1e6'), amount: new Decimal('5e4') }, { threshold: new Decimal('1e7'), amount: new Decimal('2e5') }
         ];
 
         function checkUnlockConditions() {
-            // Item Unlocks
             if (!elevesUnlocked && bonsPoints.gte(calculateNextEleveCost(nombreEleves))) { elevesUnlocked = true; showNotification("Achat Élèves débloqué !"); }
-            if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); } // Lowered requirement
+            if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
             if (!imagesUnlocked && bonsPoints.gte(calculateNextImageCost())) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
             if (!professeursUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseurs))) { professeursUnlocked = true; showNotification("Achat Professeurs débloqué !"); }
 
-            // Feature Unlocks
             if (!skillsButtonUnlocked && nombreProfesseurs.gte(1)) { skillsButtonUnlocked = true; showNotification("Menu Compétences débloqué !"); }
             if (!settingsButtonUnlocked && images.gte(5)) { settingsButtonUnlocked = true; showNotification("Menu Paramètres débloqué !"); }
             if (!ascensionUnlocked && nombreProfesseurs.gte(1)) { ascensionUnlocked = true; showNotification("Option Ascension débloquée !"); }
-            if (!ascensionMenuButtonUnlocked && ascensionCount.gte(1)) { ascensionMenuButtonUnlocked = true; /* No notification, happens on ascend */ }
-            if (!questsUnlocked && totalPAEarned.gte(10)) { questsUnlocked = true; showNotification("Menu Quêtes débloqué !"); } // Based on total PA
+            if (!ascensionMenuButtonUnlocked && ascensionCount.gte(1)) { ascensionMenuButtonUnlocked = true; }
+            if (!questsUnlocked && totalPAEarned.gte(10)) { questsUnlocked = true; showNotification("Menu Quêtes débloqué !"); }
             if (!achievementsButtonUnlocked && bonsPoints.gte('1e4')) { achievementsButtonUnlocked = true; showNotification("Menu Succès débloqué !"); }
 
 
-            // Bonus Points
             bonusPointThresholds.forEach(bonus => {
-                const thresholdStr = bonus.threshold.toString();
+                const thresholdStr = bonus.threshold.toString(); // Use string for object key
                 if (bonsPoints.gte(bonus.threshold) && !bonusPointsClaimed[thresholdStr]) {
                     bonsPoints = bonsPoints.add(bonus.amount);
                     bonusPointsClaimed[thresholdStr] = true;
@@ -2102,9 +2108,9 @@
                 }
             });
             
-            checkAchievements(); // New
+            checkAchievements();
             updateSectionVisibility();
-            renderQuests(); // Check quest completion
+            renderQuests();
         }
         
         function updateSectionVisibility() {
@@ -2117,12 +2123,12 @@
             ascensionButton.style.display = ascensionUnlocked ? 'block' : 'none';
             ascensionMenuButton.style.display = ascensionMenuButtonUnlocked ? 'block' : 'none';
             purchaseMultiplierSelection.style.display = multiPurchaseOptionUnlocked ? 'block' : 'none';
-            setMultiplierXMax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none'; // inline-block for button
+            setMultiplierXMax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none';
             automationSection.style.display = automationCategoryUnlocked ? 'block' : 'none';
             achatLyceeSection.style.display = lyceesUnlocked ? 'block' : 'none';
-            achatCollegeSection.style.display = collegesUnlocked ? 'block' : 'none'; // New
+            achatCollegeSection.style.display = collegesUnlocked ? 'block' : 'none';
             questsButton.style.display = questsUnlocked ? 'block' : 'none';
-            achievementsButton.style.display = achievementsButtonUnlocked ? 'block' : 'none'; // New
+            achievementsButton.style.display = achievementsButtonUnlocked ? 'block' : 'none';
         }
 
         // --- Quests Logic ---
@@ -2137,7 +2143,6 @@
                     let currentProgress = new Decimal(0);
                     if (quest.targetType === 'schoolCount') currentProgress = schoolCount;
                     else if (quest.targetType === 'lyceeCount') currentProgress = nombreLycees;
-                    // Add other target types here
 
                     if (currentProgress.gte(quest.targetValue)) {
                         quest.completed = true;
@@ -2145,10 +2150,8 @@
                         showNotification(`Quête terminée : ${quest.name} ! ${quest.rewardMessage || ''}`);
                         if (quest.reward.type === 'unlockPurchase') {
                             if (quest.reward.itemId === 'lycee') lyceesUnlocked = true;
-                            if (quest.reward.itemId === 'college') collegesUnlocked = true; // New
-                            // Add other unlockables
+                            if (quest.reward.itemId === 'college') collegesUnlocked = true;
                         }
-                        // Add other reward types
                     }
                 }
 
@@ -2176,13 +2179,13 @@
                 }
             });
             if (questCompletedThisCycle) {
-                updateSectionVisibility(); // Update if new sections unlocked by quests
+                updateSectionVisibility();
                 mettreAJourAffichage();
                 saveGameState();
             }
         }
         
-        // --- Achievements Logic (New) ---
+        // --- Achievements Logic ---
         function renderAchievements() {
             if (!achievementsButtonUnlocked) return;
             achievementsGrid.innerHTML = '';
@@ -2202,20 +2205,20 @@
         }
 
         function checkAchievements() {
-            if (!achievementsButtonUnlocked && bonsPoints.lt('1e4')) return; // Don't check too early if tab not even visible
+            if (!achievementsButtonUnlocked && bonsPoints.lt('1e4')) return;
 
             let newAchievementUnlocked = false;
             achievementsData.forEach(ach => {
                 if (!unlockedAchievements[ach.id] && ach.condition()) {
                     unlockedAchievements[ach.id] = true;
-                    ach.rewardFn(); // Apply reward
+                    ach.rewardFn();
                     showNotification(`Succès débloqué : ${ach.name} ! (${ach.rewardText})`);
                     newAchievementUnlocked = true;
                 }
             });
             if (newAchievementUnlocked) {
-                renderAchievements(); // Re-render if an achievement was unlocked
-                mettreAJourAffichage(); // Update main display if rewards affect it
+                renderAchievements();
+                mettreAJourAffichage();
                 saveGameState();
             }
         }
@@ -2230,43 +2233,40 @@
 
         // --- Game Loop (Interval) ---
         setInterval(() => {
-            let productionThisTick = totalBonsPointsParSeconde.div(10); // Assuming 10 ticks per second for smoother updates
+            let productionThisTick = totalBonsPointsParSeconde.div(10);
             bonsPoints = bonsPoints.add(productionThisTick);
             
-            // Automated purchases (check every second, not every tick for performance)
             if (Date.now() % 1000 < 100) { // Roughly once per second
                  if (autoEleveActive) performPurchase('eleve', 'max', true);
-                 if (autoClasseActive) performPurchase('classe', 'max', true); // New
+                 if (autoClasseActive) performPurchase('classe', 'max', true);
                  if (autoImageActive) performPurchase('image', 'max', true);
                  if (autoProfesseurActive) performPurchase('professeur', 'max', true);
             }
 
-            // Less frequent updates for UI heavy things
-            if (Date.now() % 200 < 100) { // 5 times per second
-                 mettreAJourAffichageBonsPoints(); // Only BP display frequently
-                 updateButtonStates(); // Keep buttons responsive
+            if (Date.now() % 200 < 100) {
+                 mettreAJourAffichageBonsPoints();
+                 updateButtonStates();
             }
-            if (Date.now() % 1000 < 100) { // Once per second
-                checkUnlockConditions(); // Includes achievements and quests
-                mettreAJourAffichage(); // Full display update
+            if (Date.now() % 1000 < 100) {
+                checkUnlockConditions();
+                mettreAJourAffichage(); // Full display update, includes etudierButton text
                 saveGameState();
             }
-        }, 100); // Main loop runs 10 times per second
+        }, 100);
 
 
         // --- Initialisation ---
         window.onload = function() {
             loadGameState();
-            // Initial calculation of costs based on loaded state
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
             coutClasseActuel = calculateNextClasseCost(nombreClasses);
             coutEcoleActuel = calculateNextEcoleCost(schoolCount); 
             coutLyceeActuel = calculateNextLyceeCost(nombreLycees); 
-            coutCollegeActuel = calculateNextCollegeCost(nombreColleges); // New
+            coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
             
-            applyAllSkillEffects(); // Ensure all effects are applied after load
-            mettreAJourAffichage(); // Full initial display update
-            checkUnlockConditions(); // Check initial unlocks
+            applyAllSkillEffects();
+            mettreAJourAffichage();
+            checkUnlockConditions();
             updateMultiplierButtons(); 
             updateAutomationButtonStates();
             updateSettingsButtonStates();
