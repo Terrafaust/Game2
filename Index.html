@@ -9,7 +9,7 @@
         body {
             font-family: 'Inter', sans-serif;
             display: flex;
-            flex-direction: column; /* Changé pour que le footer soit en bas */
+            flex-direction: column;
             min-height: 100vh;
             background-color: #f0f2f5;
             color: #333;
@@ -17,9 +17,9 @@
             transition: background-color 0.5s ease, color 0.5s ease;
         }
 
-        .main-game-wrapper { /* Nouveau wrapper pour le menu latéral et le contenu principal */
+        .main-game-wrapper {
             display: flex;
-            flex-grow: 1; /* Prend l'espace disponible */
+            flex-grow: 1;
             width: 100%;
         }
 
@@ -38,10 +38,14 @@
         body.dark-theme #questsContainer,
         body.dark-theme #achievementsContainer,
         body.dark-theme .modal-content,
-        body.dark-theme .achat-section {
+        body.dark-theme .achat-section,
+        body.dark-theme .achievement-tooltip { /* Added achievement-tooltip */
             background-color: #3a3a3a;
             border-color: #555;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        body.dark-theme .achievement-tooltip::after { /* Tooltip arrow for dark theme */
+            border-color: #3a3a3a transparent transparent transparent;
         }
 
         body.dark-theme #side-menu h2,
@@ -54,7 +58,9 @@
         body.dark-theme .skill-branch h3,
         body.dark-theme #automationSection h3,
         body.dark-theme #activeQuests h3,
-        body.dark-theme #completedQuests h3 {
+        body.dark-theme #completedQuests h3,
+        body.dark-theme .quest-item h4, /* Dark mode for quest titles */
+        body.dark-theme .quest-item p { /* Dark mode for quest text */
             color: #76FF03;
         }
 
@@ -105,7 +111,7 @@
             background-color: #4CAF50;
             color: white;
         }
-        body.dark-theme #page-footer { /* Style du footer en mode nuit */
+        body.dark-theme #page-footer {
             background-color: #252525;
             color: #aaa;
             border-top: 1px solid #444;
@@ -302,7 +308,7 @@
             font-weight: bold;
         }
 
-        #confirmResetModal, #confirmAscensionModal {
+        #confirmResetModal, #confirmAscensionModal, #confirmSkillResetModal, #achievementDetailModal {
             position: fixed;
             top: 0;
             left: 0;
@@ -390,8 +396,8 @@
 
         #skills-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px; 
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Smaller columns */
+            gap: 15px; /* Reduced gap */
             width: 100%;
             justify-items: center; 
         }
@@ -400,8 +406,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 15px;
-            padding: 15px;
+            gap: 10px; /* Reduced gap */
+            padding: 10px; /* Reduced padding */
             border: 1px solid #e0e0e0;
             border-radius: 12px;
             background-color: #f9f9f9;
@@ -411,9 +417,9 @@
         }
 
         .skill-branch h3 {
-            color: #333;
+            margin-top: 0;
             margin-bottom: 10px;
-            font-size: 1.3em;
+            font-size: 1.2em; /* Slightly smaller title */
             text-align: center;
         }
 
@@ -422,14 +428,14 @@
             flex-direction: column;
             align-items: center;
             position: relative; 
-            padding-bottom: 20px;
+            padding-bottom: 15px; /* Reduced padding */
         }
 
         .skill-wrapper:not(:last-child)::after {
             content: '';
             position: absolute;
             width: 2px;
-            height: 20px;
+            height: 15px; /* Reduced height */
             background-color: #a0a0a0;
             bottom: 0; 
             left: 50%;
@@ -438,7 +444,7 @@
         }
 
         .skill-name-display {
-            font-size: 1em;
+            font-size: 0.9em; /* Slightly smaller font */
             font-weight: bold;
             margin-bottom: 5px;
             text-align: center;
@@ -446,15 +452,15 @@
         }
 
         .skill-node {
-            width: 90px;
-            height: 90px;
+            width: 70px; /* Smaller node */
+            height: 70px; /* Smaller node */
             border-radius: 50%; 
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            font-size: 0.75em;
+            font-size: 0.7em; /* Smaller font */
             font-weight: bold;
             border: 3px solid;
             cursor: pointer;
@@ -548,11 +554,17 @@
 
 
         .multiplier-button {
-            width: 60px; 
+            width: 23%; /* Adjusted width for better fit */
             padding: 8px 0;
-            font-size: 1em;
-            margin: 0 5px;
+            font-size: 0.9em; /* Slightly smaller font */
+            margin: 0; /* Removed margin to use gap on parent */
             border-radius: 5px;
+        }
+        #purchaseMultiplierSelection > div { /* Parent of multiplier buttons */
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            gap: 5px; /* Added gap */
         }
         .multiplier-button.active {
             background-color: #4CAF50;
@@ -563,31 +575,46 @@
         /* Styles for Achievements Tab */
         #achievementsGrid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Smaller boxes */
+            gap: 10px; /* Reduced gap */
             width: 100%;
             padding: 10px;
+            max-width: 900px; /* Limit grid width for better appearance */
         }
         .achievement-item {
             border: 1px solid #ddd;
             border-radius: 8px;
-            padding: 15px;
+            padding: 10px; /* Reduced padding */
             background-color: #f9f9f9;
             text-align: center;
             transition: background-color 0.3s;
+            position: relative; /* For tooltip positioning */
+            cursor: pointer; /* Indicate clickability */
+            height: 80px; /* Fixed height for consistent grid */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow text */
         }
         .achievement-item h4 {
             margin-top: 0;
             margin-bottom: 5px;
             color: #333;
+            font-size: 0.9em; /* Smaller font for title */
         }
         .achievement-item p {
-            font-size: 0.9em;
+            font-size: 0.8em; /* Smaller font for description */
             color: #666;
-            margin-bottom: 10px;
+            margin-bottom: 5px; /* Reduced margin */
+            display: -webkit-box;
+            -webkit-line-clamp: 2; /* Limit description to 2 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .achievement-item .reward {
-            font-size: 0.8em;
+            font-size: 0.7em; /* Smaller font for reward */
             color: #4CAF50;
             font-weight: bold;
         }
@@ -615,6 +642,51 @@
             color: #e8f5e9;
         }
 
+        /* Achievement Tooltip (for hover and click) */
+        .achievement-tooltip {
+            position: absolute;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            z-index: 100;
+            font-size: 0.9em;
+            line-height: 1.4;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            white-space: normal; /* Allow text to wrap */
+            max-width: 300px; /* Max width for readability */
+            pointer-events: none; /* Allow clicks to pass through when not active */
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+            transform: translate(-50%, -10px); /* Initial position slightly above */
+            top: auto; /* Reset top */
+            left: 50%; /* Center horizontally */
+            bottom: calc(100% + 10px); /* Position above the item */
+            visibility: hidden;
+        }
+
+        .achievement-tooltip.visible {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto; /* Enable clicks when visible */
+            transform: translate(-50%, 0); /* Move to final position */
+        }
+        .achievement-tooltip.clicked {
+            pointer-events: auto; /* Keep pointer events active when clicked */
+        }
+
+        .achievement-tooltip::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: #555 transparent transparent transparent;
+        }
+        
         #page-footer { 
             text-align: center;
             padding: 15px;
@@ -624,6 +696,26 @@
             border-top: 1px solid #ddd;
             width: 100%; 
             box-sizing: border-box; 
+        }
+
+        /* Quests dark mode fix */
+        body.dark-theme .quest-item {
+            background-color: #424242;
+            border-color: #555;
+        }
+        body.dark-theme .quest-item p {
+            color: #ccc;
+        }
+        body.dark-theme .quest-item .info-color {
+            color: #00BFFF; /* Ensure info-color is visible in dark mode */
+        }
+        body.dark-theme .quest-item.completed {
+            background-color: #2e7d32; /* Darker green for completed quests in dark mode */
+            border-color: #76FF03;
+        }
+        body.dark-theme .quest-item.completed p,
+        body.dark-theme .quest-item.completed .info-color {
+            color: #e8f5e9;
         }
 
     </style>
@@ -638,7 +730,8 @@
                     <button id="setMultiplierX1" class="multiplier-button active">x1</button>
                     <button id="setMultiplierX10" class="multiplier-button">x10</button>
                     <button id="setMultiplierX100" class="multiplier-button">x100</button>
-                    <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> </div>
+                    <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> 
+                </div>
             </div>
             <div id="achatEleveSection" class="achat-section" style="display: none;">
                 <button id="acheterEleveButton">Élève : <span class="bons-points-color">10 BP</span></button>
@@ -720,7 +813,8 @@
                     <p>Quantité : <span id="nombreLyceesDisplay">0</span></p>
                     <p class="production">Boost multiplicateur Écoles : <span id="lyceeMultiplierDisplay">1.0x</span></p>
                 </div>
-                <div id="achatCollegeSection" class="achat-section" style="display: none;"> <button id="acheterCollegeButton">Collège : <span class="ascension-points-color">250 PA</span></button>
+                <div id="achatCollegeSection" class="achat-section" style="display: none;"> 
+                    <button id="acheterCollegeButton">Collège : <span class="ascension-points-color">250 PA</span></button>
                     <p>Quantité : <span id="nombreCollegesDisplay">0</span></p>
                     <p class="production">Boost production Écoles : <span id="collegeMultiplierDisplay">1.0x</span></p>
                 </div>
@@ -728,12 +822,14 @@
                     <button id="unlockMultiPurchaseButton">Débloquer Achat Multiple : <span class="ascension-points-color">10 PA</span></button>
                 </div>
                 <div class="achat-section">
-                    <button id="unlockMaxPurchaseButton">Débloquer Achat Multiple Max : <span class="ascension-points-color">100 PA</span></button> </div>
+                    <button id="unlockMaxPurchaseButton">Débloquer Achat Multiple Max : <span class="ascension-points-color">100 PA</span></button> 
+                </div>
                 <div class="achat-section">
                     <button id="unlockNewSettingsButton">Débloquer de nouveaux réglages : <span class="ascension-points-color">10 PA</span></button>
                 </div>
                 <div class="achat-section">
-                    <button id="unlockAutomationCategoryButton">Débloquer Automatisation : <span class="ascension-points-color">1 k PA</span></button> </div>
+                    <button id="unlockAutomationCategoryButton">Débloquer Automatisation : <span class="ascension-points-color">1 k PA</span></button> 
+                </div>
             </div>
 
             <div id="questsContainer" style="display: none;"> <h1>Quêtes</h1>
@@ -751,6 +847,7 @@
                 <div id="achievementsGrid">
                     
                 </div>
+                <div id="achievementTooltip" class="achievement-tooltip" style="display: none;"></div>
             </div>
         </div> 
     </div> 
@@ -815,6 +912,9 @@
                 num = new Decimal(num); // Ensure it's a Decimal
             }
 
+            if (num.abs().lt(1000) && num.abs().gt(0)) { // For numbers less than 1000, use fixed decimals
+                return num.toFixed(decimalPlaces);
+            }
             if (num.abs().gte(new Decimal('1e' + exponentThreshold))) {
                 return num.toExponential(2); // e.g., 1.23e+9
             }
@@ -889,7 +989,7 @@
 
         let elevesUnlocked = false;
         let classesUnlocked = false;
-        let imagesUnlocked = false;
+        let imagesUnlocked = false; // This will now control permanent visibility of image count
         let professeursUnlocked = false;
         let skillsButtonUnlocked = false;
         let settingsButtonUnlocked = false;
@@ -899,6 +999,8 @@
 
         let unlockedSkills = {};
         let bonusPointsClaimed = {};
+        let totalClicks = new Decimal(0); // New variable for click achievements
+        let paMultiplierFromQuests = new Decimal(1); // New variable for quest-based PA multiplier
 
         let skillEffects = {
             eleveBpsBonus: new Decimal(0),
@@ -942,17 +1044,170 @@
                 rewardMessage: 'Vous avez débloqué les Collèges !',
                 unlocked: false,
                 completed: false
+            },
+            {
+                id: 'Q3_TotalPA_100',
+                name: 'Chercheur d\'Ascension I',
+                description: 'Atteignez un total de 100 Points d\'Ascension gagnés sur toutes les ascensions.',
+                targetType: 'totalPAEarned',
+                targetValue: new Decimal(100),
+                reward: { type: 'paMultiplier', value: new Decimal(0.05) }, // +5% PA gain
+                rewardMessage: 'Votre gain de PA est augmenté de 5% !',
+                unlocked: true,
+                completed: false
+            },
+            {
+                id: 'Q4_AscensionCount_3',
+                name: 'Pionnier de l\'Ascension',
+                description: 'Effectuez 3 Ascensions.',
+                targetType: 'ascensionCount',
+                targetValue: new Decimal(3),
+                reward: { type: 'paMultiplier', value: new Decimal(0.10) }, // +10% PA gain
+                rewardMessage: 'Votre gain de PA est augmenté de 10% !',
+                unlocked: false, // Unlocked after Q3 or similar early PA quest
+                completed: false
+            },
+            {
+                id: 'Q5_SkillsUnlocked_5',
+                name: 'Esprit Éclairé',
+                description: 'Débloquez 5 compétences dans l\'arbre de compétences.',
+                targetType: 'unlockedSkillsCount',
+                targetValue: new Decimal(5),
+                reward: { type: 'paMultiplier', value: new Decimal(0.15) }, // +15% PA gain
+                rewardMessage: 'Votre gain de PA est augmenté de 15% !',
+                unlocked: false, // Unlocked early
+                completed: false
+            },
+            {
+                id: 'Q6_Eleves_1000',
+                name: 'Grande Classe',
+                description: 'Avoir 1000 élèves.',
+                targetType: 'nombreEleves',
+                targetValue: new Decimal(1000),
+                reward: { type: 'bonsPoints', value: new Decimal('1e6') },
+                rewardMessage: 'Gagné 1 Million de Bons Points !',
+                unlocked: true,
+                completed: false
+            },
+            {
+                id: 'Q7_Classes_50',
+                name: 'Pôle Éducatif',
+                description: 'Avoir 50 salles de classe.',
+                targetType: 'nombreClasses',
+                targetValue: new Decimal(50),
+                reward: { type: 'images', value: new Decimal(5) },
+                rewardMessage: 'Gagné 5 Images !',
+                unlocked: true,
+                completed: false
+            },
+            {
+                id: 'Q8_Professeurs_10',
+                name: 'Équipe Pédagogique',
+                description: 'Avoir 10 professeurs.',
+                targetType: 'nombreProfesseurs',
+                targetValue: new Decimal(10),
+                reward: { type: 'ascensionPoints', value: new Decimal(10) },
+                rewardMessage: 'Gagné 10 Points d\'Ascension !',
+                unlocked: true,
+                completed: false
+            },
+            {
+                id: 'Q9_BonsPoints_1e9',
+                name: 'Fortune Scolaire',
+                description: 'Atteignez 1 milliard de Bons Points.',
+                targetType: 'bonsPoints',
+                targetValue: new Decimal('1e9'),
+                reward: { type: 'totalBpsMultiplier', value: new Decimal(0.05) },
+                rewardMessage: 'Votre production totale de BP/s est augmentée de 5% !',
+                unlocked: true,
+                completed: false
+            },
+            {
+                id: 'Q10_Clicks_500',
+                name: 'Dévouement Manuel',
+                description: 'Cliquez 500 fois sur le bouton "Étudier sagement".',
+                targetType: 'totalClicks',
+                targetValue: new Decimal(500),
+                reward: { type: 'clickBonsPointsBonus', value: new Decimal(5) },
+                rewardMessage: 'Votre gain de BP par clic est augmenté de 5 !',
+                unlocked: true,
+                completed: false
             }
         ];
 
         const achievementsData = [
+            // Bons Points Achievements
+            { id: 'ACH_BP_1', name: 'Le Premier Pas', description: 'Atteindre 1 Bon Point.', condition: () => bonsPoints.gte(1), rewardText: '+0.1% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.001); }, unlocked: false },
             { id: 'ACH_BP_1K', name: 'Mille Points', description: 'Atteindre 1 000 Bons Points.', condition: () => bonsPoints.gte('1e3'), rewardText: '+1% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.01); }, unlocked: false },
             { id: 'ACH_BP_1M', name: 'Millionnaire en BP', description: 'Atteindre 1 Million de Bons Points.', condition: () => bonsPoints.gte('1e6'), rewardText: '+2% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.02); }, unlocked: false },
+            { id: 'ACH_BP_1T', name: 'Trillionnaire en BP', description: 'Atteindre 1 Trillion de Bons Points.', condition: () => bonsPoints.gte('1e12'), rewardText: '+5% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.05); }, unlocked: false },
+            { id: 'ACH_BP_1Qa', name: 'Quadrillionnaire en BP', description: 'Atteindre 1 Quadrillion de Bons Points.', condition: () => bonsPoints.gte('1e15'), rewardText: '+10% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.10); }, unlocked: false },
+            { id: 'ACH_BP_1Sx', name: 'Sextillionnaire en BP', description: 'Atteindre 1 Sextillion de Bons Points.', condition: () => bonsPoints.gte('1e21'), rewardText: '+20% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.20); }, unlocked: false },
+            { id: 'ACH_BP_1Oc', name: 'Octillionnaire en BP', description: 'Atteindre 1 Octillion de Bons Points.', condition: () => bonsPoints.gte('1e50'), rewardText: '+50% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.50); }, unlocked: false },
+            { id: 'ACH_BP_1Googol', name: 'Googol de BP', description: 'Atteindre 1e100 Bons Points.', condition: () => bonsPoints.gte('1e100'), rewardText: '+100% BP/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(1); }, unlocked: false },
+
+            // Eleves Achievements
+            { id: 'ACH_ELEVES_1', name: 'L\'Apprenti', description: 'Avoir 1 Élève.', condition: () => nombreEleves.gte(1), rewardText: 'Coût des élèves -0.1%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
             { id: 'ACH_ELEVES_100', name: 'Centurie d\'Élèves', description: 'Avoir 100 Élèves.', condition: () => nombreEleves.gte(100), rewardText: 'Coût des élèves -1%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_ASCEND_1', name: 'Première Ascension', description: 'Effectuer votre première Ascension.', condition: () => ascensionCount.gte(1), rewardText: '+5 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(5); }, unlocked: false },
+            { id: 'ACH_ELEVES_1K', name: 'Mille Élèves', description: 'Avoir 1 000 Élèves.', condition: () => nombreEleves.gte(1000), rewardText: 'Coût des élèves -2%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_ELEVES_1M', name: 'Million d\'Élèves', description: 'Avoir 1 Million d\'Élèves.', condition: () => nombreEleves.gte('1e6'), rewardText: 'Coût des élèves -5%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_ELEVES_1T', name: 'Trillion d\'Élèves', description: 'Avoir 1 Trillion d\'Élèves.', condition: () => nombreEleves.gte('1e12'), rewardText: 'Coût des élèves -10%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.10); applyAllSkillEffects(); }, unlocked: false },
+            
+            // Images Achievements
+            { id: 'ACH_IMAGES_1', name: 'Première Image', description: 'Posséder 1 Image.', condition: () => images.gte(1), rewardText: 'Coût des images -0.1%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
             { id: 'ACH_IMAGES_10', name: 'Collectionneur d\'Images', description: 'Posséder 10 Images.', condition: () => images.gte(10), rewardText: 'Coût des images -1%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_IMAGES_1K', name: 'Galerie d\'Images', description: 'Posséder 1 000 Images.', condition: () => images.gte(1000), rewardText: 'Coût des images -2%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_IMAGES_1M', name: 'Musée d\'Images', description: 'Posséder 1 Million d\'Images.', condition: () => images.gte('1e6'), rewardText: 'Coût des images -5%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
+
+            // Classes Achievements
+            { id: 'ACH_CLASSES_1', name: 'Première Salle', description: 'Avoir 1 Salle de classe.', condition: () => nombreClasses.gte(1), rewardText: 'Coût des classes -0.1%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_CLASSES_10', name: 'Petit Campus', description: 'Avoir 10 Salles de classe.', condition: () => nombreClasses.gte(10), rewardText: 'Coût des classes -1%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_CLASSES_100', name: 'Grand Campus', description: 'Avoir 100 Salles de classe.', condition: () => nombreClasses.gte(100), rewardText: 'Coût des classes -2%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_CLASSES_1K', name: 'Université', description: 'Avoir 1 000 Salles de classe.', condition: () => nombreClasses.gte(1000), rewardText: 'Coût des classes -5%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
+
+            // Professeur Achievements
+            { id: 'ACH_PROFS_1', name: 'Premier Professeur', description: 'Avoir 1 Professeur.', condition: () => nombreProfesseurs.gte(1), rewardText: 'Coût des professeurs -0.1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_5', name: 'Conseil Pédagogique', description: 'Avoir 5 Professeurs.', condition: () => nombreProfesseurs.gte(5), rewardText: 'Coût des professeurs -1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_10', name: 'Corps Enseignant', description: 'Avoir 10 Professeurs.', condition: () => nombreProfesseurs.gte(10), rewardText: 'Coût des professeurs -2%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_20', name: 'Académie', description: 'Avoir 20 Professeurs.', condition: () => nombreProfesseurs.gte(20), rewardText: 'Coût des professeurs -5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
+
+            // Ecole Achievements
+            { id: 'ACH_ECOLE_1', name: 'Première École', description: 'Acheter 1 École.', condition: () => schoolCount.gte(1), rewardText: '+0.1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.001); }, unlocked: false },
+            { id: 'ACH_ECOLE_5', name: 'Réseau Scolaire', description: 'Acheter 5 Écoles.', condition: () => schoolCount.gte(5), rewardText: '+1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.01); }, unlocked: false },
+            { id: 'ACH_ECOLE_10', name: 'District Éducatif', description: 'Acheter 10 Écoles.', condition: () => schoolCount.gte(10), rewardText: '+2% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.02); }, unlocked: false },
+
+            // Lycee Achievements
+            { id: 'ACH_LYCEE_1', name: 'Premier Lycée', description: 'Acheter 1 Lycée.', condition: () => nombreLycees.gte(1), rewardText: '+0.1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.001); }, unlocked: false },
+            { id: 'ACH_LYCEE_3', name: 'Chaîne de Lycées', description: 'Acheter 3 Lycées.', condition: () => nombreLycees.gte(3), rewardText: '+1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.01); }, unlocked: false },
+
+            // College Achievements
+            { id: 'ACH_COLLEGE_1', name: 'Premier Collège', description: 'Acheter 1 Collège.', condition: () => nombreColleges.gte(1), rewardText: '+0.5% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.005); }, unlocked: false },
+            { id: 'ACH_COLLEGE_2', name: 'Réseau de Collèges', description: 'Acheter 2 Collèges.', condition: () => nombreColleges.gte(2), rewardText: '+1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.01); }, unlocked: false },
+
+            // Ascension Achievements
+            { id: 'ACH_ASCEND_1', name: 'Première Ascension', description: 'Effectuer votre première Ascension.', condition: () => ascensionCount.gte(1), rewardText: '+5 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(5); }, unlocked: false },
+            { id: 'ACH_ASCEND_2', name: 'Deuxième Ascension', description: 'Effectuer 2 Ascensions.', condition: () => ascensionCount.gte(2), rewardText: '+10 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(10); }, unlocked: false },
+            { id: 'ACH_ASCEND_5', name: 'Ascension Maître', description: 'Effectuer 5 Ascensions.', condition: () => ascensionCount.gte(5), rewardText: '+25 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(25); }, unlocked: false },
+            { id: 'ACH_ASCEND_10', name: 'Ascension Légende', description: 'Effectuer 10 Ascensions.', condition: () => ascensionCount.gte(10), rewardText: '+50 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(50); }, unlocked: false },
+            { id: 'ACH_ASCEND_25', name: 'Ascension Divine', description: 'Effectuer 25 Ascensions.', condition: () => ascensionCount.gte(25), rewardText: '+100 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(100); }, unlocked: false },
+            { id: 'ACH_ASCEND_50', name: 'Ascension Ultime', description: 'Effectuer 50 Ascensions.', condition: () => ascensionCount.gte(50), rewardText: '+250 PA uniques', rewardFn: () => { ascensionPoints = ascensionPoints.add(250); }, unlocked: false },
+
+            // Automation Achievements
+            { id: 'ACH_AUTO_ELEVE', name: 'Auto-Élève', description: 'Débloquer l\'automatisation des Élèves.', condition: () => autoEleveActive, rewardText: 'Coût des élèves -0.5%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.005); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_AUTO_CLASSE', name: 'Auto-Classe', description: 'Débloquer l\'automatisation des Classes.', condition: () => autoClasseActive, rewardText: 'Coût des classes -0.5%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.005); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_AUTO_IMAGE', name: 'Auto-Image', description: 'Débloquer l\'automatisation des Images.', condition: () => autoImageActive, rewardText: 'Coût des images -0.5%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.005); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_AUTO_PROF', name: 'Auto-Professeur', description: 'Débloquer l\'automatisation des Professeurs.', condition: () => autoProfesseurActive, rewardText: 'Coût des professeurs -0.5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.005); applyAllSkillEffects(); }, unlocked: false },
+
+            // Click Achievements
+            { id: 'ACH_CLICK_1', name: 'Premier Clic', description: 'Cliquez 1 fois sur "Étudier sagement".', condition: () => totalClicks.gte(1), rewardText: '+0.1 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(0.1); }, unlocked: false },
+            { id: 'ACH_CLICK_10', name: 'Dix Clics', description: 'Cliquez 10 fois sur "Étudier sagement".', condition: () => totalClicks.gte(10), rewardText: '+0.5 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(0.5); }, unlocked: false },
+            { id: 'ACH_CLICK_100', name: 'Cent Clics', description: 'Cliquez 100 fois sur "Étudier sagement".', condition: () => totalClicks.gte(100), rewardText: '+1 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(1); }, unlocked: false },
+            { id: 'ACH_CLICK_200', name: 'Deux Cents Clics', description: 'Cliquez 200 fois sur "Étudier sagement".', condition: () => totalClicks.gte(200), rewardText: '+2 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(2); }, unlocked: false },
+            { id: 'ACH_CLICK_500', name: 'Cinq Cents Clics', description: 'Cliquez 500 fois sur "Étudier sagement".', condition: () => totalClicks.gte(500), rewardText: '+5 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(5); }, unlocked: false },
+            { id: 'ACH_CLICK_1K', name: 'Mille Clics', description: 'Cliquez 1 000 fois sur "Étudier sagement".', condition: () => totalClicks.gte(1000), rewardText: '+10 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(10); }, unlocked: false },
         ];
         let unlockedAchievements = {};
+        let activeAchievementTooltip = null; // To manage the clicked tooltip
 
 
         // HTML Element Retrievals
@@ -1040,6 +1295,7 @@
         const completedQuestsListDiv = document.getElementById('completedQuestsList');
         const achievementsContainer = document.getElementById('achievementsContainer');
         const achievementsGrid = document.getElementById('achievementsGrid');
+        const achievementTooltip = document.getElementById('achievementTooltip');
 
 
         // --- Save and Load Functions ---
@@ -1070,6 +1326,8 @@
                 questsData: questsData.map(q => ({ id: q.id, unlocked: q.unlocked, completed: q.completed })),
                 unlockedAchievements: unlockedAchievements,
                 permanentBpsBonusFromAchievements: permanentBpsBonusFromAchievements.toString(),
+                totalClicks: totalClicks.toString(), // Save total clicks
+                paMultiplierFromQuests: paMultiplierFromQuests.toString(), // Save PA multiplier from quests
                 lastSaveTime: Date.now()
             };
             localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
@@ -1094,7 +1352,7 @@
 
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
-                imagesUnlocked = gameState.imagesUnlocked || false;
+                imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
                 professeursUnlocked = gameState.professeursUnlocked || false;
                 skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
                 settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
@@ -1146,7 +1404,8 @@
                 }
                 unlockedAchievements = gameState.unlockedAchievements || {};
                 permanentBpsBonusFromAchievements = new Decimal(gameState.permanentBpsBonusFromAchievements || 0);
-
+                totalClicks = new Decimal(gameState.totalClicks || 0); // Load total clicks
+                paMultiplierFromQuests = new Decimal(gameState.paMultiplierFromQuests || 1); // Load PA multiplier
 
                 if (!isDayTheme) document.body.classList.add('dark-theme');
                 offlineProgressToggle.checked = offlineProgressEnabled;
@@ -1510,24 +1769,20 @@
                 branches[familyName].forEach(skill => {
                     const skillWrapper = document.createElement('div');
                     skillWrapper.classList.add('skill-wrapper');
-                    const skillNameDisplay = document.createElement('div');
-                    skillNameDisplay.classList.add('skill-name-display');
-                    skillNameDisplay.textContent = skill.name;
-                    skillWrapper.appendChild(skillNameDisplay);
-
+                    
                     const skillNode = document.createElement('div');
                     skillNode.id = `skill-${skill.id}`;
                     skillNode.classList.add('skill-node');
                     const isUnlocked = unlockedSkills[skill.id];
                     const availableProfessors = nombreProfesseurs.sub(professorsUsedForSkills);
-                    const canActivate = availableProfessors.gt(0);
                     const prerequisitesMet = skill.prerequisites.every(prereqId => unlockedSkills[prereqId]);
+                    const canAffordSkill = availableProfessors.gt(0); // Cost is 1 professor
 
                     skillNode.addEventListener('click', () => handleSkillClick(skill.id));
 
                     if (isUnlocked) {
                         skillNode.classList.add('unlocked');
-                    } else if (canActivate && prerequisitesMet) {
+                    } else if (prerequisitesMet && canAffordSkill) {
                         // No specific class for "can-afford" skills, appearance handled by 'locked' or not
                     } else {
                         skillNode.classList.add('locked');
@@ -1537,15 +1792,25 @@
                          skillNode.style.cursor = 'pointer'; 
                     }
 
-                    skillNode.innerHTML += `
-                        <div class="tooltip-text">
-                            <strong>${skill.name}</strong><br>
-                            <span class="skill-effect-description">${skill.description}</span><br>
-                            <span class="skill-flavor-text">${skill.flavorText || ''}</span>
-                            ${!isUnlocked ? '<br><span class="skill-cost images-color">Coût : 1 Professeur</span>' : ''}
-                            ${!isUnlocked && !prerequisitesMet ? '<br><span style="color:red;">Prérequis non remplis</span>' : ''}
-                            ${!isUnlocked && !canActivate && skill.id !== 'S15' ? '<br><span style="color:red;">Pas de professeur disponible</span>' : ''}
-                        </div>`;
+                    // Skill Name Display inside the node
+                    const skillNameDisplay = document.createElement('span');
+                    skillNameDisplay.classList.add('skill-name-display');
+                    skillNameDisplay.textContent = skill.name;
+                    skillNode.appendChild(skillNameDisplay);
+
+                    // Tooltip text
+                    const tooltipText = document.createElement('div');
+                    tooltipText.classList.add('tooltip-text');
+                    tooltipText.innerHTML = `
+                        <strong>${skill.name}</strong><br>
+                        <span class="skill-effect-description">${skill.description}</span><br>
+                        <span class="skill-flavor-text">${skill.flavorText || ''}</span>
+                        ${!isUnlocked ? '<br><span class="skill-cost images-color">Coût : 1 Professeur</span>' : ''}
+                        ${!isUnlocked && !prerequisitesMet ? '<br><span style="color:red;">Prérequis non remplis</span>' : ''}
+                        ${!isUnlocked && !canAffordSkill && skill.id !== 'S15' ? '<br><span style="color:red;">Pas de professeur disponible</span>' : ''}
+                    `;
+                    skillNode.appendChild(tooltipText);
+                    
                     skillWrapper.appendChild(skillNode);
                     branchDiv.appendChild(skillWrapper);
                 });
@@ -1608,6 +1873,8 @@
             [skillTreeContainer, settingsContainer, ascensionMenuContainer, questsContainer, achievementsContainer].forEach(tc => tc.style.display = 'none');
             if (tabContainer) tabContainer.style.display = 'flex';
             resetSkillsButton.style.display = (tabContainer === skillTreeContainer) ? 'block' : 'none';
+            // Hide achievement tooltip when switching tabs
+            hideAchievementTooltip();
         }
 
         skillsButton.addEventListener('click', () => openTab(skillTreeContainer, skillsButton));
@@ -1649,6 +1916,8 @@
                     paGained = basePrimePA.add(additionalProfs.mul(1));
                 }
             }
+            // Apply PA multiplier from quests
+            paGained = paGained.mul(paMultiplierFromQuests);
             return paGained.floor();
         }
 
@@ -1707,33 +1976,30 @@
 
         // --- Event Listeners for Purchases ---
         etudierButton.addEventListener('click', () => {
-            console.log("[Clic Étudier] Avant : BP =", bonsPoints.toString(), "totalBPS =", totalBonsPointsParSeconde.toString(), "skillClickBonus =", skillEffects.clickBonsPointsBonus.toString());
+            totalClicks = totalClicks.add(1); // Increment total clicks
             
             calculateTotalBPS(); 
             const dynamicBonus = totalBonsPointsParSeconde.mul(0.1);
             const clickValue = skillEffects.clickBonsPointsBonus.add(dynamicBonus);
             
-            console.log("[Clic Étudier] Calculs : dynamicBonus =", dynamicBonus.toString(), "clickValue =", clickValue.toString());
-
-            if (clickValue.gt(0)) { // Ensure we are adding a positive value
+            if (clickValue.gt(0)) {
                 bonsPoints = bonsPoints.add(clickValue); 
             } else {
-                console.warn("[Clic Étudier] clickValue est zéro ou négatif. BP non augmentés par ce clic spécifique.", clickValue.toString());
-                // Optionnel: donner un minimum de 1 point si clickValue est 0 pour éviter la confusion.
-                // if (clickValue.eq(0)) bonsPoints = bonsPoints.add(1);
+                // If clickValue is zero or negative, ensure at least 1 BP is gained
+                if (clickValue.eq(0)) {
+                    bonsPoints = bonsPoints.add(1);
+                } else {
+                    console.warn("[Clic Étudier] clickValue est négatif. BP non augmentés par ce clic spécifique.", clickValue.toString());
+                }
             }
-            
-            console.log("[Clic Étudier] Après : BP =", bonsPoints.toString());
             
             etudierButton.innerHTML = `Étudier sagement (+${formatNumber(clickValue, bonsPoints.lt(1000) ? 1:0)} BP)`;
 
             mettreAJourAffichageBonsPoints();
-            console.log("[Clic Étudier] Affichage BP mis à jour.");
 
             checkUnlockConditions();
             updateButtonStates();
             saveGameState();
-            console.log("[Clic Étudier] Fin du gestionnaire.");
         });
 
         acheterEleveButton.addEventListener('click', () => performPurchase('eleve', currentPurchaseMultiplier));
@@ -1796,7 +2062,7 @@
                 ascensionPoints = ascensionPoints.sub(10);
                 multiPurchaseOptionUnlocked = true;
                 showNotification("Achat multiple (x1, x10, x100) débloqué !");
-                mettreAJourAffichage(); saveGameState();
+                mettreAJourAffichage(); updateButtonStates(); saveGameState();
             } else if (multiPurchaseOptionUnlocked) {
                 showNotification("Déjà débloqué !");
             } else {
@@ -1808,7 +2074,7 @@
                 ascensionPoints = ascensionPoints.sub(100);
                 maxPurchaseOptionUnlocked = true;
                 showNotification("Achat multiple Max débloqué !");
-                mettreAJourAffichage(); saveGameState();
+                mettreAJourAffichage(); updateButtonStates(); saveGameState();
             } else if (maxPurchaseOptionUnlocked) {
                 showNotification("Déjà débloqué !");
             } else {
@@ -1820,7 +2086,7 @@
                 ascensionPoints = ascensionPoints.sub(10);
                 newSettingsUnlocked = true;
                 showNotification("Nouveaux réglages débloqués ! (Option progression hors ligne)");
-                mettreAJourAffichage(); saveGameState();
+                mettreAJourAffichage(); updateButtonStates(); saveGameState();
             } else if (newSettingsUnlocked) {
                 showNotification("Déjà débloqué !");
             } else {
@@ -1832,7 +2098,7 @@
                 ascensionPoints = ascensionPoints.sub(1000);
                 automationCategoryUnlocked = true;
                 showNotification("Catégorie Automatisation débloquée !");
-                mettreAJourAffichage(); saveGameState();
+                mettreAJourAffichage(); updateButtonStates(); saveGameState();
             } else if (automationCategoryUnlocked) {
                 showNotification("Déjà débloqué !");
             } else {
@@ -1890,9 +2156,15 @@
             professorsUsedForSkills = new Decimal(0);
             multiplicateurProfesseur = new Decimal(1);
             s15Clicks = new Decimal(0);
+            totalClicks = new Decimal(0); // Reset clicks on soft reset
             
-            elevesUnlocked = false; classesUnlocked = false; imagesUnlocked = false; professeursUnlocked = false;
-            skillsButtonUnlocked = false; settingsButtonUnlocked = false;
+            // Keep imagesUnlocked true if it was ever true
+            // elevesUnlocked and classesUnlocked are reset as they are tied to current game state
+            elevesUnlocked = false; 
+            classesUnlocked = false; 
+            professeursUnlocked = false; // Professors are lost, so this unlocks again
+            skillsButtonUnlocked = false; 
+            settingsButtonUnlocked = false;
             unlockedSkills = {};
             bonusPointsClaimed = {};
             
@@ -1901,7 +2173,20 @@
             questsUnlocked = false;
             achievementsButtonUnlocked = false;
 
-            questsData.forEach(q => { q.completed = false; q.unlocked = (q.id === 'Q1_Schools'); });
+            // Reset quests to initial state, but keep completed status for persistent rewards
+            questsData.forEach(q => { 
+                if (q.reward.type === 'paMultiplier' && q.completed) {
+                    // Keep PA multiplier effect if already completed
+                } else {
+                    q.completed = false; 
+                }
+                q.unlocked = (q.id === 'Q1_Schools' || q.id === 'Q3_TotalPA_100' || q.id === 'Q6_Eleves_1000' || q.id === 'Q7_Classes_50' || q.id === 'Q8_Professeurs_10' || q.id === 'Q9_BonsPoints_1e9' || q.id === 'Q10_Clicks_500'); // Re-unlock initial quests
+            });
+            // Reapply PA multipliers from completed quests
+            paMultiplierFromQuests = new Decimal(1);
+            questsData.filter(q => q.completed && q.reward.type === 'paMultiplier').forEach(q => {
+                paMultiplierFromQuests = paMultiplierFromQuests.add(q.reward.value);
+            });
 
             applyAllSkillEffects();
             updateSectionVisibility();
@@ -1936,6 +2221,11 @@
             
             unlockedAchievements = {};
             permanentBpsBonusFromAchievements = new Decimal(0);
+            paMultiplierFromQuests = new Decimal(1); // Reset PA multiplier from quests on hard reset
+
+            // Reset all quests to initial unlocked state
+            questsData.forEach(q => { q.completed = false; q.unlocked = (q.id === 'Q1_Schools' || q.id === 'Q3_TotalPA_100' || q.id === 'Q6_Eleves_1000' || q.id === 'Q7_Classes_50' || q.id === 'Q8_Professeurs_10' || q.id === 'Q9_BonsPoints_1e9' || q.id === 'Q10_Clicks_500'); });
+
 
             applyAllSkillEffects();
             updateSectionVisibility();
@@ -2007,7 +2297,8 @@
                 else ascMult = new Decimal(1).add(ascensionCount.mul(0.01));
                 ascensionBonusValueSpan.textContent = `${formatNumber(ascMult, 2)}x`;
             }
-            imagesDisplay.style.display = images.gte(1) || professeursUnlocked ? 'block' : 'none';
+            // Image display logic: always show if imagesUnlocked is true
+            imagesDisplay.style.display = imagesUnlocked ? 'block' : 'none';
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             const dynamicClickBonus = totalBonsPointsParSeconde.mul(0.1);
@@ -2030,7 +2321,7 @@
         function checkUnlockConditions() {
             if (!elevesUnlocked && bonsPoints.gte(calculateNextEleveCost(nombreEleves))) { elevesUnlocked = true; showNotification("Achat Élèves débloqué !"); }
             if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
-            if (!imagesUnlocked && bonsPoints.gte(calculateNextImageCost())) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
+            if (!imagesUnlocked && images.gte(1)) { imagesUnlocked = true; showNotification("Compteur d'Images débloqué !"); } // Unlock image display if 1 image obtained
             if (!professeursUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseurs))) { professeursUnlocked = true; showNotification("Achat Professeurs débloqué !"); }
             if (!skillsButtonUnlocked && nombreProfesseurs.gte(1)) { skillsButtonUnlocked = true; showNotification("Menu Compétences débloqué !"); }
             if (!settingsButtonUnlocked && images.gte(5)) { settingsButtonUnlocked = true; showNotification("Menu Paramètres débloqué !"); }
@@ -2057,7 +2348,7 @@
         function updateSectionVisibility() {
             achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
             achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
-            achatImageSection.style.display = imagesUnlocked ? 'block' : 'none';
+            achatImageSection.style.display = imagesUnlocked ? 'block' : 'none'; // Use imagesUnlocked
             achatProfesseurSection.style.display = professeursUnlocked ? 'block' : 'none';
             skillsButton.style.display = skillsButtonUnlocked ? 'block' : 'none';
             settingsButton.style.display = settingsButtonUnlocked ? 'block' : 'none';
@@ -2082,8 +2373,18 @@
             questsData.forEach(quest => {
                 if (!quest.completed) {
                     let currentProgress = new Decimal(0);
-                    if (quest.targetType === 'schoolCount') currentProgress = schoolCount;
-                    else if (quest.targetType === 'lyceeCount') currentProgress = nombreLycees;
+                    switch (quest.targetType) {
+                        case 'schoolCount': currentProgress = schoolCount; break;
+                        case 'lyceeCount': currentProgress = nombreLycees; break;
+                        case 'totalPAEarned': currentProgress = totalPAEarned; break;
+                        case 'ascensionCount': currentProgress = ascensionCount; break;
+                        case 'unlockedSkillsCount': currentProgress = new Decimal(Object.keys(unlockedSkills).length); break;
+                        case 'nombreEleves': currentProgress = nombreEleves; break;
+                        case 'nombreClasses': currentProgress = nombreClasses; break;
+                        case 'nombreProfesseurs': currentProgress = nombreProfesseurs; break;
+                        case 'bonsPoints': currentProgress = bonsPoints; break;
+                        case 'totalClicks': currentProgress = totalClicks; break;
+                    }
 
                     if (currentProgress.gte(quest.targetValue)) {
                         quest.completed = true;
@@ -2092,17 +2393,41 @@
                         if (quest.reward.type === 'unlockPurchase') {
                             if (quest.reward.itemId === 'lycee') lyceesUnlocked = true;
                             if (quest.reward.itemId === 'college') collegesUnlocked = true;
+                        } else if (quest.reward.type === 'paMultiplier') {
+                            paMultiplierFromQuests = paMultiplierFromQuests.add(quest.reward.value);
+                        } else if (quest.reward.type === 'bonsPoints') {
+                            bonsPoints = bonsPoints.add(quest.reward.value);
+                        } else if (quest.reward.type === 'images') {
+                            images = images.add(quest.reward.value);
+                        } else if (quest.reward.type === 'ascensionPoints') {
+                            ascensionPoints = ascensionPoints.add(quest.reward.value);
+                        } else if (quest.reward.type === 'totalBpsMultiplier') {
+                            skillEffects.totalBpsMultiplierBonus = skillEffects.totalBpsMultiplierBonus.add(quest.reward.value);
+                            applyAllSkillEffects();
+                        } else if (quest.reward.type === 'clickBonsPointsBonus') {
+                            skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(quest.reward.value);
+                            applyAllSkillEffects();
                         }
                     }
                 }
 
                 const questDiv = document.createElement('div');
-                questDiv.classList.add('achat-section'); 
+                questDiv.classList.add('achat-section', 'quest-item'); 
                 let progressText = '';
                 if (!quest.completed) {
                     let currentVal = new Decimal(0);
-                    if (quest.targetType === 'schoolCount') currentVal = schoolCount;
-                    else if (quest.targetType === 'lyceeCount') currentVal = nombreLycees;
+                    switch (quest.targetType) {
+                        case 'schoolCount': currentVal = schoolCount; break;
+                        case 'lyceeCount': currentVal = nombreLycees; break;
+                        case 'totalPAEarned': currentVal = totalPAEarned; break;
+                        case 'ascensionCount': currentVal = ascensionCount; break;
+                        case 'unlockedSkillsCount': currentVal = new Decimal(Object.keys(unlockedSkills).length); break;
+                        case 'nombreEleves': currentVal = nombreEleves; break;
+                        case 'nombreClasses': currentVal = nombreClasses; break;
+                        case 'nombreProfesseurs': currentVal = nombreProfesseurs; break;
+                        case 'bonsPoints': currentVal = bonsPoints; break;
+                        case 'totalClicks': currentVal = totalClicks; break;
+                    }
                     progressText = `<p>Progrès : <span class="info-color">${formatNumber(currentVal,0)}/${formatNumber(quest.targetValue,0)}</span></p>`;
                 }
 
@@ -2113,7 +2438,7 @@
                     ${quest.completed ? `<p class="info-color">Récompense : ${quest.rewardMessage || 'Terminée !'}</p>` : ''}
                 `;
                 if (quest.completed) {
-                    questDiv.style.backgroundColor = '#d4edda'; 
+                    questDiv.classList.add('completed');
                     completedQuestsListDiv.appendChild(questDiv);
                 } else if (quest.unlocked) {
                     questsListDiv.appendChild(questDiv);
@@ -2139,11 +2464,83 @@
                 achDiv.innerHTML = `
                     <h4>${ach.name}</h4>
                     <p>${ach.description}</p>
-                    ${unlockedAchievements[ach.id] ? `<p class="reward">Récompense : ${ach.rewardText} (obtenue)</p>` : `<p class="reward">Récompense : ${ach.rewardText}</p>`}
+                    <span class="reward">Récompense : ${ach.rewardText}</span>
                 `;
+                
+                // Event listeners for tooltip
+                achDiv.addEventListener('mouseover', (e) => showAchievementTooltip(e, ach));
+                achDiv.addEventListener('mouseout', hideAchievementTooltip);
+                achDiv.addEventListener('click', (e) => toggleAchievementTooltip(e, ach));
+
                 achievementsGrid.appendChild(achDiv);
             });
         }
+
+        function showAchievementTooltip(event, ach) {
+            // Only show if no achievement is currently clicked and displayed
+            if (activeAchievementTooltip && activeAchievementTooltip.classList.contains('clicked')) return;
+
+            achievementTooltip.innerHTML = `
+                <strong>${ach.name}</strong><br>
+                ${ach.description}<br>
+                <span class="reward">Récompense : ${ach.rewardText}</span>
+            `;
+            
+            // Position the tooltip relative to the mouse cursor
+            achievementTooltip.style.left = `${event.clientX + 10}px`;
+            achievementTooltip.style.top = `${event.clientY + 10}px`;
+            achievementTooltip.classList.add('visible');
+            achievementTooltip.style.display = 'block'; // Ensure it's block
+        }
+
+        function hideAchievementTooltip() {
+            // Only hide if it's not currently clicked
+            if (activeAchievementTooltip && activeAchievementTooltip.classList.contains('clicked')) return;
+            
+            achievementTooltip.classList.remove('visible');
+            achievementTooltip.style.display = 'none';
+        }
+
+        function toggleAchievementTooltip(event, ach) {
+            event.stopPropagation(); // Prevent click from propagating to document
+
+            // If a tooltip is already active and it's THIS one, hide it
+            if (activeAchievementTooltip === achievementTooltip && achievementTooltip.classList.contains('clicked')) {
+                hideAchievementTooltip();
+                achievementTooltip.classList.remove('clicked');
+                activeAchievementTooltip = null;
+                return;
+            }
+
+            // If another tooltip was clicked, hide it first
+            if (activeAchievementTooltip && activeAchievementTooltip.classList.contains('clicked')) {
+                activeAchievementTooltip.classList.remove('clicked', 'visible');
+                activeAchievementTooltip.style.display = 'none';
+                activeAchievementTooltip = null;
+            }
+
+            // Show the new tooltip and mark it as clicked
+            achievementTooltip.innerHTML = `
+                <strong>${ach.name}</strong><br>
+                ${ach.description}<br>
+                <span class="reward">Récompense : ${ach.rewardText}</span>
+            `;
+            achievementTooltip.style.left = `${event.clientX + 10}px`;
+            achievementTooltip.style.top = `${event.clientY + 10}px`;
+            achievementTooltip.classList.add('visible', 'clicked');
+            achievementTooltip.style.display = 'block';
+            activeAchievementTooltip = achievementTooltip;
+        }
+
+        // Hide tooltip if clicking anywhere else on the document
+        document.addEventListener('click', (e) => {
+            if (activeAchievementTooltip && activeAchievementTooltip.classList.contains('clicked') && !achievementTooltip.contains(e.target)) {
+                hideAchievementTooltip();
+                achievementTooltip.classList.remove('clicked');
+                activeAchievementTooltip = null;
+            }
+        });
+
 
         function checkAchievements() {
             if (!achievementsButtonUnlocked && bonsPoints.lt('1e4')) return;
