@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeu Incrémental - Cahier d'Étude Avancé</title>
-    <script src="break_infinity.min.js"></script>
+    <link rel="icon" href="data:," type="image/x-icon"> <script src="break_infinity.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -1883,7 +1883,7 @@
                     if (currentResource.gte(costPerItem)) {
                         currentResource = currentResource.sub(costPerItem);
                         if (resourceToDecrement === 'ascensionPoints') totalCostPA = totalCostPA.add(costPerItem);
-                        else totalCostResource = totalCostResource.totalCostResource.add(costPerItem);
+                        else totalCostResource = totalCostResource.add(costPerItem); // FIX: Removed .totalCostResource
                         quantityToBuy = quantityToBuy.add(1);
                         tempItemCounter = tempItemCounter.add(1);
                     } else {
@@ -2180,8 +2180,8 @@
         etudierButton.addEventListener('click', () => {
             totalClicks = totalClicks.add(1); // Increment total clicks
             
-            calculateTotalBPS(); 
-            const dynamicBonus = totalBonsPointsParSeconde.mul(0.1);
+            calculateTotalBPS(); // Ensure totalBonsPointsParSeconde is up-to-date
+            const dynamicBonus = totalBonsPointsParSeconde.mul(0.1); // Calculate dynamicBonus here
             const clickValue = skillEffects.clickBonsPointsBonus.add(dynamicBonus);
             
             if (clickValue.gt(0)) {
@@ -2479,7 +2479,7 @@
         
         // --- Main Display Update ---
         function calculateTotalBPS() {
-            calculateItemBPS();
+            calculateItemBPS(); 
             let baseBPS = bonsPointsParSecondeEleves.add(bonsPointsParSecondeClasses);
             let skillMultiplier = new Decimal(1).add(skillEffects.totalBpsMultiplierBonus);
             let ascensionMultiplier = new Decimal(1);
@@ -2516,7 +2516,7 @@
             
             let displayedSchoolSystemMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier).add(schoolCount.mul(skillEffects.schoolMultiplierIncrease)))
                                                 .mul(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))))
-                                                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))));
+                                                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease)));
             ecoleMultiplierSpan.textContent = `${formatNumber(displayedSchoolSystemMultiplier, 2)}x`;
             nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
             lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))), 2)}x`;
@@ -2534,9 +2534,12 @@
             imagesDisplay.style.display = imagesUnlocked ? 'block' : 'none';
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
-            const dynamicClickBonus = totalBonsPointsParSeconde.mul(0.1);
-            const currentClickValue = skillEffects.clickBonsPointsBonus.add(dynamicBonus);
-            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(currentClickValue, bonsPoints.lt(1000) ? 1:0)} BP)`;
+            
+            // Recalculate dynamicBonus for button text display
+            const dynamicBonusForDisplay = totalBonsPointsParSeconde.mul(0.1);
+            const currentClickValueForDisplay = skillEffects.clickBonsPointsBonus.add(dynamicBonusForDisplay);
+            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(currentClickValueForDisplay, bonsPoints.lt(1000) ? 1:0)} BP)`;
+            
             updateButtonStates(); 
             renderSkillsMenu(); // Update skill points display
         }
