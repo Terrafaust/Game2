@@ -443,24 +443,17 @@
             z-index: 0; 
         }
 
-        .skill-name-display {
-            font-size: 0.9em; /* Slightly smaller font */
-            font-weight: bold;
-            margin-bottom: 5px;
-            text-align: center;
-            color: #555;
-        }
-
+        /* Modified skill node to be rectangular like achievement boxes */
         .skill-node {
-            width: 70px; /* Smaller node */
-            height: 70px; /* Smaller node */
-            border-radius: 50%; 
+            width: 120px; /* Wider node */
+            height: 80px; /* Shorter node */
+            border-radius: 8px; /* Rectangular corners */
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
-            font-size: 0.7em; /* Smaller font */
+            font-size: 0.8em; /* Slightly larger font */
             font-weight: bold;
             border: 3px solid;
             cursor: pointer;
@@ -644,7 +637,7 @@
 
         /* Achievement Tooltip (for hover and click) */
         .achievement-tooltip {
-            position: absolute;
+            position: fixed; /* Changed to fixed for better positioning */
             background-color: #555;
             color: #fff;
             text-align: left;
@@ -655,7 +648,7 @@
             line-height: 1.4;
             box-shadow: 0 2px 10px rgba(0,0,0,0.3);
             white-space: normal; /* Allow text to wrap */
-            max-width: 300px; /* Max width for readability */
+            max-width: 400px; /* Increased max width for readability */
             pointer-events: none; /* Allow clicks to pass through when not active */
             opacity: 0;
             transition: opacity 0.2s, transform 0.2s;
@@ -1490,7 +1483,7 @@
             coutClasseActuel = calculateNextClasseCost(nombreClasses);
             calculateItemBPS();
         }
-        
+
         function calculateItemBPS() {
             bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus));
             bonsPointsParSecondeClasses = nombreClasses.mul(new Decimal(25).add(skillEffects.classeBpsBonus)).mul(multiplicateurProfesseur);
@@ -2158,11 +2151,10 @@
             s15Clicks = new Decimal(0);
             totalClicks = new Decimal(0); // Reset clicks on soft reset
             
-            // Keep imagesUnlocked true if it was ever true
-            // elevesUnlocked and classesUnlocked are reset as they are tied to current game state
+            // Keep imagesUnlocked true if it was ever true (controlled by its own condition)
             elevesUnlocked = false; 
             classesUnlocked = false; 
-            professeursUnlocked = false; // Professors are lost, so this unlocks again
+            professeursUnlocked = false; 
             skillsButtonUnlocked = false; 
             settingsButtonUnlocked = false;
             unlockedSkills = {};
@@ -2302,7 +2294,7 @@
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             const dynamicClickBonus = totalBonsPointsParSeconde.mul(0.1);
-            const currentClickValue = skillEffects.clickBonsPointsBonus.add(dynamicClickBonus);
+            const currentClickValue = skillEffects.clickBonsPointsBonus.add(dynamicBonus);
             etudierButton.innerHTML = `Étudier sagement (+${formatNumber(currentClickValue, bonsPoints.lt(1000) ? 1:0)} BP)`;
             updateButtonStates(); 
         }
@@ -2321,7 +2313,8 @@
         function checkUnlockConditions() {
             if (!elevesUnlocked && bonsPoints.gte(calculateNextEleveCost(nombreEleves))) { elevesUnlocked = true; showNotification("Achat Élèves débloqué !"); }
             if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
-            if (!imagesUnlocked && images.gte(1)) { imagesUnlocked = true; showNotification("Compteur d'Images débloqué !"); } // Unlock image display if 1 image obtained
+            // Changed image unlock condition
+            if (!imagesUnlocked && bonsPoints.gte(1000)) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
             if (!professeursUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseurs))) { professeursUnlocked = true; showNotification("Achat Professeurs débloqué !"); }
             if (!skillsButtonUnlocked && nombreProfesseurs.gte(1)) { skillsButtonUnlocked = true; showNotification("Menu Compétences débloqué !"); }
             if (!settingsButtonUnlocked && images.gte(5)) { settingsButtonUnlocked = true; showNotification("Menu Paramètres débloqué !"); }
