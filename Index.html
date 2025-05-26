@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jeu Incrémental - Cahier d'Étude Avancé</title>
-    <link rel="icon" href="data:," type="image/x-icon"> <script src="break_infinity.min.js"></script>
+    <link rel="icon" href="data:," type="image/x-icon"> <script src="https://cdn.jsdelivr.net/gh/Patashu/break_infinity.js/break_infinity.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -31,16 +31,17 @@
 
         body.dark-theme #side-menu,
         body.dark-theme .container,
-        body.dark-theme #skillsContainer, /* Updated to new skills container */
+        body.dark-theme #skillsContainer,
         body.dark-theme #settingsContainer,
         body.dark-theme #ascensionMenuContainer,
-        body.dark-theme #automationContainer,
+        body.dark-theme #automationMainContainer, /* Updated to new automation container */
+        body.dark-theme #studiesMainContainer, /* New studies container */
         body.dark-theme #questsContainer,
         body.dark-theme #achievementsContainer,
         body.dark-theme .modal-content,
         body.dark-theme .achat-section,
         body.dark-theme .achievement-tooltip,
-        body.dark-theme .skill-panel, /* New skill panel styles */
+        body.dark-theme .skill-panel,
         body.dark-theme .skill-tier,
         body.dark-theme .skill-box {
             background-color: #3a3a3a;
@@ -52,13 +53,14 @@
         }
 
         body.dark-theme #side-menu h2,
-        body.dark-theme #skillsContainer h1, /* Updated */
+        body.dark-theme #skillsContainer h1,
         body.dark-theme #settingsContainer h1,
         body.dark-theme #ascensionMenuContainer h1,
-        body.dark-theme #automationContainer h1,
+        body.dark-theme #automationMainContainer h1, /* Updated */
+        body.dark-theme #studiesMainContainer h1, /* New */
         body.dark-theme #questsContainer h1,
         body.dark-theme #achievementsContainer h1,
-        body.dark-theme .skill-panel h2, /* New skill panel titles */
+        body.dark-theme .skill-panel h2,
         body.dark-theme .skill-tier h3,
         body.dark-theme #automationSection h3,
         body.dark-theme #activeQuests h3,
@@ -104,7 +106,7 @@
             font-weight: bold;
         }
         body.dark-theme .warning-color {
-            color: #FF6347;
+            color: #FF4500;
             font-weight: bold;
         }
         body.dark-theme .info-color {
@@ -216,7 +218,7 @@
         }
 
         button.cannot-afford {
-            border-color: #FF6347; 
+            border-color: #FF4500; 
             cursor: not-allowed; 
             opacity: 0.7; 
         }
@@ -304,7 +306,7 @@
             font-weight: bold;
         }
         .warning-color {
-            color: #FF6347; 
+            color: #FF4500; 
             font-weight: bold;
         }
         .info-color {
@@ -338,7 +340,7 @@
 
         .modal-content h3 {
             margin-top: 0;
-            color: #FF6347; 
+            color: #FF4500; 
         }
 
         .modal-buttons {
@@ -373,8 +375,8 @@
             color: #007BFF; 
         }
 
-        #skillsContainer, /* Renamed from skillTreeContainer */
-        #settingsContainer, #ascensionMenuContainer, #automationContainer, #questsContainer, #achievementsContainer {
+        #skillsContainer,
+        #settingsContainer, #ascensionMenuContainer, #automationMainContainer, #studiesMainContainer, #questsContainer, #achievementsContainer {
             width: 100%;
             max-width: 1200px;
             margin-top: 30px;
@@ -387,8 +389,8 @@
             align-items: center;
         }
 
-        #skillsContainer h1, /* Renamed */
-        #settingsContainer h1, #ascensionMenuContainer h1, #automationContainer h1, #questsContainer h1, #achievementsContainer h1 {
+        #skillsContainer h1,
+        #settingsContainer h1, #ascensionMenuContainer h1, #automationMainContainer h1, #studiesMainContainer h1, #questsContainer h1, #achievementsContainer h1 {
             color: #4CAF50;
             margin-bottom: 20px;
         }
@@ -527,6 +529,7 @@
             color: #ccc;
         }
 
+        /* Tooltip for skills */
         .skill-box .tooltip-text {
             visibility: hidden;
             width: 250px;
@@ -537,7 +540,7 @@
             padding: 10px;
             position: absolute;
             z-index: 10;
-            bottom: 110%;
+            bottom: 110%; /* Position above the skill box */
             left: 50%;
             transform: translateX(-50%);
             opacity: 0;
@@ -562,6 +565,26 @@
             visibility: visible;
             opacity: 1;
         }
+        
+        /* Secret skill box */
+        .skill-box.secret-skill {
+            background-color: transparent;
+            border: 2px solid transparent;
+            color: transparent;
+            cursor: pointer;
+        }
+        .skill-box.secret-skill:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        .skill-box.secret-skill .tooltip-text {
+            background-color: #333; /* Make tooltip visible for secret skill */
+            color: #fff;
+        }
+        .skill-box.secret-skill .tooltip-text::after {
+            border-color: #333 transparent transparent transparent;
+        }
+
 
         /* Ascension Menu Specific Styles */
         #ascensionMenuContainer .achat-section {
@@ -744,49 +767,38 @@
         body.dark-theme .quest-item.completed .info-color {
             color: #e8f5e9;
         }
+        
+        /* Side menu buttons layout for Quests and Achievements */
+        #side-menu .bottom-buttons {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping if needed */
+            gap: 10px; /* Space between buttons */
+            justify-content: center;
+            margin-top: auto; /* Push to bottom */
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        #side-menu .bottom-buttons button {
+            flex: 1 1 calc(50% - 5px); /* Two buttons per row with gap */
+            margin: 0; /* Override default button margin */
+        }
 
     </style>
 </head>
 <body>
     <div class="main-game-wrapper"> 
         <div id="side-menu">
-            <h2>Achats</h2>
-            <div id="purchaseMultiplierSelection" class="achat-section" style="display: none; text-align: center;">
-                <h3>Quantité d'achat</h3>
-                <div style="display: flex; justify-content: space-around; margin-top: 10px;">
-                    <button id="setMultiplierX1" class="multiplier-button active">x1</button>
-                    <button id="setMultiplierX10" class="multiplier-button">x10</button>
-                    <button id="setMultiplierX100" class="multiplier-button">x100</button>
-                    <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> 
-                </div>
-            </div>
-            <div id="achatEleveSection" class="achat-section" style="display: none;">
-                <button id="acheterEleveButton">Élève : <span class="bons-points-color">10 BP</span></button>
-                <p>Quantité : <span id="nombreEleves">0</span></p>
-                <p class="production" title="Production de bons points par seconde par élève">bp/s élèves : <span id="elevesBpsPerItem">0</span></p>
-            </div>
-            <div id="achatClasseSection" class="achat-section" style="display: none;">
-                <button id="acheterClasseButton">Salle de classe : <span class="bons-points-color">100 BP</span></button> <p>Quantité : <span id="nombreClasses">0</span></p>
-                <p class="production" title="Production de bons points par seconde par classe">bp/s classes : <span id="classesBpsPerItem">0</span></p>
-            </div>
-            <div id="achatImageSection" class="achat-section" style="display: none;">
-                <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
-            </div>
-            <div id="achatProfesseurSection" class="achat-section" style="display: none;">
-                <button id="acheterProfesseurButton">Professeur : <span class="images-color">2 I</span></button>
-                <p>Quantité : <span id="professeurs">0</span></p>
-            </div>
-            <div id="automationSection" class="achat-section" style="display: none;"> <h3>Automatisation</h3>
-                <button id="autoEleveButton">Automatiser Élèves : <span class="ascension-points-color">100 PA</span></button>
-                <button id="autoClasseButton">Automatiser Classes : <span class="ascension-points-color">500 PA</span></button> <button id="autoImageButton">Automatiser Images : <span class="ascension-points-color">10 k PA</span></button>
-                <button id="autoProfesseurButton">Automatiser Professeurs : <span class="ascension-points-color">100 k PA</span></button>
-            </div>
+            <h2>Navigation</h2>
+            <button id="studiesButton">Études</button>
+            <button id="automationButton" style="display: none;">Automatisation</button>
             <button id="skillsButton" style="display: none;">Compétences</button>
-            <button id="settingsButton" style="display: none;">Paramètres</button>
             <button id="ascensionMenuButton" style="display: none; background-color: #007BFF; color: white;">Menu Ascension</button>
-            <button id="questsButton" style="display: none;">Quêtes</button>
-            <button id="achievementsButton" style="display: none;">Succès</button>
+            <button id="settingsButton" style="display: none;">Paramètres</button>
+            <div class="bottom-buttons">
+                <button id="questsButton" style="display: none;">Quêtes</button>
+                <button id="achievementsButton" style="display: none;">Succès</button>
             </div>
+        </div>
 
         <div id="main-content">
             <div class="container">
@@ -801,9 +813,49 @@
                         <p id="ascensionCountDisplay" style="display: none;">Ascensions : <span id="ascensionCountSpan" class="ascension-points-color">0</span></p>
                     </div>
                 </div>
-
-                <button id="etudierButton">Étudier sagement</button> 
             </div>
+
+            <div id="studiesMainContainer">
+                <h1>Études</h1>
+                <div class="container">
+                    <button id="etudierButton">Étudier sagement</button> 
+                </div>
+                <div id="purchaseMultiplierSelection" class="achat-section" style="display: none; text-align: center;">
+                    <h3>Quantité d'achat</h3>
+                    <div style="display: flex; justify-content: space-around; margin-top: 10px;">
+                        <button id="setMultiplierX1" class="multiplier-button active">x1</button>
+                        <button id="setMultiplierX10" class="multiplier-button">x10</button>
+                        <button id="setMultiplierX100" class="multiplier-button">x100</button>
+                        <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button> 
+                    </div>
+                </div>
+                <div id="achatEleveSection" class="achat-section" style="display: none;">
+                    <button id="acheterEleveButton">Élève : <span class="bons-points-color">10 BP</span></button>
+                    <p>Quantité : <span id="nombreEleves">0</span></p>
+                    <p class="production" title="Production de bons points par seconde par élève">bp/s élèves : <span id="elevesBpsPerItem">0</span></p>
+                </div>
+                <div id="achatClasseSection" class="achat-section" style="display: none;">
+                    <button id="acheterClasseButton">Salle de classe : <span class="bons-points-color">100 BP</span></button> <p>Quantité : <span id="nombreClasses">0</span></p>
+                    <p class="production" title="Production de bons points par seconde par classe">bp/s classes : <span id="classesBpsPerItem">0</span></p>
+                </div>
+                <div id="achatImageSection" class="achat-section" style="display: none;">
+                    <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
+                </div>
+                <div id="achatProfesseurSection" class="achat-section" style="display: none;">
+                    <button id="acheterProfesseurButton">Professeur : <span class="images-color">2 I</span></button>
+                    <p>Quantité : <span id="professeurs">0</span></p>
+                </div>
+            </div>
+
+            <div id="automationMainContainer" style="display: none;">
+                <h1>Automatisation</h1>
+                <div id="automationSection" class="achat-section"> <h3>Automatisation</h3>
+                    <button id="autoEleveButton">Automatiser Élèves : <span class="ascension-points-color">100 PA</span></button>
+                    <button id="autoClasseButton">Automatiser Classes : <span class="ascension-points-color">500 PA</span></button> <button id="autoImageButton">Automatiser Images : <span class="ascension-points-color">10 k PA</span></button>
+                    <button id="autoProfesseurButton">Automatiser Professeurs : <span class="ascension-points-color">100 k PA</span></button>
+                </div>
+            </div>
+
 
             <div id="skillsContainer">
                 <h1>Arbre de Compétences</h1>
@@ -813,12 +865,12 @@
                         <p class="points-display">Points disponibles : <span id="studiesPointsCount">0</span></p>
                         <div id="studiesSkillsGrid"></div>
                     </div>
-                    <div id="ascensionPanel" class="skill-panel">
+                    <div id="ascensionPanel" class="skill-panel" style="display: none;">
                         <h2>Ascension</h2>
                         <p class="points-display">Points disponibles : <span id="ascensionSkillsPointsCount">0</span></p>
                         <div id="ascensionSkillsGrid"></div>
                     </div>
-                    <div id="prestigePanel" class="skill-panel">
+                    <div id="prestigePanel" class="skill-panel" style="display: none;">
                         <h2>Prestige</h2>
                         <p class="points-display">Points disponibles : <span id="prestigeSkillsPointsCount">0</span></p>
                         <div id="prestigeSkillsGrid"></div>
@@ -833,7 +885,7 @@
                     <button id="themeToggleButton">Débloquer option Thème (10 I)</button>
                 </div>
                 <div class="achat-section">
-                    <button id="resetProgressionButton" style="background-color: #FF6347; color: white;">Réinitialiser la Progression (10 I)</button>
+                    <button id="resetProgressionButton" style="background-color: #FF4500; color: white;">Réinitialiser la Progression (10 I)</button>
                 </div>
                  <div class="achat-section">
                     <label for="offlineProgressToggle">Activer progression hors ligne :</label>
@@ -981,11 +1033,11 @@
         let totalBonsPointsParSeconde = new Decimal(0);
         let nombreEleves = new Decimal(0);
         const coutEleveBase = new Decimal(10);
-        const coutEleveGrowth = new Decimal(1.15);
+        const coutEleveGrowth = new Decimal(1.14); // Slightly reduced
         let coutEleveActuel;
         let nombreClasses = new Decimal(0);
         const coutClasseBase = new Decimal(100);
-        const coutClasseGrowth = new Decimal(1.20);
+        const coutClasseGrowth = new Decimal(1.18); // Slightly reduced
         let coutClasseActuel;
 
         let images = new Decimal(0);
@@ -1062,6 +1114,9 @@
         let studiesSkillsUnlocked = false;
         let ascensionSkillsUnlocked = false;
         let prestigeSkillsUnlocked = false; // Placeholder for future unlock
+
+        // Secret skill click counter
+        let secretSkillClicks = 0;
 
         const fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170, 1836311903, 2971215073, 4807526976, 7778742049, 12586269025, 20365011074].map(num => new Decimal(num));
         const prime_PA = [0, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113].map(num => new Decimal(num));
@@ -1269,6 +1324,8 @@
         const acheterClasseButton = document.getElementById('acheterClasseButton');
         const acheterImageButton = document.getElementById('acheterImageButton');
         const acheterProfesseurButton = document.getElementById('acheterProfesseurButton');
+        const studiesButton = document.getElementById('studiesButton'); // New
+        const automationButton = document.getElementById('automationButton'); // New
         const skillsButton = document.getElementById('skillsButton');
         const settingsButton = document.getElementById('settingsButton');
         const ascensionButtonInMenu = document.getElementById('ascensionButtonInMenu'); // Renamed
@@ -1284,11 +1341,13 @@
         const ascensionBonusDisplay = document.getElementById('ascensionBonusDisplay');
         const ascensionBonusValueSpan = document.getElementById('ascensionBonusValue');
         const achatEleveSection = document.getElementById('achatEleveSection');
-        const achatClasseSection = document.getElementById('achatClasseSection');
+        const achatClasseSection = document = document.getElementById('achatClasseSection');
         const achatImageSection = document.getElementById('achatImageSection');
         const achatProfesseurSection = document.getElementById('achatProfesseurSection');
         const notificationsContainer = document.getElementById('notifications-container');
-        const skillsContainer = document.getElementById('skillsContainer'); // Renamed
+        const studiesMainContainer = document.getElementById('studiesMainContainer'); // New
+        const automationMainContainer = document.getElementById('automationMainContainer'); // New
+        const skillsContainer = document.getElementById('skillsContainer');
         const studiesSkillsGrid = document.getElementById('studiesSkillsGrid');
         const ascensionSkillsGrid = document.getElementById('ascensionSkillsGrid');
         const prestigeSkillsGrid = document.getElementById('prestigeSkillsGrid');
@@ -1355,7 +1414,6 @@
                 images: images.toString(),
                 nombreProfesseurs: nombreProfesseurs.toString(),
                 multiplicateurProfesseur: multiplicateurProfesseur.toString(),
-                unlockedSkills: Object.keys(studiesSkillLevels).concat(Object.keys(ascensionSkillLevels)).concat(Object.keys(prestigeSkillLevels)), // Save all unlocked skills
                 studiesSkillLevels: studiesSkillLevels,
                 ascensionSkillLevels: ascensionSkillLevels,
                 prestigeSkillLevels: prestigeSkillLevels,
@@ -1382,6 +1440,7 @@
                 permanentBpsBonusFromAchievements: permanentBpsBonusFromAchievements.toString(),
                 totalClicks: totalClicks.toString(), // Save total clicks
                 paMultiplierFromQuests: paMultiplierFromQuests.toString(), // Save PA multiplier from quests
+                secretSkillClicks: secretSkillClicks, // Save secret skill clicks
                 lastSaveTime: Date.now()
             };
             localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
@@ -1466,6 +1525,7 @@
                 permanentBpsBonusFromAchievements = new Decimal(gameState.permanentBpsBonusFromAchievements || 0);
                 totalClicks = new Decimal(gameState.totalClicks || 0); // Load total clicks
                 paMultiplierFromQuests = new Decimal(gameState.paMultiplierFromQuests || 1); // Load PA multiplier
+                secretSkillClicks = gameState.secretSkillClicks || 0; // Load secret skill clicks
 
                 if (!isDayTheme) document.body.classList.add('dark-theme');
                 offlineProgressToggle.checked = offlineProgressEnabled;
@@ -1479,7 +1539,7 @@
                     calculateTotalBPS(); 
 
                     if (totalBonsPointsParSeconde.gt(0) && effectiveOfflineTimeMs > 10000) {
-                        const offlineGainPercentage = new Decimal(0.50);
+                        const offlineGainPercentage = new Decimal(0.50).add(skillEffects.offlineProductionIncrease); // Apply skill effect to offline gain
                         const offlineGains = totalBonsPointsParSeconde.mul(effectiveOfflineTimeMs / 1000).mul(offlineGainPercentage);
                         if (offlineGains.gt(0)) {
                             bonsPoints = bonsPoints.add(offlineGains);
@@ -1515,6 +1575,7 @@
                 { id: 'S4_2', name: 'Recrutement Expert', tier: 4, maxLevel: 6, description: 'Réduit le coût des professeurs de 5%.', effect: { type: 'professeurCostReduction', value: new Decimal(0.05) }, prerequisites: ['S3_1', 'S3_2'] },
                 // Tier 5 (Total levels: 12)
                 { id: 'S5_1', name: 'Synergie Globale', tier: 5, maxLevel: 12, description: 'Augmente la production totale de BP/s de 10%.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['S4_1', 'S4_2'] },
+                { id: 'S5_2_Secret', name: 'Le Secret', tier: 5, maxLevel: 15, description: 'Un mystère... (Cliquez 15 fois pour une récompense secrète !)', effect: { type: 'secretReward' }, prerequisites: ['S4_1', 'S4_2'] }
             ],
             ascension: [
                 // Tier 1 (Total levels: 12)
@@ -1667,6 +1728,9 @@
                 case 'allCostReduction': skillEffects.allCostReduction = skillEffects.allCostReduction.add(value); break;
                 case 'allProductionMultiplier': skillEffects.allProductionMultiplier = skillEffects.allProductionMultiplier.add(value); break;
                 case 'allBpsMultiplier': skillEffects.allBpsMultiplier = skillEffects.allBpsMultiplier.mul(new Decimal(1).add(value)); break;
+                case 'secretReward': 
+                    // This effect is handled directly in handleSkillClick for the secret skill
+                    break;
             }
         }
 
@@ -1737,42 +1801,51 @@
         }
 
         function updateButtonStates() {
+            // Eleve
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
             acheterEleveButton.innerHTML = `Élève : <span class="bons-points-color">${formatNumber(coutEleveActuel, 0)} BP</span>`;
             acheterEleveButton.classList.toggle('can-afford', bonsPoints.gte(coutEleveActuel));
             acheterEleveButton.classList.toggle('cannot-afford', bonsPoints.lt(coutEleveActuel));
 
+            // Classe
             coutClasseActuel = calculateNextClasseCost(nombreClasses);
             acheterClasseButton.innerHTML = `Salle de classe : <span class="bons-points-color">${formatNumber(coutClasseActuel, 0)} BP</span>`;
             acheterClasseButton.classList.toggle('can-afford', bonsPoints.gte(coutClasseActuel));
             acheterClasseButton.classList.toggle('cannot-afford', bonsPoints.lt(coutClasseActuel));
             
+            // Image
             let imageCost = calculateNextImageCost();
             acheterImageButton.innerHTML = `Image : <span class="bons-points-color">${formatNumber(imageCost, 0)} BP</span>`;
             acheterImageButton.classList.toggle('can-afford', bonsPoints.gte(imageCost));
             acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
 
+            // Professeur
             let professeurCost = calculateNextProfessorCost(nombreProfesseurs);
             acheterProfesseurButton.innerHTML = `Professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
+            // Ascension Button in Menu
             ascensionButtonInMenu.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseurs.gte(1));
             ascensionButtonInMenu.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseurs.lt(1));
+            // Ascension Menu Button in Side Menu
             ascensionMenuButton.classList.toggle('can-afford', ascensionUnlocked);
             ascensionMenuButton.classList.toggle('cannot-afford', !ascensionUnlocked);
 
+            // Ecole
             coutEcoleActuel = calculateNextEcoleCost(schoolCount);
             acheterEcoleButton.classList.toggle('can-afford', ascensionPoints.gte(coutEcoleActuel));
             acheterEcoleButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutEcoleActuel));
             coutEcoleSpan.textContent = `${formatNumber(coutEcoleActuel, 0)} PA`;
 
+            // Lycee
             if (lyceesUnlocked) {
                 coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
                 acheterLyceeButton.innerHTML = `Lycée : <span class="ascension-points-color">${formatNumber(coutLyceeActuel, 0)} PA</span>`;
                 acheterLyceeButton.classList.toggle('can-afford', ascensionPoints.gte(coutLyceeActuel));
                 acheterLyceeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutLyceeActuel));
             }
+            // College
             if (collegesUnlocked) {
                 coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
                 acheterCollegeButton.innerHTML = `Collège : <span class="ascension-points-color">${formatNumber(coutCollegeActuel, 0)} PA</span>`;
@@ -1780,6 +1853,7 @@
                 acheterCollegeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutCollegeActuel));
             }
 
+            // Unlock Buttons in Ascension Menu
             unlockMultiPurchaseButton.style.display = multiPurchaseOptionUnlocked ? 'none' : 'block';
             if(!multiPurchaseOptionUnlocked) {
                 unlockMultiPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(10));
@@ -1816,6 +1890,7 @@
         }
 
         function updateAutomationButtonStates() {
+            // Hide cost if automation is active
             if (autoEleveActive) {
                 autoEleveButton.textContent = "Désactiver Auto Élèves";
                 autoEleveButton.classList.add('automation-active');
@@ -1883,13 +1958,13 @@
                     if (currentResource.gte(costPerItem)) {
                         currentResource = currentResource.sub(costPerItem);
                         if (resourceToDecrement === 'ascensionPoints') totalCostPA = totalCostPA.add(costPerItem);
-                        else totalCostResource = totalCostResource.add(costPerItem); // FIX: Removed .totalCostResource
+                        else totalCostResource = totalCostResource.add(costPerItem);
                         quantityToBuy = quantityToBuy.add(1);
                         tempItemCounter = tempItemCounter.add(1);
                     } else {
                         canAfford = false;
                     }
-                     if (quantityToBuy.gte(1000) && isAutomated) break;
+                     if (quantityToBuy.gte(1000) && isAutomated) break; // Limit automated max purchases to 1000 per tick
                 }
             } else {
                 let numQuantity = new Decimal(quantityRequested);
@@ -1942,6 +2017,14 @@
 
         // --- New Skill System Functions ---
         function renderSkillsMenu() {
+            const studiesPanel = document.getElementById('studiesPanel');
+            const ascensionPanel = document.getElementById('ascensionPanel');
+            const prestigePanel = document.getElementById('prestigePanel');
+
+            studiesPanel.style.display = studiesSkillsUnlocked ? 'flex' : 'none';
+            ascensionPanel.style.display = ascensionSkillsUnlocked ? 'flex' : 'none';
+            prestigePanel.style.display = prestigeSkillsUnlocked ? 'flex' : 'none';
+
             renderSkillPanel('studies', studiesSkillsGrid, studiesSkillLevels, studiesSkillPoints, studiesSkillsUnlocked);
             renderSkillPanel('ascension', ascensionSkillsGrid, ascensionSkillLevels, ascensionSkillPoints, ascensionSkillsUnlocked);
             renderSkillPanel('prestige', prestigeSkillsGrid, prestigeSkillLevels, prestigeSkillPoints, prestigeSkillsUnlocked);
@@ -1954,7 +2037,7 @@
         function renderSkillPanel(panelType, gridElement, skillLevels, skillPoints, isPanelUnlocked) {
             gridElement.innerHTML = '';
             if (!isPanelUnlocked) {
-                gridElement.innerHTML = `<p style="text-align: center; color: #888;">Débloquez cette section pour voir les compétences.</p>`;
+                // No need to render content if panel is not unlocked, display is handled by parent div style.display
                 return;
             }
 
@@ -1988,6 +2071,10 @@
                     skillBox.classList.toggle('max-level', isMaxLevel);
                     skillBox.dataset.skillId = skill.id;
                     skillBox.dataset.panelType = panelType;
+                    
+                    if (skill.id === 'S5_2_Secret') {
+                        skillBox.classList.add('secret-skill');
+                    }
 
                     skillBox.innerHTML = `
                         <span class="skill-name">${skill.name}</span>
@@ -1995,9 +2082,10 @@
                         <div class="tooltip-text">
                             <strong>${skill.name}</strong><br>
                             ${skill.description}<br>
-                            ${!isMaxLevel ? `<span class="skill-cost images-color">Coût: 1 point de compétence</span>` : ''}
+                            ${!isMaxLevel && skill.id !== 'S5_2_Secret' ? `<span class="skill-cost images-color">Coût: 1 point de compétence</span>` : ''}
                             ${isLocked && !canUnlockTier ? `<br><span style="color:red;">Débloquez l'étage précédent</span>` : ''}
-                            ${isLocked && canUnlockTier && skillPoints.lt(1) && !isMaxLevel ? `<br><span style="color:red;">Pas assez de points</span>` : ''}
+                            ${isLocked && canUnlockTier && skillPoints.lt(1) && !isMaxLevel && skill.id !== 'S5_2_Secret' ? `<br><span style="color:red;">Pas assez de points</span>` : ''}
+                            ${skill.id === 'S5_2_Secret' ? `<br>Clics: ${secretSkillClicks}/15` : ''}
                         </div>
                     `;
                     skillBox.addEventListener('click', () => handleSkillClick(panelType, skill.id));
@@ -2031,6 +2119,26 @@
             }
 
             const currentLevel = currentSkillLevels[skillId] || 0;
+
+            if (skill.id === 'S5_2_Secret') {
+                secretSkillClicks++;
+                showNotification(`Secret cliqué ${secretSkillClicks} fois !`);
+                if (secretSkillClicks >= 15) {
+                    ascensionPoints = ascensionPoints.add(1000);
+                    ascensionCount = ascensionCount.add(10);
+                    nombreProfesseurs = nombreProfesseurs.add(50);
+                    multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
+                    totalPAEarned = totalPAEarned.add(1000); // Add to total PA earned for achievements/stats
+                    showNotification("Révélation secrète ! +1000 PA, +10 Ascensions, +50 Professeurs !", 7000);
+                    secretSkillClicks = 0; // Reset for potential future use or just mark as done
+                    skill.maxLevel = 1; // Mark as maxed for this "level"
+                    currentSkillLevels[skillId] = 1; // Set level to 1 to indicate completion
+                }
+                renderSkillsMenu(); // Re-render to update click count
+                mettreAJourAffichage();
+                saveGameState();
+                return;
+            }
 
             if (currentLevel >= skill.maxLevel) {
                 showNotification("Compétence déjà au niveau maximum.");
@@ -2099,6 +2207,9 @@
                 prestigeSkillPoints = prestigeSkillPoints.add(Object.values(prestigeSkillLevels).reduce((sum, level) => sum + level, 0));
                 prestigeSkillLevels = {};
 
+                // Reset secret skill clicks
+                secretSkillClicks = 0;
+
                 applyAllSkillEffects();
                 renderSkillsMenu();
                 mettreAJourAffichage();
@@ -2112,19 +2223,25 @@
         });
 
         // --- Tab Switching Logic ---
-        function openTab(tabContainer, buttonToSetActive) {
-            [skillsContainer, settingsContainer, ascensionMenuContainer, questsContainer, achievementsContainer].forEach(tc => tc.style.display = 'none');
+        function openTab(tabContainer) {
+            // Hide all main content containers
+            [studiesMainContainer, automationMainContainer, skillsContainer, settingsContainer, ascensionMenuContainer, questsContainer, achievementsContainer].forEach(tc => tc.style.display = 'none');
+            // Show the selected tab container
             if (tabContainer) tabContainer.style.display = 'flex';
             
             // Hide achievement tooltip when switching tabs
             hideAchievementTooltip();
         }
 
-        skillsButton.addEventListener('click', () => { openTab(skillsContainer, skillsButton); renderSkillsMenu(); });
-        settingsButton.addEventListener('click', () => { openTab(settingsContainer, settingsButton); updateSettingsButtonStates(); });
-        ascensionMenuButton.addEventListener('click', () => { openTab(ascensionMenuContainer, ascensionMenuButton); mettreAJourAffichage(); });
-        questsButton.addEventListener('click', () => { openTab(questsContainer, questsButton); renderQuests(); });
-        achievementsButton.addEventListener('click', () => { openTab(achievementsContainer, achievementsButton); renderAchievements(); });
+        // New button event listeners for main menu sections
+        studiesButton.addEventListener('click', () => { openTab(studiesMainContainer); mettreAJourAffichage(); });
+        automationButton.addEventListener('click', () => { openTab(automationMainContainer); mettreAJourAffichage(); });
+
+        skillsButton.addEventListener('click', () => { openTab(skillsContainer); renderSkillsMenu(); });
+        settingsButton.addEventListener('click', () => { openTab(settingsContainer); updateSettingsButtonStates(); });
+        ascensionMenuButton.addEventListener('click', () => { openTab(ascensionMenuContainer); mettreAJourAffichage(); });
+        questsButton.addEventListener('click', () => { openTab(questsContainer); renderQuests(); });
+        achievementsButton.addEventListener('click', () => { openTab(achievementsContainer); renderAchievements(); });
 
         // --- Ascension Logic ---
         ascensionButtonInMenu.addEventListener('click', () => { // Changed to ascensionButtonInMenu
@@ -2374,8 +2491,7 @@
             elevesUnlocked = false; 
             classesUnlocked = false; 
             professeursUnlocked = false; 
-            skillsButtonUnlocked = false; 
-            settingsButtonUnlocked = false;
+            // skillsButtonUnlocked and settingsButtonUnlocked are kept based on game state, not reset
             
             // Reset studies skill levels, but keep points
             studiesSkillLevels = {};
@@ -2406,9 +2522,12 @@
                 paMultiplierFromQuests = paMultiplierFromQuests.add(q.reward.value);
             });
 
+            // Reset secret skill clicks
+            secretSkillClicks = 0;
+
             applyAllSkillEffects();
             updateSectionVisibility();
-            openTab(null);
+            openTab(studiesMainContainer); // Default to studies tab after reset
             mettreAJourAffichage();
             saveGameState(); 
         }
@@ -2454,6 +2573,9 @@
             studiesSkillsUnlocked = false;
             ascensionSkillsUnlocked = false;
             prestigeSkillsUnlocked = false;
+
+            // Reset secret skill clicks
+            secretSkillClicks = 0;
 
 
             applyAllSkillEffects();
@@ -2586,21 +2708,28 @@
         }
         
         function updateSectionVisibility() {
-            achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
-            achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
-            achatImageSection.style.display = imagesUnlocked ? 'block' : 'none'; // Use imagesUnlocked
-            achatProfesseurSection.style.display = professeursUnlocked ? 'block' : 'none';
+            // Main menu buttons
+            automationButton.style.display = automationCategoryUnlocked ? 'block' : 'none';
             skillsButton.style.display = skillsButtonUnlocked ? 'block' : 'none';
             settingsButton.style.display = settingsButtonUnlocked ? 'block' : 'none';
-            // ascensionButton is now inside ascensionMenuContainer
             ascensionMenuButton.style.display = ascensionMenuButtonUnlocked ? 'block' : 'none';
-            purchaseMultiplierSelection.style.display = multiPurchaseOptionUnlocked ? 'block' : 'none';
-            setMultiplierXMax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none';
-            automationSection.style.display = automationCategoryUnlocked ? 'block' : 'none';
-            achatLyceeSection.style.display = lyceesUnlocked ? 'block' : 'none';
-            achatCollegeSection.style.display = collegesUnlocked ? 'block' : 'none';
             questsButton.style.display = questsUnlocked ? 'block' : 'none';
             achievementsButton.style.display = achievementsButtonUnlocked ? 'block' : 'none';
+
+            // Studies section elements (controlled by their own unlock conditions)
+            purchaseMultiplierSelection.style.display = multiPurchaseOptionUnlocked ? 'block' : 'none';
+            setMultiplierXMax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none';
+            achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
+            achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
+            achatImageSection.style.display = imagesUnlocked ? 'block' : 'none';
+            achatProfesseurSection.style.display = professeursUnlocked ? 'block' : 'none';
+            
+            // Automation section elements
+            // automationSection visibility is controlled by automationMainContainer's display
+            
+            // Ascension Menu Unlocks
+            achatLyceeSection.style.display = lyceesUnlocked ? 'block' : 'none';
+            achatCollegeSection.style.display = collegesUnlocked ? 'block' : 'none';
         }
 
         // --- Quests Logic ---
@@ -2872,6 +3001,9 @@
             renderQuests();
             renderAchievements();
             renderSkillsMenu(); // Initial render of the new skill menu
+
+            // Ensure the Studies tab is open by default on load
+            openTab(studiesMainContainer);
 
             showNotification("Bienvenue dans le Cahier d'Étude Avancé ! Prêt à apprendre ?", 5000);
         };
