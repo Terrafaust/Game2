@@ -1271,7 +1271,7 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
+                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="professeurDisplayValue"
                                 class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
@@ -1330,6 +1330,7 @@
                             <button id="acheterProfesseurButton">Professeur<span id="buyProfesseur"></span> :
                                 <span class="images-color">2
                                     I</span></button>
+                            <p>Quantité : <span id="professeurDisplayQuantity">0</span></p>
                         </div>
                         <div id="achatImageSection" class="achat-section" style="display: none;">
                             <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
@@ -1636,8 +1637,8 @@
                 <h3>Ressources et Multiplicateurs</h3>
                 <p>Bons Points: <span class="bons-points-color stat-value" id="statsBonsPoints">0</span></p>
                 <p>Images: <span class="images-color stat-value" id="statsImages">0</span></p>
-                <p>Professeur: <span class="professeur-color stat-value" id="nombreProfesseur">0</span></p>
-                <p>Professeur: <span class="professeur-color stat-value" id="statsProfesseur">0</span></p>
+                <p>Professeur<span id="statsProfesseurPluralS"></span>: <span class="professeur-color stat-value"
+                        id="statsProfesseur">0</span></p>
                 <p>Multiplicateur Professeur: <span class="info-color stat-value"
                         id="statsProfMultiplier">1.00x</span></p>
                 <p>Points d'Ascension: <span class="ascension-points-color stat-value"
@@ -1920,7 +1921,6 @@
         const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
         const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
         const ascensionCountSpan = document.getElementById('ascensionCountSpan');
-        const ProfessorCountSpan = document.getElementById('nombreProfesseur');
         const totalPAEarnedSpanInline = document.getElementById('totalPAEarnedSpanInline');
         const ascensionBonusDisplay = document.getElementById('ascensionBonusDisplay');
         const ascensionBonusValueSpan = document.getElementById('ascensionBonusValue');
@@ -2269,7 +2269,8 @@
         
             // Stats display
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
-        
+            statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
+        }
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
         // --- Cost Calculation Functions ---
@@ -2438,7 +2439,7 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
-            ProfessorCountSpan.textContent = formatNumber(nombreProfesseur, 0); // Corrected element copied on images
+            ProfessorCountSpan.textContent = formatNumber(Images, 0); // Corrected element copied on images
 
             // Update other displays
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
@@ -4252,7 +4253,7 @@
                 ascensionSkillPoints = ascensionSkillPoints.add(1); // Gain 1 ascension skill point per ascension
 
                 // Reset studies skill levels and return points
-                studiesSkillPoints = studiesSkillPoints.add(Object.values(studiesSkillLevels).reduce((sum, level) => sum + level, 0));
+                studiesSkillPoints = new Decimal(0);
                 studiesSkillLevels = {}; // Clear studies skill levels on ascension
 
                 showNotification(`Ascension réussie ! +${formatNumber(paGained, 0)} PA !`);
@@ -4381,7 +4382,7 @@
             // Ascension skill points and levels are *not* reset by prestige
             // prestige skill points and levels are kept
 
-            studiesSkillsUnlocked = false;
+            studiesSkillsUnlocked = true;
             ascensionSkillsUnlocked = false; // Needs to be re-unlocked by ascension
             // prestigeSkillsUnlocked is kept
 
@@ -4556,7 +4557,7 @@
             if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
             // Changed image unlock condition
             if (!imagesUnlocked && bonsPoints.gte(1000)) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
-            if (!professeurUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseur))) { professeurUnlocked = true; showNotification("Achat Professeur débloqué !"); }
+            if (!professeurUnlocked && images.gte(1)) { professeurUnlocked = true; showNotification("Achat Professeur débloqué !"); }
             // Ensure skills panel remains unlocked once condition is met
             if (!skillsButtonUnlocked && nombreProfesseur.gte(1)) {
                 skillsButtonUnlocked = true;
