@@ -1271,7 +1271,7 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="professeurDisplayValue"
+                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
                                 class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
@@ -1330,7 +1330,6 @@
                             <button id="acheterProfesseurButton">Professeur<span id="buyProfesseur"></span> :
                                 <span class="images-color">2
                                     I</span></button>
-                            <p>Quantité : <span id="professeurDisplayQuantity">0</span></p>
                         </div>
                         <div id="achatImageSection" class="achat-section" style="display: none;">
                             <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
@@ -1896,7 +1895,7 @@
         const imagesCountSpan = document.getElementById('imagesCount'); // Corrected ID for images count
         const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
         
-        const professorCountSpan = document.getElementById('nombreProfesseur'); // Corrected ID for professor count
+        const nombreProfesseurSpan = document.getElementById('nombreProfesseur'); // Corrected ID for professor count
         const professeurDisplayP = document.getElementById('professeurDisplay'); // The <p> tag for professor resource (updated ID)
 
         const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
@@ -2439,8 +2438,8 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
-            professorCountSpan.textContent = formatNumber(nombreProfesseur, 0); // Corrected element copied on images
-
+            nombreProfesseur.textContent = formatNumber(nombreProfesseur, 0); // Corrected element copied on images
+            professorCountSpan
             // Update other displays
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
