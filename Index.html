@@ -3626,7 +3626,7 @@
                 multiplier = multiplier.add(currentPrestigePoints.div(1000));
             }
             // Ensure multiplier does not go below 1.0 (it should always be a bonus)
-            return Decimal.max(1, multiplier);
+            return Decimal.max(new Decimal(1), multiplier);
         }
 
 
