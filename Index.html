@@ -4742,7 +4742,12 @@
                 saveGameState();
             }
         }
-
+        function checkUnlockConditions(); {
+            updateMultiplierButtons();
+            updateAutomationButtonStates();
+            updateSettingsButtonStates();
+            renderQuests();
+        }
         // --- Multiplier Buttons Event Listeners (Delegated) ---
         multiplierButtonsContainer.addEventListener('click', (event) => {
             const button = event.target.closest('.multiplier-button');
@@ -4818,6 +4823,12 @@
             setInterval(() => {
                 const now = Date.now();
                 const deltaTime = gameTickInterval / 1000; // Convert ms to seconds
+                checkUnlockConditions();
+                    updateMultiplierButtons();
+                    updateAutomationButtonStates();
+                    updateSettingsButtonStates();
+                    renderQuests();
+
 
                 // Production de Bons Points
                 bonsPoints = bonsPoints.plus(totalBonsPointsParSeconde.times(deltaTime)); // Use totalBonsPointsParSeconde
