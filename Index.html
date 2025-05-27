@@ -2440,7 +2440,7 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
-            nombreProfesseur.textContent = formatNumber(nombreProfesseur, 0); // Corrected element copied on images
+            nombreProfesseurSpan.textContent = formatNumber(nombreProfesseur, 0);
             // Update other displays
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
@@ -3457,8 +3457,8 @@
                 showNotification(`Pas assez de ressources pour acheter ${itemType} !`);
             }
 
-            updateDisplay(); // Use the consolidated updateDisplay
             checkUnlockConditions();
+            updateDisplay(); // Use the consolidated updateDisplay
             saveGameState();
         }
 // --- New runAutomation Function ---
