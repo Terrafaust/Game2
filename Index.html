@@ -1369,7 +1369,7 @@
                 <div id="skillPanels">
                     <div id="studiesPanel" class="skill-panel">
                         <h2>Études</h2>
-                        <p class="points-display">Points disponibles : <span id="studiesPointsCount">0</span></p>
+                        <p class="points-display">Points disponibles : <span id="studiesSkillsPointsCount">0</span></p>
                         <div id="studiesSkillsGrid"></div>
                     </div>
                     <div id="ascensionPanel" class="skill-panel" style="display: none;">
@@ -1936,7 +1936,7 @@
         const studiesSkillsGrid = document.getElementById('studiesSkillsGrid');
         const ascensionSkillsGrid = document.getElementById('ascensionSkillsGrid');
         const prestigeSkillsGrid = document.getElementById('prestigeSkillsGrid');
-        const studiesPointsCountSpan = document.getElementById('studiesPointsCount');
+        const studiesSkillsPointsCountSpan = document.getElementById('studiesSkillsPointsCount');
         const ascensionSkillsPointsCountSpan = document.getElementById('ascensionSkillsPointsCount');
         const prestigeSkillsPointsCountSpan = document.getElementById('prestigeSkillsPointsCount');
         const settingsContainer = document.getElementById('settingsContainer');
@@ -3179,6 +3179,7 @@
 
         function buyProfesseur() {
             performPurchase('Professeur', currentPurchaseMultiplier);
+            ascensionSkillPoints = ascensionSkillPoints.add(1);
         }
 
         function buyClasse() {
@@ -3495,7 +3496,7 @@
             renderSkillPanel('ascension', ascensionSkillsGrid, ascensionSkillLevels, ascensionSkillPoints, ascensionSkillsUnlocked);
             renderSkillPanel('prestige', prestigeSkillsGrid, prestigeSkillLevels, prestigeSkillPoints, prestigeSkillsUnlocked);
 
-            studiesPointsCountSpan.textContent = formatNumber(studiesSkillPoints, 0);
+            studiesSkillsPointsCountSpan.textContent = formatNumber(studiesSkillPoints, 0);
             ascensionSkillsPointsCountSpan.textContent = formatNumber(ascensionSkillPoints, 0);
             prestigeSkillsPointsCountSpan.textContent = formatNumber(prestigeSkillPoints, 0);
         }
