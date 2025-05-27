@@ -2311,6 +2311,118 @@
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
         
+        function updateButtonStates() {
+            // Eleve
+            coutEleveActuel = calculateNextEleveCost(nombreEleves);
+            acheterEleveButton.innerHTML = `Élève : <span class="bons-points-color">${formatNumber(coutEleveActuel, 0)} BP</span>`;
+            acheterEleveButton.classList.toggle('can-afford', bonsPoints.gte(coutEleveActuel));
+            acheterEleveButton.classList.toggle('cannot-afford', bonsPoints.lt(coutEleveActuel));
+
+            // Classe
+            coutClasseActuel = calculateNextClasseCost(nombreClasses);
+            acheterClasseButton.innerHTML = `Salle de classe : <span class="bons-points-color">${formatNumber(coutClasseActuel, 0)} BP</span>`;
+            acheterClasseButton.classList.toggle('can-afford', bonsPoints.gte(coutClasseActuel));
+            acheterClasseButton.classList.toggle('cannot-afford', bonsPoints.lt(coutClasseActuel));
+
+            // Image
+            let imageCost = calculateNextImageCost(images); // Pass images count
+            acheterImageButton.innerHTML = `Image : <span class="bons-points-color">${formatNumber(imageCost, 0)} BP</span>`;
+            acheterImageButton.classList.toggle('can-afford', bonsPoints.gte(imageCost));
+            acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
+
+            // Professeur
+            let professeurCost = calculateNextProfessorCost(nombreProfesseur);
+            acheterProfesseurButton.innerHTML = `Professeur${nombreProfesseur.add(new Decimal(currentPurchaseMultiplier)).gt(1) ? 's' : ''} : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
+            acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
+            acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
+
+            // Ascension Title Button (now clickable)
+            ascensionTitleButton.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseur.gte(1));
+            ascensionTitleButton.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseur.lt(1));
+            // Ascension Menu Button in Side Menu
+            ascensionTabBtn.classList.toggle('can-afford', ascensionUnlocked);
+            ascensionTabBtn.classList.toggle('cannot-afford', !ascensionUnlocked);
+
+            // Prestige Title Button (NEW)
+            prestigeTitleButton.classList.toggle('can-afford', prestigeUnlocked);
+            prestigeTitleButton.classList.toggle('cannot-afford', !prestigeUnlocked);
+            // Prestige Menu Button in Side Menu (NEW)
+            prestigeTabBtn.classList.toggle('can-afford', prestigeUnlocked);
+            prestigeTabBtn.classList.toggle('cannot-afford', !prestigeUnlocked);
+
+
+            // Ecole
+            coutEcoleActuel = calculateNextEcoleCost(schoolCount);
+            acheterEcoleButton.classList.toggle('can-afford', ascensionPoints.gte(coutEcoleActuel));
+            acheterEcoleButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutEcoleActuel));
+            coutEcoleSpan.textContent = `${formatNumber(coutEcoleActuel, 0)} PA`;
+
+            // Lycee
+            if (lyceesUnlocked) {
+                coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
+                acheterLyceeButton.innerHTML = `Lycée : <span class="ascension-points-color">${formatNumber(coutLyceeActuel, 0)} PA</span>`;
+                acheterLyceeButton.classList.toggle('can-afford', ascensionPoints.gte(coutLyceeActuel));
+                acheterLyceeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutLyceeActuel));
+            }
+            // College
+            if (collegesUnlocked) {
+                coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
+                acheterCollegeButton.innerHTML = `Collège : <span class="ascension-points-color">${formatNumber(coutCollegeActuel, 0)} PA</span>`;
+                acheterCollegeButton.classList.toggle('can-afford', ascensionPoints.gte(coutCollegeActuel));
+                acheterCollegeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutCollegeActuel));
+            }
+
+            // Unlock Buttons in Ascension Menu
+            unlockMultiPurchaseButton.style.display = multiPurchaseOptionUnlocked ? 'none' : 'block';
+            if (!multiPurchaseOptionUnlocked) {
+                unlockMultiPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(10));
+                unlockMultiPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(10));
+            }
+            unlockmaxPurchaseButton.style.display = maxPurchaseOptionUnlocked ? 'none' : 'block';
+            if (!maxPurchaseOptionUnlocked) {
+                unlockmaxPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(100));
+                unlockmaxPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(100));
+            }
+            unlockNewSettingsButton.style.display = newSettingsUnlocked ? 'none' : 'block';
+            if (!newSettingsUnlocked) {
+                unlockNewSettingsButton.classList.toggle('can-afford', ascensionPoints.gte(10));
+                unlockNewSettingsButton.classList.toggle('cannot-afford', ascensionPoints.lt(10));
+            }
+            unlockAutomationCategoryButton.style.display = automationCategoryUnlocked ? 'none' : 'block';
+            if (!automationCategoryUnlocked) {
+                unlockAutomationCategoryButton.classList.toggle('can-afford', ascensionPoints.gte(calculateAutomationCost(1000)));
+                unlockAutomationCategoryButton.classList.toggle('cannot-afford', ascensionPoints.lt(calculateAutomationCost(1000)));
+            }
+
+            // NEW Prestige Purchases
+            acheterLicenceButton.innerHTML = `Licence : <span class="prestige-points-color">${formatNumber(calculateLicenceCost(), 0)} PP</span>`;
+            acheterLicenceButton.classList.toggle('can-afford', prestigePoints.gte(calculateLicenceCost()));
+            acheterLicenceButton.classList.toggle('cannot-afford', prestigePoints.lt(calculateLicenceCost()));
+
+            acheterMaster1Button.innerHTML = `Master I : <span class="prestige-points-color">${formatNumber(calculateMaster1Cost(), 0)} PP</span>`;
+            acheterMaster1Button.classList.toggle('can-afford', prestigePoints.gte(calculateMaster1Cost()));
+            acheterMaster1Button.classList.toggle('cannot-afford', prestigePoints.lt(calculateMaster1Cost()));
+
+            acheterMaster2Button.innerHTML = `Master II : <span class="prestige-points-color">${formatNumber(calculateMaster2Cost(), 0)} PP</span>`;
+            acheterMaster2Button.classList.toggle('can-afford', prestigePoints.gte(calculateMaster2Cost()));
+            acheterMaster2Button.classList.toggle('cannot-afford', prestigePoints.lt(calculateMaster2Cost()));
+
+            const doctoratUnlocked = prestigePurchasesData.find(p => p.id === 'doctorat').prerequisites();
+            acheterDoctoratButton.innerHTML = `Doctorat : <span class="prestige-points-color">${formatNumber(calculateDoctoratCost(), 0)} PP</span>`;
+            acheterDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(calculateDoctoratCost()) && doctoratUnlocked);
+            acheterDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(calculateDoctoratCost()) || !doctoratUnlocked);
+
+            const postDoctoratUnlocked = prestigePurchasesData.find(p => p.id === 'postDoctorat').prerequisites();
+            acheterPostDoctoratButton.innerHTML = `Post-Doctorat : <span class="prestige-points-color">${formatNumber(calculatePostDoctoratCost(), 0)} PP</span>`;
+            acheterPostDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(calculatePostDoctoratCost()) && postDoctoratUnlocked);
+            acheterPostDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(calculatePostDoctoratCost()) || !postDoctoratUnlocked);
+
+
+            updateAutomationButtonStates();
+            updateSettingsButtonStates();
+            updateMultiplierButtons();
+        }
+
         // --- Save and Load Functions ---
         function updateDisplay() {
             updateCachedMultipliers(); // Ensure multipliers are updated before calculating total BPS
@@ -3165,119 +3277,6 @@
         }
         function calculatePostDoctoratCost() {
             return new Decimal(10000);
-        }
-
-
-        function updateButtonStates() {
-            // Eleve
-            coutEleveActuel = calculateNextEleveCost(nombreEleves);
-            acheterEleveButton.innerHTML = `Élève : <span class="bons-points-color">${formatNumber(coutEleveActuel, 0)} BP</span>`;
-            acheterEleveButton.classList.toggle('can-afford', bonsPoints.gte(coutEleveActuel));
-            acheterEleveButton.classList.toggle('cannot-afford', bonsPoints.lt(coutEleveActuel));
-
-            // Classe
-            coutClasseActuel = calculateNextClasseCost(nombreClasses);
-            acheterClasseButton.innerHTML = `Salle de classe : <span class="bons-points-color">${formatNumber(coutClasseActuel, 0)} BP</span>`;
-            acheterClasseButton.classList.toggle('can-afford', bonsPoints.gte(coutClasseActuel));
-            acheterClasseButton.classList.toggle('cannot-afford', bonsPoints.lt(coutClasseActuel));
-
-            // Image
-            let imageCost = calculateNextImageCost(images); // Pass images count
-            acheterImageButton.innerHTML = `Image : <span class="bons-points-color">${formatNumber(imageCost, 0)} BP</span>`;
-            acheterImageButton.classList.toggle('can-afford', bonsPoints.gte(imageCost));
-            acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
-
-            // Professeur
-            let professeurCost = calculateNextProfessorCost(nombreProfesseur);
-            acheterProfesseurButton.innerHTML = `Professeur${nombreProfesseur.add(new Decimal(currentPurchaseMultiplier)).gt(1) ? 's' : ''} : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
-            acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
-            acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
-
-            // Ascension Title Button (now clickable)
-            ascensionTitleButton.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseur.gte(1));
-            ascensionTitleButton.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseur.lt(1));
-            // Ascension Menu Button in Side Menu
-            ascensionTabBtn.classList.toggle('can-afford', ascensionUnlocked);
-            ascensionTabBtn.classList.toggle('cannot-afford', !ascensionUnlocked);
-
-            // Prestige Title Button (NEW)
-            prestigeTitleButton.classList.toggle('can-afford', prestigeUnlocked);
-            prestigeTitleButton.classList.toggle('cannot-afford', !prestigeUnlocked);
-            // Prestige Menu Button in Side Menu (NEW)
-            prestigeTabBtn.classList.toggle('can-afford', prestigeUnlocked);
-            prestigeTabBtn.classList.toggle('cannot-afford', !prestigeUnlocked);
-
-
-            // Ecole
-            coutEcoleActuel = calculateNextEcoleCost(schoolCount);
-            acheterEcoleButton.classList.toggle('can-afford', ascensionPoints.gte(coutEcoleActuel));
-            acheterEcoleButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutEcoleActuel));
-            coutEcoleSpan.textContent = `${formatNumber(coutEcoleActuel, 0)} PA`;
-
-            // Lycee
-            if (lyceesUnlocked) {
-                coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
-                acheterLyceeButton.innerHTML = `Lycée : <span class="ascension-points-color">${formatNumber(coutLyceeActuel, 0)} PA</span>`;
-                acheterLyceeButton.classList.toggle('can-afford', ascensionPoints.gte(coutLyceeActuel));
-                acheterLyceeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutLyceeActuel));
-            }
-            // College
-            if (collegesUnlocked) {
-                coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
-                acheterCollegeButton.innerHTML = `Collège : <span class="ascension-points-color">${formatNumber(coutCollegeActuel, 0)} PA</span>`;
-                acheterCollegeButton.classList.toggle('can-afford', ascensionPoints.gte(coutCollegeActuel));
-                acheterCollegeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutCollegeActuel));
-            }
-
-            // Unlock Buttons in Ascension Menu
-            unlockMultiPurchaseButton.style.display = multiPurchaseOptionUnlocked ? 'none' : 'block';
-            if (!multiPurchaseOptionUnlocked) {
-                unlockMultiPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(10));
-                unlockMultiPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(10));
-            }
-            unlockmaxPurchaseButton.style.display = maxPurchaseOptionUnlocked ? 'none' : 'block';
-            if (!maxPurchaseOptionUnlocked) {
-                unlockmaxPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(100));
-                unlockmaxPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(100));
-            }
-            unlockNewSettingsButton.style.display = newSettingsUnlocked ? 'none' : 'block';
-            if (!newSettingsUnlocked) {
-                unlockNewSettingsButton.classList.toggle('can-afford', ascensionPoints.gte(10));
-                unlockNewSettingsButton.classList.toggle('cannot-afford', ascensionPoints.lt(10));
-            }
-            unlockAutomationCategoryButton.style.display = automationCategoryUnlocked ? 'none' : 'block';
-            if (!automationCategoryUnlocked) {
-                unlockAutomationCategoryButton.classList.toggle('can-afford', ascensionPoints.gte(calculateAutomationCost(1000)));
-                unlockAutomationCategoryButton.classList.toggle('cannot-afford', ascensionPoints.lt(calculateAutomationCost(1000)));
-            }
-
-            // NEW Prestige Purchases
-            acheterLicenceButton.innerHTML = `Licence : <span class="prestige-points-color">${formatNumber(calculateLicenceCost(), 0)} PP</span>`;
-            acheterLicenceButton.classList.toggle('can-afford', prestigePoints.gte(calculateLicenceCost()));
-            acheterLicenceButton.classList.toggle('cannot-afford', prestigePoints.lt(calculateLicenceCost()));
-
-            acheterMaster1Button.innerHTML = `Master I : <span class="prestige-points-color">${formatNumber(calculateMaster1Cost(), 0)} PP</span>`;
-            acheterMaster1Button.classList.toggle('can-afford', prestigePoints.gte(calculateMaster1Cost()));
-            acheterMaster1Button.classList.toggle('cannot-afford', prestigePoints.lt(calculateMaster1Cost()));
-
-            acheterMaster2Button.innerHTML = `Master II : <span class="prestige-points-color">${formatNumber(calculateMaster2Cost(), 0)} PP</span>`;
-            acheterMaster2Button.classList.toggle('can-afford', prestigePoints.gte(calculateMaster2Cost()));
-            acheterMaster2Button.classList.toggle('cannot-afford', prestigePoints.lt(calculateMaster2Cost()));
-
-            const doctoratUnlocked = prestigePurchasesData.find(p => p.id === 'doctorat').prerequisites();
-            acheterDoctoratButton.innerHTML = `Doctorat : <span class="prestige-points-color">${formatNumber(calculateDoctoratCost(), 0)} PP</span>`;
-            acheterDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(calculateDoctoratCost()) && doctoratUnlocked);
-            acheterDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(calculateDoctoratCost()) || !doctoratUnlocked);
-
-            const postDoctoratUnlocked = prestigePurchasesData.find(p => p.id === 'postDoctorat').prerequisites();
-            acheterPostDoctoratButton.innerHTML = `Post-Doctorat : <span class="prestige-points-color">${formatNumber(calculatePostDoctoratCost(), 0)} PP</span>`;
-            acheterPostDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(calculatePostDoctoratCost()) && postDoctoratUnlocked);
-            acheterPostDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(calculatePostDoctoratCost()) || !postDoctoratUnlocked);
-
-
-            updateAutomationButtonStates();
-            updateSettingsButtonStates();
-            updateMultiplierButtons();
         }
 
         function updateMultiplierButtons() {
