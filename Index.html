@@ -1349,7 +1349,7 @@
                                 PA</span></button>
                         <button id="autoImageBtn">Automatiser Images : <span class="ascension-points-color">10 k
                                 PA</span></button>
-                        <button id="autoProfesseurBtn">Automatiser Professeur<span id="autoProfesseurPluralS"></span> :
+                        <button id="autoProfesseurBtn">Automatiser Professeur<span id="autoProfesseurSpan"></span> :
                             <span class="ascension-points-color">100 k PA</span></button>
                     </div>
                 </div>
@@ -1637,7 +1637,7 @@
                 <h3>Ressources et Multiplicateurs</h3>
                 <p>Bons Points: <span class="bons-points-color stat-value" id="statsBonsPoints">0</span></p>
                 <p>Images: <span class="images-color stat-value" id="statsImages">0</span></p>
-                <p>Professeur<span id="statsProfesseurPluralS"></span>: <span class="professeur-color stat-value"
+                <p>Professeur<span id="statsProfesseurSpan"></span>: <span class="professeur-color stat-value"
                         id="statsProfesseur">0</span></p>
                 <p>Multiplicateur Professeur: <span class="info-color stat-value"
                         id="statsProfMultiplier">1.00x</span></p>
@@ -1987,7 +1987,7 @@
         const autoClasseBtn = document.getElementById('autoClasseBtn'); // Corrected ID
         const autoImageBtn = document.getElementById('autoImageBtn'); // Corrected ID
         const autoProfesseurBtn = document.getElementById('autoProfesseurBtn'); // Corrected ID
-        const autoProfesseurPluralSSpan = document.getElementById('autoProfesseurPluralS'); // New span for plural 's'
+        const autoProfesseurSpan = document.getElementById('autoProfesseurSpan'); 
         const questsContainer = document.getElementById('questsContainer');
         const questsListDiv = document.getElementById('questsList');
         const completedQuestsListDiv = document.getElementById('completedQuestsList');
@@ -2261,7 +2261,7 @@
     
             // Automation button
             if (!autoProfesseurActive) { // Only update if not active (text changes when active)
-                autoProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
+                autoProfesseurSpan.textContent = '';
             }
         
             // Minimalist display
@@ -2269,6 +2269,8 @@
         
             // Stats display
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
+            statsProfesseurSpan.textContent = '';
+
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
         // --- Cost Calculation Functions ---
