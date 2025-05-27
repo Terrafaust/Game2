@@ -2198,10 +2198,10 @@
             { id: 'ACH_CLASSES_1K', name: 'Université', description: 'Avoir 1 000 Salles de classe.', condition: () => nombreClasses.gte(1000), rewardText: 'Coût des classes -5%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.05); }, unlocked: false, type: 'percentage' },
 
             // Professeur Achievements
-            { id: 'ACH_PROFS_1', name: 'Premier Professeur', description: 'Avoir 1 Professeur.', condition: () => nombreProfesseur.gte(1), rewardText: 'Coût des Professeurs -0.1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.001); }, unlocked: false, type: 'percentage' },
-            { id: 'ACH_PROFS_5', name: 'Conseil Pédagogique', description: 'Avoir 5 Professeurs.', condition: () => nombreProfesseur.gte(5), rewardText: 'Coût des Professeurs -1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.01); }, unlocked: false, type: 'percentage' },
-            { id: 'ACH_PROFS_10', name: 'Corps Enseignant', description: 'Avoir 10 Professeurs.', condition: () => nombreProfesseur.gte(10), rewardText: 'Coût des Professeurs -2%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.02); }, unlocked: false, type: 'percentage' },
-            { id: 'ACH_PROFS_20', name: 'Académie', description: 'Avoir 20 Professeurs.', condition: () => nombreProfesseur.gte(20), rewardText: 'Coût des Professeurs -5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.05); }, unlocked: false, type: 'percentage' },
+            { id: 'ACH_PROFS_1', name: 'Premier Professeur', description: 'Avoir 1 Professeur.', condition: () => nombreProfesseur.gte(1), rewardText: 'Coût des Professeurs -0.1%', rewardFn: () => { skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(0.001); }, unlocked: false, type: 'percentage' },
+            { id: 'ACH_PROFS_5', name: 'Conseil Pédagogique', description: 'Avoir 5 Professeurs.', condition: () => nombreProfesseur.gte(5), rewardText: 'Coût des Professeurs -1%', rewardFn: () => { skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(0.01); }, unlocked: false, type: 'percentage' },
+            { id: 'ACH_PROFS_10', name: 'Corps Enseignant', description: 'Avoir 10 Professeurs.', condition: () => nombreProfesseur.gte(10), rewardText: 'Coût des Professeurs -2%', rewardFn: () => { skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(0.02); }, unlocked: false, type: 'percentage' },
+            { id: 'ACH_PROFS_20', name: 'Académie', description: 'Avoir 20 Professeurs.', condition: () => nombreProfesseur.gte(20), rewardText: 'Coût des Professeurs -5%', rewardFn: () => { skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(0.05); }, unlocked: false, type: 'percentage' },
 
             // Ecole Achievements
             { id: 'ACH_ECOLE_1', name: 'Première École', description: 'Acheter 1 École.', condition: () => schoolCount.gte(1), rewardText: '+0.1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.001); }, unlocked: false, type: 'percentage' },
@@ -2228,7 +2228,7 @@
             { id: 'ACH_AUTO_ELEVE', name: 'Auto-Élève', description: 'Débloquer l\'automatisation des Élèves.', condition: () => autoEleveActive, rewardText: 'Coût des élèves -0.5%', rewardFn: () => { skillEffects.eleveCostReduction = skillEffects.eleveCostReduction.add(0.005); }, unlocked: false, type: 'percentage' },
             { id: 'ACH_AUTO_CLASSE', name: 'Auto-Classe', description: 'Débloquer l\'automatisation des Classes.', condition: () => autoClasseActive, rewardText: 'Coût des classes -0.5%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.005); }, unlocked: false, type: 'percentage' },
             { id: 'ACH_AUTO_IMAGE', name: 'Auto-Image', description: 'Débloquer l\'automatisation des Images.', condition: () => autoImageActive, rewardText: 'Coût des images -0.5%', rewardFn: () => { skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(0.005); }, unlocked: false, type: 'percentage' },
-            { id: 'ACH_AUTO_PROF', name: 'Auto-Professeur', description: 'Débloquer l\'automatisation des Professeurs.', condition: () => autoProfesseurActive, rewardText: 'Coût des Professeurs -0.5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.005); }, unlocked: false, type: 'percentage' },
+            { id: 'ACH_AUTO_PROF', name: 'Auto-Professeur', description: 'Débloquer l\'automatisation des Professeurs.', condition: () => autoProfesseurActive, rewardText: 'Coût des Professeurs -0.5%', rewardFn: () => { skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(0.005); }, unlocked: false, type: 'percentage' },
 
             // Click Achievements (Additive)
             { id: 'ACH_CLICK_1', name: 'Premier Clic', description: 'Cliquez 1 fois sur "Étudier sagement".', condition: () => totalClicks.gte(1), rewardText: '+0.1 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(0.1); }, unlocked: false, type: 'additive' },
@@ -2319,7 +2319,7 @@
         }
         function calculateNextProfessorCost(currentCount) {
             let cost = coutProfesseurBase.mul(coutProfesseurGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.professeurCostReduction).sub(skillEffects.allCostReduction)));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.ProfesseurCostReduction).sub(skillEffects.allCostReduction)));
             return Decimal.max(1, cost.floor());
         }
         function calculateNextEcoleCost(currentCount) {
@@ -2862,7 +2862,7 @@
                 { id: 'S3_2', name: 'Gestion de Campus', tier: 3, maxLevel: 6, description: 'Augmente la production des classes de 5 BP/s par classe.', effect: { type: 'classeBpsBonus', value: new Decimal(5), skillType: 'additive' }, prerequisites: ['S2_1', 'S2_2', 'S2_3'] },
                 // Tier 4 (Total levels: 12)
                 { id: 'S4_1', name: 'Logistique des Ressources', tier: 4, maxLevel: 6, description: 'Réduit le coût des images de 5%.', effect: { type: 'imageCostReduction', value: new Decimal(0.05), skillType: 'percentage' }, prerequisites: ['S3_1', 'S3_2'] },
-                { id: 'S4_2', name: 'Recrutement Expert', tier: 4, maxLevel: 6, description: 'Réduit le coût des Professeurs de 5%.', effect: { type: 'professeurCostReduction', value: new Decimal(0.05), skillType: 'percentage' }, prerequisites: ['S3_1', 'S3_2'] },
+                { id: 'S4_2', name: 'Recrutement Expert', tier: 4, maxLevel: 6, description: 'Réduit le coût des Professeurs de 5%.', effect: { type: 'ProfesseurCostReduction', value: new Decimal(0.05), skillType: 'percentage' }, prerequisites: ['S3_1', 'S3_2'] },
                 // Tier 5 (Total levels: 12)
                 { id: 'S5_1', name: 'Synergie Globale', tier: 5, maxLevel: 12, description: 'Augmente la production totale de BP/s de 10%.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10), skillType: 'percentage' }, prerequisites: ['S4_1', 'S4_2'] },
                 { id: 'S5_2_Secret', name: 'Le Secret', tier: 5, maxLevel: 15, description: 'Un mystère... (Cliquez 15 fois pour une récompense secrète !)', effect: { type: 'secretReward', skillType: 'special' }, prerequisites: ['S4_1', 'S4_2'] }
@@ -2974,7 +2974,7 @@
             eleveCostReduction: new Decimal(0),
             classeCostReduction: new Decimal(0),
             imageCostReduction: new Decimal(0),
-            professeurCostReduction: new Decimal(0),
+            ProfesseurCostReduction: new Decimal(0),
             totalBpsMultiplierBonus: new Decimal(0),
             clickBonsPointsBonus: new Decimal(1),
             paGainMultiplier: new Decimal(0),
@@ -3003,7 +3003,7 @@
                 eleveCostReduction: new Decimal(0),
                 classeCostReduction: new Decimal(0),
                 imageCostReduction: new Decimal(0),
-                professeurCostReduction: new Decimal(0),
+                ProfesseurCostReduction: new Decimal(0),
                 totalBpsMultiplierBonus: new Decimal(0),
                 clickBonsPointsBonus: new Decimal(1),
                 paGainMultiplier: new Decimal(0),
@@ -3076,7 +3076,7 @@
             skillEffects.eleveCostReduction = Decimal.min(skillEffects.eleveCostReduction, 0.9);
             skillEffects.classeCostReduction = Decimal.min(skillEffects.classeCostReduction, 0.9);
             skillEffects.imageCostReduction = Decimal.min(skillEffects.imageCostReduction, 0.9);
-            skillEffects.professeurCostReduction = Decimal.min(skillEffects.professeurCostReduction, 0.9);
+            skillEffects.ProfesseurCostReduction = Decimal.min(skillEffects.ProfesseurCostReduction, 0.9);
             skillEffects.ecoleCostReduction = Decimal.min(skillEffects.ecoleCostReduction, 0.9);
             skillEffects.automationCostReduction = Decimal.min(skillEffects.automationCostReduction, 0.9);
             skillEffects.allCostReduction = Decimal.min(skillEffects.allCostReduction, 0.9);
@@ -3109,8 +3109,8 @@
                 case 'imageCostReduction':
                     skillEffects.imageCostReduction = skillEffects.imageCostReduction.add(valueWithLevel);
                     break;
-                case 'professeurCostReduction':
-                    skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(valueWithLevel);
+                case 'ProfesseurCostReduction':
+                    skillEffects.ProfesseurCostReduction = skillEffects.ProfesseurCostReduction.add(valueWithLevel);
                     break;
                 case 'totalBpsMultiplierBonus':
                     skillEffects.totalBpsMultiplierBonus = skillEffects.totalBpsMultiplierBonus.add(valueWithLevel);
@@ -4153,7 +4153,7 @@
             document.getElementById('statsEleveCostReduction').textContent = formatNumber(skillEffects.eleveCostReduction.mul(100), 2) + '%';
             document.getElementById('statsClasseCostReduction').textContent = formatNumber(skillEffects.classeCostReduction.mul(100), 2) + '%';
             document.getElementById('statsImageCostReduction').textContent = formatNumber(skillEffects.imageCostReduction.mul(100), 2) + '%';
-            document.getElementById('statsProfesseurCostReduction').textContent = formatNumber(skillEffects.professeurCostReduction.mul(100), 2) + '%';
+            document.getElementById('statsProfesseurCostReduction').textContent = formatNumber(skillEffects.ProfesseurCostReduction.mul(100), 2) + '%';
             document.getElementById('statsEcoleCostReduction').textContent = formatNumber(skillEffects.ecoleCostReduction.mul(100), 2) + '%';
             document.getElementById('statsAutomationCostReduction').textContent = formatNumber(skillEffects.automationCostReduction.mul(100), 2) + '%';
             document.getElementById('statsAllCostReduction').textContent = formatNumber(skillEffects.allCostReduction.mul(100), 2) + '%';
