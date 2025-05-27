@@ -110,7 +110,7 @@
             color: #f0f0f0;
         }
 
-        body.dark-theme .professeur-color {
+        body.dark-theme .Professeur-color {
             /* Changed to lowercase for consistency */
             color: #f0f0f0;
         }
@@ -340,7 +340,7 @@
             font-weight: bold;
         }
 
-        .professeur-color {
+        .Professeur-color {
             color: #333;
             font-weight: bold;
         }
@@ -1127,7 +1127,7 @@
             color: #DA70D6;
         }
 
-        #minimalistResources .professeur-color {
+        #minimalistResources .Professeur-color {
             color: #f0f0f0;
         }
 
@@ -1225,7 +1225,7 @@
             color: #8A2BE2;
         }
 
-        body.dark-theme #statsModal .stats-category .professeur-color {
+        body.dark-theme #statsModal .stats-category .Professeur-color {
             color: #f0f0f0;
         }
 
@@ -1272,7 +1272,7 @@
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
                         <p id="nombreProfesseurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
-                                class="professeur-color">0</span></p>
+                                class="Professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
                         <p id="ascensionBonusDisplay" style="display: none;">Bonus d'Ascension : <span
@@ -1535,7 +1535,7 @@
         <p class="resource-line"><span class="resource-label">I:</span> <span id="miniImages"
                 class="images-color">0</span></p>
         <p class="resource-line"><span class="resource-label">P:</span> <span id="miniProfesseur"
-                class="professeur-color">0</span></p>
+                class="Professeur-color">0</span></p>
         <hr style="width: 80%; border-color: #777; margin: 5px 0;">
         <p class="resource-line"><span class="resource-label">PA:</span> <span id="miniAscensionPoints"
                 class="ascension-points-color">0</span></p>
@@ -1636,7 +1636,7 @@
                 <h3>Ressources et Multiplicateurs</h3>
                 <p>Bons Points: <span class="bons-points-color stat-value" id="statsBonsPoints">0</span></p>
                 <p>Images: <span class="images-color stat-value" id="statsImages">0</span></p>
-                <p>Professeur<span id="statsProfesseurSpan"></span>: <span class="professeur-color stat-value"
+                <p>Professeur<span id="statsProfesseurSpan"></span>: <span class="Professeur-color stat-value"
                         id="statsProfesseur">0</span></p>
                 <p>Multiplicateur Professeur: <span class="info-color stat-value"
                         id="statsProfMultiplier">1.00x</span></p>
@@ -1758,7 +1758,7 @@
         }
 
         // Game variables - Initialized with Decimal(0) from break_infinity.js
-        let professeurCostReduction = new Decimal(0)
+        let ProfesseurCostReduction = new Decimal(0)
         let bonsPoints = new Decimal(0);
         let bonsPointsParSecondeEleves = new Decimal(0);
         let bonsPointsParSecondeClasses = new Decimal(0);
@@ -1828,7 +1828,7 @@
         let elevesUnlocked = false;
         let classesUnlocked = false;
         let imagesUnlocked = false; // This will now control permanent visibility of image count
-        let professeurUnlocked = false;
+        let ProfesseurUnlocked = false;
         let skillsButtonUnlocked = false;
         let settingsButtonUnlocked = false;
         let ascensionMenuButtonUnlocked = false;
@@ -2336,7 +2336,7 @@
 
             // Professeur
             coutProfesseurActuel = calculateNextProfessorCost(nombreProfesseur)
-            acheterProfesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(coutProfesseurActuel, 0)} I</span>`;
+            acheterProfesseurButton.innerHTML = `Professeur : <span class="images-color">${formatNumber(coutProfesseurActuel, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(coutProfesseurActuel));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(coutProfesseurActuel));
 
@@ -2487,7 +2487,7 @@
             }
             // Image display logic: always show if imagesUnlocked is true
             imagesDisplayP.style.display = imagesUnlocked ? 'block' : 'none';
-            nombreProfesseurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
+            nombreProfesseurDisplayP.style.display = ProfesseurUnlocked ? 'block' : 'none';
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none';
@@ -2528,7 +2528,7 @@
                 ascensionSkillPoints: ascensionSkillPoints.toString(),
                 prestigeSkillPoints: prestigeSkillPoints.toString(), // NEW
                 studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
-                elevesUnlocked, classesUnlocked, imagesUnlocked, professeurUnlocked,
+                elevesUnlocked, classesUnlocked, imagesUnlocked, ProfesseurUnlocked,
                 skillsButtonUnlocked, settingsButtonUnlocked, ascensionUnlocked,
                 prestigeUnlocked, // NEW
                 disablePrestigeWarning, // NEW
@@ -2709,7 +2709,7 @@
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
                 imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
-                professeurUnlocked = gameState.professeurUnlocked || false;
+                ProfesseurUnlocked = gameState.ProfesseurUnlocked || false;
                 skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
                 settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
                 ascensionUnlocked = gameState.ascensionUnlocked || false;
@@ -3146,8 +3146,8 @@
 
 
         function calculateItemBPS() {
-            let profMultiplierFromPrestige = nombreLicences.mul(0.01).mul(prestigeCount).add(skillEffects.licenceProfMultiplier);
-            multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseur)).add(profMultiplierFromPrestige);
+            let ProfMultiplierFromPrestige = nombreLicences.mul(0.01).mul(prestigeCount).add(skillEffects.licenceProfMultiplier);
+            multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseur)).add(ProfMultiplierFromPrestige);
 
             let master1ClassBoost = nombreMaster1.mul(0.005).mul(nombreProfesseur).add(skillEffects.master1ClassProduction);
             let master2ClassBoost = nombreMaster2.mul(0.0001).mul(prestigePoints).add(skillEffects.master2ClassProduction);
@@ -3178,7 +3178,7 @@
         }
 
         function buyProfesseur() {
-            performPurchase('professeur', currentPurchaseMultiplier);
+            performPurchase('Professeur', currentPurchaseMultiplier);
         }
 
         function buyClasse() {
@@ -3211,7 +3211,7 @@
                 performPurchase('image', '1', true);
             }
             if (autoProfesseurActive) {
-                performPurchase('professeur', '1', true);
+                performPurchase('Professeur', '1', true);
             }
         }
 
@@ -3315,7 +3315,7 @@
                     itemCounter = images;
                     resourceToDecrement = 'bonsPoints';
                     break;
-                case 'professeur':
+                case 'Professeur':
                     currentResource = images;
                     costFunction = calculateNextProfessorCost;
                     itemCounter = nombreProfesseur;
@@ -3438,7 +3438,7 @@
                     case 'eleve': nombreEleves = nombreEleves.add(quantityToBuy); break;
                     case 'classe': nombreClasses = nombreClasses.add(quantityToBuy); break;
                     case 'image': images = images.add(quantityToBuy); break;
-                    case 'professeur': nombreProfesseur = nombreProfesseur.add(quantityToBuy); break;
+                    case 'Professeur': nombreProfesseur = nombreProfesseur.add(quantityToBuy); break;
                     case 'ecole': schoolCount = schoolCount.add(quantityToBuy); break;
                     case 'lycee': nombreLycees = nombreLycees.add(quantityToBuy); break;
                     case 'college': nombreColleges = nombreColleges.add(quantityToBuy); break;
@@ -3476,7 +3476,7 @@
                 performPurchase('image', '1', true);
             }
             if (autoProfesseurActive) {
-                performPurchase('professeur', '1', true);
+                performPurchase('Professeur', '1', true);
             }
         }
 
@@ -3989,7 +3989,7 @@
         acheterEleveButton.addEventListener('click', () => performPurchase('eleve', currentPurchaseMultiplier));
         acheterClasseButton.addEventListener('click', () => performPurchase('classe', currentPurchaseMultiplier));
         acheterImageButton.addEventListener('click', () => performPurchase('image', currentPurchaseMultiplier));
-        acheterProfesseurButton.addEventListener('click', () => performPurchase('professeur', currentPurchaseMultiplier));
+        acheterProfesseurButton.addEventListener('click', () => performPurchase('Professeur', currentPurchaseMultiplier));
         acheterEcoleButton.addEventListener('click', () => performPurchase('ecole', currentPurchaseMultiplier));
         acheterLyceeButton.addEventListener('click', () => performPurchase('lycee', currentPurchaseMultiplier));
         acheterCollegeButton.addEventListener('click', () => performPurchase('college', currentPurchaseMultiplier));
@@ -4275,7 +4275,7 @@
             // Keep imagesUnlocked true if it was ever true (controlled by its own condition)
             elevesUnlocked = false;
             classesUnlocked = false;
-            professeurUnlocked = false;
+            ProfesseurUnlocked = false;
             // skillsButtonUnlocked and settingsButtonUnlocked are kept based on game state, not reset
 
             // Studies skill levels are reset and points returned in performAscension
@@ -4557,7 +4557,7 @@
             if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
             // Changed image unlock condition
             if (!imagesUnlocked && bonsPoints.gte(1000)) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
-            if (!professeurUnlocked && images.gte(1)) { professeurUnlocked = true; showNotification("Achat Professeur débloqué !"); }
+            if (!ProfesseurUnlocked && images.gte(1)) { ProfesseurUnlocked = true; showNotification("Achat Professeur débloqué !"); }
             // Ensure skills panel remains unlocked once condition is met
             if (!skillsButtonUnlocked && nombreProfesseur.gte(1)) {
                 skillsButtonUnlocked = true;
@@ -4611,7 +4611,7 @@
             achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
             achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
             achatImageSection.style.display = imagesUnlocked ? 'block' : 'none';
-            achatProfesseurSection.style.display = professeurUnlocked ? 'block' : 'none';
+            achatProfesseurSection.style.display = ProfesseurUnlocked ? 'block' : 'none';
 
             // Automation section elements
             // automationSection visibility is controlled by automationMainContainer's display
