@@ -2244,7 +2244,32 @@
         ];
         let unlockedAchievements = {};
         let activeAchievementTooltip = null; // To manage the clicked tooltip
+        
+        function updateProfesseurDisplay() {
+            // Main display
+            professeurDisplayValueSpan.textContent = formatNumber(nombreProfesseur, 0);
+            professeurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
 
+            // Buy button
+            professeurDisplayQuantitySpan.textContent = formatNumber(nombreProfesseur, 0);
+            // Ensure currentPurchaseMultiplier is a Decimal before adding to nombreProfesseur
+            const displayProfCount = nombreProfesseur.add(new Decimal(currentPurchaseMultiplier));
+            buyProfesseurPluralSSpan.textContent = displayProfCount.gt(1) ? 's' : '';
+
+
+            // Automation button
+            if (!autoProfesseurActive) { // Only update if not active (text changes when active)
+                autoProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
+            }
+
+            // Minimalist display
+            miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
+
+            // Stats display
+            document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
+            statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
+        }
+        //SetCurrentPurchaseMultiplier
         function setCurrentPurchaseMultiplier(multiplier, itemType) {
             if (multiplier === 'max') {
                 currentPurchaseMultiplier = 'max'; // Use a string identifier for "max"
@@ -4534,31 +4559,6 @@
                 .mul(skillEffects.allBpsMultiplier)
                 .mul(cachedMultipliers.prestigeBPSMultiplier)
                 .mul(cachedMultipliers.doctoratBPSMultiplier);
-        }
-
-        function updateProfesseurDisplay() {
-            // Main display
-            professeurDisplayValueSpan.textContent = formatNumber(nombreProfesseur, 0);
-            professeurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
-
-            // Buy button
-            professeurDisplayQuantitySpan.textContent = formatNumber(nombreProfesseur, 0);
-            // Ensure currentPurchaseMultiplier is a Decimal before adding to nombreProfesseur
-            const displayProfCount = nombreProfesseur.add(new Decimal(currentPurchaseMultiplier));
-            buyProfesseurPluralSSpan.textContent = displayProfCount.gt(1) ? 's' : '';
-
-
-            // Automation button
-            if (!autoProfesseurActive) { // Only update if not active (text changes when active)
-                autoProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
-            }
-
-            // Minimalist display
-            miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
-
-            // Stats display
-            document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
-            statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
         }
 
         // --- Unlock Conditions & Bonus Points ---
