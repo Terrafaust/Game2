@@ -1774,6 +1774,8 @@
         let coutClasseActuel;
 
         let images = new Decimal(0);
+        let coutImageBase = new Decimal(10); // Added in Image cost remake
+        let coutImageGrowth = new Decimal(1.05); // added on image cost remake
         let nombreProfesseur = new Decimal(0);
         let multiplicateurProfesseur = new Decimal(1); // Base multiplier from professors (0.25x per prof)
         let ascensionPoints = new Decimal(0);
@@ -2992,11 +2994,7 @@
             return Decimal.max(1, cost.floor());
         }
         function calculateNextImageCost(currentCount) {
-            const baseCost = new Decimal(1000);
-            const logBase = 1.5; // Adjust this value to control the growth rate
-            // Corrected: Use .logarithm(new Decimal(base)) for Decimal objects
-            const growthFactor = (new Decimal(currentCount).plus(1)).logarithm(new Decimal(logBase)).plus(1); // Use currentCount
-            let cost = baseCost.mul(growthFactor);
+            let cost = coutImageBase.mul(coutEleveGrowth.pow(currentCount));
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction).sub(skillEffects.allCostReduction)));
             return Decimal.max(1, cost.floor());
         }
