@@ -2262,25 +2262,6 @@
                 }
             }
         }
-        function updateProfesseurDisplay() {
-            // Main display
-            professeurDisplayValueSpan.textContent = formatNumber(nombreProfesseur, 0);
-            professeurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
-        
-            // Buy button
-            professeurDisplayQuantitySpan.textContent = formatNumber(nombreProfesseur, 0);
-            let displayProfCount;
-        
-            if (currentPurchaseMultiplier === 'max') {
-                // Handle the 'max' case for display - you can't add 'max' to a number
-                displayProfCount = nombreProfesseur + " + max"; // Or some other appropriate display
-            } else if (currentPurchaseMultiplier instanceof Decimal) {
-                displayProfCount = nombreProfesseur.add(currentPurchaseMultiplier);
-            } else {
-                // Handle potential unexpected values of currentPurchaseMultiplier
-                console.error("Unexpected value for currentPurchaseMultiplier:", currentPurchaseMultiplier);
-                displayProfCount = nombreProfesseur; // Default to current count
-            }
     
             // Automation button
             if (!autoProfesseurActive) { // Only update if not active (text changes when active)
