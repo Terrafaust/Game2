@@ -37,13 +37,10 @@
         body.dark-theme #settingsContainer,
         body.dark-theme #ascensionMenuContainer,
         body.dark-theme #automationMainContainer,
-        /* Updated to new automation container */
         body.dark-theme #studiesMainContainer,
-        /* New */
         body.dark-theme #questsContainer,
         body.dark-theme #achievementsContainer,
         body.dark-theme .modal-content,
-        body.dark-theme #statisticsModal .modal-content,
         body.dark-theme .achat-section,
         body.dark-theme .achievement-tooltip,
         body.dark-theme .skill-panel,
@@ -75,8 +72,7 @@
         body.dark-theme #completedQuests h3,
         body.dark-theme .quest-item h4,
         body.dark-theme .quest-item p,
-        body.dark-theme #prestigeMenuContainer h1,
-        body.dark-theme #statisticsModal h2 {
+        body.dark-theme #prestigeMenuContainer h1 {
             color: #76FF03;
         }
 
@@ -109,11 +105,6 @@
 
         body.dark-theme .eleves-color {
             color: #f0f0f0;
-        }
-
-        body.dark-theme .professeurs-color {
-            color: #f0f0f0;
-            /* Ensure professor count is visible in dark mode */
         }
 
         body.dark-theme .ascension-points-color {
@@ -341,11 +332,6 @@
             font-weight: bold;
         }
 
-        .professeurs-color {
-            color: #333;
-            font-weight: bold;
-        }
-
         .ascension-points-color {
             color: #007BFF;
             font-weight: bold;
@@ -370,8 +356,7 @@
         #confirmAscensionModal,
         #confirmSkillResetModal,
         #achievementDetailModal,
-        #confirmPrestigeModal,
-        #statisticsModal {
+        #confirmPrestigeModal {
             position: fixed;
             top: 0;
             left: 0;
@@ -393,7 +378,6 @@
             text-align: center;
             max-width: 450px;
             width: 90%;
-            position: relative;
         }
 
         .modal-content h3 {
@@ -465,69 +449,6 @@
             color: #4CAF50;
             margin-bottom: 20px;
         }
-
-        /* NEW: Header row for titles and small buttons */
-        .header-row {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100%;
-            margin-bottom: 20px;
-            position: relative;
-            /* For multiplier positioning in studies */
-        }
-
-        .header-row h1 {
-            margin: 0;
-            /* Remove default margin */
-            flex-grow: 1;
-            /* Allow title to take available space */
-            text-align: center;
-        }
-
-        .header-row .small-button {
-            padding: 5px 10px;
-            font-size: 0.8em;
-            margin-left: 20px;
-            /* Space between title and button */
-            margin-top: 0;
-            /* Override default button margin */
-        }
-
-        /* Styles for the new header-title-button */
-        .header-title-button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 30px;
-            font-size: 1.8em;
-            font-weight: bold;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.1s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            margin: 0 auto; /* Center the button */
-            display: block; /* Ensure it takes full width of its content */
-        }
-
-        .header-title-button:hover {
-            background-color: #45a049;
-            transform: translateY(-2px);
-        }
-
-        .header-title-button:active {
-            transform: translateY(0);
-        }
-
-        body.dark-theme .header-title-button {
-            background-color: #2e7d32;
-            color: #e8f5e9;
-        }
-
-        body.dark-theme .header-title-button:hover {
-            background-color: #218838;
-        }
-
 
         /* New Skill Tree Styles */
         #skillPanels {
@@ -877,8 +798,7 @@
         .achievement-tooltip {
             position: fixed;
             /* Changed to fixed for better positioning */
-            background-color: rgba(85, 85, 85, 0.9);
-            /* Opaque background */
+            background-color: #555;
             color: #fff;
             text-align: left;
             border-radius: 6px;
@@ -906,11 +826,6 @@
             visibility: hidden;
         }
 
-        body.dark-theme .achievement-tooltip {
-            background-color: rgba(58, 58, 58, 0.9);
-            /* Darker opaque background */
-        }
-
         .achievement-tooltip.visible {
             opacity: 1;
             visibility: visible;
@@ -933,11 +848,7 @@
             margin-left: -5px;
             border-width: 5px;
             border-style: solid;
-            border-color: rgba(85, 85, 85, 0.9) transparent transparent transparent;
-        }
-
-        body.dark-theme .achievement-tooltip::after {
-            border-color: rgba(58, 58, 58, 0.9) transparent transparent transparent;
+            border-color: #555 transparent transparent transparent;
         }
 
         #page-footer {
@@ -1055,6 +966,28 @@
             border-radius: 3px;
         }
 
+        .studies-sections-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .studies-section-group {
+            display: flex;
+            justify-content: space-around;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .studies-section-group .achat-section {
+            flex: 1 1 calc(50% - 10px);
+            /* Two items per row */
+            min-width: 250px;
+            /* Ensure they don't get too small */
+            box-sizing: border-box;
+        }
+
         /* Minimalist Resources Panel */
         #minimalistResources {
             position: fixed;
@@ -1110,125 +1043,6 @@
         #minimalistResources .prestige-points-color {
             color: #FF0000;
         }
-
-        /* Statistics Modal Styles */
-        #statisticsModal .modal-content {
-            max-width: 800px;
-            max-height: 90vh; /* Allow scrolling for tall content */
-            overflow-y: auto; /* Enable vertical scrolling */
-            text-align: left;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        #statisticsModal .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            flex-shrink: 0; /* Prevent header from shrinking */
-        }
-
-        #statisticsModal .modal-header h2 {
-            margin: 0;
-            color: #4CAF50;
-        }
-
-        #statisticsModal .close-button {
-            background: none;
-            border: none;
-            font-size: 1.5em;
-            cursor: pointer;
-            color: #666;
-            padding: 0;
-            margin: 0;
-            transition: color 0.2s;
-        }
-
-        #statisticsModal .close-button:hover {
-            color: #f44336;
-        }
-
-        body.dark-theme #statisticsModal .close-button {
-            color: #aaa;
-        }
-
-        body.dark-theme #statisticsModal .close-button:hover {
-            color: #FF4500;
-        }
-
-        #statisticsModal .stats-section {
-            border: 1px solid #eee;
-            border-radius: 8px;
-            padding: 10px;
-            background-color: #f9f9f9;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        body.dark-theme #statisticsModal .stats-section {
-            background-color: #424242;
-            border-color: #555;
-        }
-
-        #statisticsModal .stats-section h3 {
-            margin-top: 0;
-            color: #007BFF;
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-
-        #statisticsModal .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 10px;
-        }
-
-        #statisticsModal .stat-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px dashed #eee;
-            font-size: 0.9em;
-        }
-
-        body.dark-theme #statisticsModal .stat-item {
-            border-bottom-color: #555;
-        }
-
-        #statisticsModal .stat-item:last-child {
-            border-bottom: none;
-        }
-
-        #statisticsModal .stat-label {
-            font-weight: bold;
-            color: #555;
-        }
-
-        body.dark-theme #statisticsModal .stat-label {
-            color: #ccc;
-        }
-
-        #statisticsModal .stat-value {
-            color: #333;
-        }
-
-        body.dark-theme #statisticsModal .stat-value {
-            color: #f0f0f0;
-        }
-
-        #statisticsModal .stat-value.positive {
-            color: #4CAF50;
-        }
-
-        #statisticsModal .stat-value.negative {
-            color: #FF4500;
-        }
-
-        #statisticsModal .stat-value.accent {
-            color: #8A2BE2;
-        }
     </style>
 </head>
 
@@ -1239,8 +1053,10 @@
             <button id="studiesButton">Études</button>
             <button id="automationButton" style="display: none;">Automatisation</button>
             <button id="skillsButton" style="display: none;">Compétences</button>
-            <button id="ascensionMenuButton" style="display: none; background-color: #007BFF; color: white;">Ascension</button>
-            <button id="prestigeMenuButton" style="display: none; background-color: #FF0000; color: white;">Prestige</button>
+            <button id="ascensionMenuButton" style="display: none; background-color: #007BFF; color: white;">Menu
+                Ascension</button>
+            <button id="prestigeMenuButton" style="display: none; background-color: #FF0000; color: white;">Menu
+                Prestige</button>
             <button id="settingsButton" style="display: none;">Paramètres</button>
             <button id="questsButton" style="display: none;">Quêtes</button>
             <button id="achievementsButton" style="display: none;">Succès</button>
@@ -1287,7 +1103,11 @@
                             <button id="setMultiplierXMax" class="multiplier-button" style="display: none;">xMax</button>
                         </div>
                     </div>
-                    <button id="etudierTitleButton" class="header-title-button">Études (<span id="etudierClickValue">0</span> BP/clic)</button>
+                    <h1>Études</h1>
+                </div>
+
+                <div class="container">
+                    <button id="etudierButton">Étudier sagement</button>
                 </div>
 
                 <div class="studies-sections-wrapper">
@@ -1307,7 +1127,7 @@
                                 : <span id="classesBpsPerItem">0</span></p>
                         </div>
                     </div>
-                    <div class="studies-section-group">
+                    <div class="studies-sections-group">
                         <div id="achatProfesseurSection" class="achat-section" style="display: none;">
                             <button id="acheterProfesseurButton">Professeur : <span class="images-color">2
                                     I</span></button>
@@ -1337,13 +1157,7 @@
 
 
             <div id="skillsContainer">
-                <div class="header-row">
-                    <h1>Arbre de Compétences</h1>
-                    <button id="resetSkillsButton" class="small-button"
-                        style="background-color: #f44336; color: white;">Réinitialiser</button>
-                    <button id="buyAllSkillsButton" class="small-button"
-                        style="background-color: #4CAF50; color: white; margin-left: 10px;">Tout acheter</button>
-                </div>
+                <h1>Arbre de Compétences</h1>
                 <div id="skillPanels">
                     <div id="studiesPanel" class="skill-panel">
                         <h2>Études</h2>
@@ -1361,6 +1175,8 @@
                         <div id="prestigeSkillsGrid"></div>
                     </div>
                 </div>
+                <button id="resetSkillsButton" style="background-color: #f44336; color: white; margin-top: 20px;">Réinitialiser
+                    Compétences</button>
             </div>
 
             <div id="settingsContainer">
@@ -1379,16 +1195,10 @@
                 <div class="achat-section" id="minimizeResourcesSetting" style="display: none;">
                     <button id="toggleMinimalistResources">Minimiser la section ressources</button>
                 </div>
-                <div class="achat-section" id="statisticsSetting" style="display: none;">
-                    <button id="openStatisticsButton">Statistiques</button>
-                </div>
             </div>
 
             <div id="ascensionMenuContainer">
-                <div class="header-row">
-                    <button id="ascensionTitleButton" class="header-title-button"
-                        style="background-color: #007BFF; color: white;">Ascension</button>
-                </div>
+                <h1>Menu Ascension</h1>
                 <p>Points d'Ascension disponibles : <span id="ascensionMenuPACount" class="ascension-points-color">0</span>
                 </p>
                 <div
@@ -1430,43 +1240,20 @@
                                 class="ascension-points-color">1 k PA</span></button>
                     </div>
                 </div>
+                <button id="ascensionButtonInMenu"
+                    style="margin-top: 30px; background-color: #007BFF; color: white; padding: 15px 30px; font-size: 1.2em;">Ascension
+                    !</button>
             </div>
 
             <div id="prestigeMenuContainer" style="display: none;">
-                <div class="header-row">
-                    <button id="prestigeTitleButton" class="header-title-button"
-                        style="background-color: #FF0000; color: white;">Prestige</button>
-                </div>
+                <h1>Menu Prestige</h1>
                 <p>Points de Prestige disponibles : <span id="prestigeMenuPPCount" class="prestige-points-color">0</span>
                 </p>
                 <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; width: 100%; max-width: 800px;">
-                    <div id="achatLicenceSection" class="achat-section" style="flex: 1 1 300px;">
-                        <button id="acheterLicenceButton">Licence : <span class="prestige-points-color">100 PP</span></button>
-                        <p>Quantité : <span id="nombreLicences">0</span></p>
-                        <p class="production">Boost effet Professeurs : <span id="licenceProfBoost">0%</span></p>
                     </div>
-                    <div id="achatMaster1Section" class="achat-section" style="flex: 1 1 300px; display: none;">
-                        <button id="acheterMaster1Button">Master I : <span class="prestige-points-color">200 PP</span></button>
-                        <p>Quantité : <span id="nombreMaster1">0</span></p>
-                        <p class="production">Boost production Classes : <span id="master1ClassBoost">0%</span></p>
-                    </div>
-                    <div id="achatMaster2Section" class="achat-section" style="flex: 1 1 300px; display: none;">
-                        <button id="acheterMaster2Button">Master II : <span class="prestige-points-color">1 k PP</span></button>
-                        <p>Quantité : <span id="nombreMaster2">0</span></p>
-                        <p class="production">Boost production Classes : <span id="master2ClassBoost">0%</span></p>
-                    </div>
-                    <div id="achatDoctoratSection" class="achat-section" style="flex: 1 1 300px; display: none;">
-                        <button id="acheterDoctoratButton">Doctorat : <span class="prestige-points-color">1 k PP</span></button>
-                        <p>Quantité : <span id="nombreDoctorat">0</span></p>
-                        <p class="production">Boost BP/s : <span id="doctoratBpsBoost">0%</span></p>
-                        <p class="production">Classes min après Ascension : <span id="doctoratMinClasses">0</span></p>
-                    </div>
-                    <div id="achatPostDoctoratSection" class="achat-section" style="flex: 1 1 300px; display: none;">
-                        <button id="acheterPostDoctoratButton">Post-Doctorat : <span class="prestige-points-color">10 k PP</span></button>
-                        <p>Quantité : <span id="nombrePostDoctorat">0</span></p>
-                        <p class="production">Boost gain PA : <span id="postDoctoratPaBoost">0%</span></p>
-                    </div>
-                </div>
+                <button id="prestigeButtonInMenu"
+                    style="margin-top: 30px; background-color: #FF0000; color: white; padding: 15px 30px; font-size: 1.2em;">Prestige
+                    !</button>
             </div>
 
 
@@ -1559,10 +1346,6 @@
             </div>
             <p id="subsequentAscensionWarning" style="display: none;">Vous êtes sur le point d'Ascensionner ! Cela
                 réinitialisera votre progression actuelle mais vous rapportera des Points d'Ascension.</p>
-            <p id="simpleAscensionWarning" style="display: none;">Ascensionner ? Une ascension vous rapportera <span
-                    id="simplePaGainedDisplay" class="ascension-points-color">X PA</span>, et augmentera le bonus
-                d'ascension de : <span id="oldAscensionBonusDisplay" class="ascension-points-color">Yx</span> à <span
-                    id="newAscensionBonusDisplay" class="ascension-points-color">Zx</span>.</p>
             <div class="modal-buttons">
                 <button id="confirmAscensionYes" class="can-afford">Oui</button>
                 <button id="confirmAscensionNo" class="cannot-afford">Non</button>
@@ -1574,143 +1357,14 @@
         <div class="modal-content">
             <h3 class="warning-color">Prestige !</h3>
             <p>Êtes-vous sûr de vouloir effectuer un Prestige ?</p>
-            <p>Cela réinitialisera votre progression actuelle (Bons Points, Images, Élèves, Classes, Professeurs) !</p>
+            <p>Cela réinitialisera TOUTE votre progression actuelle (Bons Points, Images, Élèves, Classes, Professeurs,
+                PA, Ascensions) !</p>
             <p>Vous gagnerez <span id="ppGainedDisplay" class="prestige-points-color">X PP</span> (Points de Prestige)
                 basés sur vos PA totaux et Ascensions totales.</p>
             <p>Vous gagnerez également <span class="prestige-points-color">1 point de compétence de Prestige</span>.</p>
-            <p><span class="info-color">Votre bonus de production total de BP/s après Prestige sera de <span id="prestigeBpsBoostDisplay">0%</span>.</span></p>
             <div class="modal-buttons">
                 <button id="confirmPrestigeYes" class="can-afford">Oui</button>
                 <button id="confirmPrestigeNo" class="cannot-afford">Non</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="statisticsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Statistiques du Jeu</h2>
-                <button class="close-button" id="closeStatisticsModal">&times;</button>
-            </div>
-
-            <div class="stats-section">
-                <h3>Ressources Actuelles</h3>
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-label">Bons Points:</span> <span id="statBonsPoints"
-                            class="stat-value bons-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">BP/s Total:</span> <span id="statTotalBps"
-                            class="stat-value bons-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Images:</span> <span id="statImages"
-                            class="stat-value images-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Professeurs:</span> <span id="statProfesseurs"
-                            class="stat-value professeurs-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Élèves:</span> <span id="statEleves"
-                            class="stat-value eleves-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Classes:</span> <span id="statClasses"
-                            class="stat-value eleves-color"></span></div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3>Progression d'Ascension</h3>
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-label">Points d'Ascension:</span> <span
-                            id="statAscensionPoints" class="stat-value ascension-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">PA Totaux Gagnés:</span> <span
-                            id="statTotalPAEarned" class="stat-value ascension-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Ascensions Effectuées:</span> <span
-                            id="statAscensionCount" class="stat-value ascension-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Écoles:</span> <span id="statEcoles"
-                            class="stat-value ascension-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Lycées:</span> <span id="statLycees"
-                            class="stat-value ascension-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Collèges:</span> <span id="statColleges"
-                            class="stat-value ascension-points-color"></span></div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3>Progression de Prestige</h3>
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-label">Points de Prestige:</span> <span
-                            id="statPrestigePoints" class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Prestiges Effectués:</span> <span
-                            id="statPrestigeCount" class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Licences:</span> <span id="statLicences"
-                            class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Master I:</span> <span id="statMaster1"
-                            class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Master II:</span> <span id="statMaster2"
-                            class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Doctorats:</span> <span id="statDoctorat"
-                            class="stat-value prestige-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Post-Doctorats:</span> <span
-                            id="statPostDoctorat" class="stat-value prestige-points-color"></span></div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3>Multiplicateurs & Bonus</h3>
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-label">Bonus d'Ascension Actuel:</span> <span
-                            id="statAscensionBonus" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur PA (Quêtes):</span> <span
-                            id="statPaMultiplierQuests" class="stat-value accent"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur PA (Compétences):</span> <span
-                            id="statPaMultiplierSkills" class="stat-value accent"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur PA (Prestige Global):</span> <span
-                            id="statPaMultiplierPrestigeTotal" class="stat-value accent"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur BP/s (Compétences):</span> <span
-                            id="statBpsMultiplierSkills" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur BP/s (Achievements):</span> <span
-                            id="statBpsMultiplierAchieve" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Multiplicateur BP/s (Prestige Global):</span> <span
-                            id="statBpsMultiplierPrestigeGlobal" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Coût Élèves:</span> <span
-                            id="statEleveCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Coût Classes:</span> <span
-                            id="statClasseCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Coût Images:</span> <span
-                            id="statImageCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Coût Professeurs:</span> <span
-                            id="statProfesseurCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Coût Écoles:</span> <span
-                            id="statEcoleCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Réduction Tous Coûts:</span> <span
-                            id="statAllCostReduction" class="stat-value negative"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Production Élèves:</span> <span
-                            id="statEleveBpsBonus" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Production Classes:</span> <span
-                            id="statClasseBpsBonus" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Production Hors Ligne:</span> <span
-                            id="statOfflineProduction" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Professeurs (Licence):</span> <span
-                            id="statLicenceProfEffect" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Classes (Master I):</span> <span
-                            id="statMaster1ClassBoost" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Boost Classes (Master II):</span> <span
-                            id="statMaster2ClassBoost" class="stat-value positive"></span></div>
-                    <div class="stat-item"><span class="stat-label">Classes Min après Ascension:</span> <span
-                            id="statMinClassesAscension" class="stat-value accent"></span></div>
-                </div>
-            </div>
-
-            <div class="stats-section">
-                <h3>Autres Statistiques</h3>
-                <div class="stats-grid">
-                    <div class="stat-item"><span class="stat-label">Clics Totaux:</span> <span id="statTotalClicks"
-                            class="stat-value"></span></div>
-                    <div class="stat-item"><span class="stat-label">BP par Clic:</span> <span id="statBPClic"
-                            class="stat-value bons-points-color"></span></div>
-                    <div class="stat-item"><span class="stat-label">Compétences Études Débloquées:</span> <span
-                            id="statStudiesSkills" class="stat-value"></span></div>
-                    <div class="stat-item"><span class="stat-label">Compétences Ascension Débloquées:</span> <span
-                            id="statAscensionSkills" class="stat-value"></span></div>
-                    <div class="stat-item"><span class="stat-label">Compétences Prestige Débloquées:</span> <span
-                            id="statPrestigeSkills" class="stat-value"></span></div>
-                    <div class="stat-item"><span class="stat-label">Succès Débloqués:</span> <span
-                            id="statAchievements" class="stat-value"></span></div>
-                </div>
             </div>
         </div>
     </div>
@@ -1766,16 +1420,16 @@
 
         let images = new Decimal(0);
         let nombreProfesseurs = new Decimal(0);
-        let multiplicateurProfesseur = new Decimal(1); // Base multiplier for professors
+        let multiplicateurProfesseur = new Decimal(1);
         let ascensionPoints = new Decimal(0);
-        let ascensionCount = new Decimal(0); // This should NOT reset on Prestige
-        let totalPAEarned = new Decimal(0); // This should reset on Prestige
+        let ascensionCount = new Decimal(0);
+        let totalPAEarned = new Decimal(0);
         let ascensionUnlocked = false;
         let disableAscensionWarning = false;
         let firstAscensionPerformed = false;
 
-        let prestigePoints = new Decimal(0); // NEW: Prestige Points (resets on prestige)
-        let prestigeCount = new Decimal(0); // NEW: Prestige Count (does NOT reset on prestige)
+        let prestigePoints = new Decimal(0); // NEW: Prestige Points
+        let prestigeCount = new Decimal(0); // NEW: Prestige Count
         let prestigeUnlocked = false; // NEW: Flag for Prestige menu unlock
 
         let schoolCount = new Decimal(0);
@@ -1847,18 +1501,6 @@
 
         // Secret skill click counter
         let secretSkillClicks = 0;
-
-        // NEW: Prestige Upgrade Counts
-        let licenceCount = new Decimal(0);
-        let master1Count = new Decimal(0);
-        let master2Count = new Decimal(0);
-        let doctoratCount = new Decimal(0);
-        let postDoctoratCount = new Decimal(0);
-
-        // NEW: Global Prestige Multipliers
-        let prestigeBpsGlobalMultiplier = new Decimal(1);
-        let prestigePaGlobalMultiplier = new Decimal(1);
-
 
         const fibonacciSequence = [0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 17711, 28657, 46368, 75025, 121393, 196418, 317811, 514229, 832040, 1346269, 2178309, 3524578, 5702887, 9227465, 14930352, 24157817, 39088169, 63245986, 102334155, 165580141, 267914296, 433494437, 701408733, 1134903170, 1836311903, 2971215073, 4807526976, 7778742049, 12586269025, 20365011074].map(num => new Decimal(num));
         const prime_PA = [0, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113].map(num => new Decimal(num));
@@ -2046,13 +1688,6 @@
             { id: 'ACH_CLICK_200', name: 'Deux Cents Clics', description: 'Cliquez 200 fois sur "Étudier sagement".', condition: () => totalClicks.gte(200), rewardText: '+2 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(2); }, unlocked: false },
             { id: 'ACH_CLICK_500', name: 'Cinq Cents Clics', description: 'Cliquez 500 fois sur "Étudier sagement".', condition: () => totalClicks.gte(500), rewardText: '+5 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(5); }, unlocked: false },
             { id: 'ACH_CLICK_1K', name: 'Mille Clics', description: 'Cliquez 1 000 fois sur "Étudier sagement".', condition: () => totalClicks.gte(1000), rewardText: '+10 BP par clic', rewardFn: () => { skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(10); }, unlocked: false },
-
-            // NEW: Prestige Upgrade Achievements
-            { id: 'ACH_PRESTIGE_LICENCE', name: 'Licence Obtenue', description: 'Acheter la Licence.', condition: () => licenceCount.gte(1), rewardText: '+0.01x effet Professeurs', rewardFn: () => { skillEffects.professeurEffectMultiplier = skillEffects.professeurEffectMultiplier.add(0.01); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PRESTIGE_MASTER1', name: 'Master I Validé', description: 'Acheter le Master I.', condition: () => master1Count.gte(1), rewardText: '+0.01x production Classes (via Profs)', rewardFn: () => { skillEffects.classProductionFromProfessors = skillEffects.classProductionFromProfessors.add(0.01); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PRESTIGE_MASTER2', name: 'Master II Validé', description: 'Acheter le Master II.', condition: () => master2Count.gte(1), rewardText: '+0.01x production Classes (via PP)', rewardFn: () => { skillEffects.classProductionFromPP = skillEffects.classProductionFromPP.add(0.01); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PRESTIGE_DOCTORAT', name: 'Doctorat Validé', description: 'Acheter le Doctorat.', condition: () => doctoratCount.gte(1), rewardText: '+0.01% BP/s (via Prestige), +1 Classe min', rewardFn: () => { skillEffects.bpsFromTotalPrestige = skillEffects.bpsFromTotalPrestige.add(0.0001); skillEffects.minClassesAfterAscension = skillEffects.minClassesAfterAscension.add(1); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PRESTIGE_POSTDOC', name: 'Post-Doctorat Validé', description: 'Acheter le Post-Doctorat.', condition: () => postDoctoratCount.gte(1), rewardText: '+0.01% gain PA (via PP)', rewardFn: () => { skillEffects.paGainFromTotalPP = skillEffects.paGainFromTotalPP.add(0.0001); applyAllSkillEffects(); }, unlocked: false },
         ];
         let unlockedAchievements = {};
         let activeAchievementTooltip = null; // To manage the clicked tooltip
@@ -2069,8 +1704,7 @@
         const imagesDisplay = document.getElementById('imagesDisplay');
         const professeursDisplayQuantity = document.getElementById('professeursDisplayQuantity'); // NEW: For quantity display
         const professeursDisplay = document.getElementById('professeursDisplay'); // NEW: For resource display
-        const etudierTitleButton = document.getElementById('etudierTitleButton'); // Changed from etudierButton
-        const etudierClickValueSpan = document.getElementById('etudierClickValue'); // NEW
+        const etudierButton = document.getElementById('etudierButton');
         const acheterEleveButton = document.getElementById('acheterEleveButton');
         const acheterClasseButton = document.getElementById('acheterClasseButton');
         const acheterImageButton = document.getElementById('acheterImageButton');
@@ -2079,14 +1713,13 @@
         const automationButton = document.getElementById('automationButton');
         const skillsButton = document.getElementById('skillsButton');
         const settingsButton = document.getElementById('settingsButton');
-        const ascensionTitleButton = document.getElementById('ascensionTitleButton'); // Changed from ascensionButtonInMenu
+        const ascensionButtonInMenu = document.getElementById('ascensionButtonInMenu');
         const ascensionMenuButton = document.getElementById('ascensionMenuButton');
         const prestigeMenuButton = document.getElementById('prestigeMenuButton'); // NEW: Prestige menu button
-        const prestigeTitleButton = document.getElementById('prestigeTitleButton'); // Changed from prestigeButtonInMenu
+        const prestigeButtonInMenu = document.getElementById('prestigeButtonInMenu'); // NEW: Prestige button in menu
         const questsButton = document.getElementById('questsButton');
         const achievementsButton = document.getElementById('achievementsButton');
         const resetSkillsButton = document.getElementById('resetSkillsButton');
-        const buyAllSkillsButton = document.getElementById('buyAllSkillsButton'); // NEW
         const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
         const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
         const ascensionCountDisplay = document.getElementById('ascensionCountDisplay');
@@ -2126,12 +1759,8 @@
         const ascensionModalTitle = document.getElementById('ascensionModalTitle');
         const firstAscensionWarningDiv = document.getElementById('firstAscensionWarning');
         const subsequentAscensionWarningDiv = document.getElementById('subsequentAscensionWarning');
-        const simpleAscensionWarningDiv = document.getElementById('simpleAscensionWarning'); // NEW
         const disableAscensionWarningCheckboxAscension = document.getElementById('disableAscensionWarningCheckbox');
         const paGainedDisplay = document.getElementById('paGainedDisplay');
-        const simplePaGainedDisplay = document.getElementById('simplePaGainedDisplay'); // NEW
-        const oldAscensionBonusDisplay = document.getElementById('oldAscensionBonusDisplay'); // NEW
-        const newAscensionBonusDisplay = document.getElementById('newAscensionBonusDisplay'); // NEW
         const ascensionMenuContainer = document.getElementById('ascensionMenuContainer');
         const ascensionMenuPACountSpan = document.getElementById('ascensionMenuPACount');
         const acheterEcoleButton = document.getElementById('acheterEcoleButton');
@@ -2177,87 +1806,6 @@
         const confirmPrestigeYesBtn = document.getElementById('confirmPrestigeYes');
         const confirmPrestigeNoBtn = document.getElementById('confirmPrestigeNo');
         const ppGainedDisplay = document.getElementById('ppGainedDisplay');
-        const prestigeBpsBoostDisplay = document.getElementById('prestigeBpsBoostDisplay'); // NEW
-
-        // NEW: Prestige Upgrade HTML elements
-        const achatLicenceSection = document.getElementById('achatLicenceSection');
-        const acheterLicenceButton = document.getElementById('acheterLicenceButton');
-        const nombreLicences = document.getElementById('nombreLicences');
-        const licenceProfBoost = document.getElementById('licenceProfBoost');
-
-        const achatMaster1Section = document.getElementById('achatMaster1Section');
-        const acheterMaster1Button = document.getElementById('acheterMaster1Button');
-        const nombreMaster1 = document.getElementById('nombreMaster1');
-        const master1ClassBoost = document.getElementById('master1ClassBoost');
-
-        const achatMaster2Section = document.getElementById('achatMaster2Section');
-        const acheterMaster2Button = document.getElementById('acheterMaster2Button');
-        const nombreMaster2 = document.getElementById('nombreMaster2');
-        const master2ClassBoost = document.getElementById('master2ClassBoost');
-
-        const achatDoctoratSection = document.getElementById('achatDoctoratSection');
-        const acheterDoctoratButton = document.getElementById('acheterDoctoratButton');
-        const nombreDoctorat = document.getElementById('nombreDoctorat');
-        const doctoratBpsBoost = document.getElementById('doctoratBpsBoost');
-        const doctoratMinClasses = document.getElementById('doctoratMinClasses');
-
-        const achatPostDoctoratSection = document.getElementById('achatPostDoctoratSection');
-        const acheterPostDoctoratButton = document.getElementById('acheterPostDoctoratButton');
-        const nombrePostDoctorat = document.getElementById('nombrePostDoctorat');
-        const postDoctoratPaBoost = document.getElementById('postDoctoratPaBoost');
-
-        // NEW: Statistics elements
-        const statisticsSetting = document.getElementById('statisticsSetting');
-        const openStatisticsButton = document.getElementById('openStatisticsButton');
-        const statisticsModal = document.getElementById('statisticsModal');
-        const closeStatisticsModalButton = document.getElementById('closeStatisticsModal');
-
-        const statBonsPoints = document.getElementById('statBonsPoints');
-        const statTotalBps = document.getElementById('statTotalBps');
-        const statImages = document.getElementById('statImages');
-        const statProfesseurs = document.getElementById('statProfesseurs');
-        const statEleves = document.getElementById('statEleves');
-        const statClasses = document.getElementById('statClasses');
-        const statAscensionPoints = document.getElementById('statAscensionPoints');
-        const statTotalPAEarned = document.getElementById('statTotalPAEarned');
-        const statAscensionCount = document.getElementById('statAscensionCount');
-        const statEcoles = document.getElementById('statEcoles');
-        const statLycees = document.getElementById('statLycees');
-        const statColleges = document.getElementById('statColleges');
-        const statPrestigePoints = document.getElementById('statPrestigePoints');
-        const statPrestigeCount = document.getElementById('statPrestigeCount');
-        const statLicences = document.getElementById('statLicences');
-        const statMaster1 = document.getElementById('statMaster1');
-        const statMaster2 = document.getElementById('statMaster2');
-        const statDoctorat = document.getElementById('statDoctorat');
-        const statPostDoctorat = document.getElementById('statPostDoctorat');
-        const statAscensionBonus = document.getElementById('statAscensionBonus');
-        const statPaMultiplierQuests = document.getElementById('statPaMultiplierQuests');
-        const statPaMultiplierSkills = document.getElementById('statPaMultiplierSkills');
-        const statPaMultiplierPrestigeTotal = document.getElementById('statPaMultiplierPrestigeTotal');
-        const statBpsMultiplierSkills = document.getElementById('statBpsMultiplierSkills');
-        const statBpsMultiplierAchieve = document.getElementById('statBpsMultiplierAchieve');
-        const statBpsMultiplierPrestigeGlobal = document.getElementById('statBpsMultiplierPrestigeGlobal'); // NEW
-        const statEleveCostReduction = document.getElementById('statEleveCostReduction');
-        const statClasseCostReduction = document.getElementById('statClasseCostReduction');
-        const statImageCostReduction = document.getElementById('statImageCostReduction');
-        const statProfesseurCostReduction = document.getElementById('statProfesseurCostReduction');
-        const statEcoleCostReduction = document.getElementById('statEcoleCostReduction');
-        const statAllCostReduction = document.getElementById('statAllCostReduction');
-        const statEleveBpsBonus = document.getElementById('statEleveBpsBonus');
-        const statClasseBpsBonus = document.getElementById('statClasseBpsBonus');
-        const statOfflineProduction = document.getElementById('statOfflineProduction');
-        const statLicenceProfEffect = document.getElementById('statLicenceProfEffect');
-        const statMaster1ClassBoost = document.getElementById('statMaster1ClassBoost');
-        const statMaster2ClassBoost = document.getElementById('statMaster2ClassBoost');
-        const statMinClassesAscension = document.getElementById('statMinClassesAscension');
-        const statTotalClicks = document.getElementById('statTotalClicks');
-        const statBPClic = document.getElementById('statBPClic');
-        const statStudiesSkills = document.getElementById('statStudiesSkills');
-        const statAscensionSkills = document.getElementById('statAscensionSkills');
-        const statPrestigeSkills = document.getElementById('statPrestigeSkills');
-        const statAchievements = document.getElementById('statAchievements');
-
 
         // NEW: Minimalist Resources elements
         const miniBonsPoints = document.getElementById('miniBonsPoints');
@@ -2284,8 +1832,7 @@
                 studiesSkillPoints: studiesSkillPoints.toString(),
                 ascensionSkillPoints: ascensionSkillPoints.toString(),
                 prestigeSkillPoints: prestigeSkillPoints.toString(), // NEW
-                // These flags are now derived from ascension/prestige counts in loadGameState
-                // studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
+                studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
                 elevesUnlocked, classesUnlocked, imagesUnlocked, professeursUnlocked,
                 skillsButtonUnlocked, settingsButtonUnlocked, ascensionUnlocked,
                 prestigeUnlocked, // NEW
@@ -2294,13 +1841,13 @@
                 isDayTheme, themeOptionUnlocked, offlineProgressEnabled,
                 minimizeResourcesActive, // NEW
 
-                ascensionPoints: ascensionPoints.toString(), // Reset on Prestige
-                ascensionCount: ascensionCount.toString(), // Persists on Prestige
-                totalPAEarned: totalPAEarned.toString(), // Reset on Prestige
+                ascensionPoints: ascensionPoints.toString(),
+                ascensionCount: ascensionCount.toString(),
+                totalPAEarned: totalPAEarned.toString(),
                 disableAscensionWarning, firstAscensionPerformed,
 
-                prestigePoints: prestigePoints.toString(), // NEW (Resets on Prestige)
-                prestigeCount: prestigeCount.toString(), // NEW (Persists on Prestige)
+                prestigePoints: prestigePoints.toString(), // NEW
+                prestigeCount: prestigeCount.toString(), // NEW
 
                 schoolCount: schoolCount.toString(),
                 newSettingsUnlocked, multiPurchaseOptionUnlocked, maxPurchaseOptionUnlocked, currentPurchaseMultiplier,
@@ -2309,19 +1856,11 @@
                 collegesUnlocked, nombreColleges: nombreColleges.toString(),
                 questsUnlocked, achievementsButtonUnlocked,
                 questsData: questsData.map(q => ({ id: q.id, unlocked: q.unlocked, completed: q.completed })),
-                unlockedAchievements: unlockedAchievements, // Achievements should persist
+                unlockedAchievements: unlockedAchievements,
                 permanentBpsBonusFromAchievements: permanentBpsBonusFromAchievements.toString(),
                 totalClicks: totalClicks.toString(), // Save total clicks
                 paMultiplierFromQuests: paMultiplierFromQuests.toString(), // Save PA multiplier from quests
                 secretSkillClicks: secretSkillClicks, // Save secret skill clicks
-
-                // NEW: Prestige Upgrade Counts
-                licenceCount: licenceCount.toString(),
-                master1Count: master1Count.toString(),
-                master2Count: master2Count.toString(),
-                doctoratCount: doctoratCount.toString(),
-                postDoctoratCount: postDoctoratCount.toString(),
-
                 lastSaveTime: Date.now()
             };
             localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
@@ -2347,20 +1886,18 @@
                 ascensionSkillPoints = new Decimal(gameState.ascensionSkillPoints || 0);
                 prestigeSkillPoints = new Decimal(gameState.prestigeSkillPoints || 0); // NEW
 
-                // Derive skill panel unlock status from game progress
-                skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
-                studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is unlocked if skills button is
-                ascensionSkillsUnlocked = gameState.ascensionSkillsUnlocked || (gameState.ascensionCount && new Decimal(gameState.ascensionCount).gte(1)); // Unlocked if previously or if ascension count >= 1
-                prestigeSkillsUnlocked = gameState.prestigeSkillsUnlocked || (gameState.prestigeCount && new Decimal(gameState.prestigeCount).gte(1)); // Unlocked if previously or if prestige count >= 1
-
+                studiesSkillsUnlocked = gameState.studiesSkillsUnlocked || false;
+                ascensionSkillsUnlocked = gameState.ascensionSkillsUnlocked || false;
+                prestigeSkillsUnlocked = gameState.prestigeSkillsUnlocked || false; // NEW
 
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
                 imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
                 professeursUnlocked = gameState.professeursUnlocked || false;
+                skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
                 settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
                 ascensionUnlocked = gameState.ascensionUnlocked || false;
-                prestigeUnlocked = gameState.prestigeUnlocked !== undefined ? gameState.prestigeUnlocked : false; // NEW
+                prestigeUnlocked = gameState.prestigeUnlocked || false; // NEW
                 bonusPointsClaimed = gameState.bonusPointsClaimed || {};
 
                 isDayTheme = gameState.isDayTheme !== undefined ? gameState.isDayTheme : true;
@@ -2409,19 +1946,11 @@
                         }
                     });
                 }
-                unlockedAchievements = gameState.unlockedAchievements || {}; // Load achievements
+                unlockedAchievements = gameState.unlockedAchievements || {};
                 permanentBpsBonusFromAchievements = new Decimal(gameState.permanentBpsBonusFromAchievements || 0);
                 totalClicks = new Decimal(gameState.totalClicks || 0); // Load total clicks
                 paMultiplierFromQuests = new Decimal(gameState.paMultiplierFromQuests || 1); // Load PA multiplier
                 secretSkillClicks = gameState.secretSkillClicks || 0; // Load secret skill clicks
-
-                // NEW: Load Prestige Upgrade Counts
-                licenceCount = new Decimal(gameState.licenceCount || 0);
-                master1Count = new Decimal(gameState.master1Count || 0);
-                master2Count = new Decimal(gameState.master2Count || 0);
-                doctoratCount = new Decimal(gameState.doctoratCount || 0);
-                postDoctoratCount = new Decimal(gameState.postDoctoratCount || 0);
-
 
                 if (!isDayTheme) document.body.classList.add('dark-theme');
                 offlineProgressToggle.checked = offlineProgressEnabled;
@@ -2431,8 +1960,8 @@
                     const maxOfflineTimeMs = 24 * 60 * 60 * 1000;
                     const effectiveOfflineTimeMs = Math.min(elapsedTimeMs, maxOfflineTimeMs);
 
-                    applyAllSkillEffects(); // Apply skills first to get accurate BPS
-                    calculateTotalBPS(); // Calculate BPS with all effects
+                    applyAllSkillEffects();
+                    calculateTotalBPS();
 
                     if (totalBonsPointsParSeconde.gt(0) && effectiveOfflineTimeMs > 10000) {
                         const offlineGainPercentage = new Decimal(0.50).add(skillEffects.offlineProductionIncrease); // Apply skill effect to offline gain
@@ -2471,7 +2000,7 @@
                 { id: 'S4_2', name: 'Recrutement Expert', tier: 4, maxLevel: 6, description: 'Réduit le coût des professeurs de 5%.', effect: { type: 'professeurCostReduction', value: new Decimal(0.05) }, prerequisites: ['S3_1', 'S3_2'] },
                 // Tier 5 (Total levels: 12)
                 { id: 'S5_1', name: 'Synergie Globale', tier: 5, maxLevel: 12, description: 'Augmente la production totale de BP/s de 10%.', effect: { type: 'totalBpsMultiplierBonus', value: new Decimal(0.10) }, prerequisites: ['S4_1', 'S4_2'] },
-                { id: 'S5_2_Secret', name: 'Le Secret', tier: 5, maxLevel: 15, description: 'Un mystère... (Cliquez 15 fois pour une récompense secrète !)', effect: { type: 'secretReward', value: new Decimal(0) }, prerequisites: ['S4_1', 'S4_2'] } // Added dummy value to prevent error
+                { id: 'S5_2_Secret', name: 'Le Secret', tier: 5, maxLevel: 15, description: 'Un mystère... (Cliquez 15 fois pour une récompense secrète !)', effect: { type: 'secretReward' }, prerequisites: ['S4_1', 'S4_2'] }
             ],
             ascension: [
                 // Tier 1 (Total levels: 12)
@@ -2531,14 +2060,7 @@
             automationCostReduction: new Decimal(0),
             allCostReduction: new Decimal(0),
             allProductionMultiplier: new Decimal(0),
-            allBpsMultiplier: new Decimal(1),
-            // NEW Prestige Skill Effects
-            professeurEffectMultiplier: new Decimal(0), // From Licence and skill
-            classProductionFromProfessors: new Decimal(0), // From Master I and skill
-            classProductionFromPP: new Decimal(0), // From Master II and skill
-            bpsFromTotalPrestige: new Decimal(0), // From Doctorat and skill
-            minClassesAfterAscension: new Decimal(0), // From Doctorat and skill
-            paGainFromTotalPP: new Decimal(0) // From Post-Doctorat and skill
+            allBpsMultiplier: new Decimal(1)
         };
 
         function resetSkillEffects() {
@@ -2561,14 +2083,7 @@
                 automationCostReduction: new Decimal(0),
                 allCostReduction: new Decimal(0),
                 allProductionMultiplier: new Decimal(0),
-                allBpsMultiplier: new Decimal(1),
-                // NEW Prestige Skill Effects (reset and then re-applied from permanent upgrades)
-                professeurEffectMultiplier: new Decimal(0),
-                classProductionFromProfessors: new Decimal(0),
-                classProductionFromPP: new Decimal(0),
-                bpsFromTotalPrestige: new Decimal(0),
-                minClassesAfterAscension: new Decimal(0),
-                paGainFromTotalPP: new Decimal(0)
+                allBpsMultiplier: new Decimal(1)
             };
         }
 
@@ -2602,28 +2117,6 @@
                 }
             }
 
-            // Apply Prestige Upgrade Effects (these are not skills, but permanent upgrades)
-            // Licence: Boost effect of professors
-            skillEffects.professeurEffectMultiplier = skillEffects.professeurEffectMultiplier.add(licenceCount.mul(0.01));
-
-            // Master I: Boost class production linked to number of professors
-            skillEffects.classProductionFromProfessors = skillEffects.classProductionFromProfessors.add(master1Count.mul(0.01));
-
-            // Master II: Boost class production linked to number of prestige points
-            skillEffects.classProductionFromPP = skillEffects.classProductionFromPP.add(master2Count.mul(0.01));
-
-            // Doctorat: Boost BP/s linked to total prestige count, and min 1 class after each ascension.
-            skillEffects.bpsFromTotalPrestige = skillEffects.bpsFromTotalPrestige.add(doctoratCount.mul(0.0001));
-            skillEffects.minClassesAfterAscension = skillEffects.minClassesAfterAscension.add(doctoratCount.mul(1));
-
-            // Post-Doctorat: Boost PA per Ascension linked to total prestige points.
-            skillEffects.paGainFromTotalPP = skillEffects.paGainFromTotalPP.add(postDoctoratCount.mul(0.0001));
-
-
-            // Calculate Global Prestige Multipliers
-            prestigeBpsGlobalMultiplier = new Decimal(1).add(prestigeCount.div(10)).add(prestigePoints.div(100));
-            prestigePaGlobalMultiplier = new Decimal(1).add(prestigeCount.div(10)).add(prestigePoints.div(1000));
-
             // Cap reductions to prevent negative costs
             skillEffects.eleveCostReduction = Decimal.min(skillEffects.eleveCostReduction, 0.9);
             skillEffects.classeCostReduction = Decimal.min(skillEffects.classeCostReduction, 0.9);
@@ -2639,9 +2132,7 @@
         }
 
         function applySingleSkillEffect(effect, level) {
-            // Ensure effect.value exists before trying to multiply it
-            const value = effect.value ? effect.value.mul(level) : new Decimal(0);
-
+            const value = effect.value.mul(level);
             switch (effect.type) {
                 case 'eleveBpsBonus': skillEffects.eleveBpsBonus = skillEffects.eleveBpsBonus.add(value); break;
                 case 'classeBpsBonus': skillEffects.classeBpsBonus = skillEffects.classeBpsBonus.add(value); break;
@@ -2665,34 +2156,12 @@
                 case 'secretReward':
                     // This effect is handled directly in handleSkillClick for the secret skill
                     break;
-                // These are handled by applyAllSkillEffects based on permanent upgrade counts,
-                // but if a skill *also* modified them, this would apply.
-                case 'professeurEffectMultiplier': skillEffects.professeurEffectMultiplier = skillEffects.professeurEffectMultiplier.add(value); break;
-                case 'classProductionFromProfessors': skillEffects.classProductionFromProfessors = skillEffects.classProductionFromProfessors.add(value); break;
-                case 'classProductionFromPP': skillEffects.classProductionFromPP = skillEffects.classProductionFromPP.add(value); break;
-                case 'bpsFromTotalPrestige': skillEffects.bpsFromTotalPrestige = skillEffects.bpsFromTotalPrestige.add(value); break;
-                case 'minClassesAfterAscension': skillEffects.minClassesAfterAscension = skillEffects.minClassesAfterAscension.add(value); break;
-                case 'paGainFromTotalPP': skillEffects.paGainFromTotalPP = skillEffects.paGainFromTotalPP.add(value); break;
             }
         }
 
         function calculateItemBPS() {
-            // Base professor multiplier is 1 + 0.25 * nombreProfesseurs.
-            // Add skill effect and Licence effect to this base multiplier.
-            let currentProfMultiplier = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs)).add(nombreProfesseurs.mul(skillEffects.professeurEffectMultiplier));
-
             bonsPointsParSecondeEleves = nombreEleves.mul(new Decimal(0.5).add(skillEffects.eleveBpsBonus)).mul(new Decimal(1).add(skillEffects.allProductionMultiplier));
-
-            // Class production now also boosted by professors and prestige points
-            let classProductionBase = new Decimal(25).add(skillEffects.classeBpsBonus);
-            let classProductionProfBoost = new Decimal(1).add(nombreProfesseurs.mul(skillEffects.classProductionFromProfessors)); // Master I effect
-            let classProductionPPBoost = new Decimal(1).add(prestigePoints.mul(skillEffects.classProductionFromPP)); // Master II effect
-
-            bonsPointsParSecondeClasses = nombreClasses.mul(classProductionBase)
-                                                    .mul(currentProfMultiplier)
-                                                    .mul(classProductionProfBoost)
-                                                    .mul(classProductionPPBoost)
-                                                    .mul(new Decimal(1).add(skillEffects.allProductionMultiplier));
+            bonsPointsParSecondeClasses = nombreClasses.mul(new Decimal(25).add(skillEffects.classeBpsBonus)).mul(multiplicateurProfesseur).mul(new Decimal(1).add(skillEffects.allProductionMultiplier));
         }
 
         function showNotification(message, duration = 3000) {
@@ -2756,24 +2225,6 @@
             return cost.floor();
         }
 
-        // NEW: Prestige Upgrade Costs
-        function calculateLicenceCost() {
-            return new Decimal(100);
-        }
-        function calculateMaster1Cost() {
-            return new Decimal(200);
-        }
-        function calculateMaster2Cost() {
-            return new Decimal(1000);
-        }
-        function calculateDoctoratCost() {
-            return new Decimal(1000);
-        }
-        function calculatePostDoctoratCost() {
-            return new Decimal(10000);
-        }
-
-
         function updateButtonStates() {
             // Eleve
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
@@ -2799,16 +2250,16 @@
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
-            // Ascension Title Button
-            ascensionTitleButton.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseurs.gte(1));
-            ascensionTitleButton.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseurs.lt(1));
+            // Ascension Button in Menu
+            ascensionButtonInMenu.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseurs.gte(1));
+            ascensionButtonInMenu.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseurs.lt(1));
             // Ascension Menu Button in Side Menu
             ascensionMenuButton.classList.toggle('can-afford', ascensionUnlocked);
             ascensionMenuButton.classList.toggle('cannot-afford', !ascensionUnlocked);
 
-            // Prestige Title Button (NEW)
-            prestigeTitleButton.classList.toggle('can-afford', prestigeUnlocked);
-            prestigeTitleButton.classList.toggle('cannot-afford', !prestigeUnlocked);
+            // Prestige Button in Menu (NEW)
+            prestigeButtonInMenu.classList.toggle('can-afford', prestigeUnlocked);
+            prestigeButtonInMenu.classList.toggle('cannot-afford', !prestigeUnlocked);
             // Prestige Menu Button in Side Menu (NEW)
             prestigeMenuButton.classList.toggle('can-afford', prestigeUnlocked);
             prestigeMenuButton.classList.toggle('cannot-afford', !prestigeUnlocked);
@@ -2834,28 +2285,6 @@
                 acheterCollegeButton.classList.toggle('can-afford', ascensionPoints.gte(coutCollegeActuel));
                 acheterCollegeButton.classList.toggle('cannot-afford', ascensionPoints.lt(coutCollegeActuel));
             }
-
-            // NEW: Prestige Upgrades buttons
-            const licenceCost = calculateLicenceCost();
-            acheterLicenceButton.classList.toggle('can-afford', prestigePoints.gte(licenceCost));
-            acheterLicenceButton.classList.toggle('cannot-afford', prestigePoints.lt(licenceCost));
-
-            const master1Cost = calculateMaster1Cost();
-            acheterMaster1Button.classList.toggle('can-afford', prestigePoints.gte(master1Cost) && licenceCount.gte(1));
-            acheterMaster1Button.classList.toggle('cannot-afford', prestigePoints.lt(master1Cost) || licenceCount.lt(1));
-
-            const master2Cost = calculateMaster2Cost();
-            acheterMaster2Button.classList.toggle('can-afford', prestigePoints.gte(master2Cost) && master1Count.gte(1));
-            acheterMaster2Button.classList.toggle('cannot-afford', prestigePoints.lt(master2Cost) || master1Count.lt(1));
-
-            const doctoratCost = calculateDoctoratCost();
-            acheterDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(doctoratCost) && master2Count.gte(1) && prestigeCount.gte(10));
-            acheterDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(doctoratCost) || master2Count.lt(1) || prestigeCount.lt(10));
-
-            const postDoctoratCost = calculatePostDoctoratCost();
-            acheterPostDoctoratButton.classList.toggle('can-afford', prestigePoints.gte(postDoctoratCost) && doctoratCount.gte(1) && prestigeCount.gte(30) && ascensionCount.gte(100));
-            acheterPostDoctoratButton.classList.toggle('cannot-afford', prestigePoints.lt(postDoctoratCost) || doctoratCount.lt(1) || prestigeCount.lt(30) || ascensionCount.lt(100));
-
 
             // Unlock Buttons in Ascension Menu
             unlockMultiPurchaseButton.style.display = multiPurchaseOptionUnlocked ? 'none' : 'block';
@@ -2937,11 +2366,11 @@
         function performPurchase(itemType, quantityRequested, isAutomated = false) {
             let quantityToBuy = new Decimal(0);
             let totalCostResource = new Decimal(0);
+            let totalCostPA = new Decimal(0);
             let currentResource;
             let costFunction;
             let itemCounter;
             let resourceToDecrement;
-            let currentCost;
 
             switch (itemType) {
                 case 'eleve': currentResource = bonsPoints; costFunction = (count) => calculateNextEleveCost(count); itemCounter = nombreEleves; resourceToDecrement = 'bonsPoints'; break;
@@ -2951,12 +2380,6 @@
                 case 'ecole': currentResource = ascensionPoints; costFunction = (count) => calculateNextEcoleCost(count); itemCounter = schoolCount; resourceToDecrement = 'ascensionPoints'; break;
                 case 'lycee': currentResource = ascensionPoints; costFunction = (count) => calculateNextLyceeCost(count); itemCounter = nombreLycees; resourceToDecrement = 'ascensionPoints'; break;
                 case 'college': currentResource = ascensionPoints; costFunction = (count) => calculateNextCollegeCost(count); itemCounter = nombreColleges; resourceToDecrement = 'ascensionPoints'; break;
-                // NEW Prestige Upgrades
-                case 'licence': currentResource = prestigePoints; costFunction = () => calculateLicenceCost(); itemCounter = licenceCount; resourceToDecrement = 'prestigePoints'; break;
-                case 'master1': currentResource = prestigePoints; costFunction = () => calculateMaster1Cost(); itemCounter = master1Count; resourceToDecrement = 'prestigePoints'; break;
-                case 'master2': currentResource = prestigePoints; costFunction = () => calculateMaster2Cost(); itemCounter = master2Count; resourceToDecrement = 'prestigePoints'; break;
-                case 'doctorat': currentResource = prestigePoints; costFunction = () => calculateDoctoratCost(); itemCounter = doctoratCount; resourceToDecrement = 'prestigePoints'; break;
-                case 'postDoctorat': currentResource = prestigePoints; costFunction = () => calculatePostDoctoratCost(); itemCounter = postDoctoratCount; resourceToDecrement = 'prestigePoints'; break;
                 default: return;
             }
 
@@ -2964,18 +2387,11 @@
                 let tempItemCounter = itemCounter;
                 let canAfford = true;
                 while (canAfford) {
-                    currentCost = costFunction(tempItemCounter);
-                    // Check prerequisites for Doctorat and Post-Doctorat
-                    if (itemType === 'doctorat' && (master2Count.lt(1) || prestigeCount.lt(10))) { canAfford = false; break; }
-                    if (itemType === 'postDoctorat' && (doctoratCount.lt(1) || prestigeCount.lt(30) || ascensionCount.lt(100))) { canAfford = false; break; }
-                    // Check prerequisites for Master I and Master II
-                    if (itemType === 'master1' && licenceCount.lt(1)) { canAfford = false; break; }
-                    if (itemType === 'master2' && master1Count.lt(1)) { canAfford = false; break; }
-
-
-                    if (currentResource.gte(currentCost)) {
-                        currentResource = currentResource.sub(currentCost);
-                        totalCostResource = totalCostResource.add(currentCost);
+                    let costPerItem = costFunction(tempItemCounter);
+                    if (currentResource.gte(costPerItem)) {
+                        currentResource = currentResource.sub(costPerItem);
+                        if (resourceToDecrement === 'ascensionPoints') totalCostPA = totalCostPA.add(costPerItem);
+                        else totalCostResource = totalCostResource.add(costPerItem);
                         quantityToBuy = quantityToBuy.add(1);
                         tempItemCounter = tempItemCounter.add(1);
                     } else {
@@ -2987,17 +2403,11 @@
                 let numQuantity = new Decimal(quantityRequested);
                 let tempItemCounter = itemCounter;
                 for (let i = 0; i < numQuantity.toNumber(); i++) {
-                    currentCost = costFunction(tempItemCounter);
-                    // Check prerequisites for Doctorat and Post-Doctorat
-                    if (itemType === 'doctorat' && (master2Count.lt(1) || prestigeCount.lt(10))) { break; }
-                    if (itemType === 'postDoctorat' && (doctoratCount.lt(1) || prestigeCount.lt(30) || ascensionCount.lt(100))) { break; }
-                    // Check prerequisites for Master I and Master II
-                    if (itemType === 'master1' && licenceCount.lt(1)) { break; }
-                    if (itemType === 'master2' && master1Count.lt(1)) { break; }
-
-                    if (currentResource.gte(currentCost)) {
-                        currentResource = currentResource.sub(currentCost);
-                        totalCostResource = totalCostResource.add(currentCost);
+                    let costPerItem = costFunction(tempItemCounter);
+                    if (currentResource.gte(costPerItem)) {
+                        currentResource = currentResource.sub(costPerItem);
+                        if (resourceToDecrement === 'ascensionPoints') totalCostPA = totalCostPA.add(costPerItem);
+                        else totalCostResource = totalCostResource.add(costPerItem);
                         quantityToBuy = quantityToBuy.add(1);
                         tempItemCounter = tempItemCounter.add(1);
                     } else {
@@ -3009,8 +2419,7 @@
             if (quantityToBuy.gt(0)) {
                 if (resourceToDecrement === 'bonsPoints') bonsPoints = bonsPoints.sub(totalCostResource);
                 else if (resourceToDecrement === 'images') images = images.sub(totalCostResource);
-                else if (resourceToDecrement === 'ascensionPoints') ascensionPoints = ascensionPoints.sub(totalCostResource);
-                else if (resourceToDecrement === 'prestigePoints') prestigePoints = prestigePoints.sub(totalCostResource); // NEW
+                else if (resourceToDecrement === 'ascensionPoints') ascensionPoints = ascensionPoints.sub(totalCostPA);
 
                 switch (itemType) {
                     case 'eleve': nombreEleves = nombreEleves.add(quantityToBuy); break;
@@ -3018,17 +2427,12 @@
                     case 'image': images = images.add(quantityToBuy); break;
                     case 'professeur':
                         nombreProfesseurs = nombreProfesseurs.add(quantityToBuy);
-                        // studiesSkillPoints is now directly linked to nombreProfesseurs, no direct add here
+                        multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
+                        studiesSkillPoints = studiesSkillPoints.add(quantityToBuy); // Gain studies skill points
                         break;
                     case 'ecole': schoolCount = schoolCount.add(quantityToBuy); break;
                     case 'lycee': nombreLycees = nombreLycees.add(quantityToBuy); break;
                     case 'college': nombreColleges = nombreColleges.add(quantityToBuy); break;
-                    // NEW Prestige Upgrades
-                    case 'licence': licenceCount = licenceCount.add(quantityToBuy); break;
-                    case 'master1': master1Count = master1Count.add(quantityToBuy); break;
-                    case 'master2': master2Count = master2Count.add(quantityToBuy); break;
-                    case 'doctorat': doctoratCount = doctoratCount.add(quantityToBuy); break;
-                    case 'postDoctorat': postDoctoratCount = postDoctoratCount.add(quantityToBuy); break;
                 }
 
                 applyAllSkillEffects();
@@ -3040,17 +2444,7 @@
                 updateButtonStates();
                 saveGameState();
             } else if (!isAutomated && quantityRequested !== 0) {
-                let message = `Pas assez de ressources pour acheter ${itemType} !`;
-                if (itemType === 'doctorat' && (master2Count.lt(1) || prestigeCount.lt(10))) {
-                    message = "Prérequis pour Doctorat non remplis : Master II et 10 Prestiges nécessaires.";
-                } else if (itemType === 'postDoctorat' && (doctoratCount.lt(1) || prestigeCount.lt(30) || ascensionCount.lt(100))) {
-                    message = "Prérequis pour Post-Doctorat non remplis : Doctorat, 30 Prestiges et 100 Ascensions nécessaires.";
-                } else if (itemType === 'master1' && licenceCount.lt(1)) {
-                    message = "Prérequis pour Master I non remplis : Licence nécessaire.";
-                } else if (itemType === 'master2' && master1Count.lt(1)) {
-                    message = "Prérequis pour Master II non remplis : Master I nécessaire.";
-                }
-                showNotification(message);
+                showNotification(`Pas assez de ressources pour acheter ${itemType} !`);
             }
         }
 
@@ -3059,11 +2453,6 @@
             const studiesPanel = document.getElementById('studiesPanel');
             const ascensionPanel = document.getElementById('ascensionPanel');
             const prestigePanel = document.getElementById('prestigePanel');
-
-            // Ensure visibility flags are up-to-date based on game state
-            studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is unlocked if skills button is
-            ascensionSkillsUnlocked = ascensionCount.gte(1); // Ascension panel is unlocked if at least 1 ascension
-            prestigeSkillsUnlocked = prestigeCount.gte(1); // Prestige panel is unlocked if at least 1 prestige
 
             studiesPanel.style.display = studiesSkillsUnlocked ? 'flex' : 'none';
             ascensionPanel.style.display = ascensionSkillsUnlocked ? 'flex' : 'none';
@@ -3077,48 +2466,6 @@
             ascensionSkillsPointsCountSpan.textContent = formatNumber(ascensionSkillPoints, 0);
             prestigeSkillsPointsCountSpan.textContent = formatNumber(prestigeSkillPoints, 0);
         }
-
-        function getSkillEffectDescription(effect, level) {
-            if (!effect || level === 0) return '';
-            // Handle secretReward specifically as it has no 'value' property
-            if (effect.type === 'secretReward') {
-                return 'Un mystère... (Cliquez 15 fois pour une récompense secrète !)';
-            }
-
-            const value = effect.value.mul(level);
-            let desc = '';
-
-            switch (effect.type) {
-                case 'eleveBpsBonus': desc = `+${formatNumber(value, 1)} BP/s par élève`; break;
-                case 'classeBpsBonus': desc = `+${formatNumber(value, 1)} BP/s par classe`; break;
-                case 'eleveCostReduction': desc = `Coût des élèves -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'classeCostReduction': desc = `Coût des classes -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'imageCostReduction': desc = `Coût des images -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'professeurCostReduction': desc = `Coût des professeurs -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'totalBpsMultiplierBonus': desc = `Production totale BP/s +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'clickBonsPointsBonus': desc = `BP par clic +${formatNumber(value, 1)}`; break;
-                case 'paGainMultiplier': desc = `Gain de PA +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'ascensionBonusIncrease': desc = `Bonus d'Ascension +${formatNumber(value, 2)}x par ascension`; break;
-                case 'schoolMultiplierIncrease': desc = `Production des écoles +${formatNumber(value, 1)}x`; break;
-                case 'lyceeBoostIncrease': desc = `Boost des lycées sur écoles +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'ecoleCostReduction': desc = `Coût des écoles -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'offlineProductionIncrease': desc = `Production hors ligne +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'collegeBoostIncrease': desc = `Boost des collèges sur écoles +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'automationCostReduction': desc = `Coût des automatisations -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'allCostReduction': desc = `Tous les coûts -${formatNumber(value.mul(100), 1)}%`; break;
-                case 'allProductionMultiplier': desc = `Toutes productions +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'allBpsMultiplier': desc = `Multiplie tous les gains de BP par ${formatNumber(value, 1)}`; break;
-                case 'professeurEffectMultiplier': desc = `Effet des Professeurs +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'classProductionFromProfessors': desc = `Production Classes (via Profs) +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'classProductionFromPP': desc = `Production Classes (via PP) +${formatNumber(value.mul(100), 1)}%`; break;
-                case 'bpsFromTotalPrestige': desc = `BP/s +${formatNumber(value.mul(100), 2)}% (via Prestige Total)`; break;
-                case 'minClassesAfterAscension': desc = `Classes min après Ascension : ${formatNumber(value, 0)}`; break;
-                case 'paGainFromTotalPP': desc = `Gain PA +${formatNumber(value.mul(100), 2)}% (via PP Total)`; break;
-                default: desc = ''; break;
-            }
-            return desc;
-        }
-
 
         function renderSkillPanel(panelType, gridElement, skillLevels, skillPoints, isPanelUnlocked) {
             gridElement.innerHTML = '';
@@ -3162,17 +2509,13 @@
                         skillBox.classList.add('secret-skill');
                     }
 
-                    const nextLevelEffect = getSkillEffectDescription(skill.effect, currentLevel + 1);
-                    const currentEffect = getSkillEffectDescription(skill.effect, currentLevel);
-
                     skillBox.innerHTML = `
                         <span class="skill-name">${skill.name}</span>
                         <span class="skill-level">Niveau ${currentLevel}/${skill.maxLevel}</span>
                         <div class="tooltip-text">
                             <strong>${skill.name}</strong><br>
                             ${skill.description}<br>
-                            ${currentLevel > 0 && currentEffect ? `Effet actuel: ${currentEffect}<br>` : ''}
-                            ${!isMaxLevel && skill.id !== 'S5_2_Secret' ? `Prochain niveau: ${nextLevelEffect}<br><span class="skill-cost images-color">Coût: 1 point de compétence</span>` : ''}
+                            ${!isMaxLevel && skill.id !== 'S5_2_Secret' ? `<span class="skill-cost images-color">Coût: 1 point de compétence</span>` : ''}
                             ${isLocked && !canUnlockTier ? `<br><span style="color:red;">Débloquez l'étage précédent</span>` : ''}
                             ${isLocked && canUnlockTier && skillPoints.lt(1) && !isMaxLevel && skill.id !== 'S5_2_Secret' ? `<br><span style="color:red;">Pas assez de points</span>` : ''}
                             ${skill.id === 'S5_2_Secret' ? `<br>Clics: ${secretSkillClicks}/15` : ''}
@@ -3312,82 +2655,6 @@
             });
         });
 
-        // NEW: Buy All Skills button logic
-        buyAllSkillsButton.addEventListener('click', () => {
-            let panelType;
-            // Determine which skill panel is currently displayed
-            if (skillsContainer.style.display === 'flex') { // Check if skillsContainer is visible
-                if (studiesPanel.style.display === 'flex') panelType = 'studies';
-                else if (ascensionPanel.style.display === 'flex') panelType = 'ascension';
-                else if (prestigePanel.style.display === 'flex') panelType = 'prestige';
-                else return; // No skill panel active within skillsContainer
-            } else {
-                return; // Skills container is not open
-            }
-
-
-            let skillLevels = {};
-            let skillPoints = new Decimal(0);
-            let skillPointsVarName = '';
-
-            if (panelType === 'studies') {
-                skillLevels = studiesSkillLevels;
-                skillPoints = studiesSkillPoints;
-                skillPointsVarName = 'studiesSkillPoints';
-            } else if (panelType === 'ascension') {
-                skillLevels = ascensionSkillLevels;
-                skillPoints = ascensionSkillPoints;
-                skillPointsVarName = 'ascensionSkillPoints';
-            } else if (panelType === 'prestige') {
-                skillLevels = prestigeSkillLevels;
-                skillPoints = prestigeSkillPoints;
-                skillPointsVarName = 'prestigeSkillPoints';
-            }
-
-            let skillsBought = 0;
-            let canBuyMore = true;
-
-            // Loop multiple times to handle dependencies
-            for (let i = 0; i < 10 && canBuyMore; i++) { // Max 10 passes to ensure dependencies are met
-                canBuyMore = false; // Assume no more buys in this pass unless one happens
-                const skillsInPanel = skillsData[panelType];
-                const maxTier = Math.max(...skillsInPanel.map(s => s.tier));
-
-                for (let tier = 1; tier <= maxTier; tier++) {
-                    const skillsInThisTier = skillsInPanel.filter(s => s.tier === tier);
-                    let allPreviousTierMaxed = true;
-                    if (tier > 1) {
-                        const previousTierSkills = skillsInPanel.filter(s => s.tier === tier - 1);
-                        allPreviousTierMaxed = previousTierSkills.every(s => (skillLevels[s.id] || 0) >= s.maxLevel);
-                    }
-
-                    if (!allPreviousTierMaxed) continue; // Cannot buy skills in this tier yet
-
-                    for (const skill of skillsInThisTier) {
-                        const currentLevel = skillLevels[skill.id] || 0;
-                        if (currentLevel < skill.maxLevel && skillPoints.gte(1)) {
-                            skillLevels[skill.id] = currentLevel + 1;
-                            skillPoints = skillPoints.sub(1);
-                            skillsBought++;
-                            canBuyMore = true; // A skill was bought, try another pass
-                        }
-                    }
-                }
-            }
-
-            if (skillsBought > 0) {
-                eval(`${skillPointsVarName} = skillPoints;`); // Update the global variable
-                showNotification(`${skillsBought} niveaux de compétences achetés !`);
-                applyAllSkillEffects();
-                renderSkillsMenu();
-                mettreAJourAffichage();
-                saveGameState();
-            } else {
-                showNotification("Aucune compétence à acheter ou pas assez de points.");
-            }
-        });
-
-
         // --- Tab Switching Logic ---
         function openTab(tabContainer) {
             // Hide all main content containers
@@ -3411,50 +2678,26 @@
         achievementsButton.addEventListener('click', () => { openTab(achievementsContainer); renderAchievements(); });
 
         // --- Ascension Logic ---
-        ascensionTitleButton.addEventListener('click', () => { // Changed to ascensionTitleButton
+        ascensionButtonInMenu.addEventListener('click', () => { // Changed to ascensionButtonInMenu
             if (nombreProfesseurs.lt(1)) {
                 showNotification("Il faut au moins 1 professeur pour Ascensionner.");
                 return;
             }
             const paGained = calculatePAGained();
             paGainedDisplay.textContent = `${formatNumber(paGained, 0)} PA`;
-            simplePaGainedDisplay.textContent = `${formatNumber(paGained, 0)} PA`;
-
-            // Calculate current and new ascension bonus for simple warning
-            const currentAscensionBonus = calculateAscensionBonus(ascensionCount, totalPAEarned);
-            const newAscensionBonus = calculateAscensionBonus(ascensionCount.add(1), totalPAEarned.add(paGained));
-            oldAscensionBonusDisplay.textContent = `${formatNumber(currentAscensionBonus, 2)}x`;
-            newAscensionBonusDisplay.textContent = `${formatNumber(newAscensionBonus, 2)}x`;
-
 
             if (ascensionCount.eq(0) && !disableAscensionWarning) {
                 ascensionModalTitle.textContent = "Première Ascension !";
                 firstAscensionWarningDiv.style.display = 'block';
                 subsequentAscensionWarningDiv.style.display = 'none';
-                simpleAscensionWarningDiv.style.display = 'none'; // Ensure this is hidden
                 disableAscensionWarningCheckboxAscension.checked = disableAscensionWarning;
-            } else if (disableAscensionWarning) {
-                ascensionModalTitle.textContent = "Ascensionner ?";
-                firstAscensionWarningDiv.style.display = 'none';
-                subsequentAscensionWarningDiv.style.display = 'none';
-                simpleAscensionWarningDiv.style.display = 'block'; // Show simple warning
-            }
-            else {
+            } else {
                 ascensionModalTitle.textContent = "Ascensionner ?";
                 firstAscensionWarningDiv.style.display = 'none';
                 subsequentAscensionWarningDiv.style.display = 'block';
-                simpleAscensionWarningDiv.style.display = 'none'; // Ensure this is hidden
             }
             confirmAscensionModal.style.display = 'flex';
         });
-
-        function calculateAscensionBonus(currentAscCount, currentTotalPA) {
-            let ascMult = new Decimal(1);
-            if (currentAscCount.gt(0) || currentTotalPA.gt(0)) { // Only apply if there's any ascension progress
-                ascMult = new Decimal(1).add(currentAscCount.mul(currentTotalPA).mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(currentAscCount));
-            }
-            return ascMult;
-        }
 
         function calculatePAGained() {
             let paGained = new Decimal(0);
@@ -3469,13 +2712,6 @@
             }
             // Apply PA multiplier from quests and skills
             paGained = paGained.mul(paMultiplierFromQuests.add(skillEffects.paGainMultiplier).add(1));
-
-            // NEW: Apply Global Prestige PA bonus
-            paGained = paGained.mul(prestigePaGlobalMultiplier);
-
-            // NEW: Apply Post-Doctorat effect
-            paGained = paGained.mul(new Decimal(1).add(prestigePoints.mul(skillEffects.paGainFromTotalPP)));
-
             return paGained.floor();
         }
 
@@ -3492,22 +2728,13 @@
         });
 
         // --- Prestige Logic (NEW) ---
-        prestigeTitleButton.addEventListener('click', () => { // Changed to prestigeTitleButton
+        prestigeButtonInMenu.addEventListener('click', () => {
             // Capture current totalPAEarned and ascensionCount BEFORE reset
-            const currentTotalPAEarnedForPP = totalPAEarned;
-            const currentAscensionCountForPP = ascensionCount; // Correctly capture ascensionCount
+            const currentTotalPAEarned = totalPAEarned;
+            const currentAscensionCount = ascensionCount;
 
-            const ppGained = calculatePPGained(currentTotalPAEarnedForPP, currentAscensionCountForPP);
+            const ppGained = calculatePPGained(currentTotalPAEarned, currentAscensionCount);
             ppGainedDisplay.textContent = `${formatNumber(ppGained, 0)} PP`;
-
-            // Calculate the total BPS multiplier from prestige upgrades for display
-            // This is the *future* BPS boost from prestige upgrades *after* the reset,
-            // assuming the new prestige points are added.
-            let futurePrestigePoints = prestigePoints.add(ppGained);
-            let futurePrestigeCount = prestigeCount.add(1); // Assuming 1 prestige is gained
-
-            let totalPrestigeBpsBoostPreview = new Decimal(1).add(futurePrestigeCount.div(10)).add(futurePrestigePoints.div(100));
-            prestigeBpsBoostDisplay.textContent = `${formatNumber(totalPrestigeBpsBoostPreview.sub(1).mul(100), 2)}%`; // Display as percentage increase
 
             confirmPrestigeModal.style.display = 'flex';
         });
@@ -3531,38 +2758,27 @@
         });
 
         function performPrestige() {
-            // Capture current values BEFORE reset that should persist or be used for calculation
-            const currentAscensionCount = ascensionCount; // This persists
-            const currentAscensionSkillPoints = ascensionSkillPoints; // This persists
-            const currentPrestigeCount = prestigeCount; // This persists
+            // Capture values BEFORE reset
+            const currentTotalPAEarned = totalPAEarned;
+            const currentAscensionCount = ascensionCount;
 
-            // Values for PP calculation (these will be reset by softResetGame)
-            const currentTotalPAEarnedForPP = totalPAEarned;
+            // Reset PA and total PA
+            ascensionPoints = new Decimal(0);
+            totalPAEarned = new Decimal(0);
 
-            // Perform soft reset first
-            softResetGame();
+            // Perform a hard reset, which also resets soft reset items
+            hardResetGame(); // This will reset everything, including ascension stats
 
-            // Recalculate PP based on values *before* the soft reset
-            const ppGained = calculatePPGained(currentTotalPAEarnedForPP, currentAscensionCount); // FIX: Use currentAscensionCount here
+            // Recalculate PP based on values *before* the reset
+            const ppGained = calculatePPGained(currentTotalPAEarned, currentAscensionCount);
             prestigePoints = prestigePoints.add(ppGained);
-            prestigeCount = currentPrestigeCount.add(1); // Increment prestige count
+            prestigeCount = prestigeCount.add(1);
             prestigeSkillPoints = prestigeSkillPoints.add(1); // Gain 1 prestige skill point
-
-            // Restore ascension-related variables that should persist
-            ascensionCount = currentAscensionCount;
-            ascensionSkillPoints = currentAscensionSkillPoints;
-
-            // Ensure skill panels remain unlocked if they were
-            skillsButtonUnlocked = true; // Always true after first skill unlock
-            studiesSkillsUnlocked = true; // Always true if skills button is unlocked
-            ascensionSkillsUnlocked = true; // Stays true after first ascension
-            prestigeSkillsUnlocked = true; // Stays true after first prestige
 
             showNotification(`Prestige réussi ! +${formatNumber(ppGained, 0)} PP !`);
 
             applyAllSkillEffects(); // Reapply effects after reset
             updateSectionVisibility();
-            renderSkillsMenu(); // Update skill menu after prestige
             openTab(studiesMainContainer); // Default to studies tab after reset
             mettreAJourAffichage();
             saveGameState();
@@ -3570,7 +2786,7 @@
 
 
         // --- Event Listeners for Purchases ---
-        etudierTitleButton.addEventListener('click', () => { // Changed to etudierTitleButton
+        etudierButton.addEventListener('click', () => {
             totalClicks = totalClicks.add(1); // Increment total clicks
 
             calculateTotalBPS(); // Ensure totalBonsPointsParSeconde is up-to-date
@@ -3588,7 +2804,8 @@
                 }
             }
 
-            // etudierTitleButton.innerHTML is updated in mettreAJourAffichage
+            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(clickValue, bonsPoints.lt(1000) ? 1 : 0)} BP)`;
+
             mettreAJourAffichageBonsPoints();
 
             checkUnlockConditions();
@@ -3603,13 +2820,6 @@
         acheterEcoleButton.addEventListener('click', () => performPurchase('ecole', currentPurchaseMultiplier));
         acheterLyceeButton.addEventListener('click', () => performPurchase('lycee', currentPurchaseMultiplier));
         acheterCollegeButton.addEventListener('click', () => performPurchase('college', currentPurchaseMultiplier));
-        // NEW Prestige Upgrades
-        acheterLicenceButton.addEventListener('click', () => performPurchase('licence', 1));
-        acheterMaster1Button.addEventListener('click', () => performPurchase('master1', 1));
-        acheterMaster2Button.addEventListener('click', () => performPurchase('master2', 1));
-        acheterDoctoratButton.addEventListener('click', () => performPurchase('doctorat', 1));
-        acheterPostDoctoratButton.addEventListener('click', () => performPurchase('postDoctorat', 1));
-
 
         // --- Settings Menu Functions ---
         themeToggleButton.addEventListener('click', () => {
@@ -3644,7 +2854,7 @@
         confirmResetYesBtn.addEventListener('click', () => {
             if (images.gte(10)) {
                 images = images.sub(10);
-                hardResetGame(true); // Pass true to indicate a full hard reset, including prestige
+                hardResetGame();
                 showNotification("Progression réinitialisée !");
             }
             confirmResetModal.style.display = 'none';
@@ -3663,21 +2873,6 @@
             updateSectionVisibility(); // This will handle showing/hiding the correct resource display
             mettreAJourAffichage(); // Update values in the new display
             saveGameState();
-        });
-
-        // NEW: Statistics Button
-        openStatisticsButton.addEventListener('click', () => {
-            updateStatisticsDisplay(); // Update stats before opening
-            statisticsModal.style.display = 'flex';
-        });
-        closeStatisticsModalButton.addEventListener('click', () => {
-            statisticsModal.style.display = 'none';
-        });
-        // Close statistics modal if clicking outside the content
-        statisticsModal.addEventListener('click', (event) => {
-            if (event.target === statisticsModal) { // Check if the click was on the modal background itself
-                statisticsModal.style.display = 'none';
-            }
         });
 
 
@@ -3710,7 +2905,7 @@
             if (ascensionPoints.gte(10) && !newSettingsUnlocked) {
                 ascensionPoints = ascensionPoints.sub(10);
                 newSettingsUnlocked = true;
-                showNotification("Nouveaux réglages débloqués ! (Option progression hors ligne, minimisation des ressources, et statistiques)");
+                showNotification("Nouveaux réglages débloqués ! (Option progression hors ligne et minimisation des ressources)");
                 mettreAJourAffichage(); updateButtonStates(); saveGameState();
             } else if (newSettingsUnlocked) {
                 showNotification("Déjà débloqué !");
@@ -3773,16 +2968,11 @@
                 ascensionSkillPoints = ascensionSkillPoints.add(1); // Gain 1 ascension skill point per ascension
 
                 // Reset studies skill levels and return points
-                studiesSkillLevels = {}; // Reset studies skill levels
-                studiesSkillPoints = nombreProfesseurs; // Studies skill points are now equal to professors
-
-                // Ensure studies and ascension skill panels remain unlocked
-                studiesSkillsUnlocked = true;
-                ascensionSkillsUnlocked = true; // Ensure this stays true after ascension
+                studiesSkillPoints = studiesSkillPoints.add(Object.values(studiesSkillLevels).reduce((sum, level) => sum + level, 0));
+                studiesSkillLevels = {};
 
                 showNotification(`Ascension réussie ! +${formatNumber(paGained, 0)} PA !`);
                 softResetGame();
-                renderSkillsMenu(); // Update skill menu after ascension
             } else {
                 showNotification("Pas assez de gains pour Ascensionner (besoin d'au moins 1 professeur).");
             }
@@ -3791,7 +2981,7 @@
         function softResetGame() {
             bonsPoints = new Decimal(0);
             nombreEleves = new Decimal(0);
-            nombreClasses = Decimal.max(skillEffects.minClassesAfterAscension, 0); // Apply Doctorat effect
+            nombreClasses = new Decimal(0);
             images = new Decimal(0);
             nombreProfesseurs = new Decimal(0);
             multiplicateurProfesseur = new Decimal(1);
@@ -3805,10 +2995,6 @@
 
             // Studies skill levels are reset and points returned in performAscension
             // Ascension skill levels and points are kept
-
-            // Reset PA and Total PA Earned
-            ascensionPoints = new Decimal(0);
-            totalPAEarned = new Decimal(0);
 
             bonusPointsClaimed = {};
 
@@ -3842,7 +3028,7 @@
             saveGameState();
         }
 
-        function hardResetGame(fullReset = false) {
+        function hardResetGame() {
             // Reset all game variables to their initial states, except for prestige-related ones if this is called by prestige.
             // If called by the "Reset Progression" button, then prestige also resets.
             bonsPoints = new Decimal(0);
@@ -3854,6 +3040,7 @@
             totalClicks = new Decimal(0);
 
             ascensionPoints = new Decimal(0);
+            ascensionCount = new Decimal(0);
             totalPAEarned = new Decimal(0);
             ascensionUnlocked = false;
             disableAscensionWarning = false;
@@ -3875,8 +3062,7 @@
             offlineProgressToggle.checked = true;
             minimizeResourcesActive = false; // Reset minimalist resources state
 
-            // Achievements are NOT reset by hardResetGame (they persist)
-            // unlockedAchievements = {}; // Keep this line commented out as achievements persist
+            unlockedAchievements = {};
             permanentBpsBonusFromAchievements = new Decimal(0);
             paMultiplierFromQuests = new Decimal(1); // Reset PA multiplier from quests on hard reset
 
@@ -3885,32 +3071,14 @@
 
             // Reset all skill points and levels
             studiesSkillPoints = new Decimal(0);
-            studiesSkillLevels = {};
-            ascensionSkillPoints = new Decimal(0); // Reset ascension skill points on full hard reset
-            ascensionSkillLevels = {}; // Reset ascension skill levels on full hard reset
+            ascensionSkillPoints = new Decimal(0);
             prestigeSkillPoints = new Decimal(0);
+            studiesSkillLevels = {};
+            ascensionSkillLevels = {};
             prestigeSkillLevels = {};
-
-            // If it's a full hard reset (from settings), reset prestige as well
-            if (fullReset) {
-                prestigePoints = new Decimal(0);
-                prestigeCount = new Decimal(0); // Reset prestige count on full hard reset
-                prestigeUnlocked = false;
-
-                // Reset prestige upgrade counts
-                licenceCount = new Decimal(0);
-                master1Count = new Decimal(0);
-                master2Count = new Decimal(0);
-                doctoratCount = new Decimal(0);
-                postDoctoratCount = new Decimal(0);
-            }
-
-            // Skill panel unlock flags are derived, so they'll be false unless conditions are met again
-            skillsButtonUnlocked = false;
             studiesSkillsUnlocked = false;
             ascensionSkillsUnlocked = false;
             prestigeSkillsUnlocked = false;
-
 
             // Reset secret skill clicks
             secretSkillClicks = 0;
@@ -3935,7 +3103,6 @@
 
             offlineProgressSetting.style.display = newSettingsUnlocked ? 'block' : 'none'; // NEW
             minimizeResourcesSetting.style.display = newSettingsUnlocked ? 'block' : 'none'; // NEW
-            statisticsSetting.style.display = newSettingsUnlocked ? 'block' : 'none'; // NEW
             toggleMinimalistResourcesButton.textContent = minimizeResourcesActive ? "Afficher les ressources complètes" : "Minimiser la section ressources"; // NEW
         }
 
@@ -3945,8 +3112,10 @@
             let baseBPS = bonsPointsParSecondeEleves.add(bonsPointsParSecondeClasses);
             let skillMultiplier = new Decimal(1).add(skillEffects.totalBpsMultiplierBonus);
             let ascensionMultiplier = new Decimal(1);
-            if (ascensionCount.gt(0) || totalPAEarned.gt(0)) { // Only apply if there's any ascension progress
+            if (ascensionCount.gt(0) && totalPAEarned.gt(0)) {
                 ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
+            } else if (ascensionCount.gt(0)) {
+                ascensionMultiplier = new Decimal(1).add(ascensionCount.mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
             }
 
             let effectiveSchoolMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier).add(schoolCount.mul(skillEffects.schoolMultiplierIncrease)));
@@ -3955,23 +3124,10 @@
             let collegeBoost = new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease)));
             effectiveSchoolMultiplier = effectiveSchoolMultiplier.mul(collegeBoost);
 
-            // NEW: Apply BPS boost from Doctorat and Global Prestige Multiplier
-            let doctoratBpsBoost = new Decimal(1).add(prestigeCount.mul(skillEffects.bpsFromTotalPrestige));
-
-            totalBonsPointsParSeconde = baseBPS
-                .mul(skillMultiplier)
-                .mul(ascensionMultiplier)
-                .mul(effectiveSchoolMultiplier)
-                .mul(new Decimal(1).add(permanentBpsBonusFromAchievements))
-                .mul(skillEffects.allBpsMultiplier)
-                .mul(doctoratBpsBoost)
-                .mul(prestigeBpsGlobalMultiplier); // Apply global prestige BPS multiplier
+            totalBonsPointsParSeconde = baseBPS.mul(skillMultiplier).mul(ascensionMultiplier).mul(effectiveSchoolMultiplier).mul(new Decimal(1).add(permanentBpsBonusFromAchievements)).mul(skillEffects.allBpsMultiplier);
         }
 
         function mettreAJourAffichage() {
-            // Update studies skill points to match professors
-            studiesSkillPoints = nombreProfesseurs;
-
             calculateTotalBPS();
             bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
             totalBpsInlineSpan.textContent = formatNumber(totalBonsPointsParSeconde, 1);
@@ -3980,7 +3136,6 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesSpan.textContent = formatNumber(images, 0);
-            professeurs.textContent = formatNumber(nombreProfesseurs, 0); // Correctly update the main professeurs display
             professeursDisplayQuantity.textContent = formatNumber(nombreProfesseurs, 0); // NEW: Update the quantity display
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
@@ -3992,51 +3147,34 @@
             prestigeCountSpan.textContent = formatNumber(prestigeCount, 0); // NEW
             prestigeMenuPPCountSpan.textContent = formatNumber(prestigePoints, 0); // NEW
 
-            // NEW: Prestige Upgrade Counts Display
-            nombreLicences.textContent = formatNumber(licenceCount, 0);
-            licenceProfBoost.textContent = `${formatNumber(licenceCount.mul(0.01).mul(100), 1)}%`; // Assuming 0.01 per licence
-            achatMaster1Section.style.display = licenceCount.gte(1) ? 'block' : 'none'; // Show Master I if Licence owned
-            nombreMaster1.textContent = formatNumber(master1Count, 0);
-            master1ClassBoost.textContent = `${formatNumber(master1Count.mul(0.01).mul(100), 1)}%`; // Assuming 0.01 per Master I
-            achatMaster2Section.style.display = master1Count.gte(1) ? 'block' : 'none'; // Show Master II if Master I owned
-            nombreMaster2.textContent = formatNumber(master2Count, 0);
-            master2ClassBoost.textContent = `${formatNumber(master2Count.mul(0.01).mul(100), 1)}%`; // Assuming 0.01 per Master II
-            achatDoctoratSection.style.display = master2Count.gte(1) && prestigeCount.gte(10) ? 'block' : 'none'; // Show Doctorat if Master II owned and 10 prestige
-            nombreDoctorat.textContent = formatNumber(doctoratCount, 0);
-            doctoratBpsBoost.textContent = `${formatNumber(skillEffects.bpsFromTotalPrestige.mul(100), 2)}%`; // Display the actual effect value
-            doctoratMinClasses.textContent = formatNumber(skillEffects.minClassesAfterAscension, 0); // Display the actual effect value
-            achatPostDoctoratSection.style.display = doctoratCount.gte(1) && prestigeCount.gte(30) && ascensionCount.gte(100) ? 'block' : 'none'; // Show Post-Doctorat with prerequisites
-            nombrePostDoctorat.textContent = formatNumber(postDoctoratCount, 0);
-            postDoctoratPaBoost.textContent = `${formatNumber(skillEffects.paGainFromTotalPP.mul(100), 2)}%`; // Display the actual effect value
-
-
             let displayedSchoolSystemMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier).add(schoolCount.mul(skillEffects.schoolMultiplierIncrease)))
                 .mul(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))))
-                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease)));
+                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))));
             ecoleMultiplierSpan.textContent = `${formatNumber(displayedSchoolSystemMultiplier, 2)}x`;
             nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
             lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))), 2)}x`;
             nombreCollegesDisplay.textContent = formatNumber(nombreColleges, 0);
             collegeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))), 2)}x`;
 
-            ascensionBonusDisplay.style.display = ascensionCount.gt(0) || totalPAEarned.gt(0) ? 'block' : 'none';
-            if (ascensionCount.gt(0) || totalPAEarned.gt(0)) {
-                let ascMult = calculateAscensionBonus(ascensionCount, totalPAEarned);
+            ascensionBonusDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
+            if (ascensionCount.gt(0)) {
+                let ascMult = new Decimal(1);
+                if (totalPAEarned.gt(0)) ascMult = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
+                else ascMult = new Decimal(1).add(ascensionCount.mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
                 ascensionBonusValueSpan.textContent = `${formatNumber(ascMult, 2)}x`;
             }
             // Image display logic: always show if imagesUnlocked is true
             imagesDisplay.style.display = imagesUnlocked ? 'block' : 'none';
             professeursDisplay.style.display = professeursUnlocked ? 'block' : 'none'; // NEW: Show/hide professor resource line
-            currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) || totalPAEarned.gt(0) ? 'block' : 'none';
+            currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none'; // NEW
             prestigeCountDisplay.style.display = prestigeCount.gt(0) ? 'block' : 'none'; // NEW
 
-            // Update dynamic click value for button text display
+            // Recalculate dynamicBonus for button text display
             const dynamicBonusForDisplay = totalBonsPointsParSeconde.mul(0.1);
             const currentClickValueForDisplay = skillEffects.clickBonsPointsBonus.add(dynamicBonusForDisplay);
-            etudierClickValueSpan.textContent = formatNumber(currentClickValueForDisplay, bonsPoints.lt(1000) ? 1 : 0);
-
+            etudierButton.innerHTML = `Étudier sagement (+${formatNumber(currentClickValueForDisplay, bonsPoints.lt(1000) ? 1 : 0)} BP)`;
 
             // Update minimalist resources display (NEW)
             miniBonsPoints.textContent = formatNumber(bonsPoints, 0);
@@ -4123,20 +3261,9 @@
             achatLyceeSection.style.display = lyceesUnlocked ? 'block' : 'none';
             achatCollegeSection.style.display = collegesUnlocked ? 'block' : 'none';
 
-            // Prestige Menu Unlocks (NEW)
-            achatLicenceSection.style.display = prestigeUnlocked ? 'block' : 'none';
-            achatMaster1Section.style.display = licenceCount.gte(1) ? 'block' : 'none';
-            achatMaster2Section.style.display = master1Count.gte(1) ? 'block' : 'none';
-            achatDoctoratSection.style.display = master2Count.gte(1) && prestigeCount.gte(10) ? 'block' : 'none';
-            achatPostDoctoratSection.style.display = doctoratCount.gte(1) && prestigeCount.gte(30) && ascensionCount.gte(100) ? 'block' : 'none';
-
-
             // Resource Display Toggle (NEW)
             mainResourcesDisplay.style.display = minimizeResourcesActive ? 'none' : 'flex';
             minimalistResources.style.display = minimizeResourcesActive ? 'flex' : 'none';
-
-            // Statistics button visibility (NEW)
-            statisticsSetting.style.display = newSettingsUnlocked ? 'block' : 'none';
         }
 
         // --- Quests Logic ---
@@ -4361,51 +3488,61 @@
             }
         }
 
-        // --- Statistics Display Logic (NEW) ---
-        function updateStatisticsDisplay() {
-            // Basic Resources
-            statBonsPoints.textContent = formatNumber(bonsPoints, 0);
-            statTotalBps.textContent = formatNumber(totalBonsPointsParSeconde, 1);
-            statImages.textContent = formatNumber(images, 0);
-            statProfesseurs.textContent = formatNumber(nombreProfesseurs, 0);
-            statEleves.textContent = formatNumber(nombreEleves, 0);
-            statClasses.textContent = formatNumber(nombreClasses, 0);
+        // --- Multiplier Buttons Event Listeners ---
+        setMultiplierX1.addEventListener('click', () => { currentPurchaseMultiplier = 1; updateMultiplierButtons(); saveGameState(); });
+        setMultiplierX10.addEventListener('click', () => { currentPurchaseMultiplier = 10; updateMultiplierButtons(); saveGameState(); });
+        setMultiplierX100.addEventListener('click', () => { currentPurchaseMultiplier = 100; updateMultiplierButtons(); saveGameState(); });
+        setMultiplierXMax.addEventListener('click', () => { currentPurchaseMultiplier = 'max'; updateMultiplierButtons(); saveGameState(); });
 
-            // Ascension Progress
-            statAscensionPoints.textContent = formatNumber(ascensionPoints, 0);
-            statTotalPAEarned.textContent = formatNumber(totalPAEarned, 0);
-            statAscensionCount.textContent = formatNumber(ascensionCount, 0);
-            statEcoles.textContent = formatNumber(schoolCount, 0);
-            statLycees.textContent = formatNumber(nombreLycees, 0);
-            statColleges.textContent = formatNumber(nombreColleges, 0);
+        // --- Game Loop (Interval) ---
+        setInterval(() => {
+            let productionThisTick = totalBonsPointsParSeconde.mul(new Decimal(1).add(skillEffects.offlineProductionIncrease)).div(10); // Apply offline production bonus
+            bonsPoints = bonsPoints.add(productionThisTick);
 
-            // Prestige Progress
-            statPrestigePoints.textContent = formatNumber(prestigePoints, 0);
-            statPrestigeCount.textContent = formatNumber(prestigeCount, 0);
-            statLicences.textContent = formatNumber(licenceCount, 0);
-            statMaster1.textContent = formatNumber(master1Count, 0);
-            statMaster2.textContent = formatNumber(master2Count, 0);
-            statDoctorat.textContent = formatNumber(doctoratCount, 0);
-            statPostDoctorat.textContent = formatNumber(postDoctoratCount, 0);
+            if (Date.now() % 1000 < 100) {
+                if (autoEleveActive) performPurchase('eleve', 'max', true);
+                if (autoClasseActive) performPurchase('classe', 'max', true);
+                if (autoImageActive) performPurchase('image', 'max', true);
+                if (autoProfesseurActive) performPurchase('professeur', 'max', true);
+            }
 
-            // Multipliers & Bonuses
-            statAscensionBonus.textContent = `${formatNumber(calculateAscensionBonus(ascensionCount, totalPAEarned), 2)}x`;
-            statPaMultiplierQuests.textContent = `${formatNumber(paMultiplierFromQuests.sub(1).mul(100), 1)}%`;
-            statPaMultiplierSkills.textContent = `${formatNumber(skillEffects.paGainMultiplier.mul(100), 1)}%`;
-            statPaMultiplierPrestigeTotal.textContent = `${formatNumber(prestigePaGlobalMultiplier.sub(1).mul(100), 2)}%`; // Global Prestige PA Multiplier
-            statBpsMultiplierSkills.textContent = `${formatNumber(skillEffects.totalBpsMultiplierBonus.mul(100), 1)}%`;
-            statBpsMultiplierAchieve.textContent = `${formatNumber(permanentBpsBonusFromAchievements.mul(100), 1)}%`;
-            statBpsMultiplierPrestigeGlobal.textContent = `${formatNumber(prestigeBpsGlobalMultiplier.sub(1).mul(100), 2)}%`; // Global Prestige BPS Multiplier
+            if (Date.now() % 200 < 100) {
+                mettreAJourAffichageBonsPoints();
+                updateButtonStates();
+            }
+            if (Date.now() % 1000 < 100) {
+                checkUnlockConditions();
+                mettreAJourAffichage();
+                saveGameState();
+            }
+        }, 100);
 
-            statEleveCostReduction.textContent = `${formatNumber(skillEffects.eleveCostReduction.mul(100), 1)}%`;
-            statClasseCostReduction.textContent = `${formatNumber(skillEffects.classeCostReduction.mul(100), 1)}%`;
-            statImageCostReduction.textContent = `${formatNumber(skillEffects.imageCostReduction.mul(100), 1)}%`;
-            statProfesseurCostReduction.textContent = `${formatNumber(skillEffects.professeurCostReduction.mul(100), 1)}%`;
-            statEcoleCostReduction.textContent = `${formatNumber(skillEffects.ecoleCostReduction.mul(100), 1)}%`;
-            statAllCostReduction.textContent = `${formatNumber(skillEffects.allCostReduction.mul(100), 1)}%`;
+        // --- Initialisation ---
+        window.onload = function () {
+            loadGameState();
+            coutEleveActuel = calculateNextEleveCost(nombreEleves);
+            coutClasseActuel = calculateNextClasseCost(nombreClasses);
+            coutEcoleActuel = calculateNextEcoleCost(schoolCount);
+            coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
+            coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
 
-            statEleveBpsBonus.textContent = `${formatNumber(skillEffects.eleveBpsBonus, 1)} BP/s`;
-            statClasseBpsBonus.textContent = `${formatNumber(skillEffects.classeBpsBonus, 1)} BP/s`;
-            statOfflineProduction.textContent = `${formatNumber(skillEffects.offlineProductionIncrease.mul(100), 1)}%`;
+            applyAllSkillEffects();
+            mettreAJourAffichage();
+            checkUnlockConditions();
+            updateMultiplierButtons();
+            updateAutomationButtonStates();
+            updateSettingsButtonStates();
+            renderQuests();
+            renderAchievements();
+            renderSkillsMenu(); // Initial render of the new skill menu
 
-            statLicenceProfEffect.textContent = `${formatNumber(licenceCount.mul(0.01).m
+            // Ensure the Studies tab is open by default on load
+            openTab(studiesMainContainer);
+
+            showNotification("Bienvenue dans le Cahier d'Étude Avancé ! Prêt à apprendre ?", 5000);
+        };
+
+    </script>
+</body>
+
+</html>
