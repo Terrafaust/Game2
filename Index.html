@@ -2310,7 +2310,53 @@
         }
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
-        
+        // --- Cost Calculation Functions ---
+        function calculateNextEleveCost(currentCount) {
+            let cost = coutEleveBase.mul(coutEleveGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.eleveCostReduction).sub(skillEffects.allCostReduction)));
+            return Decimal.max(1, cost.floor());
+        }
+        function calculateNextClasseCost(currentCount) {
+            let cost = coutClasseBase.mul(coutClasseGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.classeCostReduction).sub(skillEffects.allCostReduction)));
+            return Decimal.max(1, cost.floor());
+        }
+        function calculateNextImageCost(currentCount) {
+            let cost = coutImageBase.mul(coutImageGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction).sub(skillEffects.allCostReduction)));
+            return Decimal.max(1, cost.floor());
+        }
+        function calculateNextProfessorCost(currentCount) {
+            let nextProfIndex = currentCount.add(1);
+            let cost;
+            if (nextProfIndex.lt(fibonacciSequence.length)) {
+                cost = fibonacciSequence[nextProfIndex.toNumber()];
+            } else {
+                cost = fibonacciSequence[fibonacciSequence.length - 1].mul(new Decimal(1.6).pow(nextProfIndex.sub(fibonacciSequence.length - 1)));
+            }
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.professeurCostReduction).sub(skillEffects.allCostReduction)));
+            return Decimal.max(1, cost.floor());
+        }
+        function calculateNextEcoleCost(currentCount) {
+            let cost = coutEcoleBase.mul(coutEcoleGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.ecoleCostReduction).sub(skillEffects.allCostReduction)));
+            return cost.floor();
+        }
+        function calculateNextLyceeCost(currentCount) {
+            let cost = coutLyceeBase.mul(coutLyceeGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.allCostReduction)));
+            return cost.floor();
+        }
+        function calculateNextCollegeCost(currentCount) {
+            let cost = coutCollegeBase.mul(coutCollegeGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.allCostReduction)));
+            return cost.floor();
+        }
+        function calculateAutomationCost(baseCost) {
+            let cost = new Decimal(baseCost);
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.automationCostReduction).sub(skillEffects.allCostReduction)));
+            return cost.floor();
+        }
         function updateButtonStates() {
             // Eleve
             coutEleveActuel = calculateNextEleveCost(nombreEleves);
@@ -3166,54 +3212,6 @@
                 notification.style.transform = 'translateX(100%)';
                 setTimeout(() => notification.remove(), 500);
             }, duration - 500);
-        }
-
-        // --- Cost Calculation Functions ---
-        function calculateNextEleveCost(currentCount) {
-            let cost = coutEleveBase.mul(coutEleveGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.eleveCostReduction).sub(skillEffects.allCostReduction)));
-            return Decimal.max(1, cost.floor());
-        }
-        function calculateNextClasseCost(currentCount) {
-            let cost = coutClasseBase.mul(coutClasseGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.classeCostReduction).sub(skillEffects.allCostReduction)));
-            return Decimal.max(1, cost.floor());
-        }
-        function calculateNextImageCost(currentCount) {
-            let cost = coutImageBase.mul(coutImageGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction).sub(skillEffects.allCostReduction)));
-            return Decimal.max(1, cost.floor());
-        }
-        function calculateNextProfessorCost(currentCount) {
-            let nextProfIndex = currentCount.add(1);
-            let cost;
-            if (nextProfIndex.lt(fibonacciSequence.length)) {
-                cost = fibonacciSequence[nextProfIndex.toNumber()];
-            } else {
-                cost = fibonacciSequence[fibonacciSequence.length - 1].mul(new Decimal(1.6).pow(nextProfIndex.sub(fibonacciSequence.length - 1)));
-            }
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.professeurCostReduction).sub(skillEffects.allCostReduction)));
-            return Decimal.max(1, cost.floor());
-        }
-        function calculateNextEcoleCost(currentCount) {
-            let cost = coutEcoleBase.mul(coutEcoleGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.ecoleCostReduction).sub(skillEffects.allCostReduction)));
-            return cost.floor();
-        }
-        function calculateNextLyceeCost(currentCount) {
-            let cost = coutLyceeBase.mul(coutLyceeGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.allCostReduction)));
-            return cost.floor();
-        }
-        function calculateNextCollegeCost(currentCount) {
-            let cost = coutCollegeBase.mul(coutCollegeGrowth.pow(currentCount));
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.allCostReduction)));
-            return cost.floor();
-        }
-        function calculateAutomationCost(baseCost) {
-            let cost = new Decimal(baseCost);
-            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.automationCostReduction).sub(skillEffects.allCostReduction)));
-            return cost.floor();
         }
         function buyEleve() {
             performPurchase('eleve', currentPurchaseMultiplier);
