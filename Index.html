@@ -31,21 +31,21 @@
             color: #f0f0f0;
         }
 
-        body.dark-theme #side-menu,
-        body.dark-theme .container,
-        body.dark-theme #skillsContainer,
-        body.dark-theme #settingsContainer,
-        body.dark-theme #ascensionMenuContainer,
-        body.dark-theme #automationMainContainer,
-        body.dark-theme #studiesMainContainer,
-        body.dark-theme #questsContainer,
-        body.dark-theme #achievementsContainer,
-        body.dark-theme .modal-content,
-        body.dark-theme .achat-section,
-        body.dark-theme .achievement-tooltip,
-        body.dark-theme .skill-panel,
-        body.dark-theme .skill-tier,
-        body.dark-theme .skill-box,
+        body.dark-theme #side-menu,\
+        body.dark-theme .container,\
+        body.dark-theme #skillsContainer,\
+        body.dark-theme #settingsContainer,\
+        body.dark-theme #ascensionMenuContainer,\
+        body.dark-theme #automationMainContainer, /* Updated to new automation container */\
+        body.dark-theme #studiesMainContainer, /* New */\
+        body.dark-theme #questsContainer,\
+        body.dark-theme #achievementsContainer,\
+        body.dark-theme .modal-content,\
+        body.dark-theme .achat-section,\
+        body.dark-theme .achievement-tooltip,\
+        body.dark-theme .skill-panel,\
+        body.dark-theme .skill-tier,\
+        body.dark-theme .skill-box,\
         body.dark-theme #prestigeMenuContainer {
             background-color: #3a3a3a;
             border-color: #555;
@@ -57,21 +57,21 @@
             border-color: #3a3a3a transparent transparent transparent;
         }
 
-        body.dark-theme #side-menu h2,
-        body.dark-theme #skillsContainer h1,
-        body.dark-theme #settingsContainer h1,
-        body.dark-theme #ascensionMenuContainer h1,
-        body.dark-theme #automationMainContainer h1,
-        body.dark-theme #studiesMainContainer h1,
-        body.dark-theme #questsContainer h1,
-        body.dark-theme #achievementsContainer h1,
-        body.dark-theme .skill-panel h2,
-        body.dark-theme .skill-tier h3,
-        body.dark-theme #automationSection h3,
-        body.dark-theme #activeQuests h3,
-        body.dark-theme #completedQuests h3,
-        body.dark-theme .quest-item h4,
-        body.dark-theme .quest-item p,
+        body.dark-theme #side-menu h2,\
+        body.dark-theme #skillsContainer h1,\
+        body.dark-theme #settingsContainer h1,\
+        body.dark-theme #ascensionMenuContainer h1,\
+        body.dark-theme #automationMainContainer h1,\
+        body.dark-theme #studiesMainContainer h1,\
+        body.dark-theme #questsContainer h1,\
+        body.dark-theme #achievementsContainer h1,\
+        body.dark-theme .skill-panel h2,\
+        body.dark-theme .skill-tier h3,\
+        body.dark-theme #automationSection h3,\
+        body.dark-theme #activeQuests h3,\
+        body.dark-theme #completedQuests h3,\
+        body.dark-theme .quest-item h4,\
+        body.dark-theme .quest-item p,\
         body.dark-theme #prestigeMenuContainer h1 {
             color: #76FF03;
         }
@@ -105,6 +105,10 @@
 
         body.dark-theme .eleves-color {
             color: #f0f0f0;
+        }
+
+        body.dark-theme .professeurs-color {
+            color: #f0f0f0; /* Ensure professor count is visible in dark mode */
         }
 
         body.dark-theme .ascension-points-color {
@@ -332,6 +336,11 @@
             font-weight: bold;
         }
 
+        .professeurs-color {
+            color: #333;
+            font-weight: bold;
+        }
+
         .ascension-points-color {
             color: #007BFF;
             font-weight: bold;
@@ -352,10 +361,10 @@
             font-weight: bold;
         }
 
-        #confirmResetModal,
-        #confirmAscensionModal,
-        #confirmSkillResetModal,
-        #achievementDetailModal,
+        #confirmResetModal,\
+        #confirmAscensionModal,\
+        #confirmSkillResetModal,\
+        #achievementDetailModal,\
         #confirmPrestigeModal {
             position: fixed;
             top: 0;
@@ -418,13 +427,13 @@
             color: #007BFF;
         }
 
-        #skillsContainer,
-        #settingsContainer,
-        #ascensionMenuContainer,
-        #automationMainContainer,
-        #studiesMainContainer,
-        #questsContainer,
-        #achievementsContainer,
+        #skillsContainer,\
+        #settingsContainer,\
+        #ascensionMenuContainer,\
+        #automationMainContainer,\
+        #studiesMainContainer,\
+        #questsContainer,\
+        #achievementsContainer,\
         #prestigeMenuContainer {
             width: 100%;
             max-width: 1200px;
@@ -438,13 +447,13 @@
             align-items: center;
         }
 
-        #skillsContainer h1,
-        #settingsContainer h1,
-        #ascensionMenuContainer h1,
-        #automationMainContainer h1,
-        #studiesMainContainer h1,
-        #questsContainer h1,
-        #achievementsContainer h1,
+        #skillsContainer h1,\
+        #settingsContainer h1,\
+        #ascensionMenuContainer h1,\
+        #automationMainContainer h1,\
+        #studiesMainContainer h1,\
+        #questsContainer h1,\
+        #achievementsContainer h1,\
         #prestigeMenuContainer h1 {
             color: #4CAF50;
             margin-bottom: 20px;
@@ -788,8 +797,8 @@
             border-color: #76FF03;
         }
 
-        body.dark-theme .achievement-item.unlocked h4,
-        body.dark-theme .achievement-item.unlocked p,
+        body.dark-theme .achievement-item.unlocked h4,\
+        body.dark-theme .achievement-item.unlocked p,\
         body.dark-theme .achievement-item.unlocked .reward {
             color: #e8f5e9;
         }
@@ -883,7 +892,7 @@
             border-color: #76FF03;
         }
 
-        body.dark-theme .quest-item.completed p,
+        body.dark-theme .quest-item.completed p,\
         body.dark-theme .quest-item.completed .info-color {
             color: #e8f5e9;
         }
@@ -1127,7 +1136,7 @@
                                 : <span id="classesBpsPerItem">0</span></p>
                         </div>
                     </div>
-                    <div class="studies-sections-group">
+                    <div class="studies-section-group">
                         <div id="achatProfesseurSection" class="achat-section" style="display: none;">
                             <button id="acheterProfesseurButton">Professeur : <span class="images-color">2
                                     I</span></button>
@@ -1832,7 +1841,8 @@
                 studiesSkillPoints: studiesSkillPoints.toString(),
                 ascensionSkillPoints: ascensionSkillPoints.toString(),
                 prestigeSkillPoints: prestigeSkillPoints.toString(), // NEW
-                studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
+                // These flags are now derived from ascension/prestige counts in loadGameState
+                // studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
                 elevesUnlocked, classesUnlocked, imagesUnlocked, professeursUnlocked,
                 skillsButtonUnlocked, settingsButtonUnlocked, ascensionUnlocked,
                 prestigeUnlocked, // NEW
@@ -1886,15 +1896,17 @@
                 ascensionSkillPoints = new Decimal(gameState.ascensionSkillPoints || 0);
                 prestigeSkillPoints = new Decimal(gameState.prestigeSkillPoints || 0); // NEW
 
-                studiesSkillsUnlocked = gameState.studiesSkillsUnlocked || false;
-                ascensionSkillsUnlocked = gameState.ascensionSkillsUnlocked || false;
-                prestigeSkillsUnlocked = gameState.prestigeSkillsUnlocked || false; // NEW
+                // Derive skill panel unlock status from game progress
+                skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
+                studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is unlocked if skills button is
+                ascensionSkillsUnlocked = gameState.ascensionSkillsUnlocked || ascensionCount.gte(1); // Unlocked if previously or if ascension count >= 1
+                prestigeSkillsUnlocked = gameState.prestigeSkillsUnlocked || prestigeCount.gte(1); // Unlocked if previously or if prestige count >= 1
+
 
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
                 imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
                 professeursUnlocked = gameState.professeursUnlocked || false;
-                skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
                 settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
                 ascensionUnlocked = gameState.ascensionUnlocked || false;
                 prestigeUnlocked = gameState.prestigeUnlocked || false; // NEW
@@ -2454,6 +2466,11 @@
             const ascensionPanel = document.getElementById('ascensionPanel');
             const prestigePanel = document.getElementById('prestigePanel');
 
+            // Ensure visibility flags are up-to-date based on game state
+            studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is always unlocked if skills button is
+            ascensionSkillsUnlocked = ascensionCount.gte(1); // Ascension panel is unlocked if at least 1 ascension
+            prestigeSkillsUnlocked = prestigeCount.gte(1); // Prestige panel is unlocked if at least 1 prestige
+
             studiesPanel.style.display = studiesSkillsUnlocked ? 'flex' : 'none';
             ascensionPanel.style.display = ascensionSkillsUnlocked ? 'flex' : 'none';
             prestigePanel.style.display = prestigeSkillsUnlocked ? 'flex' : 'none';
@@ -2712,6 +2729,11 @@
             }
             // Apply PA multiplier from quests and skills
             paGained = paGained.mul(paMultiplierFromQuests.add(skillEffects.paGainMultiplier).add(1));
+
+            // NEW: Apply Prestige bonus to PA gain
+            let prestigeBonusMultiplier = new Decimal(1).add(prestigeCount.mul(0.5));
+            paGained = paGained.mul(prestigeBonusMultiplier);
+
             return paGained.floor();
         }
 
@@ -2762,10 +2784,6 @@
             const currentTotalPAEarned = totalPAEarned;
             const currentAscensionCount = ascensionCount;
 
-            // Reset PA and total PA
-            ascensionPoints = new Decimal(0);
-            totalPAEarned = new Decimal(0);
-
             // Perform a hard reset, which also resets soft reset items
             hardResetGame(); // This will reset everything, including ascension stats
 
@@ -2775,10 +2793,16 @@
             prestigeCount = prestigeCount.add(1);
             prestigeSkillPoints = prestigeSkillPoints.add(1); // Gain 1 prestige skill point
 
+            // Ensure skill panels remain unlocked if they were
+            skillsButtonUnlocked = true; // Always true after first skill unlock
+            studiesSkillsUnlocked = true; // Always true if skills button is unlocked
+            ascensionSkillsUnlocked = true; // Stays true after first ascension
+
             showNotification(`Prestige réussi ! +${formatNumber(ppGained, 0)} PP !`);
 
             applyAllSkillEffects(); // Reapply effects after reset
             updateSectionVisibility();
+            renderSkillsMenu(); // Update skill menu after prestige
             openTab(studiesMainContainer); // Default to studies tab after reset
             mettreAJourAffichage();
             saveGameState();
@@ -2854,7 +2878,7 @@
         confirmResetYesBtn.addEventListener('click', () => {
             if (images.gte(10)) {
                 images = images.sub(10);
-                hardResetGame();
+                hardResetGame(true); // Pass true to indicate a full hard reset, including prestige
                 showNotification("Progression réinitialisée !");
             }
             confirmResetModal.style.display = 'none';
@@ -2971,8 +2995,13 @@
                 studiesSkillPoints = studiesSkillPoints.add(Object.values(studiesSkillLevels).reduce((sum, level) => sum + level, 0));
                 studiesSkillLevels = {};
 
+                // Ensure studies and ascension skill panels remain unlocked
+                studiesSkillsUnlocked = true;
+                ascensionSkillsUnlocked = true; // Ensure this stays true after ascension
+
                 showNotification(`Ascension réussie ! +${formatNumber(paGained, 0)} PA !`);
                 softResetGame();
+                renderSkillsMenu(); // Update skill menu after ascension
             } else {
                 showNotification("Pas assez de gains pour Ascensionner (besoin d'au moins 1 professeur).");
             }
@@ -3028,7 +3057,7 @@
             saveGameState();
         }
 
-        function hardResetGame() {
+        function hardResetGame(fullReset = false) {
             // Reset all game variables to their initial states, except for prestige-related ones if this is called by prestige.
             // If called by the "Reset Progression" button, then prestige also resets.
             bonsPoints = new Decimal(0);
@@ -3076,9 +3105,20 @@
             studiesSkillLevels = {};
             ascensionSkillLevels = {};
             prestigeSkillLevels = {};
+
+            // If it's a full hard reset (from settings), reset prestige as well
+            if (fullReset) {
+                prestigePoints = new Decimal(0);
+                prestigeCount = new Decimal(0);
+                prestigeUnlocked = false;
+            }
+
+            // Skill panel unlock flags are derived, so they'll be false unless conditions are met again
+            skillsButtonUnlocked = false;
             studiesSkillsUnlocked = false;
             ascensionSkillsUnlocked = false;
             prestigeSkillsUnlocked = false;
+
 
             // Reset secret skill clicks
             secretSkillClicks = 0;
@@ -3136,6 +3176,7 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesSpan.textContent = formatNumber(images, 0);
+            professeurs.textContent = formatNumber(nombreProfesseurs, 0); // Correctly update the main professeurs display
             professeursDisplayQuantity.textContent = formatNumber(nombreProfesseurs, 0); // NEW: Update the quantity display
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
