@@ -1032,7 +1032,7 @@
             color: #DA70D6;
         }
 
-        #minimalistResources .professeurs-color {
+        #minimalistResources .professeur-color {
             color: #f0f0f0;
         }
 
@@ -1070,8 +1070,8 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="professeursDisplay" style="display: none;">Professeurs : <span id="professeurs"
-                                class="professeurs-color">0</span></p>
+                        <p id="professeurDisplay" style="display: none;">professeur : <span id="professeur"
+                                class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
                         <p id="ascensionBonusDisplay" style="display: none;">Bonus d'Ascension : <span
@@ -1131,7 +1131,7 @@
                         <div id="achatProfesseurSection" class="achat-section" style="display: none;">
                             <button id="acheterProfesseurButton">Professeur : <span class="images-color">2
                                     I</span></button>
-                            <p>Quantité : <span id="professeursDisplayQuantity">0</span></p>
+                            <p>Quantité : <span id="professeurDisplayQuantity">0</span></p>
                         </div>
                         <div id="achatImageSection" class="achat-section" style="display: none;">
                             <button id="acheterImageButton">Image : <span class="bons-points-color">1 k BP</span></button>
@@ -1150,7 +1150,7 @@
                             PA</span></button>
                     <button id="autoImageButton">Automatiser Images : <span class="ascension-points-color">10 k
                             PA</span></button>
-                    <button id="autoProfesseurButton">Automatiser Professeurs : <span
+                    <button id="autoProfesseurButton">Automatiser Professeur : <span
                             class="ascension-points-color">100 k PA</span></button>
                 </div>
             </div>
@@ -1289,8 +1289,8 @@
                 class="bons-points-color">0</span></p>
         <p class="resource-line"><span class="resource-label">I:</span> <span id="miniImages"
                 class="images-color">0</span></p>
-        <p class="resource-line"><span class="resource-label">P:</span> <span id="miniProfesseurs"
-                class="professeurs-color">0</span></p>
+        <p class="resource-line"><span class="resource-label">P:</span> <span id="miniProfesseur"
+                class="professeur-color">0</span></p>
         <hr style="width: 80%; border-color: #777; margin: 5px 0;">
         <p class="resource-line"><span class="resource-label">PA:</span> <span id="miniAscensionPoints"
                 class="ascension-points-color">0</span></p>
@@ -1322,13 +1322,13 @@
                 <p><span class="info-color">C'est votre première Ascension !</span> Voici ce que cela implique :</p>
                 <ul>
                     <li><span class="warning-color">Vous perdrez toutes vos constructions</span> (élèves, classes,
-                        professeurs).</li>
+                        professeur).</li>
                     <li><span class="warning-color">Vous perdrez toutes les compétences</span> débloquées.</li>
                     <li><span class="warning-color">Vous perdrez toutes vos monnaies</span> (Bons Points, Images).</li>
                     <li><span class="info-color">Vous conserverez la monnaie <span
                                 class="ascension-points-color">PA (Points d'Ascension)</span>.</span></li>
                     <li><span class="info-color">Vous obtiendrez <span id="paGainedDisplay"
-                                class="ascension-points-color">X PA</span> basés sur le nombre de professeurs que vous
+                                class="ascension-points-color">X PA</span> basés sur le nombre de professeur que vous
                             avez au moment de l'Ascension.</span></li>
                     <li><span class="info-color">Vous débloquerez un <span
                                 class="ascension-points-color">Bonus d'Ascension</span> permanent</span> qui augmentera
@@ -1419,7 +1419,7 @@
         let coutClasseActuel;
 
         let images = new Decimal(0);
-        let nombreProfesseurs = new Decimal(0);
+        let nombreProfesseur = new Decimal(0);
         let multiplicateurProfesseur = new Decimal(1);
         let ascensionPoints = new Decimal(0);
         let ascensionCount = new Decimal(0);
@@ -1466,7 +1466,7 @@
         let elevesUnlocked = false;
         let classesUnlocked = false;
         let imagesUnlocked = false; // This will now control permanent visibility of image count
-        let professeursUnlocked = false;
+        let professeurUnlocked = false;
         let skillsButtonUnlocked = false;
         let settingsButtonUnlocked = false;
         let ascensionMenuButtonUnlocked = false;
@@ -1587,7 +1587,7 @@
                 id: 'Q8_Professeurs_10',
                 name: 'Équipe Pédagogique',
                 description: 'Avoir 10 professeurs.',
-                targetType: 'nombreProfesseurs',
+                targetType: 'nombreProfesseur',
                 targetValue: new Decimal(10),
                 reward: { type: 'ascensionPoints', value: new Decimal(10) },
                 rewardMessage: 'Gagné 10 Points d\'Ascension !',
@@ -1649,10 +1649,10 @@
             { id: 'ACH_CLASSES_1K', name: 'Université', description: 'Avoir 1 000 Salles de classe.', condition: () => nombreClasses.gte(1000), rewardText: 'Coût des classes -5%', rewardFn: () => { skillEffects.classeCostReduction = skillEffects.classeCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
 
             // Professeur Achievements
-            { id: 'ACH_PROFS_1', name: 'Premier Professeur', description: 'Avoir 1 Professeur.', condition: () => nombreProfesseurs.gte(1), rewardText: 'Coût des professeurs -0.1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PROFS_5', name: 'Conseil Pédagogique', description: 'Avoir 5 Professeurs.', condition: () => nombreProfesseurs.gte(5), rewardText: 'Coût des professeurs -1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PROFS_10', name: 'Corps Enseignant', description: 'Avoir 10 Professeurs.', condition: () => nombreProfesseurs.gte(10), rewardText: 'Coût des professeurs -2%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
-            { id: 'ACH_PROFS_20', name: 'Académie', description: 'Avoir 20 Professeurs.', condition: () => nombreProfesseurs.gte(20), rewardText: 'Coût des professeurs -5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_1', name: 'Premier Professeur', description: 'Avoir 1 Professeur.', condition: () => nombreProfesseur.gte(1), rewardText: 'Coût des professeurs -0.1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.001); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_5', name: 'Conseil Pédagogique', description: 'Avoir 5 Professeurs.', condition: () => nombreProfesseur.gte(5), rewardText: 'Coût des professeurs -1%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.01); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_10', name: 'Corps Enseignant', description: 'Avoir 10 Professeurs.', condition: () => nombreProfesseur.gte(10), rewardText: 'Coût des professeurs -2%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.02); applyAllSkillEffects(); }, unlocked: false },
+            { id: 'ACH_PROFS_20', name: 'Académie', description: 'Avoir 20 Professeurs.', condition: () => nombreProfesseur.gte(20), rewardText: 'Coût des professeurs -5%', rewardFn: () => { skillEffects.professeurCostReduction = skillEffects.professeurCostReduction.add(0.05); applyAllSkillEffects(); }, unlocked: false },
 
             // Ecole Achievements
             { id: 'ACH_ECOLE_1', name: 'Première École', description: 'Acheter 1 École.', condition: () => schoolCount.gte(1), rewardText: '+0.1% PA/s', rewardFn: () => { permanentBpsBonusFromAchievements = permanentBpsBonusFromAchievements.add(0.001); }, unlocked: false },
@@ -1702,8 +1702,8 @@
         const nombreClassesSpan = document.getElementById('nombreClasses');
         const imagesSpan = document.getElementById('imagesCount');
         const imagesDisplay = document.getElementById('imagesDisplay');
-        const professeursDisplayQuantity = document.getElementById('professeursDisplayQuantity'); // NEW: For quantity display
-        const professeursDisplay = document.getElementById('professeursDisplay'); // NEW: For resource display
+        const professeurDisplayQuantity = document.getElementById('professeurDisplayQuantity'); // NEW: For quantity display
+        const professeurDisplay = document.getElementById('professeurDisplay'); // NEW: For resource display
         const etudierButton = document.getElementById('etudierButton');
         const acheterEleveButton = document.getElementById('acheterEleveButton');
         const acheterClasseButton = document.getElementById('acheterClasseButton');
@@ -1810,7 +1810,7 @@
         // NEW: Minimalist Resources elements
         const miniBonsPoints = document.getElementById('miniBonsPoints');
         const miniImages = document.getElementById('miniImages');
-        const miniProfesseurs = document.getElementById('miniProfesseurs');
+        const miniProfesseur = document.getElementById('miniProfesseur');
         const miniAscensionPoints = document.getElementById('miniAscensionPoints');
         const miniAscensionCount = document.getElementById('miniAscensionCount');
         const miniPrestigePoints = document.getElementById('miniPrestigePoints');
@@ -1824,7 +1824,7 @@
                 nombreEleves: nombreEleves.toString(),
                 nombreClasses: nombreClasses.toString(),
                 images: images.toString(),
-                nombreProfesseurs: nombreProfesseurs.toString(),
+                nombreProfesseur: nombreProfesseur.toString(),
                 multiplicateurProfesseur: multiplicateurProfesseur.toString(),
                 studiesSkillLevels: studiesSkillLevels,
                 ascensionSkillLevels: ascensionSkillLevels,
@@ -1833,7 +1833,7 @@
                 ascensionSkillPoints: ascensionSkillPoints.toString(),
                 prestigeSkillPoints: prestigeSkillPoints.toString(), // NEW
                 studiesSkillsUnlocked, ascensionSkillsUnlocked, prestigeSkillsUnlocked,
-                elevesUnlocked, classesUnlocked, imagesUnlocked, professeursUnlocked,
+                elevesUnlocked, classesUnlocked, imagesUnlocked, professeurUnlocked,
                 skillsButtonUnlocked, settingsButtonUnlocked, ascensionUnlocked,
                 prestigeUnlocked, // NEW
                 bonusPointsClaimed: bonusPointsClaimed,
@@ -1875,7 +1875,7 @@
                 nombreEleves = new Decimal(gameState.nombreEleves || 0);
                 nombreClasses = new Decimal(gameState.nombreClasses || 0);
                 images = new Decimal(gameState.images || 0);
-                nombreProfesseurs = new Decimal(gameState.nombreProfesseurs || 0);
+                nombreProfesseur = new Decimal(gameState.nombreProfesseur || 0);
                 multiplicateurProfesseur = new Decimal(gameState.multiplicateurProfesseur || 1);
 
                 studiesSkillLevels = gameState.studiesSkillLevels || {};
@@ -1893,7 +1893,7 @@
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
                 imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
-                professeursUnlocked = gameState.professeursUnlocked || false;
+                professeurUnlocked = gameState.professeurUnlocked || false;
                 skillsButtonUnlocked = gameState.skillsButtonUnlocked || false;
                 settingsButtonUnlocked = gameState.settingsButtonUnlocked || false;
                 ascensionUnlocked = gameState.ascensionUnlocked || false;
@@ -2245,14 +2245,14 @@
             acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
 
             // Professeur
-            let professeurCost = calculateNextProfessorCost(nombreProfesseurs);
+            let professeurCost = calculateNextProfessorCost(nombreProfesseur);
             acheterProfesseurButton.innerHTML = `Professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
             // Ascension Button in Menu
-            ascensionButtonInMenu.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseurs.gte(1));
-            ascensionButtonInMenu.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseurs.lt(1));
+            ascensionButtonInMenu.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseur.gte(1));
+            ascensionButtonInMenu.classList.toggle('cannot-afford', !ascensionUnlocked || nombreProfesseur.lt(1));
             // Ascension Menu Button in Side Menu
             ascensionMenuButton.classList.toggle('can-afford', ascensionUnlocked);
             ascensionMenuButton.classList.toggle('cannot-afford', !ascensionUnlocked);
@@ -2376,7 +2376,7 @@
                 case 'eleve': currentResource = bonsPoints; costFunction = (count) => calculateNextEleveCost(count); itemCounter = nombreEleves; resourceToDecrement = 'bonsPoints'; break;
                 case 'classe': currentResource = bonsPoints; costFunction = (count) => calculateNextClasseCost(count); itemCounter = nombreClasses; resourceToDecrement = 'bonsPoints'; break;
                 case 'image': currentResource = bonsPoints; costFunction = () => calculateNextImageCost(); itemCounter = images; resourceToDecrement = 'bonsPoints'; break;
-                case 'professeur': currentResource = images; costFunction = (count) => calculateNextProfessorCost(count); itemCounter = nombreProfesseurs; resourceToDecrement = 'images'; break;
+                case 'professeur': currentResource = images; costFunction = (count) => calculateNextProfessorCost(count); itemCounter = nombreProfesseur; resourceToDecrement = 'images'; break;
                 case 'ecole': currentResource = ascensionPoints; costFunction = (count) => calculateNextEcoleCost(count); itemCounter = schoolCount; resourceToDecrement = 'ascensionPoints'; break;
                 case 'lycee': currentResource = ascensionPoints; costFunction = (count) => calculateNextLyceeCost(count); itemCounter = nombreLycees; resourceToDecrement = 'ascensionPoints'; break;
                 case 'college': currentResource = ascensionPoints; costFunction = (count) => calculateNextCollegeCost(count); itemCounter = nombreColleges; resourceToDecrement = 'ascensionPoints'; break;
@@ -2426,8 +2426,8 @@
                     case 'classe': nombreClasses = nombreClasses.add(quantityToBuy); break;
                     case 'image': images = images.add(quantityToBuy); break;
                     case 'professeur':
-                        nombreProfesseurs = nombreProfesseurs.add(quantityToBuy);
-                        multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
+                        nombreProfesseur = nombreProfesseur.add(quantityToBuy);
+                        multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseur));
                         studiesSkillPoints = studiesSkillPoints.add(quantityToBuy); // Gain studies skill points
                         break;
                     case 'ecole': schoolCount = schoolCount.add(quantityToBuy); break;
@@ -2559,8 +2559,8 @@
                 if (secretSkillClicks >= 15) {
                     ascensionPoints = ascensionPoints.add(1000);
                     ascensionCount = ascensionCount.add(10);
-                    nombreProfesseurs = nombreProfesseurs.add(50);
-                    multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseurs));
+                    nombreProfesseur = nombreProfesseur.add(50);
+                    multiplicateurProfesseur = new Decimal(1).add(new Decimal(0.25).mul(nombreProfesseur));
                     totalPAEarned = totalPAEarned.add(1000); // Add to total PA earned for achievements/stats
                     showNotification("Révélation secrète ! +1000 PA, +10 Ascensions, +50 Professeurs !", 7000);
                     secretSkillClicks = 0; // Reset for potential future use or just mark as done
@@ -2679,7 +2679,7 @@
 
         // --- Ascension Logic ---
         ascensionButtonInMenu.addEventListener('click', () => { // Changed to ascensionButtonInMenu
-            if (nombreProfesseurs.lt(1)) {
+            if (nombreProfesseur.lt(1)) {
                 showNotification("Il faut au moins 1 professeur pour Ascensionner.");
                 return;
             }
@@ -2701,12 +2701,12 @@
 
         function calculatePAGained() {
             let paGained = new Decimal(0);
-            if (nombreProfesseurs.gt(0)) {
-                if (nombreProfesseurs.lt(prime_PA.length)) {
-                    paGained = prime_PA[nombreProfesseurs.toNumber()];
+            if (nombreProfesseur.gt(0)) {
+                if (nombreProfesseur.lt(prime_PA.length)) {
+                    paGained = prime_PA[nombreProfesseur.toNumber()];
                 } else {
                     let basePrimePA = prime_PA[prime_PA.length - 1];
-                    let additionalProfs = nombreProfesseurs.sub(prime_PA.length - 1);
+                    let additionalProfs = nombreProfesseur.sub(prime_PA.length - 1);
                     paGained = basePrimePA.add(additionalProfs.mul(1));
                 }
             }
@@ -2983,14 +2983,14 @@
             nombreEleves = new Decimal(0);
             nombreClasses = new Decimal(0);
             images = new Decimal(0);
-            nombreProfesseurs = new Decimal(0);
+            nombreProfesseur = new Decimal(0);
             multiplicateurProfesseur = new Decimal(1);
             totalClicks = new Decimal(0); // Reset clicks on soft reset
 
             // Keep imagesUnlocked true if it was ever true (controlled by its own condition)
             elevesUnlocked = false;
             classesUnlocked = false;
-            professeursUnlocked = false;
+            professeurUnlocked = false;
             // skillsButtonUnlocked and settingsButtonUnlocked are kept based on game state, not reset
 
             // Studies skill levels are reset and points returned in performAscension
@@ -3035,7 +3035,7 @@
             nombreEleves = new Decimal(0);
             nombreClasses = new Decimal(0);
             images = new Decimal(0);
-            nombreProfesseurs = new Decimal(0);
+            nombreProfesseur = new Decimal(0);
             multiplicateurProfesseur = new Decimal(1);
             totalClicks = new Decimal(0);
 
@@ -3136,7 +3136,7 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesSpan.textContent = formatNumber(images, 0);
-            professeursDisplayQuantity.textContent = formatNumber(nombreProfesseurs, 0); // NEW: Update the quantity display
+            professeurDisplayQuantity.textContent = formatNumber(nombreProfesseur, 0); // NEW: Update the quantity display
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
             ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
             totalPAEarnedSpanInline.textContent = formatNumber(totalPAEarned, 0);
@@ -3165,7 +3165,7 @@
             }
             // Image display logic: always show if imagesUnlocked is true
             imagesDisplay.style.display = imagesUnlocked ? 'block' : 'none';
-            professeursDisplay.style.display = professeursUnlocked ? 'block' : 'none'; // NEW: Show/hide professor resource line
+            professeurDisplay.style.display = professeurUnlocked ? 'block' : 'none'; // NEW: Show/hide professor resource line
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none'; // NEW
@@ -3179,7 +3179,7 @@
             // Update minimalist resources display (NEW)
             miniBonsPoints.textContent = formatNumber(bonsPoints, 0);
             miniImages.textContent = formatNumber(images, 0);
-            miniProfesseurs.textContent = formatNumber(nombreProfesseurs, 0);
+            miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
             miniAscensionPoints.textContent = formatNumber(ascensionPoints, 0);
             miniAscensionCount.textContent = formatNumber(ascensionCount, 0);
             miniPrestigePoints.textContent = formatNumber(prestigePoints, 0);
@@ -3210,10 +3210,10 @@
             if (!classesUnlocked && nombreEleves.gte(10)) { classesUnlocked = true; showNotification("Achat Classes débloqué !"); }
             // Changed image unlock condition
             if (!imagesUnlocked && bonsPoints.gte(1000)) { imagesUnlocked = true; showNotification("Achat Images débloqué !"); }
-            if (!professeursUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseurs))) { professeursUnlocked = true; showNotification("Achat Professeurs débloqué !"); }
-            if (!skillsButtonUnlocked && nombreProfesseurs.gte(1)) { skillsButtonUnlocked = true; studiesSkillsUnlocked = true; showNotification("Menu Compétences débloqué !"); } // Unlock studies skills panel
+            if (!professeurUnlocked && images.gte(calculateNextProfessorCost(nombreProfesseur))) { professeurUnlocked = true; showNotification("Achat Professeurs débloqué !"); }
+            if (!skillsButtonUnlocked && nombreProfesseur.gte(1)) { skillsButtonUnlocked = true; studiesSkillsUnlocked = true; showNotification("Menu Compétences débloqué !"); } // Unlock studies skills panel
             if (!settingsButtonUnlocked && images.gte(5)) { settingsButtonUnlocked = true; showNotification("Menu Paramètres débloqué !"); }
-            if (!ascensionUnlocked && nombreProfesseurs.gte(1)) { ascensionUnlocked = true; showNotification("Option Ascension débloquée !"); }
+            if (!ascensionUnlocked && nombreProfesseur.gte(1)) { ascensionUnlocked = true; showNotification("Option Ascension débloquée !"); }
             if (!ascensionMenuButtonUnlocked && ascensionCount.gte(1)) { ascensionMenuButtonUnlocked = true; }
             if (!ascensionSkillsUnlocked && ascensionCount.gte(1)) { ascensionSkillsUnlocked = true; showNotification("Section Compétences d'Ascension débloquée !"); }
             if (!prestigeSkillsUnlocked && prestigeCount.gte(1)) { prestigeSkillsUnlocked = true; showNotification("Section Compétences de Prestige débloquée !"); } // NEW: Prestige skill panel unlock
@@ -3252,7 +3252,7 @@
             achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
             achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
             achatImageSection.style.display = imagesUnlocked ? 'block' : 'none';
-            achatProfesseurSection.style.display = professeursUnlocked ? 'block' : 'none';
+            achatProfesseurSection.style.display = professeurUnlocked ? 'block' : 'none';
 
             // Automation section elements
             // automationSection visibility is controlled by automationMainContainer's display
@@ -3296,7 +3296,7 @@
                             break;
                         case 'nombreEleves': currentProgress = nombreEleves; break;
                         case 'nombreClasses': currentProgress = nombreClasses; break;
-                        case 'nombreProfesseurs': currentProgress = nombreProfesseurs; break;
+                        case 'nombreProfesseur': currentProgress = nombreProfesseur; break;
                         case 'bonsPoints': currentProgress = bonsPoints; break;
                         case 'totalClicks': currentProgress = totalClicks; break;
                     }
@@ -3351,7 +3351,7 @@
                             break;
                         case 'nombreEleves': currentVal = nombreEleves; break;
                         case 'nombreClasses': currentVal = nombreClasses; break;
-                        case 'nombreProfesseurs': currentVal = nombreProfesseurs; break;
+                        case 'nombreProfesseur': currentVal = nombreProfesseur; break;
                         case 'bonsPoints': currentVal = bonsPoints; break;
                         case 'totalClicks': currentVal = totalClicks; break;
                     }
