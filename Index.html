@@ -1765,7 +1765,6 @@
         let totalBonsPointsParSeconde = new Decimal(0);
         let nombreEleves = new Decimal(0);
         const nombreElevesSpan = document.getElementById('nombreEleves'); // Corrected ID
-        nombreElevesSpan.textContent = formatNumber(nombreEleve, 0);
         let coutEleveBase = new Decimal(10); // Changed to let
         const coutEleveGrowth = new Decimal(1.14); // Slightly reduced
         let coutEleveActuel;
@@ -2041,6 +2040,9 @@
         const miniPrestigePoints = document.getElementById('miniPrestigePoints');
         const miniPrestigeCount = document.getElementById('miniPrestigeCount');
 
+
+        // Idk why put here but why not
+        nombreElevesSpan.textContent = formatNumber(nombreEleve, 0);
         // Stats Modal Professeur Pluralization
         const statsProfesseurPluralSSpan = document.getElementById('statsProfesseurPluralS');
 
