@@ -2994,7 +2994,7 @@
             return Decimal.max(1, cost.floor());
         }
         function calculateNextImageCost(currentCount) {
-            let cost = coutImageBase.mul(coutEleveGrowth.pow(currentCount));
+            let cost = coutImageBase.mul(coutImageGrowth.pow(currentCount));
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction).sub(skillEffects.allCostReduction)));
             return Decimal.max(1, cost.floor());
         }
