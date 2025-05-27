@@ -4742,12 +4742,6 @@
                 saveGameState();
             }
         }
-        function checkUnlockConditions(); {
-            updateMultiplierButtons();
-            updateAutomationButtonStates();
-            updateSettingsButtonStates();
-            renderQuests();
-        }
         // --- Multiplier Buttons Event Listeners (Delegated) ---
         multiplierButtonsContainer.addEventListener('click', (event) => {
             const button = event.target.closest('.multiplier-button');
