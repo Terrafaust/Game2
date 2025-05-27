@@ -2244,6 +2244,93 @@
 
 
         // --- Save and Load Functions ---
+        function updateDisplay() {
+            updateCachedMultipliers(); // Ensure multipliers are updated before calculating total BPS
+            calculateTotalBPS(); // Ensure totalBonsPointsParSeconde is up-to-date
+
+            // Update main resource displays
+            bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
+            totalBpsInlineSpan.textContent = formatNumber(totalBonsPointsParSeconde, 1);
+            elevesBpsPerItemSpan.textContent = formatNumber(bonsPointsParSecondeEleves, 1);
+            classesBpsPerItemSpan.textContent = formatNumber(bonsPointsParSecondeClasses, 1);
+            nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
+            nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
+            imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
+
+            updateProfesseurDisplay(); // Call new function for professor display
+
+            // Update other displays
+            ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
+            ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
+            totalPAEarnedSpanInline.textContent = formatNumber(totalPAEarned, 0);
+            ascensionMenuPACountSpan.textContent = formatNumber(ascensionPoints, 0);
+            nombreEcolesSpan.textContent = formatNumber(schoolCount, 0);
+
+            prestigePointsCountSpan.textContent = formatNumber(prestigePoints, 0);
+            prestigeCountSpan.textContent = formatNumber(prestigeCount, 0);
+            prestigeMenuPPCountSpan.textContent = formatNumber(prestigePoints, 0);
+
+            nombreLicencesSpan.textContent = formatNumber(nombreLicences, 0);
+            licenceBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'licence').getEffectValue().sub(1).mul(100), 2)}%`;
+
+            nombreMaster1Span.textContent = formatNumber(nombreMaster1, 0);
+            master1BoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'master1').getEffectValue().sub(1).mul(100), 2)}%`;
+
+            nombreMaster2Span.textContent = formatNumber(nombreMaster2, 0);
+            master2BoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'master2').getEffectValue().sub(1).mul(100), 2)}%`;
+
+            nombreDoctoratSpan.textContent = formatNumber(nombreDoctorat, 0);
+            doctoratBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'doctorat').getEffectValue().sub(1).mul(100), 2)}%`;
+            doctoratMinClassesSpan.textContent = formatNumber(prestigePurchasesData.find(p => p.id === 'doctorat').getMinClasses(), 0);
+
+            nombrePostDoctoratSpan.textContent = formatNumber(nombrePostDoctorat, 0);
+            postDoctoratBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'postDoctorat').getEffectValue().sub(1).mul(100), 2)}%`;
+
+
+            let displayedSchoolSystemMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier).add(schoolCount.mul(skillEffects.schoolMultiplierIncrease)))
+                .mul(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))))
+                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))));
+            ecoleMultiplierSpan.textContent = `${formatNumber(displayedSchoolSystemMultiplier, 2)}x`;
+            nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
+            lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))), 2)}x`;
+            nombreCollegesDisplay.textContent = formatNumber(nombreColleges, 0);
+            collegeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))), 2)}x`;
+
+            ascensionBonusDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
+            if (ascensionCount.gt(0)) {
+                let ascMult = new Decimal(1);
+                if (totalPAEarned.gt(0)) ascMult = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
+                else ascMult = new Decimal(1).add(ascensionCount.mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
+                ascensionBonusValueSpan.textContent = `${formatNumber(ascMult, 2)}x`;
+            }
+            // Image display logic: always show if imagesUnlocked is true
+            imagesDisplayP.style.display = imagesUnlocked ? 'block' : 'none';
+            professeurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
+            currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
+            ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
+            prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none';
+            prestigeCountDisplay.style.display = prestigeCount.gt(0) ? 'block' : 'none';
+
+            // Update the display for click bonus in the title
+            const dynamicBonusForDisplay = totalBonsPointsParSeconde.mul(0.1);
+            const currentClickValueForDisplay = skillEffects.clickBonsPointsBonus.add(dynamicBonusForDisplay);
+            clickBonsPointsDisplay.textContent = `+${formatNumber(currentClickValueForDisplay, bonsPoints.lt(1000) ? 1 : 0)} BP`;
+
+
+            // Update minimalist resources display
+            miniBonsPoints.textContent = formatNumber(bonsPoints, 0);
+            miniImages.textContent = formatNumber(images, 0);
+            miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
+            miniAscensionPoints.textContent = formatNumber(ascensionPoints, 0);
+            miniAscensionCount.textContent = formatNumber(ascensionCount, 0);
+            miniPrestigePoints.textContent = formatNumber(prestigePoints, 0);
+            miniPrestigeCount.textContent = formatNumber(prestigeCount, 0);
+
+
+            updateButtonStates();
+            renderSkillsMenu(); // Update skill points display
+        }
+        
         function saveGameState() {
             const gameState = {
                 bonsPoints: bonsPoints.toString(),
@@ -2301,7 +2388,118 @@
             };
             localStorage.setItem('incrementalGameSave', JSON.stringify(gameState));
         }
+        // --- Quests Logic ---
+        function renderQuests() {
+            if (!questsUnlocked) return;
+            questsListDiv.innerHTML = '';
+            completedQuestsListDiv.innerHTML = '';
+            let questCompletedThisCycle = false;
 
+            questsData.forEach(quest => {
+                if (!quest.completed) {
+                    let currentProgress = new Decimal(0);
+                    switch (quest.targetType) {
+                        case 'schoolCount': currentProgress = schoolCount; break;
+                        case 'lyceeCount': currentProgress = nombreLycees; break;
+                        case 'totalPAEarned': currentProgress = totalPAEarned; break;
+                        case 'ascensionCount': currentProgress = ascensionCount; break;
+                        case 'unlockedSkillsCount':
+                            let totalUnlockedSkills = 0;
+                            for (const panelType in skillsData) {
+                                for (const skill of skillsData[panelType]) {
+                                    if ((panelType === 'studies' && studiesSkillLevels[skill.id] > 0) ||
+                                        (panelType === 'ascension' && ascensionSkillLevels[skill.id] > 0) ||
+                                        (panelType === 'prestige' && prestigeSkillLevels[skill.id] > 0)) {
+                                        totalUnlockedSkills++;
+                                    }
+                                }
+                            }
+                            currentProgress = new Decimal(totalUnlockedSkills);
+                            break;
+                        case 'nombreEleves': currentProgress = nombreEleves; break;
+                        case 'nombreClasses': currentProgress = nombreClasses; break;
+                        case 'nombreProfesseur': currentProgress = nombreProfesseur; break;
+                        case 'bonsPoints': currentProgress = bonsPoints; break;
+                        case 'totalClicks': currentProgress = totalClicks; break;
+                    }
+
+                    if (currentProgress.gte(quest.targetValue)) {
+                        quest.completed = true;
+                        questCompletedThisCycle = true;
+                        showNotification(`Quête terminée : ${quest.name} ! ${quest.rewardMessage || ''}`);
+                        if (quest.reward.type === 'unlockPurchase') {
+                            if (quest.reward.itemId === 'lycee') lyceesUnlocked = true;
+                            if (quest.reward.itemId === 'college') collegesUnlocked = true;
+                        } else if (quest.reward.type === 'paMultiplier') {
+                            paMultiplierFromQuests = paMultiplierFromQuests.add(quest.reward.value);
+                        } else if (quest.reward.type === 'bonsPoints') {
+                            bonsPoints = bonsPoints.add(quest.reward.value);
+                        } else if (quest.reward.type === 'images') {
+                            images = images.add(quest.reward.value);
+                        } else if (quest.reward.type === 'ascensionPoints') {
+                            ascensionPoints = ascensionPoints.add(quest.reward.value);
+                        } else if (quest.reward.type === 'totalBpsMultiplier') {
+                            skillEffects.totalBpsMultiplierBonus = skillEffects.totalBpsMultiplierBonus.add(quest.reward.value);
+                            applyAllSkillEffects();
+                        } else if (quest.reward.type === 'clickBonsPointsBonus') {
+                            skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(quest.reward.value);
+                            applyAllSkillEffects();
+                        }
+                    }
+                }
+
+                const questDiv = document.createElement('div');
+                questDiv.classList.add('achat-section', 'quest-item');
+                let progressText = '';
+                if (!quest.completed) {
+                    let currentVal = new Decimal(0);
+                    switch (quest.targetType) {
+                        case 'schoolCount': currentVal = schoolCount; break;
+                        case 'lyceeCount': currentVal = nombreLycees; break;
+                        case 'totalPAEarned': currentVal = totalPAEarned; break;
+                        case 'ascensionCount': currentVal = ascensionCount; break;
+                        case 'unlockedSkillsCount':
+                            let totalUnlockedSkills = 0;
+                            for (const panelType in skillsData) {
+                                for (const skill of skillsData[panelType]) {
+                                    if ((panelType === 'studies' && studiesSkillLevels[skill.id] > 0) ||
+                                        (panelType === 'ascension' && ascensionSkillLevels[skill.id] > 0) ||
+                                        (panelType === 'prestige' && prestigeSkillLevels[skill.id] > 0)) {
+                                        totalUnlockedSkills++;
+                                    }
+                                }
+                            }
+                            currentVal = new Decimal(totalUnlockedSkills);
+                            break;
+                        case 'nombreEleves': currentVal = nombreEleves; break;
+                        case 'nombreClasses': currentVal = nombreClasses; break;
+                        case 'nombreProfesseur': currentVal = nombreProfesseur; break;
+                        case 'bonsPoints': currentVal = bonsPoints; break;
+                        case 'totalClicks': currentVal = totalClicks; break;
+                    }
+                    progressText = `<p>Progrès : <span class="info-color">${formatNumber(currentVal, 0)}/${formatNumber(quest.targetValue, 0)}</span></p>`;
+                }
+
+                questDiv.innerHTML = `
+                    <h4>${quest.name}</h4>
+                    <p>${quest.description}</p>
+                    ${progressText}
+                    ${quest.completed ? `<p class="info-color">Récompense : ${quest.rewardMessage || 'Terminée !'}</p>` : ''}
+                `;
+                if (quest.completed) {
+                    questDiv.classList.add('completed');
+                    completedQuestsListDiv.appendChild(questDiv);
+                } else if (quest.unlocked) {
+                    questsListDiv.appendChild(questDiv);
+                }
+            });
+            if (questCompletedThisCycle) {
+                updateSectionVisibility();
+                updateDisplay(); // Use the consolidated updateDisplay
+                saveGameState();
+            }
+        }
+        //Loading game feature
         function loadGameState() {
             const savedState = localStorage.getItem('incrementalGameSave');
             if (savedState) {
@@ -4556,94 +4754,6 @@
             statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
         }
 
-
-        function updateDisplay() {
-            updateCachedMultipliers(); // Ensure multipliers are updated before calculating total BPS
-            calculateTotalBPS(); // Ensure totalBonsPointsParSeconde is up-to-date
-
-            // Update main resource displays
-            bonsPointsSpan.textContent = formatNumber(bonsPoints, 0);
-            totalBpsInlineSpan.textContent = formatNumber(totalBonsPointsParSeconde, 1);
-            elevesBpsPerItemSpan.textContent = formatNumber(bonsPointsParSecondeEleves, 1);
-            classesBpsPerItemSpan.textContent = formatNumber(bonsPointsParSecondeClasses, 1);
-            nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
-            nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
-            imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
-
-            updateProfesseurDisplay(); // Call new function for professor display
-
-            // Update other displays
-            ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
-            ascensionCountSpan.textContent = formatNumber(ascensionCount, 0);
-            totalPAEarnedSpanInline.textContent = formatNumber(totalPAEarned, 0);
-            ascensionMenuPACountSpan.textContent = formatNumber(ascensionPoints, 0);
-            nombreEcolesSpan.textContent = formatNumber(schoolCount, 0);
-
-            prestigePointsCountSpan.textContent = formatNumber(prestigePoints, 0);
-            prestigeCountSpan.textContent = formatNumber(prestigeCount, 0);
-            prestigeMenuPPCountSpan.textContent = formatNumber(prestigePoints, 0);
-
-            nombreLicencesSpan.textContent = formatNumber(nombreLicences, 0);
-            licenceBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'licence').getEffectValue().sub(1).mul(100), 2)}%`;
-
-            nombreMaster1Span.textContent = formatNumber(nombreMaster1, 0);
-            master1BoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'master1').getEffectValue().sub(1).mul(100), 2)}%`;
-
-            nombreMaster2Span.textContent = formatNumber(nombreMaster2, 0);
-            master2BoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'master2').getEffectValue().sub(1).mul(100), 2)}%`;
-
-            nombreDoctoratSpan.textContent = formatNumber(nombreDoctorat, 0);
-            doctoratBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'doctorat').getEffectValue().sub(1).mul(100), 2)}%`;
-            doctoratMinClassesSpan.textContent = formatNumber(prestigePurchasesData.find(p => p.id === 'doctorat').getMinClasses(), 0);
-
-            nombrePostDoctoratSpan.textContent = formatNumber(nombrePostDoctorat, 0);
-            postDoctoratBoostSpan.textContent = `${formatNumber(prestigePurchasesData.find(p => p.id === 'postDoctorat').getEffectValue().sub(1).mul(100), 2)}%`;
-
-
-            let displayedSchoolSystemMultiplier = new Decimal(1).add(schoolCount.mul(schoolBaseMultiplier).add(schoolCount.mul(skillEffects.schoolMultiplierIncrease)))
-                .mul(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))))
-                .mul(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))));
-            ecoleMultiplierSpan.textContent = `${formatNumber(displayedSchoolSystemMultiplier, 2)}x`;
-            nombreLyceesDisplay.textContent = formatNumber(nombreLycees, 0);
-            lyceeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreLycees.mul(lyceeSchoolBoost).add(nombreLycees.mul(skillEffects.lyceeBoostIncrease))), 2)}x`;
-            nombreCollegesDisplay.textContent = formatNumber(nombreColleges, 0);
-            collegeMultiplierDisplay.textContent = `${formatNumber(new Decimal(1).add(nombreColleges.mul(collegeEcoleProductionBoost).add(nombreColleges.mul(skillEffects.collegeBoostIncrease))), 2)}x`;
-
-            ascensionBonusDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
-            if (ascensionCount.gt(0)) {
-                let ascMult = new Decimal(1);
-                if (totalPAEarned.gt(0)) ascMult = new Decimal(1).add(ascensionCount.mul(totalPAEarned).mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
-                else ascMult = new Decimal(1).add(ascensionCount.mul(0.01)).add(skillEffects.ascensionBonusIncrease.mul(ascensionCount));
-                ascensionBonusValueSpan.textContent = `${formatNumber(ascMult, 2)}x`;
-            }
-            // Image display logic: always show if imagesUnlocked is true
-            imagesDisplayP.style.display = imagesUnlocked ? 'block' : 'none';
-            professeurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
-            currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
-            ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
-            prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none';
-            prestigeCountDisplay.style.display = prestigeCount.gt(0) ? 'block' : 'none';
-
-            // Update the display for click bonus in the title
-            const dynamicBonusForDisplay = totalBonsPointsParSeconde.mul(0.1);
-            const currentClickValueForDisplay = skillEffects.clickBonsPointsBonus.add(dynamicBonusForDisplay);
-            clickBonsPointsDisplay.textContent = `+${formatNumber(currentClickValueForDisplay, bonsPoints.lt(1000) ? 1 : 0)} BP`;
-
-
-            // Update minimalist resources display
-            miniBonsPoints.textContent = formatNumber(bonsPoints, 0);
-            miniImages.textContent = formatNumber(images, 0);
-            miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
-            miniAscensionPoints.textContent = formatNumber(ascensionPoints, 0);
-            miniAscensionCount.textContent = formatNumber(ascensionCount, 0);
-            miniPrestigePoints.textContent = formatNumber(prestigePoints, 0);
-            miniPrestigeCount.textContent = formatNumber(prestigeCount, 0);
-
-
-            updateButtonStates();
-            renderSkillsMenu(); // Update skill points display
-        }
-
         // --- Unlock Conditions & Bonus Points ---
         const bonusPointThresholds = [
             { threshold: new Decimal('1e2'), amount: new Decimal('1e2') }, { threshold: new Decimal('1e3'), amount: new Decimal('5e2') },
@@ -4725,117 +4835,6 @@
 
             // Skill panels visibility is handled in renderSkillsMenu based on their respective 'unlocked' flags
             // No direct style.display manipulation here for skill panels
-        }
-        // --- Quests Logic ---
-        function renderQuests() {
-            if (!questsUnlocked) return;
-            questsListDiv.innerHTML = '';
-            completedQuestsListDiv.innerHTML = '';
-            let questCompletedThisCycle = false;
-
-            questsData.forEach(quest => {
-                if (!quest.completed) {
-                    let currentProgress = new Decimal(0);
-                    switch (quest.targetType) {
-                        case 'schoolCount': currentProgress = schoolCount; break;
-                        case 'lyceeCount': currentProgress = nombreLycees; break;
-                        case 'totalPAEarned': currentProgress = totalPAEarned; break;
-                        case 'ascensionCount': currentProgress = ascensionCount; break;
-                        case 'unlockedSkillsCount':
-                            let totalUnlockedSkills = 0;
-                            for (const panelType in skillsData) {
-                                for (const skill of skillsData[panelType]) {
-                                    if ((panelType === 'studies' && studiesSkillLevels[skill.id] > 0) ||
-                                        (panelType === 'ascension' && ascensionSkillLevels[skill.id] > 0) ||
-                                        (panelType === 'prestige' && prestigeSkillLevels[skill.id] > 0)) {
-                                        totalUnlockedSkills++;
-                                    }
-                                }
-                            }
-                            currentProgress = new Decimal(totalUnlockedSkills);
-                            break;
-                        case 'nombreEleves': currentProgress = nombreEleves; break;
-                        case 'nombreClasses': currentProgress = nombreClasses; break;
-                        case 'nombreProfesseur': currentProgress = nombreProfesseur; break;
-                        case 'bonsPoints': currentProgress = bonsPoints; break;
-                        case 'totalClicks': currentProgress = totalClicks; break;
-                    }
-
-                    if (currentProgress.gte(quest.targetValue)) {
-                        quest.completed = true;
-                        questCompletedThisCycle = true;
-                        showNotification(`Quête terminée : ${quest.name} ! ${quest.rewardMessage || ''}`);
-                        if (quest.reward.type === 'unlockPurchase') {
-                            if (quest.reward.itemId === 'lycee') lyceesUnlocked = true;
-                            if (quest.reward.itemId === 'college') collegesUnlocked = true;
-                        } else if (quest.reward.type === 'paMultiplier') {
-                            paMultiplierFromQuests = paMultiplierFromQuests.add(quest.reward.value);
-                        } else if (quest.reward.type === 'bonsPoints') {
-                            bonsPoints = bonsPoints.add(quest.reward.value);
-                        } else if (quest.reward.type === 'images') {
-                            images = images.add(quest.reward.value);
-                        } else if (quest.reward.type === 'ascensionPoints') {
-                            ascensionPoints = ascensionPoints.add(quest.reward.value);
-                        } else if (quest.reward.type === 'totalBpsMultiplier') {
-                            skillEffects.totalBpsMultiplierBonus = skillEffects.totalBpsMultiplierBonus.add(quest.reward.value);
-                            applyAllSkillEffects();
-                        } else if (quest.reward.type === 'clickBonsPointsBonus') {
-                            skillEffects.clickBonsPointsBonus = skillEffects.clickBonsPointsBonus.add(quest.reward.value);
-                            applyAllSkillEffects();
-                        }
-                    }
-                }
-
-                const questDiv = document.createElement('div');
-                questDiv.classList.add('achat-section', 'quest-item');
-                let progressText = '';
-                if (!quest.completed) {
-                    let currentVal = new Decimal(0);
-                    switch (quest.targetType) {
-                        case 'schoolCount': currentVal = schoolCount; break;
-                        case 'lyceeCount': currentVal = nombreLycees; break;
-                        case 'totalPAEarned': currentVal = totalPAEarned; break;
-                        case 'ascensionCount': currentVal = ascensionCount; break;
-                        case 'unlockedSkillsCount':
-                            let totalUnlockedSkills = 0;
-                            for (const panelType in skillsData) {
-                                for (const skill of skillsData[panelType]) {
-                                    if ((panelType === 'studies' && studiesSkillLevels[skill.id] > 0) ||
-                                        (panelType === 'ascension' && ascensionSkillLevels[skill.id] > 0) ||
-                                        (panelType === 'prestige' && prestigeSkillLevels[skill.id] > 0)) {
-                                        totalUnlockedSkills++;
-                                    }
-                                }
-                            }
-                            currentVal = new Decimal(totalUnlockedSkills);
-                            break;
-                        case 'nombreEleves': currentVal = nombreEleves; break;
-                        case 'nombreClasses': currentVal = nombreClasses; break;
-                        case 'nombreProfesseur': currentVal = nombreProfesseur; break;
-                        case 'bonsPoints': currentVal = bonsPoints; break;
-                        case 'totalClicks': currentVal = totalClicks; break;
-                    }
-                    progressText = `<p>Progrès : <span class="info-color">${formatNumber(currentVal, 0)}/${formatNumber(quest.targetValue, 0)}</span></p>`;
-                }
-
-                questDiv.innerHTML = `
-                    <h4>${quest.name}</h4>
-                    <p>${quest.description}</p>
-                    ${progressText}
-                    ${quest.completed ? `<p class="info-color">Récompense : ${quest.rewardMessage || 'Terminée !'}</p>` : ''}
-                `;
-                if (quest.completed) {
-                    questDiv.classList.add('completed');
-                    completedQuestsListDiv.appendChild(questDiv);
-                } else if (quest.unlocked) {
-                    questsListDiv.appendChild(questDiv);
-                }
-            });
-            if (questCompletedThisCycle) {
-                updateSectionVisibility();
-                updateDisplay(); // Use the consolidated updateDisplay
-                saveGameState();
-            }
         }
 
         // --- Achievements Logic ---
