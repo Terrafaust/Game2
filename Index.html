@@ -2284,7 +2284,7 @@
         
             if (currentPurchaseMultiplier === 'max') {
                 // Handle the 'max' case for display - you can't add 'max' to a number
-                displayProfCount = nombreProfesseur + " + Max"; // Or some other appropriate display
+                displayProfCount = nombreProfesseur + " + max"; // Or some other appropriate display
             } else if (currentPurchaseMultiplier instanceof Decimal) {
                 displayProfCount = nombreProfesseur.add(currentPurchaseMultiplier);
             } else {
@@ -2378,7 +2378,7 @@
 
             // Professeur
             let professeurCost = calculateNextProfessorCost(nombreProfesseur);
-            acheterProfesseurButton.innerHTML = `Professeur${nombreProfesseur.add(new Decimal(currentPurchaseMultiplier)).gt(1) ? 's' : ''} : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
+            acheterprofesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
