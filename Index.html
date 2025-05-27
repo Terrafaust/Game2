@@ -1757,17 +1757,6 @@
                 return num.toFixed(decimalPlaces);
             }
         }
-        document.addEventListener('DOMContentLoaded', function() {
-    const acheterProfesseurButton = document.getElementById('acheterProfesseurButton');
-    if (acheterProfesseurButton) {
-        // Your code that updates the button's innerHTML
-        acheterProfesseurButton.innerHTML = `Professeur${nombreProfesseur.add(new Decimal(currentPurchaseMultiplier)).gt(1) ? 's' : ''} : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
-        acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
-        acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
-    } else {
-        console.error("Error: acheterProfesseurButton element not found in the DOM.");
-    }
-});
 
         // Game variables - Initialized with Decimal(0) from break_infinity.js
         let professeurCost = new Decimal(0)
