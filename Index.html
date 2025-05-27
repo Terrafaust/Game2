@@ -2265,22 +2265,33 @@
             // Main display
             professeurDisplayValueSpan.textContent = formatNumber(nombreProfesseur, 0);
             professeurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
-
+        
             // Buy button
             professeurDisplayQuantitySpan.textContent = formatNumber(nombreProfesseur, 0);
-            // Ensure currentPurchaseMultiplier is a Decimal before adding to nombreProfesseur
-            const displayProfCount = nombreProfesseur.add(new Decimal(currentPurchaseMultiplier));
-            buyProfesseurPluralSSpan.textContent = displayProfCount.gt(1) ? 's' : '';
-
-
+            let displayProfCount;
+        
+            if (currentPurchaseMultiplier === 'max') {
+                // Handle the 'max' case for display - you can't add 'max' to a number
+                displayProfCount = nombreProfesseur + " + Max"; // Or some other appropriate display
+            } else if (currentPurchaseMultiplier instanceof Decimal) {
+                displayProfCount = nombreProfesseur.add(currentPurchaseMultiplier);
+            } else {
+                // Handle potential unexpected values of currentPurchaseMultiplier
+                console.error("Unexpected value for currentPurchaseMultiplier:", currentPurchaseMultiplier);
+                displayProfCount = nombreProfesseur; // Default to current count
+            }
+        
+            buyProfesseurPluralSSpan.textContent = (displayProfCount instanceof Decimal && displayProfCount.gt(1)) || (typeof displayProfCount === 'string' && displayProfCount.includes('+ Max')) ? 's' : '';
+        
+        
             // Automation button
             if (!autoProfesseurActive) { // Only update if not active (text changes when active)
                 autoProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
             }
-
+        
             // Minimalist display
             miniProfesseur.textContent = formatNumber(nombreProfesseur, 0);
-
+        
             // Stats display
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
             statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
