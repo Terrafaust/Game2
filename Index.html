@@ -1055,28 +1055,6 @@
             border-radius: 3px;
         }
 
-        .studies-sections-wrapper {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            width: 100%;
-        }
-
-        .studies-section-group {
-            display: flex;
-            justify-content: space-around;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-
-        .studies-section-group .achat-section {
-            flex: 1 1 calc(50% - 10px);
-            /* Two items per row */
-            min-width: 250px;
-            /* Ensure they don't get too small */
-            box-sizing: border-box;
-        }
-
         /* Minimalist Resources Panel */
         #minimalistResources {
             position: fixed;
@@ -3083,7 +3061,7 @@
             const prestigePanel = document.getElementById('prestigePanel');
 
             // Ensure visibility flags are up-to-date based on game state
-            studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is always unlocked if skills button is
+            studiesSkillsUnlocked = skillsButtonUnlocked; // Studies panel is unlocked if skills button is
             ascensionSkillsUnlocked = ascensionCount.gte(1); // Ascension panel is unlocked if at least 1 ascension
             prestigeSkillsUnlocked = prestigeCount.gte(1); // Prestige panel is unlocked if at least 1 prestige
 
@@ -3337,10 +3315,16 @@
         // NEW: Buy All Skills button logic
         buyAllSkillsButton.addEventListener('click', () => {
             let panelType;
-            if (studiesContainer.style.display === 'flex') panelType = 'studies';
-            else if (ascensionMenuContainer.style.display === 'flex') panelType = 'ascension';
-            else if (prestigeMenuContainer.style.display === 'flex') panelType = 'prestige';
-            else return; // No skill panel active
+            // Determine which skill panel is currently displayed
+            if (skillsContainer.style.display === 'flex') { // Check if skillsContainer is visible
+                if (studiesPanel.style.display === 'flex') panelType = 'studies';
+                else if (ascensionPanel.style.display === 'flex') panelType = 'ascension';
+                else if (prestigePanel.style.display === 'flex') panelType = 'prestige';
+                else return; // No skill panel active within skillsContainer
+            } else {
+                return; // Skills container is not open
+            }
+
 
             let skillLevels = {};
             let skillPoints = new Decimal(0);
@@ -3511,7 +3495,7 @@
         prestigeTitleButton.addEventListener('click', () => { // Changed to prestigeTitleButton
             // Capture current totalPAEarned and ascensionCount BEFORE reset
             const currentTotalPAEarnedForPP = totalPAEarned;
-            const currentAscensionCountForPP = ascensionCount;
+            const currentAscensionCountForPP = ascensionCount; // Correctly capture ascensionCount
 
             const ppGained = calculatePPGained(currentTotalPAEarnedForPP, currentAscensionCountForPP);
             ppGainedDisplay.textContent = `${formatNumber(ppGained, 0)} PP`;
@@ -3547,20 +3531,19 @@
         });
 
         function performPrestige() {
-            // Capture values BEFORE reset that should persist or be used for calculation
+            // Capture current values BEFORE reset that should persist or be used for calculation
             const currentAscensionCount = ascensionCount; // This persists
             const currentAscensionSkillPoints = ascensionSkillPoints; // This persists
             const currentPrestigeCount = prestigeCount; // This persists
 
             // Values for PP calculation (these will be reset by softResetGame)
             const currentTotalPAEarnedForPP = totalPAEarned;
-            const currentAscensionPointsForPP = ascensionPoints;
 
             // Perform soft reset first
             softResetGame();
 
             // Recalculate PP based on values *before* the soft reset
-            const ppGained = calculatePPGained(currentTotalPAEarnedForPP, currentAscensionCountForPP);
+            const ppGained = calculatePPGained(currentTotalPAEarnedForPP, currentAscensionCount); // FIX: Use currentAscensionCount here
             prestigePoints = prestigePoints.add(ppGained);
             prestigeCount = currentPrestigeCount.add(1); // Increment prestige count
             prestigeSkillPoints = prestigeSkillPoints.add(1); // Gain 1 prestige skill point
