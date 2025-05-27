@@ -2560,26 +2560,26 @@
             const savedState = localStorage.getItem('incrementalGameSave');
             if (savedState) {
                 const gameState = JSON.parse(savedState);
-
+        
                 bonsPoints = new Decimal(gameState.bonsPoints || 0);
                 nombreEleves = new Decimal(gameState.nombreEleves || 0);
                 nombreClasses = new Decimal(gameState.nombreClasses || 0);
                 images = new Decimal(gameState.images || 0);
                 nombreProfesseur = new Decimal(gameState.nombreProfesseur || 0);
                 multiplicateurProfesseur = new Decimal(gameState.multiplicateurProfesseur || 1);
-
+        
                 studiesSkillLevels = gameState.studiesSkillLevels || {};
                 ascensionSkillLevels = gameState.ascensionSkillLevels || {};
                 prestigeSkillLevels = gameState.prestigeSkillLevels || {}; // NEW
-
+        
                 studiesSkillPoints = new Decimal(gameState.studiesSkillPoints || 0);
                 ascensionSkillPoints = new Decimal(gameState.ascensionSkillPoints || 0);
                 prestigeSkillPoints = new Decimal(gameState.prestigeSkillPoints || 0); // NEW
-
+        
                 studiesSkillsUnlocked = gameState.studiesSkillsUnlocked || false;
                 ascensionSkillsUnlocked = gameState.ascensionSkillsUnlocked || false;
                 prestigeSkillsUnlocked = gameState.prestigeSkillsUnlocked || false; // NEW
-
+        
                 elevesUnlocked = gameState.elevesUnlocked || false;
                 classesUnlocked = gameState.classesUnlocked || false;
                 imagesUnlocked = gameState.imagesUnlocked || false; // Load imagesUnlocked state
@@ -2590,45 +2590,45 @@
                 prestigeUnlocked = gameState.prestigeUnlocked !== undefined ? gameState.prestigeUnlocked : false; // NEW
                 disablePrestigeWarning = gameState.disablePrestigeWarning !== undefined ? gameState.disablePrestigeWarning : false; // NEW
                 bonusPointsClaimed = gameState.bonusPointsClaimed || {};
-
+        
                 isDayTheme = gameState.isDayTheme !== undefined ? gameState.isDayTheme : true;
                 themeOptionUnlocked = gameState.themeOptionUnlocked || false;
                 offlineProgressEnabled = gameState.offlineProgressEnabled !== undefined ? gameState.offlineProgressEnabled : true;
                 minimizeResourcesActive = gameState.minimizeResourcesActive !== undefined ? gameState.minimizeResourcesActive : false; // NEW
                 statsButtonUnlocked = gameState.statsButtonUnlocked !== undefined ? gameState.statsButtonUnlocked : false; // NEW
-
-
+        
+        
                 ascensionPoints = new Decimal(gameState.ascensionPoints || 0);
                 ascensionCount = new Decimal(gameState.ascensionCount || 0);
                 totalPAEarned = new Decimal(gameState.totalPAEarned || 0);
                 disableAscensionWarning = gameState.disableAscensionWarning || false;
                 firstAscensionPerformed = gameState.firstAscensionPerformed || false;
-
+        
                 prestigePoints = new Decimal(gameState.prestigePoints || 0); // NEW
                 prestigeCount = new Decimal(gameState.prestigeCount || 0); // NEW
-
+        
                 schoolCount = new Decimal(gameState.schoolCount || 0);
-
+        
                 newSettingsUnlocked = gameState.newSettingsUnlocked || false;
                 multiPurchaseOptionUnlocked = gameState.multiPurchaseOptionUnlocked || false;
                 maxPurchaseOptionUnlocked = gameState.maxPurchaseOptionUnlocked || false;
                 currentPurchaseMultiplier = gameState.currentPurchaseMultiplier || 1;
-
+        
                 automationCategoryUnlocked = gameState.automationCategoryUnlocked || false;
                 autoEleveActive = gameState.autoEleveActive || false;
                 autoClasseActive = gameState.autoClasseActive || false;
                 autoImageActive = gameState.autoImageActive || false;
                 autoProfesseurActive = gameState.autoProfesseurActive || false;
-
+        
                 lyceesUnlocked = gameState.lyceesUnlocked || false;
                 nombreLycees = new Decimal(gameState.nombreLycees || 0);
-
+        
                 collegesUnlocked = gameState.collegesUnlocked || false;
                 nombreColleges = new Decimal(gameState.nombreColleges || 0);
-
+        
                 questsUnlocked = gameState.questsUnlocked || false;
                 achievementsButtonUnlocked = gameState.achievementsButtonUnlocked || false;
-
+        
                 if (gameState.questsData) {
                     gameState.questsData.forEach(savedQuest => {
                         const quest = questsData.find(q => q.id === savedQuest.id);
@@ -2643,28 +2643,28 @@
                 totalClicks = new Decimal(gameState.totalClicks || 0); // Load total clicks
                 paMultiplierFromQuests = new Decimal(gameState.paMultiplierFromQuests || 1); // Load PA multiplier
                 secretSkillClicks = gameState.secretSkillClicks || 0; // Load secret skill clicks
-
+        
                 // NEW Prestige Purchases
                 nombreLicences = new Decimal(gameState.nombreLicences || 0);
                 nombreMaster1 = new Decimal(gameState.nombreMaster1 || 0);
                 nombreMaster2 = new Decimal(gameState.nombreMaster2 || 0);
                 nombreDoctorat = new Decimal(gameState.nombreDoctorat || 0);
                 nombrePostDoctorat = new Decimal(gameState.nombrePostDoctorat || 0);
-
-
+        
+        
                 if (!isDayTheme) document.body.classList.add('dark-theme');
                 offlineProgressToggle.checked = offlineProgressEnabled;
                 disablePrestigeWarningCheckbox.checked = disablePrestigeWarning; // NEW
-
+        
                 if (gameState.lastSaveTime && offlineProgressEnabled) {
                     const elapsedTimeMs = Date.now() - gameState.lastSaveTime;
                     const maxOfflineTimeMs = 24 * 60 * 60 * 1000;
                     const effectiveOfflineTimeMs = Math.min(elapsedTimeMs, maxOfflineTimeMs);
-
+        
                     applyAllSkillEffects(); // Apply skill effects before calculating offline gain
                     updateCachedMultipliers(); // Ensure cached multipliers are up-to-date for offline gain
                     calculateTotalBPS(); // Recalculate BPS with updated multipliers
-
+        
                     if (totalBonsPointsParSeconde.gt(0) && effectiveOfflineTimeMs > 10000) {
                         const offlineGainPercentage = new Decimal(0.50).add(skillEffects.offlineProductionIncrease); // Apply skill effect to offline gain
                         const offlineGains = totalBonsPointsParSeconde.mul(effectiveOfflineTimeMs / 1000).mul(offlineGainPercentage);
@@ -2674,10 +2674,18 @@
                         }
                     }
                 }
-
+        
                 applyAllSkillEffects();
             }
-            updateSectionVisibility();
+        
+            // Ensure setMultiplierXmax exists before calling updateSectionVisibility
+            const setMultiplierXmaxElement = document.getElementById('setMultiplierXmax');
+            if (setMultiplierXmaxElement) {
+                updateSectionVisibility();
+            } else {
+                console.warn("Element with ID 'setMultiplierXmax' not found when loadGameState tried to call updateSectionVisibility.");
+            }
+        
             renderQuests();
             renderAchievements();
         }
