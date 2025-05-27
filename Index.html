@@ -1271,7 +1271,7 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="nombreProfesseurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
+                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
                                 class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
@@ -1758,7 +1758,7 @@
         }
 
         // Game variables - Initialized with Decimal(0) from break_infinity.js
-        let professeurCost = new Decimal(0)
+        let professeurCostReduction = new Decimal(0)
         let bonsPoints = new Decimal(0);
         let bonsPointsParSecondeEleves = new Decimal(0);
         let bonsPointsParSecondeClasses = new Decimal(0);
@@ -1768,6 +1768,8 @@
         let coutEleveBase = new Decimal(10); // Changed to let
         const coutEleveGrowth = new Decimal(1.14); // Slightly reduced
         let coutEleveActuel;
+        let coutImageActuel;
+        let coutProfesseurActuel;
         let nombreClasses = new Decimal(0);
         let coutClasseBase = new Decimal(100); // Changed to let
         const coutClasseGrowth = new Decimal(1.18); // Slightly reduced
@@ -1896,9 +1898,9 @@
         const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
         
         const nombreProfesseurSpan = document.getElementById('nombreProfesseur'); // Corrected ID for professor count
-        const nombreProfesseurDisplayP = document.getElementById('nombreProfessorDisplay'); // The <p> tag for professor resource (updated ID)
+        const professeurDisplayP = document.getElementById('professeurDisplay'); // The <p> tag for professor resource (updated ID)
 
-        const nombreProfesseurDisplayQuantitySpan = document.getElementById('nombreProfesseurDisplayQuantity');
+        const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
         const studiesTitleButton = document.getElementById('studiesTitleButton');
         const clickBonsPointsDisplay = document.getElementById('clickBonsPointsDisplay');
         const acheterEleveButton = document.getElementById('acheterEleveButton');
@@ -2333,10 +2335,10 @@
             acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
 
             // Professeur
-            let professeurCost = calculateNextProfessorCost(nombreProfesseur);
-            acheterProfesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
-            acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
-            acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
+            coutProfesseurActuel = calculateNextProfessorCost(nombreProfesseur)
+            acheterProfesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(coutProfesseurActuel, 0)} I</span>`;
+            acheterProfesseurButton.classList.toggle('can-afford', images.gte(coutProfesseurActuel));
+            acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(coutProfesseurActuel));
 
             // Ascension Title Button (now clickable)
             ascensionTitleButton.classList.toggle('can-afford', ascensionUnlocked && nombreProfesseur.gte(1));
@@ -2485,7 +2487,7 @@
             }
             // Image display logic: always show if imagesUnlocked is true
             imagesDisplayP.style.display = imagesUnlocked ? 'block' : 'none';
-            nombreProfesseurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
+            professeurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none';
