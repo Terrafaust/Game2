@@ -5001,42 +5001,12 @@
         });
 
         // --- Boucle de Jeu Principale ---
-        const gameTickInterval = 50; // 50 ms per tick (20 ticks per second)
+        const gameTickInterval = 100; // 50 ms per tick (20 ticks per second)
         const displayUpdateInterval = 1000; // 1000 ms (1 second)
         const saveCheckInterval = 5000; // 5000 ms (5 seconds)
 
         let lastDisplayUpdateTime = 0;
         let lastSaveCheckTime = 0;
-
-        setInterval(() => {
-            const now = Date.now();
-            const deltaTime = gameTickInterval / 1000; // Convert ms to seconds
-
-            // Production de Bons Points
-            bonsPoints = bonsPoints.plus(totalBonsPointsParSeconde.times(deltaTime)); // Use totalBonsPointsParSeconde
-            bonsPointsTotal = bonsPointsTotal.plus(totalBonsPointsParSeconde.times(deltaTime)); // Accumulate total
-
-            // Run automation
-            runAutomation();
-            checkQuestCompletion();
-            checkAchievements(); // Ensure achievements are checked frequently
-
-            // Update display less frequently for performance
-            if (now - lastDisplayUpdateTime >= displayUpdateInterval) {
-                updateDisplay();
-                renderSkillsMenu(); // Re-render skills to update unlock/affordability
-                renderQuests();
-                renderAchievements();
-                lastDisplayUpdateTime = now;
-            }
-
-            // Check unlocks and save less frequently
-            if (now - lastSaveCheckTime >= saveCheckInterval) {
-                checkUnlockConditions();
-                saveGameState();
-                lastSaveCheckTime = now;
-            }
-        }, gameTickInterval);
 
         // --- Initialisation ---
         window.onload = function () {
@@ -5064,8 +5034,36 @@
             openTab(studiesMainContainer);
 
             showNotification("Bienvenue dans le Cahier d'Étude Avancé ! Prêt à apprendre ?", 5000);
-        };
+            setInterval(() => {
+                const now = Date.now();
+                const deltaTime = gameTickInterval / 1000; // Convert ms to seconds
+
+                // Production de Bons Points
+                bonsPoints = bonsPoints.plus(totalBonsPointsParSeconde.times(deltaTime)); // Use totalBonsPointsParSeconde
+                bonsPointsTotal = bonsPointsTotal.plus(totalBonsPointsParSeconde.times(deltaTime)); // Accumulate total
+
+                // Run automation
+                runAutomation();
+                checkQuestCompletion();
+                checkAchievements(); // Ensure achievements are checked frequently
+
+                // Update display less frequently for performance
+                if (now - lastDisplayUpdateTime >= displayUpdateInterval) {
+                    updateDisplay();
+                    renderSkillsMenu(); // Re-render skills to update unlock/affordability
+                    renderQuests();
+                    renderAchievements();
+                    lastDisplayUpdateTime = now;
+                }
+
+                // Check unlocks and save less frequently
+                if (now - lastSaveCheckTime >= saveCheckInterval) {
+                    checkUnlockConditions();
+                    saveGameState();
+                    lastSaveCheckTime = now;
+                }
+            }, gameTickInterval);
+            };
     </script>
 </body>
-
 </html>
