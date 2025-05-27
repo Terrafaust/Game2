@@ -2363,7 +2363,7 @@
 
             // Professeur
             let professeurCost = calculateNextProfessorCost(nombreProfesseur);
-            acheterprofesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
+            acheterProfesseurButton.innerHTML = `professeur : <span class="images-color">${formatNumber(professeurCost, 0)} I</span>`;
             acheterProfesseurButton.classList.toggle('can-afford', images.gte(professeurCost));
             acheterProfesseurButton.classList.toggle('cannot-afford', images.lt(professeurCost));
 
