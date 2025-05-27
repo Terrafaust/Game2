@@ -1758,13 +1758,175 @@
             }
         }
 
+ // HTML Element Retrievals
+        const bonsPointsSpan = document.getElementById('bonsPoints');
+        const totalBpsInlineSpan = document.getElementById('totalBpsInline');
+        const elevesBpsPerItemSpan = document.getElementById('elevesBpsPerItem');
+        const classesBpsPerItemSpan = document.getElementById('classesBpsPerItem');
+        const nombreClassesSpan = document.getElementById('nombreClasses');
+        const imagesCountSpan = document.getElementById('imagesCount'); // Corrected ID for images count
+        const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
 
+        const professeurDisplayValueSpan = document.getElementById('professeurDisplayValue'); // Updated ID for professor value
+        const professeurPluralSSpan = document.getElementById('professeurPluralS'); // New span for plural 's'
+        const professeurDisplayP = document.getElementById('professeurDisplayP'); // The <p> tag for professor resource (updated ID)
+
+        const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
+        const buyProfesseurPluralSSpan = document.getElementById('buyProfesseurPluralS'); // New span for plural 's' on buy button
+
+        const studiesTitleButton = document.getElementById('studiesTitleButton');
+        const clickBonsPointsDisplay = document.getElementById('clickBonsPointsDisplay');
+        const acheterEleveButton = document.getElementById('acheterEleveButton');
+        const acheterClasseButton = document.getElementById('acheterClasseButton');
+        const acheterImageButton = document.getElementById('acheterImageButton');
+        const acheterProfesseurButton = document.getElementById('acheterProfesseurButton');
+        const studiesTabBtn = document.getElementById('studiesTabBtn'); // Corrected ID
+        const automationTabBtn = document.getElementById('automationTabBtn'); // Corrected ID
+        const skillsTabBtn = document.getElementById('skillsTabBtn'); // Corrected ID
+        const settingsTabBtn = document.getElementById('settingsTabBtn'); // Corrected ID
+        const ascensionTitleButton = document.getElementById('ascensionTitleButton');
+        const ascensionTabBtn = document.getElementById('ascensionTabBtn'); // Corrected ID
+        const prestigeTabBtn = document.getElementById('prestigeTabBtn'); // Corrected ID
+        const prestigeTitleButton = document.getElementById('prestigeTitleButton');
+        const questsTabBtn = document.getElementById('questsTabBtn'); // Corrected ID
+        const achievementsTabBtn = document.getElementById('achievementsTabBtn'); // Corrected ID
+        const resetSkillsButton = document.getElementById('resetSkillsButton');
+        const buyAllSkillsButton = document.getElementById('buyAllSkillsButton');
+        const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
+        const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
+        const ascensionCountSpan = document.getElementById('ascensionCountSpan');
+        const totalPAEarnedSpanInline = document.getElementById('totalPAEarnedSpanInline');
+        const ascensionBonusDisplay = document.getElementById('ascensionBonusDisplay');
+        const ascensionBonusValueSpan = document.getElementById('ascensionBonusValue');
+        const achatEleveSection = document.getElementById('achatEleveSection');
+        const achatClasseSection = document.getElementById('achatClasseSection');
+        const achatImageSection = document.getElementById('achatImageSection');
+        const achatProfesseurSection = document.getElementById('achatProfesseurSection');
+        const notificationsContainer = document.getElementById('notifications-container');
+        const studiesMainContainer = document.getElementById('studiesMainContainer');
+        const automationMainContainer = document.getElementById('automationMainContainer');
+        const skillsContainer = document.getElementById('skillsContainer');
+        const studiesSkillsGrid = document.getElementById('studiesSkillsGrid');
+        const ascensionSkillsGrid = document.getElementById('ascensionSkillsGrid');
+        const prestigeSkillsGrid = document.getElementById('prestigeSkillsGrid');
+        const studiesPointsCountSpan = document.getElementById('studiesPointsCount');
+        const ascensionSkillsPointsCountSpan = document.getElementById('ascensionSkillsPointsCount');
+        const prestigeSkillsPointsCountSpan = document.getElementById('prestigeSkillsPointsCount');
+        const settingsContainer = document.getElementById('settingsContainer');
+        const themeToggleButton = document.getElementById('themeToggleButton');
+        const resetProgressionButton = document.getElementById('resetProgressionButton');
+        const offlineProgressToggle = document.getElementById('offlineProgressToggle');
+        const offlineProgressSetting = document.getElementById('offlineProgressSetting');
+        const toggleMinimalistResourcesButton = document.getElementById('toggleMinimalistResources');
+        const minimizeResourcesSetting = document.getElementById('minimizeResourcesSetting');
+        const mainResourcesDisplay = document.getElementById('mainResourcesDisplay');
+        const minimalistResources = document.getElementById('minimalistResources');
+        const confirmResetModal = document.getElementById('confirmResetModal');
+        const confirmResetYesBtn = document.getElementById('confirmResetYes');
+        const confirmResetNoBtn = document.getElementById('confirmResetNo');
+        const confirmAscensionModal = document.getElementById('confirmAscensionModal');
+        const confirmAscensionYesBtn = document.getElementById('confirmAscensionYes');
+        const confirmAscensionNoBtn = document.getElementById('confirmAscensionNo');
+        const ascensionModalTitle = document.getElementById('ascensionModalTitle');
+        const firstAscensionWarningDiv = document.getElementById('firstAscensionWarning');
+        const subsequentAscensionWarningDiv = document.getElementById('subsequentAscensionWarning');
+        const disableAscensionWarningCheckboxAscension = document.getElementById('disableAscensionWarningCheckbox');
+        const paGainedDisplay = document.getElementById('paGainedDisplay');
+        const ascensionMenuContainer = document.getElementById('ascensionMenuContainer');
+        const ascensionMenuPACountSpan = document.getElementById('ascensionMenuPACount');
+        const acheterEcoleButton = document.getElementById('acheterEcoleButton');
+        const coutEcoleSpan = document.getElementById('coutEcole');
+        const nombreEcolesSpan = document.getElementById('nombreEcoles');
+        const ecoleMultiplierSpan = document.getElementById('ecoleMultiplier');
+        const unlockNewSettingsButton = document.getElementById('unlockNewSettingsButton');
+        const unlockMultiPurchaseButton = document.getElementById('unlockMultiPurchaseButton');
+        const unlockMaxPurchaseButton = document.getElementById('unlockMaxPurchaseButton');
+        const unlockAutomationCategoryButton = document.getElementById('unlockAutomationCategoryButton');
+        const achatLyceeSection = document.getElementById('achatLyceeSection');
+        const acheterLyceeButton = document.getElementById('acheterLyceeButton');
+        const nombreLyceesDisplay = document.getElementById('nombreLyceesDisplay');
+        const lyceeMultiplierDisplay = document.getElementById('lyceeMultiplierDisplay');
+        const achatCollegeSection = document.getElementById('achatCollegeSection');
+        const acheterCollegeButton = document.getElementById('acheterCollegeButton');
+        const nombreCollegesDisplay = document.getElementById('nombreCollegesDisplay');
+        const collegeMultiplierDisplay = document.getElementById('collegeMultiplierDisplay');
+        const purchaseMultiplierSelection = document.getElementById('purchaseMultiplierSelection');
+        const multiplierButtonsContainer = document.getElementById('multiplierButtonsContainer'); // New element for delegation
+        const setMultiplierX1 = document.getElementById('setMultiplierX1');
+        const setMultiplierX10 = document.getElementById('setMultiplierX10');
+        const setMultiplierX100 = document.getElementById('setMultiplierX100');
+        const setMultiplierXMax = document.getElementById('setMultiplierXMax');
+        const automationSection = document.getElementById('automationSection');
+        const autoEleveBtn = document.getElementById('autoEleveBtn'); // Corrected ID
+        const autoClasseBtn = document.getElementById('autoClasseBtn'); // Corrected ID
+        const autoImageBtn = document.getElementById('autoImageBtn'); // Corrected ID
+        const autoProfesseurBtn = document.getElementById('autoProfesseurBtn'); // Corrected ID
+        const autoProfesseurPluralSSpan = document.getElementById('autoProfesseurPluralS'); // New span for plural 's'
+        const questsContainer = document.getElementById('questsContainer');
+        const questsListDiv = document.getElementById('questsList');
+        const completedQuestsListDiv = document.getElementById('completedQuestsList');
+        const achievementsContainer = document.getElementById('achievementsContainer');
+        const achievementsGrid = document.getElementById('achievementsGrid');
+        const achievementTooltip = document.getElementById('achievementTooltip');
+        const statsButton = document.getElementById('statsButton');
+        const statsButtonSetting = document.getElementById('statsButtonSetting');
+        const statsModal = document.getElementById('statsModal');
+
+        // NEW: Prestige related elements
+        const prestigePointsDisplay = document.getElementById('prestigePointsDisplay');
+        const prestigePointsCountSpan = document.getElementById('prestigePointsCount');
+        const prestigeCountDisplay = document.getElementById('prestigeCountDisplay');
+        const prestigeCountSpan = document.getElementById('prestigeCountSpan');
+        const prestigeMenuPPCountSpan = document.getElementById('prestigeMenuPPCount');
+        const confirmPrestigeModal = document.getElementById('confirmPrestigeModal');
+        const confirmPrestigeYesBtn = document.getElementById('confirmPrestigeYes');
+        const confirmPrestigeNoBtn = document.getElementById('confirmPrestigeNo');
+        const ppGainedDisplay = document.getElementById('ppGainedDisplay');
+        const prestigeWarningText = document.getElementById('prestigeWarningText');
+        const disablePrestigeWarningCheckbox = document.getElementById('disablePrestigeWarningCheckbox');
+
+        // NEW: Prestige Purchase Buttons
+        const acheterLicenceButton = document.getElementById('acheterLicenceButton');
+        const nombreLicencesSpan = document.getElementById('nombreLicences');
+        const licenceBoostSpan = document.getElementById('licenceBoost');
+
+        const acheterMaster1Button = document.getElementById('acheterMaster1Button');
+        const nombreMaster1Span = document.getElementById('nombreMaster1');
+        const master1BoostSpan = document.getElementById('master1Boost');
+
+        const acheterMaster2Button = document.getElementById('acheterMaster2Button');
+        const nombreMaster2Span = document.getElementById('nombreMaster2');
+        const master2BoostSpan = document.getElementById('master2Boost');
+
+        const acheterDoctoratButton = document.getElementById('acheterDoctoratButton');
+        const nombreDoctoratSpan = document.getElementById('nombreDoctorat');
+        const doctoratBoostSpan = document.getElementById('doctoratBoost');
+        const doctoratMinClassesSpan = document.getElementById('doctoratMinClasses');
+
+        const acheterPostDoctoratButton = document.getElementById('acheterPostDoctoratButton');
+        const nombrePostDoctoratSpan = document.getElementById('nombrePostDoctorat');
+        const postDoctoratBoostSpan = document.getElementById('postDoctoratBoost');
+
+
+        // NEW: Minimalist Resources elements
+        const miniBonsPoints = document.getElementById('miniBonsPoints');
+        const miniImages = document.getElementById('miniImages');
+        const miniProfesseur = document.getElementById('miniProfesseur');
+        const miniAscensionPoints = document.getElementById('miniAscensionPoints');
+        const miniAscensionCount = document.getElementById('miniAscensionCount');
+        const miniPrestigePoints = document.getElementById('miniPrestigePoints');
+        const miniPrestigeCount = document.getElementById('miniPrestigeCount');
+
+        // Stats Modal Professeur Pluralization
+        const statsProfesseurPluralSSpan = document.getElementById('statsProfesseurPluralS');
+        
         // Game variables - Initialized with Decimal(0) from break_infinity.js
         let bonsPoints = new Decimal(0);
         let bonsPointsParSecondeEleves = new Decimal(0);
         let bonsPointsParSecondeClasses = new Decimal(0);
         let totalBonsPointsParSeconde = new Decimal(0);
-        const nombreElevesSpan = document.getElementById('nombreEleves');
+        const nombreElevesSpan = document.getElementById('nombreEleves'); // Corrected ID
+        nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
         let nombreEleves = new Decimal(0);
         let coutEleveBase = new Decimal(10); // Changed to let
         const coutEleveGrowth = new Decimal(1.14); // Slightly reduced
@@ -2078,170 +2240,6 @@
         ];
         let unlockedAchievements = {};
         let activeAchievementTooltip = null; // To manage the clicked tooltip
-
-
-        // HTML Element Retrievals
-        const bonsPointsSpan = document.getElementById('bonsPoints');
-        const totalBpsInlineSpan = document.getElementById('totalBpsInline');
-        const elevesBpsPerItemSpan = document.getElementById('elevesBpsPerItem');
-        const classesBpsPerItemSpan = document.getElementById('classesBpsPerItem');
-        const nombreClassesSpan = document.getElementById('nombreClasses');
-        const imagesCountSpan = document.getElementById('imagesCount'); // Corrected ID for images count
-        const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
-
-        const professeurDisplayValueSpan = document.getElementById('professeurDisplayValue'); // Updated ID for professor value
-        const professeurPluralSSpan = document.getElementById('professeurPluralS'); // New span for plural 's'
-        const professeurDisplayP = document.getElementById('professeurDisplayP'); // The <p> tag for professor resource (updated ID)
-
-        const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
-        const buyProfesseurPluralSSpan = document.getElementById('buyProfesseurPluralS'); // New span for plural 's' on buy button
-
-        const studiesTitleButton = document.getElementById('studiesTitleButton');
-        const clickBonsPointsDisplay = document.getElementById('clickBonsPointsDisplay');
-        const acheterEleveButton = document.getElementById('acheterEleveButton');
-        const acheterClasseButton = document.getElementById('acheterClasseButton');
-        const acheterImageButton = document.getElementById('acheterImageButton');
-        const acheterProfesseurButton = document.getElementById('acheterProfesseurButton');
-        const studiesTabBtn = document.getElementById('studiesTabBtn'); // Corrected ID
-        const automationTabBtn = document.getElementById('automationTabBtn'); // Corrected ID
-        const skillsTabBtn = document.getElementById('skillsTabBtn'); // Corrected ID
-        const settingsTabBtn = document.getElementById('settingsTabBtn'); // Corrected ID
-        const ascensionTitleButton = document.getElementById('ascensionTitleButton');
-        const ascensionTabBtn = document.getElementById('ascensionTabBtn'); // Corrected ID
-        const prestigeTabBtn = document.getElementById('prestigeTabBtn'); // Corrected ID
-        const prestigeTitleButton = document.getElementById('prestigeTitleButton');
-        const questsTabBtn = document.getElementById('questsTabBtn'); // Corrected ID
-        const achievementsTabBtn = document.getElementById('achievementsTabBtn'); // Corrected ID
-        const resetSkillsButton = document.getElementById('resetSkillsButton');
-        const buyAllSkillsButton = document.getElementById('buyAllSkillsButton');
-        const currentAscensionPointsDisplay = document.getElementById('currentAscensionPointsDisplay');
-        const ascensionPointsCountSpan = document.getElementById('ascensionPointsCount');
-        const ascensionCountSpan = document.getElementById('ascensionCountSpan');
-        const totalPAEarnedSpanInline = document.getElementById('totalPAEarnedSpanInline');
-        const ascensionBonusDisplay = document.getElementById('ascensionBonusDisplay');
-        const ascensionBonusValueSpan = document.getElementById('ascensionBonusValue');
-        const achatEleveSection = document.getElementById('achatEleveSection');
-        const achatClasseSection = document.getElementById('achatClasseSection');
-        const achatImageSection = document.getElementById('achatImageSection');
-        const achatProfesseurSection = document.getElementById('achatProfesseurSection');
-        const notificationsContainer = document.getElementById('notifications-container');
-        const studiesMainContainer = document.getElementById('studiesMainContainer');
-        const automationMainContainer = document.getElementById('automationMainContainer');
-        const skillsContainer = document.getElementById('skillsContainer');
-        const studiesSkillsGrid = document.getElementById('studiesSkillsGrid');
-        const ascensionSkillsGrid = document.getElementById('ascensionSkillsGrid');
-        const prestigeSkillsGrid = document.getElementById('prestigeSkillsGrid');
-        const studiesPointsCountSpan = document.getElementById('studiesPointsCount');
-        const ascensionSkillsPointsCountSpan = document.getElementById('ascensionSkillsPointsCount');
-        const prestigeSkillsPointsCountSpan = document.getElementById('prestigeSkillsPointsCount');
-        const settingsContainer = document.getElementById('settingsContainer');
-        const themeToggleButton = document.getElementById('themeToggleButton');
-        const resetProgressionButton = document.getElementById('resetProgressionButton');
-        const offlineProgressToggle = document.getElementById('offlineProgressToggle');
-        const offlineProgressSetting = document.getElementById('offlineProgressSetting');
-        const toggleMinimalistResourcesButton = document.getElementById('toggleMinimalistResources');
-        const minimizeResourcesSetting = document.getElementById('minimizeResourcesSetting');
-        const mainResourcesDisplay = document.getElementById('mainResourcesDisplay');
-        const minimalistResources = document.getElementById('minimalistResources');
-        const confirmResetModal = document.getElementById('confirmResetModal');
-        const confirmResetYesBtn = document.getElementById('confirmResetYes');
-        const confirmResetNoBtn = document.getElementById('confirmResetNo');
-        const confirmAscensionModal = document.getElementById('confirmAscensionModal');
-        const confirmAscensionYesBtn = document.getElementById('confirmAscensionYes');
-        const confirmAscensionNoBtn = document.getElementById('confirmAscensionNo');
-        const ascensionModalTitle = document.getElementById('ascensionModalTitle');
-        const firstAscensionWarningDiv = document.getElementById('firstAscensionWarning');
-        const subsequentAscensionWarningDiv = document.getElementById('subsequentAscensionWarning');
-        const disableAscensionWarningCheckboxAscension = document.getElementById('disableAscensionWarningCheckbox');
-        const paGainedDisplay = document.getElementById('paGainedDisplay');
-        const ascensionMenuContainer = document.getElementById('ascensionMenuContainer');
-        const ascensionMenuPACountSpan = document.getElementById('ascensionMenuPACount');
-        const acheterEcoleButton = document.getElementById('acheterEcoleButton');
-        const coutEcoleSpan = document.getElementById('coutEcole');
-        const nombreEcolesSpan = document.getElementById('nombreEcoles');
-        const ecoleMultiplierSpan = document.getElementById('ecoleMultiplier');
-        const unlockNewSettingsButton = document.getElementById('unlockNewSettingsButton');
-        const unlockMultiPurchaseButton = document.getElementById('unlockMultiPurchaseButton');
-        const unlockMaxPurchaseButton = document.getElementById('unlockMaxPurchaseButton');
-        const unlockAutomationCategoryButton = document.getElementById('unlockAutomationCategoryButton');
-        const achatLyceeSection = document.getElementById('achatLyceeSection');
-        const acheterLyceeButton = document.getElementById('acheterLyceeButton');
-        const nombreLyceesDisplay = document.getElementById('nombreLyceesDisplay');
-        const lyceeMultiplierDisplay = document.getElementById('lyceeMultiplierDisplay');
-        const achatCollegeSection = document.getElementById('achatCollegeSection');
-        const acheterCollegeButton = document.getElementById('acheterCollegeButton');
-        const nombreCollegesDisplay = document.getElementById('nombreCollegesDisplay');
-        const collegeMultiplierDisplay = document.getElementById('collegeMultiplierDisplay');
-        const purchaseMultiplierSelection = document.getElementById('purchaseMultiplierSelection');
-        const multiplierButtonsContainer = document.getElementById('multiplierButtonsContainer'); // New element for delegation
-        const setMultiplierX1 = document.getElementById('setMultiplierX1');
-        const setMultiplierX10 = document.getElementById('setMultiplierX10');
-        const setMultiplierX100 = document.getElementById('setMultiplierX100');
-        const setMultiplierXMax = document.getElementById('setMultiplierXMax');
-        const automationSection = document.getElementById('automationSection');
-        const autoEleveBtn = document.getElementById('autoEleveBtn'); // Corrected ID
-        const autoClasseBtn = document.getElementById('autoClasseBtn'); // Corrected ID
-        const autoImageBtn = document.getElementById('autoImageBtn'); // Corrected ID
-        const autoProfesseurBtn = document.getElementById('autoProfesseurBtn'); // Corrected ID
-        const autoProfesseurPluralSSpan = document.getElementById('autoProfesseurPluralS'); // New span for plural 's'
-        const questsContainer = document.getElementById('questsContainer');
-        const questsListDiv = document.getElementById('questsList');
-        const completedQuestsListDiv = document.getElementById('completedQuestsList');
-        const achievementsContainer = document.getElementById('achievementsContainer');
-        const achievementsGrid = document.getElementById('achievementsGrid');
-        const achievementTooltip = document.getElementById('achievementTooltip');
-        const statsButton = document.getElementById('statsButton');
-        const statsButtonSetting = document.getElementById('statsButtonSetting');
-        const statsModal = document.getElementById('statsModal');
-
-        // NEW: Prestige related elements
-        const prestigePointsDisplay = document.getElementById('prestigePointsDisplay');
-        const prestigePointsCountSpan = document.getElementById('prestigePointsCount');
-        const prestigeCountDisplay = document.getElementById('prestigeCountDisplay');
-        const prestigeCountSpan = document.getElementById('prestigeCountSpan');
-        const prestigeMenuPPCountSpan = document.getElementById('prestigeMenuPPCount');
-        const confirmPrestigeModal = document.getElementById('confirmPrestigeModal');
-        const confirmPrestigeYesBtn = document.getElementById('confirmPrestigeYes');
-        const confirmPrestigeNoBtn = document.getElementById('confirmPrestigeNo');
-        const ppGainedDisplay = document.getElementById('ppGainedDisplay');
-        const prestigeWarningText = document.getElementById('prestigeWarningText');
-        const disablePrestigeWarningCheckbox = document.getElementById('disablePrestigeWarningCheckbox');
-
-        // NEW: Prestige Purchase Buttons
-        const acheterLicenceButton = document.getElementById('acheterLicenceButton');
-        const nombreLicencesSpan = document.getElementById('nombreLicences');
-        const licenceBoostSpan = document.getElementById('licenceBoost');
-
-        const acheterMaster1Button = document.getElementById('acheterMaster1Button');
-        const nombreMaster1Span = document.getElementById('nombreMaster1');
-        const master1BoostSpan = document.getElementById('master1Boost');
-
-        const acheterMaster2Button = document.getElementById('acheterMaster2Button');
-        const nombreMaster2Span = document.getElementById('nombreMaster2');
-        const master2BoostSpan = document.getElementById('master2Boost');
-
-        const acheterDoctoratButton = document.getElementById('acheterDoctoratButton');
-        const nombreDoctoratSpan = document.getElementById('nombreDoctorat');
-        const doctoratBoostSpan = document.getElementById('doctoratBoost');
-        const doctoratMinClassesSpan = document.getElementById('doctoratMinClasses');
-
-        const acheterPostDoctoratButton = document.getElementById('acheterPostDoctoratButton');
-        const nombrePostDoctoratSpan = document.getElementById('nombrePostDoctorat');
-        const postDoctoratBoostSpan = document.getElementById('postDoctoratBoost');
-
-
-        // NEW: Minimalist Resources elements
-        const miniBonsPoints = document.getElementById('miniBonsPoints');
-        const miniImages = document.getElementById('miniImages');
-        const miniProfesseur = document.getElementById('miniProfesseur');
-        const miniAscensionPoints = document.getElementById('miniAscensionPoints');
-        const miniAscensionCount = document.getElementById('miniAscensionCount');
-        const miniPrestigePoints = document.getElementById('miniPrestigePoints');
-        const miniPrestigeCount = document.getElementById('miniPrestigeCount');
-
-        // Stats Modal Professeur Pluralization
-        const statsProfesseurPluralSSpan = document.getElementById('statsProfesseurPluralS');
-
 
         // --- Save and Load Functions ---
         function updateDisplay() {
