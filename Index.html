@@ -1443,7 +1443,7 @@
                                 class="ascension-points-color">10 PA</span></button>
                     </div>
                     <div class="achat-section" style="flex: 1 1 300px;">
-                        <button id="unlockMaxPurchaseButton">Débloquer Achat Multiple Max : <span
+                        <button id="unlockmaxPurchaseButton">Débloquer Achat Multiple Max : <span
                                 class="ascension-points-color">100 PA</span></button>
                     </div>
                     <div class="achat-section" style="flex: 1 1 300px;">
@@ -1965,7 +1965,7 @@
         const ecoleMultiplierSpan = document.getElementById('ecoleMultiplier');
         const unlockNewSettingsButton = document.getElementById('unlockNewSettingsButton');
         const unlockMultiPurchaseButton = document.getElementById('unlockMultiPurchaseButton');
-        const unlockMaxPurchaseButton = document.getElementById('unlockMaxPurchaseButton');
+        const unlockmaxPurchaseButton = document.getElementById('unlockmaxPurchaseButton');
         const unlockAutomationCategoryButton = document.getElementById('unlockAutomationCategoryButton');
         const achatLyceeSection = document.getElementById('achatLyceeSection');
         const acheterLyceeButton = document.getElementById('acheterLyceeButton');
@@ -3179,10 +3179,10 @@
                 unlockMultiPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(10));
                 unlockMultiPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(10));
             }
-            unlockMaxPurchaseButton.style.display = maxPurchaseOptionUnlocked ? 'none' : 'block';
+            unlockmaxPurchaseButton.style.display = maxPurchaseOptionUnlocked ? 'none' : 'block';
             if (!maxPurchaseOptionUnlocked) {
-                unlockMaxPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(100));
-                unlockMaxPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(100));
+                unlockmaxPurchaseButton.classList.toggle('can-afford', ascensionPoints.gte(100));
+                unlockmaxPurchaseButton.classList.toggle('cannot-afford', ascensionPoints.lt(100));
             }
             unlockNewSettingsButton.style.display = newSettingsUnlocked ? 'none' : 'block';
             if (!newSettingsUnlocked) {
@@ -4164,7 +4164,7 @@
                 showNotification("Pas assez de PA (coût : 10 PA) !");
             }
         });
-        unlockMaxPurchaseButton.addEventListener('click', () => {
+        unlockmaxPurchaseButton.addEventListener('click', () => {
             if (ascensionPoints.gte(100) && !maxPurchaseOptionUnlocked) {
                 ascensionPoints = ascensionPoints.sub(100);
                 maxPurchaseOptionUnlocked = true;
