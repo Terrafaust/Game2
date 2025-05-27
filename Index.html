@@ -1271,8 +1271,8 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="professeurDisplayP" style="display: none;">Professeur<span id="professeurPluralS"></span>
-                            : <span id="professeurDisplayValue" class="professeur-color">0</span></p>
+                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="professeurDisplayValue"
+                                class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
                         <p id="ascensionBonusDisplay" style="display: none;">Bonus d'Ascension : <span
@@ -1892,12 +1892,12 @@
         const elevesBpsPerItemSpan = document.getElementById('elevesBpsPerItem');
         const classesBpsPerItemSpan = document.getElementById('classesBpsPerItem');
         const nombreClassesSpan = document.getElementById('nombreClasses');
+        
         const imagesCountSpan = document.getElementById('imagesCount'); // Corrected ID for images count
         const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
-
-        const professeurDisplayValueSpan = document.getElementById('professeurDisplayValue'); // Updated ID for professor value
-        const professeurPluralSSpan = document.getElementById('professeurPluralS'); // New span for plural 's'
-        const professeurDisplayP = document.getElementById('professeurDisplayP'); // The <p> tag for professor resource (updated ID)
+        
+        const professorCountSpan = document.getElementById('nombreProfesseur'); // Corrected ID for professor count
+        const professeurDisplayP = document.getElementById('professeurDisplay'); // The <p> tag for professor resource (updated ID)
 
         const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
         const studiesTitleButton = document.getElementById('studiesTitleButton');
@@ -2274,6 +2274,7 @@
             // Stats display
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
             statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
+        }
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
         // --- Cost Calculation Functions ---
@@ -2442,8 +2443,7 @@
             nombreElevesSpan.textContent = formatNumber(nombreEleves, 0);
             nombreClassesSpan.textContent = formatNumber(nombreClasses, 0);
             imagesCountSpan.textContent = formatNumber(images, 0); // Corrected element
-
-            updateProfesseurDisplay(); // Call new function for professor display
+            ProfessorCountSpan.textContent = formatNumber(Images, 0); // Corrected element copied on images
 
             // Update other displays
             ascensionPointsCountSpan.textContent = formatNumber(ascensionPoints, 0);
