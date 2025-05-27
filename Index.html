@@ -1271,7 +1271,7 @@
                                 class="production-inline">(<span id="totalBpsInline">0</span> bp/s)</span></p>
                         <p id="imagesDisplay" style="display: none;">Images : <span id="imagesCount"
                                 class="images-color">0</span></p>
-                        <p id="professeurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
+                        <p id="nombreProfesseurDisplay" style="display: none;">Professeur : <span id="nombreProfesseur"
                                 class="professeur-color">0</span></p>
                     </div>
                     <div class="resource-group">
@@ -1896,9 +1896,9 @@
         const imagesDisplayP = document.getElementById('imagesDisplay'); // The <p> tag for images resource
         
         const nombreProfesseurSpan = document.getElementById('nombreProfesseur'); // Corrected ID for professor count
-        const professeurDisplayP = document.getElementById('professeurDisplay'); // The <p> tag for professor resource (updated ID)
+        const nombreProfesseurDisplayP = document.getElementById('nombreProfessorDisplay'); // The <p> tag for professor resource (updated ID)
 
-        const professeurDisplayQuantitySpan = document.getElementById('professeurDisplayQuantity');
+        const nombreProfesseurDisplayQuantitySpan = document.getElementById('nombreProfesseurDisplayQuantity');
         const studiesTitleButton = document.getElementById('studiesTitleButton');
         const clickBonsPointsDisplay = document.getElementById('clickBonsPointsDisplay');
         const acheterEleveButton = document.getElementById('acheterEleveButton');
@@ -2485,7 +2485,7 @@
             }
             // Image display logic: always show if imagesUnlocked is true
             imagesDisplayP.style.display = imagesUnlocked ? 'block' : 'none';
-            professeurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
+            nombreProfesseurDisplayP.style.display = professeurUnlocked ? 'block' : 'none';
             currentAscensionPointsDisplay.style.display = ascensionPoints.gte(1) || ascensionUnlocked || ascensionCount.gt(0) ? 'block' : 'none';
             ascensionCountDisplay.style.display = ascensionCount.gt(0) ? 'block' : 'none';
             prestigePointsDisplay.style.display = prestigePoints.gte(1) || prestigeCount.gt(0) ? 'block' : 'none';
