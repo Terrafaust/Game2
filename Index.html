@@ -2673,6 +2673,79 @@
             return new Decimal(10000);
         }
 
+        /**
+         * Calculates the total cost for a given amount of items.
+         * @param {Decimal} amount The number of items to buy.
+         * @param {Decimal} costBase The base cost of the item.
+         * @param {Decimal} costGrowth The growth rate of the item's cost.
+         * @param {Decimal} currentCount The current number of items owned.
+         * @param {Decimal} costReduction The total cost reduction percentage (e.g., 0.1 for 10% reduction).
+         * @returns {Decimal} The total cost for the specified amount of items.
+         */
+        function getCostForAmount(amount, costBase, costGrowth, currentCount, costReduction) {
+            if (amount.eq(0)) return new Decimal(0);
+
+            const effectiveCostReduction = Decimal.max(0.1, new Decimal(1).sub(costReduction).sub(skillEffects.allCostReduction));
+            
+            // Sum of a geometric series: a * (r^n - 1) / (r - 1)
+            // Here, a = costBase * growth^currentCount * effectiveCostReduction
+            // r = growth
+            // n = amount
+            const firstCost = costBase.mul(costGrowth.pow(currentCount)).mul(effectiveCostReduction);
+            const totalCost = firstCost.mul(costGrowth.pow(amount).sub(1)).div(costGrowth.sub(1));
+            
+            return Decimal.max(1, totalCost.floor());
+        }
+
+        /**
+         * Calculates the maximum number of items that can be bought with current resources
+         * and the total cost for that amount.
+         * @param {Decimal} currentResource The amount of resource available.
+         * @param {Decimal} costBase The base cost of the item.
+         * @param {Decimal} costGrowth The growth rate of the item's cost.
+         * @param {Decimal} currentCount The current number of items owned.
+         * @param {Decimal} costReduction The total cost reduction percentage (e.g., 0.1 for 10% reduction).
+         * @returns {{quantity: Decimal, totalCost: Decimal}} An object containing the quantity and total cost.
+         */
+        function getBuyAmount(currentResource, costBase, costGrowth, currentCount, costReduction) {
+            if (currentResource.lt(costBase.mul(Decimal.max(0.1, new Decimal(1).sub(costReduction).sub(skillEffects.allCostReduction))))) {
+                return { quantity: new Decimal(0), totalCost: new Decimal(0) };
+            }
+
+            const effectiveCostReduction = Decimal.max(0.1, new Decimal(1).sub(costReduction).sub(skillEffects.allCostReduction));
+            const A = costBase.mul(costGrowth.pow(currentCount)).mul(effectiveCostReduction);
+            const R = costGrowth;
+            const C = currentResource;
+
+            // Solve C = A * (R^N - 1) / (R - 1) for N
+            // C * (R - 1) / A = R^N - 1
+            // R^N = C * (R - 1) / A + 1
+            // N = log_R(C * (R - 1) / A + 1)
+            // N = log(C * (R - 1) / A + 1) / log(R)
+
+            let quantity = new Decimal(0);
+            let totalCost = new Decimal(0);
+
+            if (R.eq(1)) { // Linear growth (shouldn't happen with current setup, but for safety)
+                quantity = C.div(A).floor();
+                totalCost = A.mul(quantity);
+            } else {
+                const term = C.mul(R.sub(1)).div(A).add(1);
+                if (term.lte(0)) { // Should not happen with positive costs/resources
+                    quantity = new Decimal(0);
+                } else {
+                    quantity = Decimal.log(term, R).floor();
+                }
+                
+                // Recalculate total cost for the determined quantity to avoid floating point inaccuracies
+                if (quantity.gt(0)) {
+                    totalCost = getCostForAmount(quantity, costBase, costGrowth, currentCount, costReduction);
+                }
+            }
+            
+            return { quantity: quantity, totalCost: totalCost };
+        }
+
 
         function updateButtonStates() {
             // Eleve
@@ -2842,82 +2915,104 @@
 
      // Purchase logic
     function performPurchase(itemType, quantityRequested, isAutomated = false) {
-        let currentResource, costFunction, itemCounter, resourceToDecrement;
-        let totalCostPA = new Decimal(0); // Track total PA cost for automation purchases
-        let totalCostPP = new Decimal(0); // Track total PP cost for prestige purchases
+        let currentResource, costBase, costGrowth, itemCounter, resourceToDecrement, costReductionEffect;
 
         switch (itemType) {
             case 'eleve':
                 currentResource = bonsPoints;
-                costFunction = () => calculateNextEleveCost(nombreEleves);
+                costBase = coutEleveBase;
+                costGrowth = coutEleveGrowth;
                 itemCounter = nombreEleves;
                 resourceToDecrement = 'bonsPoints';
+                costReductionEffect = skillEffects.eleveCostReduction;
                 break;
             case 'classe':
                 currentResource = bonsPoints;
-                costFunction = () => calculateNextClasseCost(nombreClasses);
+                costBase = coutClasseBase;
+                costGrowth = coutClasseGrowth;
                 itemCounter = nombreClasses;
                 resourceToDecrement = 'bonsPoints';
+                costReductionEffect = skillEffects.classeCostReduction;
                 break;
             case 'image':
                 currentResource = bonsPoints;
-                costFunction = () => calculateNextImageCost();
+                costBase = new Decimal(1000); // Fixed cost for image
+                costGrowth = new Decimal(1); // No growth for image
                 itemCounter = images;
                 resourceToDecrement = 'bonsPoints';
+                costReductionEffect = skillEffects.imageCostReduction;
                 break;
             case 'professeur':
                 currentResource = images;
-                costFunction = () => calculateNextProfessorCost(nombreprofesseur);
+                // For professeur, cost is based on Fibonacci sequence, not simple geometric growth.
+                // We'll handle this as a special case for max/multi-buy.
                 itemCounter = nombreprofesseur;
                 resourceToDecrement = 'images';
+                costReductionEffect = skillEffects.professeurCostReduction;
                 break;
-            case 'ecole': // Added for école purchase
+            case 'ecole':
                 currentResource = ascensionPoints;
-                costFunction = () => calculateNextEcoleCost(schoolCount);
+                costBase = coutEcoleBase;
+                costGrowth = coutEcoleGrowth;
                 itemCounter = schoolCount;
                 resourceToDecrement = 'ascensionPoints';
+                costReductionEffect = skillEffects.ecoleCostReduction;
                 break;
-            case 'lycee': // Added for lycee purchase
+            case 'lycee':
                 currentResource = ascensionPoints;
-                costFunction = () => calculateNextLyceeCost(nombreLycees);
+                costBase = coutLyceeBase;
+                costGrowth = coutLyceeGrowth;
                 itemCounter = nombreLycees;
                 resourceToDecrement = 'ascensionPoints';
+                costReductionEffect = new Decimal(0); // No specific cost reduction for lycee
                 break;
-            case 'college': // Added for college purchase
+            case 'college':
                 currentResource = ascensionPoints;
-                costFunction = () => calculateNextCollegeCost(nombreColleges);
+                costBase = coutCollegeBase;
+                costGrowth = coutCollegeGrowth;
                 itemCounter = nombreColleges;
                 resourceToDecrement = 'ascensionPoints';
+                costReductionEffect = new Decimal(0); // No specific cost reduction for college
                 break;
             case 'licence':
                 currentResource = prestigePoints;
-                costFunction = () => calculateLicenceCost();
+                costBase = calculateLicenceCost(); // Fixed cost
+                costGrowth = new Decimal(1);
                 itemCounter = nombreLicences;
                 resourceToDecrement = 'prestigePoints';
+                costReductionEffect = new Decimal(0);
                 break;
             case 'master1':
                 currentResource = prestigePoints;
-                costFunction = () => calculateMaster1Cost();
+                costBase = calculateMaster1Cost(); // Fixed cost
+                costGrowth = new Decimal(1);
                 itemCounter = nombreMaster1;
                 resourceToDecrement = 'prestigePoints';
+                costReductionEffect = new Decimal(0);
                 break;
             case 'master2':
                 currentResource = prestigePoints;
-                costFunction = () => calculateMaster2Cost();
+                costBase = calculateMaster2Cost(); // Fixed cost
+                costGrowth = new Decimal(1);
                 itemCounter = nombreMaster2;
                 resourceToDecrement = 'prestigePoints';
+                costReductionEffect = new Decimal(0);
                 break;
             case 'doctorat':
                 currentResource = prestigePoints;
-                costFunction = () => calculateDoctoratCost();
+                costBase = calculateDoctoratCost(); // Fixed cost
+                costGrowth = new Decimal(1);
                 itemCounter = nombreDoctorat;
                 resourceToDecrement = 'prestigePoints';
+                costReductionEffect = new Decimal(0);
                 break;
             case 'postDoctorat':
                 currentResource = prestigePoints;
-                costFunction = () => calculatePostDoctoratCost();
+                costBase = calculatePostDoctoratCost(); // Fixed cost
+                costGrowth = new Decimal(1);
                 itemCounter = nombrePostDoctorat;
                 resourceToDecrement = 'prestigePoints';
+                costReductionEffect = new Decimal(0);
                 break;
             default:
                 return;
@@ -2925,59 +3020,89 @@
 
         // Check prerequisites for prestige purchases
         if (itemType === 'doctorat' && !prestigePurchasesData.find(p => p.id === 'doctorat').prerequisites()) {
-            showNotification("Conditions pour Doctorat non remplies (10 Prestiges nécessaires) !");
+            if (!isAutomated) showNotification("Conditions pour Doctorat non remplies (10 Prestiges nécessaires) !");
             return;
         }
         if (itemType === 'postDoctorat' && !prestigePurchasesData.find(p => p.id === 'postDoctorat').prerequisites()) {
-            showNotification("Conditions pour Post-Doctorat non remplies (30 Prestiges, 100 Ascensions nécessaires) !");
+            if (!isAutomated) showNotification("Conditions pour Post-Doctorat non remplies (30 Prestiges, 100 Ascensions nécessaires) !");
             return;
         }
     
         let quantityToBuy = new Decimal(0);
-        let currentCost = new Decimal(0);
+        let totalCost = new Decimal(0);
 
-        if (quantityRequested === 'max') {
+        if (itemType === 'professeur') {
+            // Special handling for professor due to Fibonacci cost
             let tempItemCounter = itemCounter;
             let tempResource = currentResource;
-            let canAffordOne = true;
-            while (canAffordOne) {
-                let costPerItem = costFunction(tempItemCounter);
+            let numToAttempt = (quantityRequested === 'max') ? new Decimal(Infinity) : new Decimal(quantityRequested);
+
+            for (let i = 0; i < numToAttempt.toNumber(); i++) {
+                let costPerItem = calculateNextProfessorCost(tempItemCounter);
                 if (tempResource.gte(costPerItem)) {
                     tempResource = tempResource.sub(costPerItem);
                     tempItemCounter = tempItemCounter.add(1);
-                    quantityToBuy = quantityToBuy.add(1);
-                    currentCost = currentCost.add(costPerItem); // Accumulate total cost for 'max'
-                } else {
-                    canAffordOne = false;
-                }
-            }
-        } else {
-            // For x1, x10, x100
-            let numToBuy = new Decimal(quantityRequested);
-            let tempItemCounter = itemCounter;
-            let tempResource = currentResource;
-            let totalCostForQuantity = new Decimal(0);
-
-            for (let i = 0; i < numToBuy.toNumber(); i++) {
-                let costPerItem = costFunction(tempItemCounter);
-                if (tempResource.gte(costPerItem)) {
-                    tempResource = tempResource.sub(costPerItem);
-                    tempItemCounter = tempItemCounter.add(1);
-                    totalCostForQuantity = totalCostForQuantity.add(costPerItem);
+                    totalCost = totalCost.add(costPerItem);
                     quantityToBuy = quantityToBuy.add(1);
                 } else {
-                    break; // Cannot afford all requested items
+                    break;
                 }
             }
-            currentCost = totalCostForQuantity;
+        } else if (itemType === 'image') {
+            // Special handling for image as its cost is fixed per unit
+            const singleCost = calculateNextImageCost();
+            if (quantityRequested === 'max') {
+                quantityToBuy = currentResource.div(singleCost).floor();
+                totalCost = quantityToBuy.mul(singleCost);
+            } else {
+                const numToAttempt = new Decimal(quantityRequested);
+                totalCost = singleCost.mul(numToAttempt);
+                if (currentResource.gte(totalCost)) {
+                    quantityToBuy = numToAttempt;
+                } else {
+                    quantityToBuy = currentResource.div(singleCost).floor();
+                    totalCost = quantityToBuy.mul(singleCost);
+                }
+            }
+        }
+        else if (itemType === 'licence' || itemType === 'master1' || itemType === 'master2' || itemType === 'doctorat' || itemType === 'postDoctorat') {
+            // These prestige purchases have fixed costs per unit, but are typically bought one by one
+            const singleCost = costBase; // Cost is already calculated and fixed
+            if (currentResource.gte(singleCost)) {
+                quantityToBuy = new Decimal(1);
+                totalCost = singleCost;
+            } else {
+                quantityToBuy = new Decimal(0);
+                totalCost = new Decimal(0);
+            }
+        }
+        else {
+            // For items with geometric growth (eleve, classe, ecole, lycee, college)
+            let result;
+            if (quantityRequested === 'max') {
+                result = getBuyAmount(currentResource, costBase, costGrowth, itemCounter, costReductionEffect);
+                quantityToBuy = result.quantity;
+                totalCost = result.totalCost;
+            } else {
+                const numToAttempt = new Decimal(quantityRequested);
+                totalCost = getCostForAmount(numToAttempt, costBase, costGrowth, itemCounter, costReductionEffect);
+                if (currentResource.gte(totalCost)) {
+                    quantityToBuy = numToAttempt;
+                } else {
+                    // If cannot afford requested quantity, buy as many as possible
+                    result = getBuyAmount(currentResource, costBase, costGrowth, itemCounter, costReductionEffect);
+                    quantityToBuy = result.quantity;
+                    totalCost = result.totalCost;
+                }
+            }
         }
 
         if (quantityToBuy.gt(0)) {
             // Decrement resource
-            if (resourceToDecrement === 'bonsPoints') bonsPoints = bonsPoints.sub(currentCost);
-            else if (resourceToDecrement === 'images') images = images.sub(currentCost);
-            else if (resourceToDecrement === 'ascensionPoints') ascensionPoints = ascensionPoints.sub(currentCost);
-            else if (resourceToDecrement === 'prestigePoints') prestigePoints = prestigePoints.sub(currentCost);
+            if (resourceToDecrement === 'bonsPoints') bonsPoints = bonsPoints.sub(totalCost);
+            else if (resourceToDecrement === 'images') images = images.sub(totalCost);
+            else if (resourceToDecrement === 'ascensionPoints') ascensionPoints = ascensionPoints.sub(totalCost);
+            else if (resourceToDecrement === 'prestigePoints') prestigePoints = prestigePoints.sub(totalCost);
 
             // Increment item counter
             switch (itemType) {
