@@ -2245,6 +2245,24 @@
         let unlockedAchievements = {};
         let activeAchievementTooltip = null; // To manage the clicked tooltip
 
+        function setCurrentPurchaseMultiplier(multiplier, itemType) {
+            if (multiplier === 'max') {
+                currentPurchaseMultiplier = 'Max'; // Use a string identifier for "Max"
+                console.log("currentPurchaseMultiplier set to: Max for", itemType);
+            } else {
+                const numMultiplier = parseFloat(multiplier);
+                if (!isNaN(numMultiplier) && isFinite(numMultiplier) && numMultiplier > 0) {
+                    currentPurchaseMultiplier = new Decimal(numMultiplier);
+                    console.log("currentPurchaseMultiplier set to:", currentPurchaseMultiplier, "for", itemType);
+                } else {
+                    console.error("Invalid multiplier value:", multiplier);
+                    currentPurchaseMultiplier = new Decimal(1); // Default to 1 if invalid
+                }
+            }
+        }
+    // You might want to add visual feedback here to indicate the active multiplier button
+    updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
+}
         // --- Save and Load Functions ---
         function updateDisplay() {
             updateCachedMultipliers(); // Ensure multipliers are updated before calculating total BPS
@@ -4089,7 +4107,6 @@
             document.getElementById('statsBonsPoints').textContent = formatNumber(bonsPoints, 0);
             document.getElementById('statsImages').textContent = formatNumber(images, 0);
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
-            statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
             document.getElementById('statsProfMultiplier').textContent = formatNumber(multiplicateurProfesseur, 2) + 'x';
             document.getElementById('statsAscensionPoints').textContent = formatNumber(ascensionPoints, 0);
             document.getElementById('statsPrestigePoints').textContent = formatNumber(prestigePoints, 0);
