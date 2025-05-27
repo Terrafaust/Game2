@@ -1789,6 +1789,8 @@
         let coutImageBase = new Decimal(10); // Added in Image cost remake
         let coutImageGrowth = new Decimal(1.05); // added on image cost remake
         let nombreProfesseur = new Decimal(0);
+        let coutProfesseurGrowth = new Decimal(3);
+        let coutProfesseurBase = new Decimal(1);
         let multiplicateurProfesseur = new Decimal(1); // Base multiplier from professors (0.25x per prof)
         let ascensionPoints = new Decimal(0);
         let ascensionCount = new Decimal(0);
@@ -2324,6 +2326,11 @@
         function calculateNextImageCost(currentCount) {
             let cost = coutImageBase.mul(coutImageGrowth.pow(currentCount));
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.imageCostReduction).sub(skillEffects.allCostReduction)));
+            return Decimal.max(1, cost.floor());
+        }
+        function calculateNextProfessorCost(currentCount) {
+            let cost = coutProfesseurBase.mul(coutProfesseurGrowth.pow(currentCount));
+            cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.professeurCostReduction).sub(skillEffects.allCostReduction)));
             return Decimal.max(1, cost.floor());
         }
         function calculateNextProfessorCost(currentCount) {
