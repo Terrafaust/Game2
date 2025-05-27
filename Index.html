@@ -3029,276 +3029,49 @@
             cost = cost.mul(Decimal.max(0.1, new Decimal(1).sub(skillEffects.automationCostReduction).sub(skillEffects.allCostReduction)));
             return cost.floor();
         }
-        // --- Purchase Functions (PLACEHOLDERS - FILL IN YOUR ACTUAL LOGIC) ---
-        // These functions will be called by runAutomation() and buy buttons
         function buyEleve() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreEleves, eleveCostBase, eleveCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Élèves.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = eleveCostBase.times(Decimal.pow(eleveCostExponent, nombreEleves.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreEleves = nombreEleves.plus(boughtCount);
-                coutEleveActuel = calculateNextEleveCost(nombreEleves);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Élèves.", 1500);
-            }
+            performPurchase('eleve', currentPurchaseMultiplier);
         }
 
         function buyImage() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreImages, imageCostBase, imageCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Images.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = imageCostBase.times(Decimal.pow(imageCostExponent, nombreImages.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreImages = nombreImages.plus(boughtCount);
-                coutImageActuel = calculateNextImageCost(nombreImages);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Images.", 1500);
-            }
+            performPurchase('image', currentPurchaseMultiplier);
         }
 
         function buyProfesseur() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreProfesseurs, professeurCostBase, professeurCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Professeurs.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = professeurCostBase.times(Decimal.pow(professeurCostExponent, nombreProfesseurs.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreProfesseurs = nombreProfesseurs.plus(boughtCount);
-                coutProfesseurActuel = calculateNextProfesseurCost(nombreProfesseurs);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Professeurs.", 1500);
-            }
+            performPurchase('professeur', currentPurchaseMultiplier);
         }
 
         function buyClasse() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreClasses, classeCostBase, classeCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Classes.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = classeCostBase.times(Decimal.pow(classeCostExponent, nombreClasses.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreClasses = nombreClasses.plus(boughtCount);
-                coutClasseActuel = calculateNextClasseCost(nombreClasses);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Classes.", 1500);
-            }
+            performPurchase('classe', currentPurchaseMultiplier);
         }
 
         function buyEcole() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(schoolCount, schoolCostBase, schoolCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Écoles.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = schoolCostBase.times(Decimal.pow(schoolCostExponent, schoolCount.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                schoolCount = schoolCount.plus(boughtCount);
-                coutEcoleActuel = calculateNextEcoleCost(schoolCount);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Écoles.", 1500);
-            }
+            performPurchase('ecole', currentPurchaseMultiplier);
         }
 
         function buyCollege() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreColleges, collegeCostBase, collegeCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Collèges.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = collegeCostBase.times(Decimal.pow(collegeCostExponent, nombreColleges.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreColleges = nombreColleges.plus(boughtCount);
-                coutCollegeActuel = calculateNextCollegeCost(nombreColleges);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Collèges.", 1500);
-            }
+            performPurchase('college', currentPurchaseMultiplier);
         }
 
         function buyLycee() {
-            let quantityToBuy = new Decimal(1);
-            if (currentPurchaseMultiplier === '10') quantityToBuy = new Decimal(10);
-            if (currentPurchaseMultiplier === '100') quantityToBuy = new Decimal(100);
-            if (currentPurchaseMultiplier === 'max') {
-                quantityToBuy = calculateMaxBuy(nombreLycees, lyceeCostBase, lyceeCostExponent, bonsPoints);
-            }
-
-            if (quantityToBuy.lt(1)) {
-                showNotification("Pas assez de Bons Points pour acheter des Lycées.", 1500);
-                return;
-            }
-
-            let totalCost = new Decimal(0);
-            let boughtCount = new Decimal(0);
-            for (let i = 0; i < quantityToBuy.toNumber(); i++) {
-                const cost = lyceeCostBase.times(Decimal.pow(lyceeCostExponent, nombreLycees.plus(i))).times(cachedMultipliers.costReduction);
-                if (bonsPoints.gte(cost)) {
-                    totalCost = totalCost.plus(cost);
-                    boughtCount = boughtCount.plus(1);
-                } else {
-                    break;
-                }
-            }
-
-            if (boughtCount.gt(0)) {
-                bonsPoints = bonsPoints.sub(totalCost);
-                nombreLycees = nombreLycees.plus(boughtCount);
-                coutLyceeActuel = calculateNextLyceeCost(nombreLycees);
-                calculateTotalBPS();
-                updateDisplay();
-            } else {
-                showNotification("Pas assez de Bons Points pour acheter des Lycées.", 1500);
-            }
+            performPurchase('lycee', currentPurchaseMultiplier);
         }
-
         // --- New runAutomation Function ---
         /**
          * Runs all active automations.
          */
         function runAutomation() {
             if (autoEleveActive) {
-                buyEleve();
+                performPurchase('eleve', '1', true); // Pass '1' for single purchase, true for automated
             }
             if (autoClasseActive) {
-                buyClasse();
+                performPurchase('classe', '1', true);
             }
             if (autoImageActive) {
-                buyImage();
+                performPurchase('image', '1', true);
             }
             if (autoProfesseurActive) {
-                buyProfesseur();
+                performPurchase('professeur', '1', true);
             }
         }
 
@@ -3335,7 +3108,7 @@
             acheterClasseButton.classList.toggle('cannot-afford', bonsPoints.lt(coutClasseActuel));
 
             // Image
-            let imageCost = calculateNextImageCost();
+            let imageCost = calculateNextImageCost(images); // Pass images count
             acheterImageButton.innerHTML = `Image : <span class="bons-points-color">${formatNumber(imageCost, 0)} BP</span>`;
             acheterImageButton.classList.toggle('can-afford', bonsPoints.gte(imageCost));
             acheterImageButton.classList.toggle('cannot-afford', bonsPoints.lt(imageCost));
@@ -3499,73 +3272,73 @@
             switch (itemType) {
                 case 'eleve':
                     currentResource = bonsPoints;
-                    costFunction = () => calculateNextEleveCost(nombreEleves);
+                    costFunction = calculateNextEleveCost;
                     itemCounter = nombreEleves;
                     resourceToDecrement = 'bonsPoints';
                     break;
                 case 'classe':
                     currentResource = bonsPoints;
-                    costFunction = () => calculateNextClasseCost(nombreClasses);
+                    costFunction = calculateNextClasseCost;
                     itemCounter = nombreClasses;
                     resourceToDecrement = 'bonsPoints';
                     break;
                 case 'image':
                     currentResource = bonsPoints;
-                    costFunction = () => calculateNextImageCost();
+                    costFunction = calculateNextImageCost;
                     itemCounter = images;
                     resourceToDecrement = 'bonsPoints';
                     break;
                 case 'professeur':
                     currentResource = images;
-                    costFunction = () => calculateNextProfessorCost(nombreProfesseur);
+                    costFunction = calculateNextProfessorCost;
                     itemCounter = nombreProfesseur;
                     resourceToDecrement = 'images';
                     break;
                 case 'ecole': // Added for école purchase
                     currentResource = ascensionPoints;
-                    costFunction = () => calculateNextEcoleCost(schoolCount);
+                    costFunction = calculateNextEcoleCost;
                     itemCounter = schoolCount;
                     resourceToDecrement = 'ascensionPoints';
                     break;
                 case 'lycee': // Added for lycee purchase
                     currentResource = ascensionPoints;
-                    costFunction = () => calculateNextLyceeCost(nombreLycees);
+                    costFunction = calculateNextLyceeCost;
                     itemCounter = nombreLycees;
                     resourceToDecrement = 'ascensionPoints';
                     break;
                 case 'college': // Added for college purchase
                     currentResource = ascensionPoints;
-                    costFunction = () => calculateNextCollegeCost(nombreColleges);
+                    costFunction = calculateNextCollegeCost;
                     itemCounter = nombreColleges;
                     resourceToDecrement = 'ascensionPoints';
                     break;
                 case 'licence':
                     currentResource = prestigePoints;
-                    costFunction = () => calculateLicenceCost();
+                    costFunction = calculateLicenceCost;
                     itemCounter = nombreLicences;
                     resourceToDecrement = 'prestigePoints';
                     break;
                 case 'master1':
                     currentResource = prestigePoints;
-                    costFunction = () => calculateMaster1Cost();
+                    costFunction = calculateMaster1Cost;
                     itemCounter = nombreMaster1;
                     resourceToDecrement = 'prestigePoints';
                     break;
                 case 'master2':
                     currentResource = prestigePoints;
-                    costFunction = () => calculateMaster2Cost();
+                    costFunction = calculateMaster2Cost;
                     itemCounter = nombreMaster2;
                     resourceToDecrement = 'prestigePoints';
                     break;
                 case 'doctorat':
                     currentResource = prestigePoints;
-                    costFunction = () => calculateDoctoratCost();
+                    costFunction = calculateDoctoratCost;
                     itemCounter = nombreDoctorat;
                     resourceToDecrement = 'prestigePoints';
                     break;
                 case 'postDoctorat':
                     currentResource = prestigePoints;
-                    costFunction = () => calculatePostDoctoratCost();
+                    costFunction = calculatePostDoctoratCost;
                     itemCounter = nombrePostDoctorat;
                     resourceToDecrement = 'prestigePoints';
                     break;
@@ -3589,16 +3362,20 @@
             if (quantityRequested === 'max') {
                 let tempItemCounter = itemCounter;
                 let tempResource = currentResource;
-                let canAffordOne = true;
-                while (canAffordOne) {
-                    let costPerItem = costFunction(tempItemCounter);
+                // Add a safety limit for max buy to prevent potential infinite loops or extreme calculations
+                const maxIterations = 100000; // Cap the number of items to check
+                let iterations = 0;
+
+                while (iterations < maxIterations) {
+                    let costPerItem = costFunction(tempItemCounter); // Pass tempItemCounter to cost function
                     if (tempResource.gte(costPerItem)) {
                         tempResource = tempResource.sub(costPerItem);
                         tempItemCounter = tempItemCounter.add(1);
                         quantityToBuy = quantityToBuy.add(1);
                         currentCost = currentCost.add(costPerItem); // Accumulate total cost for 'max'
+                        iterations++;
                     } else {
-                        canAffordOne = false;
+                        break; // Not enough resources
                     }
                 }
             } else {
@@ -3609,7 +3386,7 @@
                 let totalCostForQuantity = new Decimal(0);
 
                 for (let i = 0; i < numToBuy.toNumber(); i++) {
-                    let costPerItem = costFunction(tempItemCounter);
+                    let costPerItem = costFunction(tempItemCounter); // Pass tempItemCounter to cost function
                     if (tempResource.gte(costPerItem)) {
                         tempResource = tempResource.sub(costPerItem);
                         tempItemCounter = tempItemCounter.add(1);
@@ -3657,7 +3434,24 @@
             checkUnlockConditions();
             saveGameState();
         }
-
+// --- New runAutomation Function ---
+/**
+ * Runs all active automations.
+ */
+        function runAutomation() {
+            if (autoEleveActive) {
+                performPurchase('eleve', '1', true); // Pass '1' for single purchase, true for automated
+            }
+            if (autoClasseActive) {
+                performPurchase('classe', '1', true);
+            }
+            if (autoImageActive) {
+                performPurchase('image', '1', true);
+            }
+            if (autoProfesseurActive) {
+                performPurchase('professeur', '1', true);
+            }
+        }
 
         // --- New Skill System Functions ---
         function renderSkillsMenu() {
@@ -5050,7 +4844,7 @@
                     lastSaveCheckTime = now;
                 }
             }, gameTickInterval);
-            };
+        };
     </script>
 </body>
 
