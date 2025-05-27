@@ -2245,6 +2245,22 @@
         let unlockedAchievements = {};
         let activeAchievementTooltip = null; // To manage the clicked tooltip
         
+        //SetCurrentPurchaseMultiplier
+        function setCurrentPurchaseMultiplier(multiplier, itemType) {
+            if (multiplier === 'max') {
+                currentPurchaseMultiplier = 'max'; // Use a string identifier for "max"
+                console.log("currentPurchaseMultiplier set to: max for", itemType);
+            } else {
+                const numMultiplier = parseFloat(multiplier);
+                if (!isNaN(numMultiplier) && isFinite(numMultiplier) && numMultiplier > 0) {
+                    currentPurchaseMultiplier = new Decimal(numMultiplier);
+                    console.log("currentPurchaseMultiplier set to:", currentPurchaseMultiplier, "for", itemType);
+                } else {
+                    console.error("Invalid multiplier value:", multiplier);
+                    currentPurchaseMultiplier = new Decimal(1); // Default to 1 if invalid
+                }
+            }
+        }
         function updateProfesseurDisplay() {
             // Main display
             professeurDisplayValueSpan.textContent = formatNumber(nombreProfesseur, 0);
@@ -2268,22 +2284,6 @@
             // Stats display
             document.getElementById('statsProfesseur').textContent = formatNumber(nombreProfesseur, 0);
             statsProfesseurPluralSSpan.textContent = nombreProfesseur.gt(1) ? 's' : '';
-        }
-        //SetCurrentPurchaseMultiplier
-        function setCurrentPurchaseMultiplier(multiplier, itemType) {
-            if (multiplier === 'max') {
-                currentPurchaseMultiplier = 'max'; // Use a string identifier for "max"
-                console.log("currentPurchaseMultiplier set to: max for", itemType);
-            } else {
-                const numMultiplier = parseFloat(multiplier);
-                if (!isNaN(numMultiplier) && isFinite(numMultiplier) && numMultiplier > 0) {
-                    currentPurchaseMultiplier = new Decimal(numMultiplier);
-                    console.log("currentPurchaseMultiplier set to:", currentPurchaseMultiplier, "for", itemType);
-                } else {
-                    console.error("Invalid multiplier value:", multiplier);
-                    currentPurchaseMultiplier = new Decimal(1); // Default to 1 if invalid
-                }
-            }
         }
         // You might want to add visual feedback here to indicate the active multiplier button
         //updateMultiplierButtonsVisuals(multiplier); // Assuming you have a function for this
