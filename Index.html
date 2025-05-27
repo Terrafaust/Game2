@@ -3439,7 +3439,18 @@
                     case 'eleve': nombreEleves = nombreEleves.add(quantityToBuy); break;
                     case 'classe': nombreClasses = nombreClasses.add(quantityToBuy); break;
                     case 'image': images = images.add(quantityToBuy); break;
-                    case 'Professeur': nombreProfesseur = nombreProfesseur.add(quantityToBuy); break;
+                    case 'Professeur':
+                        nombreProfesseur = nombreProfesseur.add(quantityToBuy); 
+                        const oldAscensionSkillPoints = new Decimal(ascensionSkillPoints); // Store old value
+                        ascensionSkillPoints = ascensionSkillPoints.add(quantityToBuy);
+                        showNotification(`+${formatNumber(quantityToBuy,0)} Point(s) de Compétence d'Ascension !`);
+                        
+                        // Unlock ascension skills panel if it's not already and points were actually gained
+                        if (!ascensionSkillsUnlocked && ascensionSkillPoints.gt(oldAscensionSkillPoints)) { 
+                            ascensionSkillsUnlocked = true;
+                            showNotification("Panneau Compétences d'Ascension débloqué !");
+                        }
+                        break;
                     case 'ecole': schoolCount = schoolCount.add(quantityToBuy); break;
                     case 'lycee': nombreLycees = nombreLycees.add(quantityToBuy); break;
                     case 'college': nombreColleges = nombreColleges.add(quantityToBuy); break;
