@@ -1301,8 +1301,8 @@
                             <button id="setMultiplierX1" class="multiplier-button active" data-multiplier="1">x1</button>
                             <button id="setMultiplierX10" class="multiplier-button" data-multiplier="10">x10</button>
                             <button id="setMultiplierX100" class="multiplier-button" data-multiplier="100">x100</button>
-                            <button id="setMultiplierXMax" class="multiplier-button" data-multiplier="max"
-                                style="display: none;">xMax</button>
+                            <button id="setMultiplierXmax" class="multiplier-button" data-multiplier="max"
+                                style="display: none;">Xmax</button>
                         </div>
                     </div>
                     <h1 id="studiesTitleButton">Études (<span id="clickBonsPointsDisplay">+0 BP</span>)</h1>
@@ -1980,7 +1980,7 @@
         const setMultiplierX1 = document.getElementById('setMultiplierX1');
         const setMultiplierX10 = document.getElementById('setMultiplierX10');
         const setMultiplierX100 = document.getElementById('setMultiplierX100');
-        const setMultiplierXMax = document.getElementById('setMultiplierXMax');
+        const setMultiplierXmax = document.getElementById('setMultiplierXMax');
         const automationSection = document.getElementById('automationSection');
         const autoEleveBtn = document.getElementById('autoEleveBtn'); // Corrected ID
         const autoClasseBtn = document.getElementById('autoClasseBtn'); // Corrected ID
@@ -2247,8 +2247,8 @@
 
         function setCurrentPurchaseMultiplier(multiplier, itemType) {
             if (multiplier === 'max') {
-                currentPurchaseMultiplier = 'Max'; // Use a string identifier for "Max"
-                console.log("currentPurchaseMultiplier set to: Max for", itemType);
+                currentPurchaseMultiplier = 'max'; // Use a string identifier for "max"
+                console.log("currentPurchaseMultiplier set to: max for", itemType);
             } else {
                 const numMultiplier = parseFloat(multiplier);
                 if (!isNaN(numMultiplier) && isFinite(numMultiplier) && numMultiplier > 0) {
@@ -4624,7 +4624,7 @@
 
             // Studies section elements (controlled by their own unlock conditions)
             purchaseMultiplierSelection.style.display = multiPurchaseOptionUnlocked ? 'flex' : 'none';
-            setMultiplierXMax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none';
+            setMultiplierXmax.style.display = maxPurchaseOptionUnlocked ? 'inline-block' : 'none';
             achatEleveSection.style.display = elevesUnlocked ? 'block' : 'none';
             achatClasseSection.style.display = classesUnlocked ? 'block' : 'none';
             achatImageSection.style.display = imagesUnlocked ? 'block' : 'none';
