@@ -13,7 +13,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } = from './core/coreResourceManager.js';
+import { coreResourceManager } from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
