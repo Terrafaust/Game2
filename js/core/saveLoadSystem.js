@@ -11,8 +11,7 @@ import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js';
 import { coreGameStateManager } from './coreGameStateManager.js';
 import { coreResourceManager } from './coreResourceManager.js';
-// When modules are implemented, their state will also need to be part of the save/load process.
-// import { moduleLoader } from './moduleLoader.js';
+import { coreUIManager } from './coreUIManager.js'; // Ensure coreUIManager is imported
 
 const SAVE_KEY = 'incrementalGameSaveData';
 const CURRENT_SAVE_VERSION = coreGameStateManager.getGameVersion(); // Align with game state version initially

@@ -35,7 +35,8 @@ async function initializeGame() {
 
     // 5. Initialize Core Resource Manager (already initialized at definition)
 
-    // 6. Initialize Core UI Manager (requires DOM to be ready)
+    // 6. Initialize Core UI Manager (requires DOM to be ready and is critical for notifications)
+    // This MUST be initialized before any system attempts to use coreUIManager for notifications or UI updates.
     coreUIManager.initialize();
 
     // 7. Apply initial theme from settings and set up listeners
@@ -56,6 +57,7 @@ async function initializeGame() {
 
 
     // 8. Initialize Save/Load System & Attempt to Load Game
+    // Now that coreUIManager is initialized, saveLoadSystem can safely use its notification methods.
     const gameLoaded = saveLoadSystem.loadGame();
 
     if (!gameLoaded) {
@@ -181,7 +183,9 @@ async function initializeGame() {
 document.addEventListener('DOMContentLoaded', () => {
     initializeGame().catch(error => {
         loggingSystem.error("Main", "Unhandled error during game initialization:", error);
-        if (coreUIManager && coreUIManager.showNotification) {
+        // Ensure coreUIManager is available even in a catastrophic error scenario
+        // by making a direct check and fallback
+        if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
              coreUIManager.showNotification("A critical error occurred during game startup. Please try refreshing. If the problem persists, a reset might be needed.", "error", 0);
         } else {
             const body = document.querySelector('body');
