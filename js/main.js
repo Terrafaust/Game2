@@ -16,7 +16,7 @@ import { staticDataAggregator } from './core/staticDataAggregator.js';
 import { coreResourceManager } from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
-import { gameLoop } from './core/gameLoop.js';
+import { gameLoop } from './core/gameLoop';
 import { moduleLoader } from './core/moduleLoader.js';
 
 
@@ -90,9 +90,9 @@ async function initializeGame() {
     // 10. Load Game Modules
     try {
         // Corrected path for module loading:
-        // moduleLoader.js is in js/core/, so to reach js/modules/, it needs to go up one level (..)
+        // moduleLoader.js is in js/core/, so to reach js/modules/, it needs to go up two levels (../../)
         // then into the modules directory.
-        const moduleLoadedSuccessfully = await moduleLoader.loadModule('../modules/core_gameplay_module/core_gameplay_manifest.js');
+        const moduleLoadedSuccessfully = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         if (moduleLoadedSuccessfully) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
