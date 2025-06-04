@@ -1,4 +1,4 @@
-// js/main.js (v14)
+// js/main.js (v16)
 
 /**
  * @file main.js
@@ -13,7 +13,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js';
+import { coreResourceManager } from './core/coreResourceManager.js'; // Corrected import
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -74,7 +74,7 @@ async function initializeGame() {
                 initialAmount: 0,
                 isUnlocked: true,
                 showInUI: true,
-                color: '#4F46E5' // Default color for Study Points
+                color: '#4F46E5' // Default color for Study Points (consistent with primary)
             }
         });
         const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');

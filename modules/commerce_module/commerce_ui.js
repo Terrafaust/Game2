@@ -1,4 +1,4 @@
-// js/modules/commerce_module/commerce_ui.js (v4)
+// js/modules/commerce_module/commerce_ui.js (v5)
 
 /**
  * @file commerce_ui.js
@@ -75,7 +75,8 @@ export const ui = {
 
             const purchasableDescription = document.createElement('p');
             purchasableDescription.className = 'text-textSecondary text-sm mb-3';
-            purchasDescription.textContent = purchasableDef.description;
+            // Corrected typo: purchasDescription -> purchasableDescription
+            purchasableDescription.textContent = purchasableDef.description;
             purchasableCard.appendChild(purchasableDescription);
 
             // Only show owned count for repeatable items (if any, not currently used for commerce)
@@ -186,7 +187,7 @@ export const ui = {
                 content += `<p>Unlock via global game progression (Flag: '${condition.flag}').</p>`;
                 break;
             default:
-                content += `<p>Meet unknown condition.</p>`;
+                content += `<p>Meet unknown condition. Coomment please.</p>`;
                 break;
         }
         return content;
@@ -255,10 +256,16 @@ export const ui = {
                 const currentCost = moduleLogicRef.calculatePurchasableCost(purchasableId);
 
                 // Update owned count for repeatable items (if any)
-                if (purchasableDef.showOwnedCount) {
+                // This is specifically for generators that *have* owned counts.
+                // For one-time purchases like 'buyImage', this section will be skipped.
+                if (purchasableDef.showOwnedCount) { // Check showOwnedCount flag
                     const ownedCount = moduleLogicRef.getOwnedPurchasableCount(purchasableId);
                     const ownedDisplay = purchasableCard.querySelector(`#purchasable-${purchasableId}-owned`);
                     if (ownedDisplay) ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
+                } else {
+                    // Ensure owned display is hidden or removed if not applicable
+                    const ownedDisplay = purchasableCard.querySelector(`#purchasable-${purchasableId}-owned`);
+                    if (ownedDisplay) ownedDisplay.remove();
                 }
 
                 const costDisplay = purchasableCard.querySelector(`#purchasable-${purchasableId}-cost`);
@@ -278,7 +285,7 @@ export const ui = {
                         buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
                     }
                     // Update button tooltip for purchasables
-                    buyButton.title = purchasableDef.ui.tooltip(moduleLogicRef.getOwnedPurchasableCount(purchasableId));
+                    buyButton.title = purchasableDef.ui.tooltip(); // No dynamic owned count needed for one-time buy tooltip
                 }
             } else {
                 // If locked or already purchased (for one-time unlocks)
