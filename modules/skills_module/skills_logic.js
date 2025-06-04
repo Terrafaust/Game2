@@ -1,4 +1,4 @@
-// js/modules/skills_module/skills_logic.js 
+// modules/skills_module/skills_logic.js 
 
 /**
  * @file skills_logic.js

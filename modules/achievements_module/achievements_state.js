@@ -1,4 +1,4 @@
-// js/modules/achievements_module/achievements_state.js 
+// modules/achievements_module/achievements_state.js 
 
 /**
  * @file achievements_state.js
@@ -16,16 +16,17 @@ export let moduleState = {
 
 /**
  * Gets the initial state for this module.
+ * @param {object} staticData - The static data for the module, containing achievement definitions.
  * @returns {object} The initial state object.
  */
-export function getInitialState() {
+export function getInitialState(staticData) {
     // Return a new object instance each time to avoid shared references if called multiple times.
     const initialState = {
         unlockedAchievements: {},
     };
 
-    // Initialize all achievements to not unlocked
-    for (const achievementId in staticModuleData.achievements) {
+    // Initialize all achievements to not unlocked based on the provided staticData
+    for (const achievementId in staticData.achievements) {
         initialState.unlockedAchievements[achievementId] = false;
     }
 

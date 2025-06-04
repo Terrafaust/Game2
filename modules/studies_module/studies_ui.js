@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_ui.js
+// modules/studies_module/studies_ui.js
 
 /**
  * @file studies_ui.js

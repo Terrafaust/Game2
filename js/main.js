@@ -1,4 +1,4 @@
-// js/main.js (v7)
+// js/main.js (v8)
 
 /**
  * @file main.js
@@ -40,7 +40,7 @@ async function initializeGame() {
     // This MUST be initialized before any system attempts to use coreUIManager for notifications or UI updates.
     coreUIManager.initialize();
 
-    // 7. Initialize Core Upgrade Manager (NEW)
+    // 7. Initialize Core Upgrade Manager
     coreUpgradeManager.initialize();
 
     // 8. Apply initial theme from settings and set up listeners
@@ -96,7 +96,8 @@ async function initializeGame() {
     // 11. Load Game Modules
     try {
         // Load Core Gameplay Module (Stream 1)
-        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
+        // Corrected path: modules/core_gameplay_module/core_gameplay_manifest.js
+        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         if (coreGameplayModuleLoaded) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
@@ -106,7 +107,8 @@ async function initializeGame() {
         }
 
         // Load Studies Module (Stream 2)
-        const studiesModuleLoaded = await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
+        // Corrected path: modules/studies_module/studies_manifest.js
+        const studiesModuleLoaded = await moduleLoader.loadModule('../modules/studies_module/studies_manifest.js');
 
         if (studiesModuleLoaded) {
             loggingSystem.info("Main", "Studies module loading initiated and reported success by moduleLoader.");
@@ -116,7 +118,8 @@ async function initializeGame() {
         }
 
         // Load Stream 3 Modules
-        const commerceModuleLoaded = await moduleLoader.loadModule('../../modules/commerce_module/commerce_manifest.js');
+        // Corrected path: modules/commerce_module/commerce_manifest.js
+        const commerceModuleLoaded = await moduleLoader.loadModule('../modules/commerce_module/commerce_manifest.js');
         if (commerceModuleLoaded) {
             loggingSystem.info("Main", "Commerce module loading initiated and reported success by moduleLoader.");
         } else {
@@ -124,7 +127,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Commerce module failed to load.", "error", 10000);
         }
 
-        const skillsModuleLoaded = await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
+        // Corrected path: modules/skills_module/skills_manifest.js
+        const skillsModuleLoaded = await moduleLoader.loadModule('../modules/skills_module/skills_manifest.js');
         if (skillsModuleLoaded) {
             loggingSystem.info("Main", "Skills module loading initiated and reported success by moduleLoader.");
         } else {
@@ -132,7 +136,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Skills module failed to load.", "error", 10000);
         }
 
-        const achievementsModuleLoaded = await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
+        // Corrected path: modules/achievements_module/achievements_manifest.js
+        const achievementsModuleLoaded = await moduleLoader.loadModule('../modules/achievements_module/achievements_manifest.js');
         if (achievementsModuleLoaded) {
             loggingSystem.info("Main", "Achievements module loading initiated and reported success by moduleLoader.");
         } else {
@@ -140,7 +145,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Achievements module failed to load.", "error", 10000);
         }
 
-        const settingsUIModuleLoaded = await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
+        // Corrected path: modules/settings_ui_module/settings_ui_manifest.js
+        const settingsUIModuleLoaded = await moduleLoader.loadModule('../modules/settings_ui_module/settings_ui_manifest.js');
         if (settingsUIModuleLoaded) {
             loggingSystem.info("Main", "Settings UI module loading initiated and reported success by moduleLoader.");
         } else {

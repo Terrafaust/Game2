@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_logic.js
+// modules/studies_module/studies_logic.js 
 
 /**
  * @file studies_logic.js
@@ -28,7 +28,7 @@ export const moduleLogic = {
      * @returns {Decimal} The current cost of the producer.
      */
     calculateProducerCost(producerId) {
-        const { decimalUtility, loggingSystem } = coreSystemsRef;
+        const { decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef; // Added coreUpgradeManager
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef) {
@@ -40,9 +40,13 @@ export const moduleLogic = {
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
         const ownedCount = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
 
-        // Cost = baseCost * (costGrowthFactor ^ ownedCount)
+        // Apply cost reduction modifiers from CoreUpgradeManager
+        const costReductionFactor = coreUpgradeManager.getAggregatedModifier('producer', 'costReduction', producerId);
+        let actualBaseCost = decimalUtility.multiply(baseCost, costReductionFactor);
+
+        // Cost = actualBaseCost * (costGrowthFactor ^ ownedCount)
         const currentCost = decimalUtility.multiply(
-            baseCost,
+            actualBaseCost,
             decimalUtility.power(costGrowthFactor, ownedCount)
         );
 
@@ -78,6 +82,14 @@ export const moduleLogic = {
             let currentOwned = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
             moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, 1).toString(); // Store as string for saving
 
+            // If purchasing the first Professor, unlock the Knowledge resource in UI
+            if (producerId === 'professor' && decimalUtility.eq(currentOwned, 0)) {
+                coreResourceManager.unlockResource('knowledge');
+                coreResourceManager.setResourceVisibility('knowledge', true);
+                loggingSystem.info("StudiesLogic", "Knowledge resource unlocked and set to show in UI.");
+                coreSystemsRef.coreUIManager.showNotification("New Resource Unlocked: Knowledge!", 'info', 3000);
+            }
+
             // Update total production rate for the resource this producer generates
             this.updateProducerProduction(producerId);
 
@@ -98,7 +110,7 @@ export const moduleLogic = {
      * @param {string} producerId - The ID of the producer (e.g., 'student').
      */
     updateProducerProduction(producerId) {
-        const { coreResourceManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef; // Added coreUpgradeManager
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef) {
@@ -112,9 +124,22 @@ export const moduleLogic = {
         // Calculate total production from this type of producer
         let totalProduction = decimalUtility.multiply(baseProductionPerUnit, ownedCount);
 
-        // TODO: Apply skill/achievement multipliers here if CoreUpgradeManager is implemented.
-        // For now, it's just base production * owned count.
-        // Example: totalProduction = decimalUtility.multiply(totalProduction, coreUpgradeManager.getMultiplier(producerId));
+        // Apply production multipliers from CoreUpgradeManager
+        // Check for specific producer multipliers (e.g., skill for student)
+        const producerMultiplier = coreUpgradeManager.getAggregatedModifier('producer', 'productionMultiplier', producerId);
+        totalProduction = decimalUtility.multiply(totalProduction, producerMultiplier);
+
+        // Check for global resource multipliers (e.g., achievement for studyPoints)
+        if (producerDef.resourceId === 'studyPoints') {
+            const globalSPMultiplier = coreUpgradeManager.getAggregatedModifier('resource', 'productionMultiplier', 'studyPoints');
+            totalProduction = decimalUtility.multiply(totalProduction, globalSPMultiplier);
+        }
+        // Add other resource-specific global multipliers here if needed (e.g., for 'knowledge')
+        if (producerDef.resourceId === 'knowledge') {
+             const globalKnowledgeMultiplier = coreUpgradeManager.getAggregatedModifier('resource', 'productionMultiplier', 'knowledge');
+             totalProduction = decimalUtility.multiply(totalProduction, globalKnowledgeMultiplier);
+        }
+
 
         // Set this producer's contribution to the resource manager
         // The sourceKey should be unique for this module and producer type
@@ -141,7 +166,7 @@ export const moduleLogic = {
      * @returns {boolean} True if unlocked, false otherwise.
      */
     isProducerUnlocked(producerId) {
-        const { coreResourceManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, moduleLoader } = coreSystemsRef; // Added moduleLoader
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef || !producerDef.unlockCondition) {
@@ -157,10 +182,12 @@ export const moduleLogic = {
                 const requiredResourceAmount = decimalUtility.new(condition.amount);
                 return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
             case "producerOwned":
+                // For producerOwned conditions, check against this module's state
                 const ownedCount = decimalUtility.new(moduleState.ownedProducers[condition.producerId] || 0);
                 const requiredCount = decimalUtility.new(condition.count);
                 return decimalUtility.gte(ownedCount, requiredCount);
-            // Add other unlock condition types as needed (e.g., global flags, achievements)
+            case "globalFlag": // Added for completeness, though not currently used in studies_data.js producers
+                return coreSystemsRef.coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
             default:
                 loggingSystem.warn("StudiesLogic", `Unknown unlock condition type for producer ${producerId}: ${condition.type}`);
                 return false;
@@ -205,7 +232,7 @@ export const moduleLogic = {
      * This should be called periodically (e.g., in game loop or after significant actions).
      */
     updateGlobalFlags() {
-        const { coreGameStateManager, loggingSystem, decimalUtility } = coreSystemsRef;
+        const { coreGameStateManager, loggingSystem, decimalUtility, coreUIManager } = coreSystemsRef; // Added coreUIManager
 
         for (const flagKey in staticModuleData.globalFlagsToSet) {
             const flagDef = staticModuleData.globalFlagsToSet[flagKey];
@@ -227,7 +254,8 @@ export const moduleLogic = {
             if (conditionMet && !coreGameStateManager.getGlobalFlag(flagDef.flag)) {
                 coreGameStateManager.setGlobalFlag(flagDef.flag, flagDef.value);
                 loggingSystem.info("StudiesLogic", `Global flag '${flagDef.flag}' set to ${flagDef.value} due to condition met.`);
-                coreSystemsRef.coreUIManager.showNotification(`New content unlocked: ${flagDef.flag}!`, 'info', 3000);
+                coreUIManager.showNotification(`New content unlocked: ${flagDef.flag}!`, 'info', 3000);
+                coreUIManager.renderMenu(); // Trigger menu re-render to show new tabs
             }
         }
     },

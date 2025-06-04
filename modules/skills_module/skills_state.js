@@ -1,4 +1,4 @@
-// js/modules/skills_module/skills_state.js 
+// modules/skills_module/skills_state.js 
 
 /**
  * @file skills_state.js
@@ -16,16 +16,17 @@ export let moduleState = {
 
 /**
  * Gets the initial state for this module.
+ * @param {object} staticData - The static data for the module, containing skill definitions.
  * @returns {object} The initial state object.
  */
-export function getInitialState() {
+export function getInitialState(staticData) {
     // Return a new object instance each time to avoid shared references if called multiple times.
     const initialState = {
         skillLevels: {},
     };
 
-    // Initialize all skills to level 0
-    for (const skillId in staticModuleData.skills) {
+    // Initialize all skills to level 0 based on the provided staticData
+    for (const skillId in staticData.skills) {
         initialState.skillLevels[skillId] = 0;
     }
 

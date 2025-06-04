@@ -1,4 +1,4 @@
-// js/modules/core_gameplay_module/core_gameplay_manifest.js
+// modules/core_gameplay_module/core_gameplay_manifest.js
 
 /**
  * @file core_gameplay_manifest.js

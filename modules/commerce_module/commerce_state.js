@@ -1,4 +1,4 @@
-// js/modules/commerce_module/commerce_state.js 
+// modules/commerce_module/commerce_state.js 
 
 /**
  * @file commerce_state.js

@@ -1,4 +1,4 @@
-// js/modules/commerce_module/commerce_ui.js 
+// modules/commerce_module/commerce_ui.js 
 
 /**
  * @file commerce_ui.js

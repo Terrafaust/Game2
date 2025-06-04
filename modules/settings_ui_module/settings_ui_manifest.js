@@ -1,4 +1,4 @@
-// js/modules/settings_ui_module/settings_ui_manifest.js 
+// modules/settings_ui_module/settings_ui_manifest.js 
 
 /**
  * @file settings_ui_manifest.js

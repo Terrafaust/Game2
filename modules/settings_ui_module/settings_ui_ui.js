@@ -1,4 +1,4 @@
-// js/modules/settings_ui_module/settings_ui_ui.js 
+// modules/settings_ui_module/settings_ui_ui.js 
 
 /**
  * @file settings_ui_ui.js

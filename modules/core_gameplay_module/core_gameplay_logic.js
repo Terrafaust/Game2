@@ -1,4 +1,4 @@
-// js/modules/core_gameplay_module/core_gameplay_logic.js
+// modules/core_gameplay_module/core_gameplay_logic.js
 
 /**
  * @file core_gameplay_logic.js

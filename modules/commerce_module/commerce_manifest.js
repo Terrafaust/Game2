@@ -1,4 +1,4 @@
-// js/modules/commerce_module/commerce_manifest.js 
+// modules/commerce_module/commerce_manifest.js 
 
 /**
  * @file commerce_manifest.js

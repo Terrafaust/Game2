@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_manifest.js
+// modules/studies_module/studies_manifest.js 
 
 /**
  * @file studies_manifest.js
@@ -52,7 +52,6 @@ const studiesManifest = {
         }
 
         // 2. Initialize Module State
-        // Load state from coreGameStateManager or use defaults
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
             loggingSystem.info(this.name, "No saved state found for Studies module. Initializing with default state.");
@@ -140,7 +139,8 @@ const studiesManifest = {
                     owned: moduleLogic.getOwnedProducerCount(producerId),
                     production: coreResourceManager.getProductionFromSource(staticModuleData.producers[producerId].resourceId, `studies_module_${producerId}`)
                 };
-            }
+            },
+            staticModuleData: staticModuleData // Expose static data for other modules (e.g., Achievements)
         };
     }
 };

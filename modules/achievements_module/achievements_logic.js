@@ -1,4 +1,4 @@
-// js/modules/achievements_module/achievements_logic.js 
+// modules/achievements_module/achievements_logic.js 
 
 /**
  * @file achievements_logic.js

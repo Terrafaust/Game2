@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_state.js
+// modules/studies_module/studies_state.js
 
 /**
  * @file studies_state.js

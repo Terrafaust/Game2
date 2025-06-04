@@ -1,4 +1,4 @@
-// js/modules/settings_ui_module/settings_ui_logic.js 
+// modules/settings_ui_module/settings_ui_logic.js 
 
 /**
  * @file settings_ui_logic.js

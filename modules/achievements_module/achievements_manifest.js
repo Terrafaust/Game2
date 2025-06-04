@@ -1,4 +1,4 @@
-// js/modules/achievements_module/achievements_manifest.js
+// modules/achievements_module/achievements_manifest.js 
 
 /**
  * @file achievements_manifest.js
@@ -41,12 +41,12 @@ const achievementsManifest = {
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
             loggingSystem.info(this.name, "No saved state found for Achievements module. Initializing with default state.");
-            currentModuleState = getInitialState();
+            currentModuleState = getInitialState(staticModuleData); // Pass staticModuleData
             coreGameStateManager.setModuleState(this.id, currentModuleState);
         } else {
             loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Achievements module.", currentModuleState);
             // No Decimal conversion needed for boolean flags, but ensure consistency
-            for (const achId in staticModuleData.achievements) {
+            for (const achId in staticModuleData.achievements) { // Use staticModuleData to ensure all achievements are covered
                 if (typeof currentModuleState.unlockedAchievements[achId] === 'undefined') {
                     currentModuleState.unlockedAchievements[achId] = false; // Add new achievements if not in save
                 }
@@ -89,16 +89,17 @@ const achievementsManifest = {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
+            staticModuleData: staticModuleData, // Expose static data for other modules (e.g., Statistics)
             // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
                 loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
                 if (!loadedState) {
-                    loadedState = getInitialState();
+                    loadedState = getInitialState(staticModuleData); // Pass staticModuleData
                     coreGameStateManager.setModuleState(this.id, loadedState);
                 }
                 // Ensure consistency for new achievements or missing flags
-                for (const achId in staticModuleData.achievements) {
+                for (const achId in staticModuleData.achievements) { // Use staticModuleData to ensure all achievements are covered
                     if (typeof loadedState.unlockedAchievements[achId] === 'undefined') {
                         loadedState.unlockedAchievements[achId] = false;
                     }
@@ -111,7 +112,7 @@ const achievementsManifest = {
             },
             onResetState: () => {
                 loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
-                const initialState = getInitialState();
+                const initialState = getInitialState(staticModuleData); // Pass staticModuleData
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
                 moduleLogic.onResetState(); // Notify logic component

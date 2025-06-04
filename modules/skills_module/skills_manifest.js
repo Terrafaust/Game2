@@ -1,4 +1,4 @@
-// js/modules/skills_module/skills_manifest.js 
+// modules/skills_module/skills_manifest.js 
 
 /**
  * @file skills_manifest.js
@@ -40,13 +40,17 @@ const skillsManifest = {
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
             loggingSystem.info(this.name, "No saved state found for Skills module. Initializing with default state.");
-            currentModuleState = getInitialState();
+            currentModuleState = getInitialState(staticModuleData); // Pass staticModuleData
             coreGameStateManager.setModuleState(this.id, currentModuleState);
         } else {
             loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Skills module.", currentModuleState);
             // Ensure skill levels are numbers (they are small, so no Decimal conversion needed for state)
-            for (const skillId in currentModuleState.skillLevels) {
-                currentModuleState.skillLevels[skillId] = parseInt(currentModuleState.skillLevels[skillId] || 0);
+            for (const skillId in staticModuleData.skills) { // Use staticModuleData to ensure all skills are covered
+                if (typeof currentModuleState.skillLevels[skillId] === 'undefined') {
+                    currentModuleState.skillLevels[skillId] = 0; // Add new skills if not in save
+                } else {
+                    currentModuleState.skillLevels[skillId] = parseInt(currentModuleState.skillLevels[skillId] || 0);
+                }
             }
             Object.assign(moduleState, currentModuleState); // Update local moduleState
         }
@@ -89,17 +93,22 @@ const skillsManifest = {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
+            staticModuleData: staticModuleData, // Expose static data for other modules (e.g., Achievements)
             // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
                 loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
                 if (!loadedState) {
-                    loadedState = getInitialState();
+                    loadedState = getInitialState(staticModuleData); // Pass staticModuleData
                     coreGameStateManager.setModuleState(this.id, loadedState);
                 }
                 // Ensure skill levels are numbers
-                for (const skillId in loadedState.skillLevels) {
-                    loadedState.skillLevels[skillId] = parseInt(loadedState.skillLevels[skillId] || 0);
+                for (const skillId in staticModuleData.skills) { // Use staticModuleData to ensure all skills are covered
+                    if (typeof loadedState.skillLevels[skillId] === 'undefined') {
+                        loadedState.skillLevels[skillId] = 0;
+                    } else {
+                        loadedState.skillLevels[skillId] = parseInt(loadedState.skillLevels[skillId] || 0);
+                    }
                 }
                 Object.assign(moduleState, loadedState); // Update local moduleState
                 moduleLogic.onGameLoad(); // Notify logic component
@@ -109,7 +118,7 @@ const skillsManifest = {
             },
             onResetState: () => {
                 loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
-                const initialState = getInitialState();
+                const initialState = getInitialState(staticModuleData); // Pass staticModuleData
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
                 moduleLogic.onResetState(); // Notify logic component

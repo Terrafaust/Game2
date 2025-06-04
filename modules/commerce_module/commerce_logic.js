@@ -1,4 +1,4 @@
-// js/modules/commerce_module/commerce_logic.js 
+// modules/commerce_module/commerce_logic.js 
 
 /**
  * @file commerce_logic.js

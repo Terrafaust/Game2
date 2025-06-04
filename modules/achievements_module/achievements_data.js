@@ -1,4 +1,4 @@
-// js/modules/achievements_module/achievements_data.js 
+// modules/achievements_module/achievements_data.js 
 
 /**
  * @file achievements_data.js

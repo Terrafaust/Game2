@@ -1,4 +1,4 @@
-// js/modules/skills_module/skills_ui.js 
+// modules/skills_module/skills_ui.js 
 
 /**
  * @file skills_ui.js
