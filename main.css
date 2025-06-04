@@ -1,0 +1,16 @@
+/* main.css */
+/* Styles defined within the <style> tag in index.html are preferred for Tailwind integration */
+/* This file can be used for more complex global styles or overrides if necessary. */
+
+/* Example of a global style if not using Tailwind for everything, or for very specific overrides:
+body {
+    font-family: 'Arial', sans-serif; /* This would be overridden by Tailwind's font-inter if Inter is loaded */
+    background-color: #f0f0f0;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+*/
+
+/* Placeholder for any future global CSS needs */
