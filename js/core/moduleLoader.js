@@ -16,6 +16,7 @@ let coreSystems = {
     coreUIManager: null,
     decimalUtility: null,
     loggingSystem: null, // Already imported, but good to have in the coreSystems object for modules
+    gameLoop: null, // Ensure gameLoop is part of coreSystems
 };
 
 const loadedModules = {
@@ -31,6 +32,7 @@ const moduleLoader = {
      * @param {object} coreUIManagerRef
      * @param {object} decimalUtilityRef
      * @param {object} loggingSystemRef
+     * @param {object} gameLoopRef - Reference to the gameLoop system
      */
     initialize(
         staticDataAggregatorRef,
@@ -38,14 +40,16 @@ const moduleLoader = {
         coreResourceManagerRef,
         coreUIManagerRef,
         decimalUtilityRef,
-        loggingSystemRef
+        loggingSystemRef,
+        gameLoopRef // Added gameLoopRef parameter
     ) {
         coreSystems.staticDataAggregator = staticDataAggregatorRef;
         coreSystems.coreGameStateManager = coreGameStateManagerRef;
         coreSystems.coreResourceManager = coreResourceManagerRef;
         coreSystems.coreUIManager = coreUIManagerRef;
         coreSystems.decimalUtility = decimalUtilityRef;
-        coreSystems.loggingSystem = loggingSystemRef; // Can also use the direct import
+        coreSystems.loggingSystem = loggingSystemRef;
+        coreSystems.gameLoop = gameLoopRef; // Assign gameLoopRef to coreSystems
 
         loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems.");
     },
