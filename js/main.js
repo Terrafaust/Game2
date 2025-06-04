@@ -206,10 +206,11 @@ async function loadGameModules() {
  * This is called when the DOM is fully loaded.
  */
 async function initGame() {
-    loggingSystem.log('Initializing game...', 'main.js');
-
     // 1. Initialize Core Engine services
     initializeCoreEngine();
+
+    // Now loggingSystem is guaranteed to be initialized, so we can use it.
+    loggingSystem.log('Initializing game...', 'main.js');
 
     // 2. Load game modules
     await loadGameModules();
