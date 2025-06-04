@@ -89,8 +89,10 @@ async function initializeGame() {
     
     // 10. Load Game Modules
     try {
-        // Explicitly check the boolean return from loadModule
-        const moduleLoadedSuccessfully = await moduleLoader.loadModule('./modules/core_gameplay_module/core_gameplay_manifest.js');
+        // Corrected path for module loading:
+        // moduleLoader.js is in js/core/, so to reach js/modules/, it needs to go up one level (..)
+        // then into the modules directory.
+        const moduleLoadedSuccessfully = await moduleLoader.loadModule('../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         if (moduleLoadedSuccessfully) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
