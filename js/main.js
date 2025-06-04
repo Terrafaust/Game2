@@ -1,4 +1,4 @@
-// js/main.js
+// js/main.js 
 
 /**
  * @file main.js
@@ -9,7 +9,7 @@
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
-import { decimalUtility } from './core/decimalUtility.js'; // Though not directly used here, good to acknowledge
+import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
@@ -18,6 +18,7 @@ import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
+import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 
 
 // --- Main Game Initialization Function ---
@@ -39,7 +40,10 @@ async function initializeGame() {
     // This MUST be initialized before any system attempts to use coreUIManager for notifications or UI updates.
     coreUIManager.initialize();
 
-    // 7. Apply initial theme from settings and set up listeners
+    // 7. Initialize Core Upgrade Manager (NEW)
+    coreUpgradeManager.initialize();
+
+    // 8. Apply initial theme from settings and set up listeners
     const initialTheme = globalSettingsManager.getSetting('theme');
     if (initialTheme && initialTheme.name && initialTheme.mode) {
         coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
@@ -56,8 +60,8 @@ async function initializeGame() {
     });
 
 
-    // 8. Initialize Save/Load System & Attempt to Load Game
-    // Now that coreUIManager is initialized, saveLoadSystem can safely use its notification methods.
+    // 9. Initialize Save/Load System & Attempt to Load Game
+    // Now that coreUIManager and coreUpgradeManager are initialized, saveLoadSystem can safely use their methods.
     const gameLoaded = saveLoadSystem.loadGame();
 
     if (!gameLoaded) {
@@ -85,11 +89,11 @@ async function initializeGame() {
     coreUIManager.renderMenu();
 
 
-    // 9. Initialize Module Loader
-    // Pass gameLoop to the moduleLoader so modules can register callbacks with it.
-    moduleLoader.initialize(staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop);
+    // 10. Initialize Module Loader
+    // Pass ALL core systems to the moduleLoader so modules can access them.
+    moduleLoader.initialize(staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop, coreUpgradeManager);
     
-    // 10. Load Game Modules
+    // 11. Load Game Modules
     try {
         // Load Core Gameplay Module (Stream 1)
         const coreGameplayModuleLoaded = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
@@ -111,12 +115,46 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Studies module failed to load. Game may not function correctly.", "error", 10000);
         }
 
+        // Load Stream 3 Modules
+        const commerceModuleLoaded = await moduleLoader.loadModule('../../modules/commerce_module/commerce_manifest.js');
+        if (commerceModuleLoaded) {
+            loggingSystem.info("Main", "Commerce module loading initiated and reported success by moduleLoader.");
+        } else {
+            loggingSystem.error("Main", "ModuleLoader reported failure to load commerce_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Commerce module failed to load.", "error", 10000);
+        }
+
+        const skillsModuleLoaded = await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
+        if (skillsModuleLoaded) {
+            loggingSystem.info("Main", "Skills module loading initiated and reported success by moduleLoader.");
+        } else {
+            loggingSystem.error("Main", "ModuleLoader reported failure to load skills_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Skills module failed to load.", "error", 10000);
+        }
+
+        const achievementsModuleLoaded = await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
+        if (achievementsModuleLoaded) {
+            loggingSystem.info("Main", "Achievements module loading initiated and reported success by moduleLoader.");
+        } else {
+            loggingSystem.error("Main", "ModuleLoader reported failure to load achievements_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Achievements module failed to load.", "error", 10000);
+        }
+
+        const settingsUIModuleLoaded = await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
+        if (settingsUIModuleLoaded) {
+            loggingSystem.info("Main", "Settings UI module loading initiated and reported success by moduleLoader.");
+        } else {
+            loggingSystem.error("Main", "ModuleLoader reported failure to load settings_ui_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Settings UI module failed to load.", "error", 10000);
+        }
+
+
     } catch (error) { // This catch is for unexpected errors from the await operation itself or if loadModule re-throws
         loggingSystem.error("Main", "Unhandled error during module loading attempt:", error);
         coreUIManager.showNotification("Critical Error: A module failed to load (unexpected error). Game may not function.", "error", 10000);
     }
 
-    // 11. Attach Event Listeners for Global Buttons (Save, Load, Reset)
+    // 12. Attach Event Listeners for Global Buttons (Save, Load, Reset)
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
@@ -175,7 +213,7 @@ async function initializeGame() {
         loggingSystem.warn("Main", "Reset button not found in DOM.");
     }
 
-    // 12. Start the Game Loop
+    // 13. Start the Game Loop
     // Ensure it's started, especially if a load operation might have stopped it.
     if (!gameLoop.isRunning()) {
         gameLoop.start();

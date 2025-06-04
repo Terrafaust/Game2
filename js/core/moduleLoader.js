@@ -1,4 +1,4 @@
-// js/core/moduleLoader.js
+// js/core/moduleLoader.js (v2)
 
 /**
  * @file moduleLoader.js
@@ -17,6 +17,7 @@ let coreSystems = {
     decimalUtility: null,
     loggingSystem: null, // Already imported, but good to have in the coreSystems object for modules
     gameLoop: null, // Ensure gameLoop is part of coreSystems
+    coreUpgradeManager: null, // NEW: Reference to the CoreUpgradeManager
 };
 
 const loadedModules = {
@@ -33,6 +34,7 @@ const moduleLoader = {
      * @param {object} decimalUtilityRef
      * @param {object} loggingSystemRef
      * @param {object} gameLoopRef - Reference to the gameLoop system
+     * @param {object} coreUpgradeManagerRef - NEW: Reference to the CoreUpgradeManager
      */
     initialize(
         staticDataAggregatorRef,
@@ -41,7 +43,8 @@ const moduleLoader = {
         coreUIManagerRef,
         decimalUtilityRef,
         loggingSystemRef,
-        gameLoopRef // Added gameLoopRef parameter
+        gameLoopRef,
+        coreUpgradeManagerRef // NEW: Added coreUpgradeManagerRef parameter
     ) {
         coreSystems.staticDataAggregator = staticDataAggregatorRef;
         coreSystems.coreGameStateManager = coreGameStateManagerRef;
@@ -49,7 +52,8 @@ const moduleLoader = {
         coreSystems.coreUIManager = coreUIManagerRef;
         coreSystems.decimalUtility = decimalUtilityRef;
         coreSystems.loggingSystem = loggingSystemRef;
-        coreSystems.gameLoop = gameLoopRef; // Assign gameLoopRef to coreSystems
+        coreSystems.gameLoop = gameLoopRef;
+        coreSystems.coreUpgradeManager = coreUpgradeManagerRef; // NEW: Assign coreUpgradeManagerRef
 
         loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems.");
     },
