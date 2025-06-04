@@ -262,7 +262,8 @@ const decimalUtility = {
     format(value, places = 2, mantissaPlaces = 2) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
 
-        if (decValue.isNan || !decValue.isFinite()) {
+        // Corrected check for NaN or Infinity using break_infinity.js properties
+        if (decValue.isNan || decValue.isInfinite) { 
             return decValue.toString(); // "NaN", "Infinity"
         }
         
