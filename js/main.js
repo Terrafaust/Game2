@@ -86,7 +86,8 @@ async function initializeGame() {
 
 
     // 9. Initialize Module Loader
-    moduleLoader.initialize(staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem);
+    // Pass gameLoop to the moduleLoader so modules can register callbacks with it.
+    moduleLoader.initialize(staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop);
     
     // 10. Load Game Modules
     try {
