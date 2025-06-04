@@ -1,246 +1,199 @@
-// game/js/main.js
+// js/main.js
 
 /**
- * @fileoverview Main entry point for the Incremental Game.
- * This file orchestrates the initialization of the CoreEngine services
- * and the loading of various game modules.
+ * @file main.js
+ * @description Main entry point for the incremental game.
+ * Initializes all core systems, loads game data, sets up initial game state,
+ * loads modules, and starts the game loop.
  */
 
-// Import core engine services.
-// Assuming these are defined in separate files and made globally accessible,
-// or imported via a build system. For this setup, we'll assume global access
-// after their respective scripts are loaded in index.html.
-// In a real module system, you'd use:
-// import { DecimalUtility } from './core/decimalUtility.js';
-// import { GameLoop } from './core/gameLoop.js';
-// etc.
+// --- Core System Imports ---
+import { loggingSystem } from './core/loggingSystem.js';
+import { decimalUtility } from './core/decimalUtility.js'; // Though not directly used here, good to acknowledge
+import { globalSettingsManager } from './core/globalSettingsManager.js';
+import { coreGameStateManager } from './core/coreGameStateManager.js';
+import { staticDataAggregator } from './core/staticDataAggregator.js';
+import { coreResourceManager } from './core/coreResourceManager.js';
+import { coreUIManager } from './core/coreUIManager.js';
+import { saveLoadSystem } from './core/saveLoadSystem.js';
+import { gameLoop } from './core/gameLoop.js';
+import { moduleLoader } from './core/moduleLoader.js';
 
-// Global references for core services (initialized in initGame).
-let decimalUtility;
-let loggingSystem;
-let coreGameStateManager;
-let coreResourceManager;
-let coreUIManager;
-let moduleLoader;
-let saveLoadSystem;
-let staticDataAggregator;
-let gameLoop;
 
-/**
- * Initializes the core game engine services.
- * This function sets up the foundational components of the game.
- */
-function initializeCoreEngine() {
-    // Initialize LoggingSystem first, as other components might use it.
-    if (typeof LoggingSystem !== 'undefined') {
-        loggingSystem = LoggingSystem;
-        loggingSystem.log('LoggingSystem initialized.', 'main.js');
-    } else {
-        console.error('LoggingSystem not found!');
-        // Provide a fallback if LoggingSystem is missing.
-        loggingSystem = {
-            log: console.log,
-            warn: console.warn,
-            error: console.error
-        };
+// --- Main Game Initialization Function ---
+async function initializeGame() {
+    // 1. Initialize Logging System (as early as possible)
+    loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
+    loggingSystem.info("Main", "Game initialization sequence started.");
+
+    // 2. Initialize Global Settings Manager
+    globalSettingsManager.initialize();
+
+    // 3. Initialize Core Game State Manager (already initialized at definition)
+
+    // 4. Initialize Static Data Aggregator (already initialized at definition)
+
+    // 5. Initialize Core Resource Manager (already initialized at definition)
+
+    // 6. Initialize Core UI Manager (requires DOM to be ready and is critical for notifications)
+    // This MUST be initialized before any system attempts to use coreUIManager for notifications or UI updates.
+    coreUIManager.initialize();
+
+    // 7. Apply initial theme from settings and set up listeners
+    const initialTheme = globalSettingsManager.getSetting('theme');
+    if (initialTheme && initialTheme.name && initialTheme.mode) {
+        coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
     }
-
-    // Initialize DecimalUtility. Ensure break_infinity.min.js is loaded.
-    if (typeof Decimal !== 'undefined' && typeof DecimalUtility !== 'undefined') {
-        decimalUtility = DecimalUtility;
-        decimalUtility.init(Decimal); // Pass the Decimal constructor to the utility.
-        loggingSystem.log('DecimalUtility initialized.', 'main.js');
-    } else {
-        loggingSystem.error('Decimal.js or DecimalUtility not found! Large number calculations will fail.', 'main.js');
-        // Fallback or error handling for missing Decimal.js
-        decimalUtility = {
-            new: (value) => new Number(value), // Fallback to native Number
-            add: (a, b) => a + b,
-            subtract: (a, b) => a - b,
-            multiply: (a, b) => a * b,
-            divide: (a, b) => a / b,
-            pow: (base, exp) => Math.pow(base, exp),
-            greaterThanOrEqualTo: (a, b) => a >= b,
-            lessThanOrEqualTo: (a, b) => a <= b,
-            format: (value) => value.toString()
-        };
-    }
-
-    // Initialize other core services.
-    // Pass dependencies during initialization.
-    if (typeof CoreGameStateManager !== 'undefined') {
-        coreGameStateManager = CoreGameStateManager;
-        coreGameStateManager.init(loggingSystem);
-        loggingSystem.log('CoreGameStateManager initialized.', 'main.js');
-    } else {
-        loggingSystem.error('CoreGameStateManager not found!', 'main.js');
-    }
-
-    if (typeof CoreResourceManager !== 'undefined') {
-        coreResourceManager = CoreResourceManager;
-        coreResourceManager.init(decimalUtility, loggingSystem);
-        loggingSystem.log('CoreResourceManager initialized.', 'main.js');
-    } else {
-        loggingSystem.error('CoreResourceManager not found!', 'main.js');
-    }
-
-    if (typeof CoreUIManager !== 'undefined') {
-        coreUIManager = CoreUIManager;
-        coreUIManager.init(coreResourceManager, coreGameStateManager, loggingSystem, decimalUtility);
-        loggingSystem.log('CoreUIManager initialized.', 'main.js');
-    } else {
-        loggingSystem.error('CoreUIManager not found!', 'main.js');
-    }
-
-    if (typeof ModuleLoader !== 'undefined') {
-        moduleLoader = ModuleLoader;
-        moduleLoader.init(loggingSystem);
-        loggingSystem.log('ModuleLoader initialized.', 'main.js');
-    } else {
-        loggingSystem.error('ModuleLoader not found!', 'main.js');
-    }
-
-    if (typeof SaveLoadSystem !== 'undefined') {
-        saveLoadSystem = SaveLoadSystem;
-        saveLoadSystem.init(coreGameStateManager, coreResourceManager, loggingSystem, decimalUtility);
-        loggingSystem.log('SaveLoadSystem initialized.', 'main.js');
-    } else {
-        loggingSystem.error('SaveLoadSystem not found!', 'main.js');
-    }
-
-    if (typeof StaticDataAggregator !== 'undefined') {
-        staticDataAggregator = StaticDataAggregator;
-        staticDataAggregator.init(loggingSystem);
-        loggingSystem.log('StaticDataAggregator initialized.', 'main.js');
-    } else {
-        loggingSystem.error('StaticDataAggregator not found!', 'main.js');
-    }
-
-    // GameLoop needs references to other services for its update cycle.
-    if (typeof GameLoop !== 'undefined') {
-        gameLoop = GameLoop;
-        gameLoop.init(coreUIManager, coreResourceManager, loggingSystem); // Pass coreUIManager and coreResourceManager for updates
-        loggingSystem.log('GameLoop initialized.', 'main.js');
-    } else {
-        loggingSystem.error('GameLoop not found!', 'main.js');
-    }
-
-    // Attach global save/load/reset buttons.
-    document.getElementById('save-button').addEventListener('click', () => {
-        saveLoadSystem.saveGame();
-        coreUIManager.showMessage('Game Saved!', 'success');
+    document.addEventListener('themeChanged', (event) => {
+        const { name, mode } = event.detail;
+        coreUIManager.applyTheme(name, mode);
+        loggingSystem.info("Main", `Theme changed to ${name} (${mode}) via event.`);
     });
-    document.getElementById('load-button').addEventListener('click', () => {
-        saveLoadSystem.loadGame();
-        coreUIManager.showMessage('Game Loaded!', 'success');
+    document.addEventListener('languageChanged', (event) => {
+        const lang = event.detail;
+        loggingSystem.info("Main", `Language changed to ${lang} via event. Localization not yet implemented.`);
+        coreUIManager.showNotification(`Language set to ${lang} (Localization TBD)`, 'info');
     });
-    document.getElementById('reset-button').addEventListener('click', () => {
-        // In a real game, you'd want a confirmation modal here.
-        if (confirm('Are you sure you want to hard reset your game? This cannot be undone!')) {
-            saveLoadSystem.resetGame();
-            coreUIManager.showMessage('Game Reset!', 'info');
+
+
+    // 8. Initialize Save/Load System & Attempt to Load Game
+    // Now that coreUIManager is initialized, saveLoadSystem can safely use its notification methods.
+    const gameLoaded = saveLoadSystem.loadGame();
+
+    if (!gameLoaded) {
+        loggingSystem.info("Main", "No save game found or loading failed. Starting a new game.");
+        staticDataAggregator.registerStaticData('core_resource_definitions', {
+            studyPoints: {
+                id: 'studyPoints',
+                name: "Study Points",
+                initialAmount: 0,
+                isUnlocked: true,
+                showInUI: true
+            }
+        });
+        const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
+        if (spDef) {
+             coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
+        } else {
+            loggingSystem.error("Main", "Failed to define initial Study Points resource from static data.");
+        }
+        coreGameStateManager.setGameVersion("0.1.0");
+    }
+    
+    coreUIManager.updateResourceDisplay();
+    coreUIManager.renderMenu();
+
+
+    // 9. Initialize Module Loader
+    moduleLoader.initialize(staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem);
+    
+    // 10. Load Game Modules
+    try {
+        // Corrected path for module loading:
+        // moduleLoader.js is in js/core/, so to reach js/modules/, it needs to go up two levels (../../)
+        // then into the modules directory.
+        const moduleLoadedSuccessfully = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
+        
+        if (moduleLoadedSuccessfully) {
+            loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
+        } else {
+            // This block will now execute if moduleLoader.loadModule returns false
+            loggingSystem.error("Main", "ModuleLoader reported failure to load core_gameplay_module. This usually means an error occurred within the module's own initialization or manifest. Check ModuleLoader and module-specific logs.");
+            coreUIManager.showNotification("Critical Error: Core gameplay module failed to load (moduleLoader returned false). Game may not function correctly.", "error", 10000);
+        }
+    } catch (error) { // This catch is for unexpected errors from the await operation itself or if loadModule re-throws
+        loggingSystem.error("Main", "Unhandled error during module loading attempt for core_gameplay_module:", error);
+        coreUIManager.showNotification("Critical Error: Core gameplay module failed to load (unexpected error). Game may not function.", "error", 10000);
+    }
+
+    // 11. Attach Event Listeners for Global Buttons (Save, Load, Reset)
+    const saveButton = document.getElementById('save-button');
+    const loadButton = document.getElementById('load-button');
+    const resetButton = document.getElementById('reset-button');
+
+    if (saveButton) saveButton.addEventListener('click', () => saveLoadSystem.saveGame());
+    else loggingSystem.warn("Main", "Save button not found in DOM.");
+
+    if (loadButton) {
+        loadButton.addEventListener('click', () => {
+            if (saveLoadSystem.loadGame()) {
+                loggingSystem.info("Main", "Game loaded. Refreshing UI and notifying modules.");
+                coreUIManager.fullUIRefresh();
+                moduleLoader.notifyAllModulesOfLoad(); 
+                // gameLoop might need a restart if state changes affect its timing/logic significantly,
+                // but for now, assume continuous operation is fine or modules handle their needs.
+                // if (!gameLoop.isRunning()) gameLoop.start(); // Example if loop could be stopped
+            }
+        });
+    } else {
+        loggingSystem.warn("Main", "Load button not found in DOM.");
+    }
+
+    if (resetButton) {
+        resetButton.addEventListener('click', () => {
+            coreUIManager.showModal(
+                "Reset Game?",
+                "All progress will be lost permanently. This cannot be undone. Are you sure you want to reset the game to its initial state?",
+                [
+                    {
+                        label: "Reset Game",
+                        className: "bg-red-600 hover:bg-red-700",
+                        callback: () => {
+                            gameLoop.stop();
+                            saveLoadSystem.resetGameData(); 
+                            
+                            const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
+                            if (spDef) {
+                                coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
+                            }
+                            coreGameStateManager.setGameVersion("0.1.0");
+                            coreUIManager.closeModal();
+                            coreUIManager.fullUIRefresh(); 
+                            moduleLoader.resetAllModules(); 
+                            moduleLoader.notifyAllModulesOfLoad(); // Treat as a new game load for modules
+                            gameLoop.start();
+                            loggingSystem.info("Main", "Game reset and restarted.");
+                        }
+                    },
+                    {
+                        label: "Cancel",
+                        className: "bg-gray-500 hover:bg-gray-600",
+                        callback: () => coreUIManager.closeModal()
+                    }
+                ]
+            );
+        });
+    } else {
+        loggingSystem.warn("Main", "Reset button not found in DOM.");
+    }
+
+    // 12. Start the Game Loop
+    // Ensure it's started, especially if a load operation might have stopped it.
+    if (!gameLoop.isRunning()) {
+        gameLoop.start();
+    }
+
+    loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
+    // Avoid showing "Game Loaded Successfully" if it was a new game start without explicit load.
+    // The notifications from saveLoadSystem.loadGame() are more specific.
+    // if (gameLoaded) { // Only show if gameWasLoaded is true
+    //    coreUIManager.showNotification("Game Loaded Successfully!", "success", 2000);
+    // }
+}
+
+// --- DOMContentLoaded Listener ---
+document.addEventListener('DOMContentLoaded', () => {
+    initializeGame().catch(error => {
+        loggingSystem.error("Main", "Unhandled error during game initialization:", error);
+        // Ensure coreUIManager is available even in a catastrophic error scenario
+        // by making a direct check and fallback
+        if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
+             coreUIManager.showNotification("A critical error occurred during game startup. Please try refreshing. If the problem persists, a reset might be needed.", "error", 0);
+        } else {
+            const body = document.querySelector('body');
+            if (body) {
+                body.innerHTML = '<div style="color: red; padding: 20px; font-family: sans-serif; text-align: center;"><h1>Critical Error</h1><p>Game failed to start. Please try refreshing. If the problem persists, data might be corrupted.</p></div>';
+            }
         }
     });
-
-}
-
-/**
- * Loads all necessary game modules.
- * Modules are loaded in a specific order if dependencies exist.
- */
-async function loadGameModules() {
-    loggingSystem.log('Loading game modules...', 'main.js');
-
-    // Define the paths to your module files.
-    // The order here is important for dependencies.
-    // CoreGameplay should be loaded before Studies as Studies depends on it.
-    const modulePaths = [
-        'js/modules/core_gameplay_module/core_gameplay_manifest.js',
-        'js/modules/core_gameplay_module/core_gameplay_data.js',
-        'js/modules/core_gameplay_module/core_gameplay_logic.js',
-        'js/modules/core_gameplay_module/core_gameplay_ui.js',
-        'js/modules/core_gameplay_module/core_gameplay_state.js',
-        // Studies Module files - NEW
-        'js/modules/studies_module/studies_manifest.js',
-        'js/modules/studies_module/studies_data.js',
-        'js/modules/studies_module/studies_logic.js',
-        'js/modules/studies_module/studies_ui.js',
-        'js/modules/studies_module/studies_state.js'
-    ];
-
-    // Load all module script files.
-    await moduleLoader.loadModuleScripts(modulePaths);
-
-    // After scripts are loaded, the manifests should be available globally.
-    // Now, register and initialize modules via their manifests.
-    // The ModuleLoader will handle dependencies and call init functions.
-    await moduleLoader.registerAndInitializeModule(CoreGameplayManifest, {
-        coreResourceManager,
-        coreUIManager,
-        coreGameStateManager,
-        decimalUtility,
-        gameLoop,
-        saveLoadSystem,
-        staticDataAggregator,
-        loggingSystem
-    });
-
-    // Register and initialize the Studies module.
-    // Ensure all core services are passed to its init function.
-    await moduleLoader.registerAndInitializeModule(StudiesManifest, {
-        coreResourceManager,
-        coreUIManager,
-        coreGameStateManager,
-        decimalUtility,
-        gameLoop,
-        saveLoadSystem,
-        staticDataAggregator,
-        loggingSystem
-    });
-
-    loggingSystem.log('All game modules loaded and initialized.', 'main.js');
-}
-
-/**
- * The main game initialization function.
- * This is called when the DOM is fully loaded.
- */
-async function initGame() {
-    // 1. Initialize Core Engine services
-    initializeCoreEngine();
-
-    // Now loggingSystem is guaranteed to be initialized, so we can use it.
-    loggingSystem.log('Initializing game...', 'main.js');
-
-    // 2. Load game modules
-    await loadGameModules();
-
-    // 3. Load saved game state, or start a new one.
-    // This needs to happen after all modules have registered their states.
-    saveLoadSystem.loadGame();
-
-    // 4. Initial UI render and update.
-    // This will render the default active tab and resource bar.
-    coreUIManager.renderInitialUI();
-
-    // After loading, ensure all production rates are correctly applied.
-    // This calls the logic functions of each module to update their production
-    // with the CoreResourceManager based on loaded state.
-    if (typeof CoreGameplayLogic !== 'undefined') {
-        CoreGameplayLogic.updateAllProduction(); // For manual click production (if any)
-    }
-    if (typeof StudiesLogic !== 'undefined') {
-        StudiesLogic.updateAllProducerProductions(); // Update production for Studies producers
-        StudiesLogic.checkForGlobalUnlocks(); // Check global unlocks on load
-    }
-
-
-    // 5. Start the game loop.
-    gameLoop.start();
-
-    loggingSystem.log('Game initialized and started!', 'main.js');
-}
-
-// Ensure the DOM is fully loaded before initializing the game.
-// This prevents issues with script trying to access elements that don't exist yet.
-window.onload = initGame;
+});
