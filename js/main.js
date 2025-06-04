@@ -1,4 +1,4 @@
-// js/main.js 
+// js/main.js (v7)
 
 /**
  * @file main.js
@@ -148,6 +148,9 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Settings UI module failed to load.", "error", 10000);
         }
 
+        // Ensure studyPoints is unlocked after all modules have had a chance to initialize/load state
+        coreResourceManager.unlockResource('studyPoints'); // Ensure studyPoints is always unlocked
+
 
     } catch (error) { // This catch is for unexpected errors from the await operation itself or if loadModule re-throws
         loggingSystem.error("Main", "Unhandled error during module loading attempt:", error);
@@ -158,6 +161,7 @@ async function initializeGame() {
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
+    const giveSpButton = document.getElementById('give-sp-button'); // Get the new button
 
     if (saveButton) saveButton.addEventListener('click', () => saveLoadSystem.saveGame());
     else loggingSystem.warn("Main", "Save button not found in DOM.");
@@ -211,6 +215,18 @@ async function initializeGame() {
         });
     } else {
         loggingSystem.warn("Main", "Reset button not found in DOM.");
+    }
+
+    // Add event listener for the test button
+    if (giveSpButton) {
+        giveSpButton.addEventListener('click', () => {
+            const amount = decimalUtility.new('1e11'); // 100,000,000,000 Study Points
+            coreResourceManager.addAmount('studyPoints', amount);
+            coreUIManager.showNotification(`+${decimalUtility.format(amount, 0)} Study Points (Test)!`, 'info', 2000);
+            loggingSystem.info("Main", `Test: Added ${amount.toString()} Study Points.`);
+        });
+    } else {
+        loggingSystem.warn("Main", "Give SP button not found in DOM.");
     }
 
     // 13. Start the Game Loop
