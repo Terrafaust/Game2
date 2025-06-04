@@ -74,6 +74,7 @@ function tick(tickDeltaTime) {
     // For now, let's update UI elements tied to resources/state after logic ticks.
     // More complex UI animations might be handled directly in `loop` or by coreUIManager.
     coreUIManager.updateResourceDisplay(); // Update resource bar
+    coreUIManager.renderMenu(); // Ensure the menu is re-rendered to check unlock conditions
     // coreUIManager.updateModuleUI(); // Tell active module to refresh its UI if needed
     updateCallbacks.uiUpdate.forEach(cb => cb(tickDeltaTime)); // For other UI updates
 }
