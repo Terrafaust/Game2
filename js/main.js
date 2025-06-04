@@ -16,7 +16,7 @@ import { staticDataAggregator } from './core/staticDataAggregator.js';
 import { coreResourceManager } from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
-import { gameLoop } from './core/gameLoop';
+import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 
 
