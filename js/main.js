@@ -1,4 +1,4 @@
-// js/main.js (v9)
+// js/main.js (v10)
 
 /**
  * @file main.js
@@ -96,8 +96,8 @@ async function initializeGame() {
     // 11. Load Game Modules
     try {
         // Load Core Gameplay Module (Stream 1)
-        // Using absolute path from root for robustness
-        const coreGameplayModuleLoaded = await moduleLoader.loadModule('/modules/core_gameplay_module/core_gameplay_manifest.js');
+        // Using relative path from js/ to modules/
+        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         if (coreGameplayModuleLoaded) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
@@ -107,8 +107,8 @@ async function initializeGame() {
         }
 
         // Load Studies Module (Stream 2)
-        // Using absolute path from root for robustness
-        const studiesModuleLoaded = await moduleLoader.loadModule('/modules/studies_module/studies_manifest.js');
+        // Using relative path from js/ to modules/
+        const studiesModuleLoaded = await moduleLoader.loadModule('../modules/studies_module/studies_manifest.js');
 
         if (studiesModuleLoaded) {
             loggingSystem.info("Main", "Studies module loading initiated and reported success by moduleLoader.");
@@ -118,8 +118,8 @@ async function initializeGame() {
         }
 
         // Load Stream 3 Modules
-        // Using absolute path from root for robustness
-        const commerceModuleLoaded = await moduleLoader.loadModule('/modules/commerce_module/commerce_manifest.js');
+        // Using relative path from js/ to modules/
+        const commerceModuleLoaded = await moduleLoader.loadModule('../modules/commerce_module/commerce_manifest.js');
         if (commerceModuleLoaded) {
             loggingSystem.info("Main", "Commerce module loading initiated and reported success by moduleLoader.");
         } else {
@@ -127,8 +127,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Commerce module failed to load.", "error", 10000);
         }
 
-        // Using absolute path from root for robustness
-        const skillsModuleLoaded = await moduleLoader.loadModule('/modules/skills_module/skills_manifest.js');
+        // Using relative path from js/ to modules/
+        const skillsModuleLoaded = await moduleLoader.loadModule('../modules/skills_module/skills_manifest.js');
         if (skillsModuleLoaded) {
             loggingSystem.info("Main", "Skills module loading initiated and reported success by moduleLoader.");
         } else {
@@ -136,8 +136,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Skills module failed to load.", "error", 10000);
         }
 
-        // Using absolute path from root for robustness
-        const achievementsModuleLoaded = await moduleLoader.loadModule('/modules/achievements_module/achievements_manifest.js');
+        // Using relative path from js/ to modules/
+        const achievementsModuleLoaded = await moduleLoader.loadModule('../modules/achievements_module/achievements_manifest.js');
         if (achievementsModuleLoaded) {
             loggingSystem.info("Main", "Achievements module loading initiated and reported success by moduleLoader.");
         } else {
@@ -145,8 +145,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Achievements module failed to load.", "error", 10000);
         }
 
-        // Using absolute path from root for robustness
-        const settingsUIModuleLoaded = await moduleLoader.loadModule('/modules/settings_ui_module/settings_ui_manifest.js');
+        // Using relative path from js/ to modules/
+        const settingsUIModuleLoaded = await moduleLoader.loadModule('../modules/settings_ui_module/settings_ui_manifest.js');
         if (settingsUIModuleLoaded) {
             loggingSystem.info("Main", "Settings UI module loading initiated and reported success by moduleLoader.");
         } else {
