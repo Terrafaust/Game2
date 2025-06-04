@@ -1,4 +1,4 @@
-// modules/core_gameplay_module/core_gameplay_manifest.js
+// js/modules/core_gameplay_module/core_gameplay_manifest.js (v5)
 
 /**
  * @file core_gameplay_manifest.js
@@ -26,7 +26,7 @@ const coreGameplayManifest = {
      * @returns {object} The module's public API or instance.
      */
     async initialize(coreSystems) {
-        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem } = coreSystems;
+        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
@@ -44,12 +44,13 @@ const coreGameplayManifest = {
                     name: "Study Points",
                     initialAmount: 0,
                     isUnlocked: true,
-                    showInUI: true
+                    showInUI: true,
+                    color: '#4F46E5' // Default color for Study Points
                 }
             });
             const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
             if (spDef) {
-                coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
+                coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked, spDef.color);
             }
         }
 
@@ -84,6 +85,16 @@ const coreGameplayManifest = {
             () => ui.onHide(),    // onHide callback
             true // isDefaultTab
         );
+
+        // 5. Register update callbacks with the game loop
+        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
+            // Check for Studies tab unlock here (logic moved to core_gameplay_logic.js)
+            // core_gameplay_logic.js will handle triggering coreUIManager.renderMenu() if needed.
+        });
+        gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
+            ui.updateDynamicElements(); // Update UI elements like total clicks
+        });
+
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 

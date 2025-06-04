@@ -1,4 +1,4 @@
-// modules/skills_module/skills_logic.js 
+// js/modules/skills_module/skills_logic.js (v4)
 
 /**
  * @file skills_logic.js
@@ -116,9 +116,6 @@ export const moduleLogic = {
         }
 
         // Remove previous effect from this skill level to re-register the new one
-        // This ensures effects are correctly updated when a skill levels up.
-        // For simplicity, we'll remove the old effect and add the new one.
-        // A more granular update might be possible if effects are truly additive.
         const sourceId = `skills_module_${skillId}`;
         coreUpgradeManager.removeEffect(skillDef.effect.targetType, skillDef.effect.type, skillDef.effect.targetId, sourceId);
 
@@ -131,7 +128,6 @@ export const moduleLogic = {
                 effectValue = decimalUtility.add(decimalUtility.ONE, effectValue);
             }
             // If it's a cost reduction, the base value is the percentage reduction (e.g., 0.02 for 2%)
-            // The coreUpgradeManager expects the reduction factor (e.g., 0.98 for 2% reduction)
             // The `getAggregatedModifier` for costReduction will handle `(1 - sumOfReductions)`.
             // So here, we just register the baseValue * currentLevel.
 
@@ -165,7 +161,7 @@ export const moduleLogic = {
      * @returns {boolean} True if unlocked, false otherwise.
      */
     isSkillUnlocked(skillId) {
-        const { loggingSystem } = coreSystemsRef;
+        const { loggingSystem, coreGameStateManager } = coreSystemsRef;
         const skillDef = staticModuleData.skills[skillId];
 
         if (!skillDef) {
@@ -195,6 +191,8 @@ export const moduleLogic = {
                     }
                 }
                 return true; // All skills in the target tier are at or above the required level
+            case "globalFlag": // Added for completeness, if a skill tier is unlocked by a flag
+                return coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
             default:
                 loggingSystem.warn("SkillsLogic", `Unknown unlock condition type for skill ${skillId}: ${condition.type}`);
                 return false;
@@ -205,7 +203,7 @@ export const moduleLogic = {
      * Checks for and applies any new tier unlocks.
      */
     checkTierUnlocks() {
-        const { coreUIManager, loggingSystem } = coreSystemsRef;
+        const { coreUIManager, loggingSystem, coreGameStateManager } = coreSystemsRef;
         // Iterate through all skills to find tiers and check their unlock conditions
         const tiers = new Set(Object.values(staticModuleData.skills).map(s => s.tier));
         tiers.forEach(tier => {
@@ -233,6 +231,9 @@ export const moduleLogic = {
                             }
                         }
                         tierUnlocked = allPreviousTierSkillsMet;
+                        break;
+                    case "globalFlag":
+                        tierUnlocked = coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
                         break;
                     default:
                         loggingSystem.warn("SkillsLogic", `Unhandled tier unlock condition type: ${condition.type}`);

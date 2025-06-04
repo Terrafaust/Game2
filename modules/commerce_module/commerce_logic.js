@@ -1,4 +1,4 @@
-// modules/commerce_module/commerce_logic.js 
+// js/modules/commerce_module/commerce_logic.js (v4)
 
 /**
  * @file commerce_logic.js
@@ -79,7 +79,7 @@ export const moduleLogic = {
         const costResource = purchasableDef.costResource;
 
         // Check if it's a one-time unlock and already purchased (flag set)
-        if (purchasableDef.setsGlobalFlag && coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag)) {
+        if (purchasableDef.type === "flagUnlock" && coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag)) {
             loggingSystem.warn("CommerceLogic", `Attempted to purchase already unlocked item: ${purchasableId}`);
             coreUIManager.showNotification(`${purchasableDef.name} already unlocked!`, 'info', 2000);
             return false;
@@ -88,24 +88,37 @@ export const moduleLogic = {
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
 
-            // Handle repeatable items (generators)
+            // Handle repeatable items (e.g., if we re-introduce passive generators)
             if (purchasableDef.costGrowthFactor !== "1") {
                 let currentOwned = decimalUtility.new(moduleState.ownedPurchasables[purchasableId] || 0);
                 moduleState.ownedPurchasables[purchasableId] = decimalUtility.add(currentOwned, 1).toString(); // Store as string for saving
+            }
 
-                // Update total production rate for the resource this item generates (if it's a generator)
-                if (purchasableDef.resourceId) {
-                    this.updateGeneratorProduction(purchasableId);
+            // NEW: Handle resourceGain type
+            if (purchasableDef.type === "resourceGain") {
+                coreResourceManager.addAmount(purchasableDef.gainResourceId, decimalUtility.new(purchasableDef.gainAmount));
+                loggingSystem.info("CommerceLogic", `Gained ${purchasableDef.gainAmount} ${purchasableDef.gainResourceId} from purchasing ${purchasableDef.name}.`);
+
+                // NEW: Unlock resource and show in UI if it's 'images'
+                if (purchasableDef.gainResourceId === 'images') {
+                    coreResourceManager.unlockResource('images');
+                    coreResourceManager.setResourceVisibility('images', true);
+                }
+                // NEW: Unlock Skills menu if it's the first studySkillPoint
+                if (purchasableDef.gainResourceId === 'studySkillPoints' && decimalUtility.eq(coreResourceManager.getAmount('studySkillPoints'), decimalUtility.new(purchasableDef.gainAmount))) {
+                    coreResourceManager.unlockResource('studySkillPoints'); // Unlock the resource itself
+                    // No need to set visibility for studySkillPoints as it's explicitly hidden in data
+                    coreSystemsRef.coreUIManager.renderMenu(); // Re-render to show Skills tab
                 }
             }
 
             // Handle one-time unlocks that set global flags
-            if (purchasableDef.setsGlobalFlag) {
+            if (purchasableDef.type === "flagUnlock" && purchasableDef.setsGlobalFlag) {
                 coreGameStateManager.setGlobalFlag(purchasableDef.setsGlobalFlag.flag, purchasableDef.setsGlobalFlag.value);
                 moduleState.unlockedFlags[purchasableDef.setsGlobalFlag.flag] = true; // Update local state for consistency
                 loggingSystem.info("CommerceLogic", `Global flag '${purchasableDef.setsGlobalFlag.flag}' set to ${purchasableDef.setsGlobalFlag.value}.`);
                 coreUIManager.showNotification(`New content unlocked: ${purchasableDef.name}!`, 'info', 3000);
-                coreUIManager.renderMenu(); // Re-render menu to show new tabs
+                coreUIManager.renderMenu(); // Re-render menu to show new tabs (Settings/Achievements)
             }
 
             // Persist the updated module state to the global game state
@@ -120,62 +133,22 @@ export const moduleLogic = {
     },
 
     /**
-     * Updates the total production rate for a specific generator type.
-     * This method should be called after purchasing a generator or when production bonuses change.
-     * @param {string} generatorId - The ID of the generator (e.g., 'imageGenerator').
-     */
-    updateGeneratorProduction(generatorId) {
-        const { coreResourceManager, decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
-        const generatorDef = staticModuleData.purchasables[generatorId];
-
-        if (!generatorDef || !generatorDef.resourceId) {
-            loggingSystem.error("CommerceLogic", `Generator definition or resourceId not found for ID: ${generatorId} during production update.`);
-            return;
-        }
-
-        const ownedCount = decimalUtility.new(moduleState.ownedPurchasables[generatorId] || 0);
-        const baseProductionPerUnit = decimalUtility.new(generatorDef.baseProduction);
-
-        // Calculate total production from this type of generator
-        let totalProduction = decimalUtility.multiply(baseProductionPerUnit, ownedCount);
-
-        // Apply multipliers from CoreUpgradeManager
-        const productionMultiplier = coreUpgradeManager.getAggregatedModifier('producer', 'productionMultiplier', generatorId);
-        totalProduction = decimalUtility.multiply(totalProduction, productionMultiplier);
-
-        // Set this generator's contribution to the resource manager
-        const sourceKey = `commerce_module_${generatorId}`;
-        coreResourceManager.setProductionPerSecond(generatorDef.resourceId, sourceKey, totalProduction);
-
-        loggingSystem.debug("CommerceLogic", `Updated production for ${generatorDef.name} (${generatorId}). Total: ${decimalUtility.format(totalProduction)} ${generatorDef.resourceId}/s`);
-    },
-
-    /**
-     * Calculates and updates the production for all generators in the Commerce module.
-     * This should be called on game load and potentially periodically if external multipliers change.
-     */
-    updateAllGeneratorProductions() {
-        for (const purchasableId in staticModuleData.purchasables) {
-            const purchasableDef = staticModuleData.purchasables[purchasableId];
-            if (purchasableDef.resourceId) { // Only update if it's a resource generator
-                this.updateGeneratorProduction(purchasableId);
-            }
-        }
-        coreSystemsRef.loggingSystem.debug("CommerceLogic", "All generator productions updated.");
-    },
-
-    /**
      * Checks if a purchasable item is unlocked based on its unlock condition.
      * @param {string} purchasableId - The ID of the purchasable item.
      * @returns {boolean} True if unlocked, false otherwise.
      */
     isPurchasableUnlocked(purchasableId) {
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, moduleLoader } = coreSystemsRef;
         const purchasableDef = staticModuleData.purchasables[purchasableId];
 
         if (!purchasableDef || !purchasableDef.unlockCondition) {
             // If no unlock condition, assume it's unlocked by default
             return true;
+        }
+
+        // NEW: For flagUnlock types, if the flag is already set, it's "unlocked" and shouldn't be purchasable again.
+        if (purchasableDef.type === "flagUnlock" && coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag)) {
+            return true; // Already purchased/unlocked
         }
 
         const condition = purchasableDef.unlockCondition;
@@ -186,7 +159,7 @@ export const moduleLogic = {
                 const requiredResourceAmount = decimalUtility.new(condition.amount);
                 return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
             case "producerOwned": // For conditions based on Studies module producers
-                const studiesModule = coreSystemsRef.moduleLoader.getModule('studies');
+                const studiesModule = moduleLoader.getModule('studies');
                 if (studiesModule && studiesModule.logic && typeof studiesModule.logic.getOwnedProducerCount === 'function') {
                     const ownedCount = studiesModule.logic.getOwnedProducerCount(condition.producerId);
                     const requiredCount = decimalUtility.new(condition.count);
@@ -236,9 +209,18 @@ export const moduleLogic = {
      * Ensures all production rates are correctly set based on loaded state.
      */
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("CommerceLogic", "onGameLoad: Re-calculating all generator productions.");
-        this.updateAllGeneratorProductions();
-        // No global flags to check *from* this module on load, as they are set *by* this module.
+        coreSystemsRef.loggingSystem.info("CommerceLogic", "onGameLoad: Commerce module loaded.");
+        // No generators to update production for anymore, as they are one-time gains.
+        // But ensure resources like Images and Study Skill Points are unlocked if they were acquired.
+        const { coreResourceManager } = coreSystemsRef;
+        if (coreResourceManager.getAmount('images').gt(0)) {
+            coreResourceManager.unlockResource('images');
+            coreResourceManager.setResourceVisibility('images', true);
+        }
+        if (coreResourceManager.getAmount('studySkillPoints').gt(0)) {
+            coreResourceManager.unlockResource('studySkillPoints');
+            // studySkillPoints is explicitly hidden from UI, so no setResourceVisibility(true) here.
+        }
     },
 
     /**
@@ -247,6 +229,6 @@ export const moduleLogic = {
      */
     onResetState() {
         coreSystemsRef.loggingSystem.info("CommerceLogic", "onResetState: Resetting Commerce module logic state.");
-        this.updateAllGeneratorProductions(); // Ensure productions are reset to zero
+        // No productions to reset, as they are one-time gains.
     }
 };

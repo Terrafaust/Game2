@@ -1,4 +1,4 @@
-// modules/commerce_module/commerce_manifest.js 
+// js/modules/commerce_module/commerce_manifest.js (v3)
 
 /**
  * @file commerce_manifest.js
@@ -46,7 +46,8 @@ const commerceManifest = {
                 resDef.name,
                 resDef.initialAmount,
                 resDef.showInUI,
-                resDef.isUnlocked
+                resDef.isUnlocked,
+                resDef.color // Pass color
             );
             loggingSystem.info(this.name, `Resource '${resDef.name}' (${resDef.id}) defined.`);
         }
@@ -60,8 +61,14 @@ const commerceManifest = {
         } else {
             loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Commerce module.", currentModuleState);
             // Ensure Decimal values are revived from strings in loaded state for ownedPurchasables
-            for (const purchasableId in currentModuleState.ownedPurchasables) {
-                currentModuleState.ownedPurchasables[purchasableId] = decimalUtility.new(currentModuleState.ownedPurchasables[purchasableId]).toString();
+            for (const purchasableId in staticModuleData.purchasables) { // Iterate through all defined purchasables
+                if (staticModuleData.purchasables[purchasableId].costGrowthFactor !== "1") { // Only for repeatable ones
+                    if (typeof currentModuleState.ownedPurchasables[purchasableId] === 'undefined') {
+                        currentModuleState.ownedPurchasables[purchasableId] = "0"; // Add new repeatable if not in save
+                    } else {
+                        currentModuleState.ownedPurchasables[purchasableId] = decimalUtility.new(currentModuleState.ownedPurchasables[purchasableId]).toString();
+                    }
+                }
             }
             Object.assign(moduleState, currentModuleState); // Update local moduleState
         }
@@ -83,22 +90,13 @@ const commerceManifest = {
         );
 
         // 6. Register update callbacks with the game loop
-        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
-            // This module's logic might not have a continuous update function itself,
-            // but it might trigger global flag checks here.
-            // No specific global flags are set *by* commerce logic itself based on continuous updates,
-            // flags are set on purchase.
-        });
-        gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
-            // Update resource generation for Image and Skill Point generators
-            moduleLogic.updateAllGeneratorProductions();
-        });
+        // No generalLogic or resourceGeneration callbacks needed for Commerce as items are one-time gains.
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
             ui.updateDynamicElements(); // Update UI elements like costs, owned counts
         });
 
-        // Initial update of all generator productions after state is loaded/initialized
-        moduleLogic.updateAllGeneratorProductions();
+        // Initial setup for resources that might have been acquired from save
+        moduleLogic.onGameLoad();
 
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
@@ -108,6 +106,7 @@ const commerceManifest = {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
+            staticModuleData: staticModuleData, // Expose static data for other modules
             // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
                 loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
@@ -117,8 +116,14 @@ const commerceManifest = {
                     coreGameStateManager.setModuleState(this.id, loadedState);
                 }
                 // Ensure Decimals are revived when loading into moduleState
-                for (const purchasableId in loadedState.ownedPurchasables) {
-                    loadedState.ownedPurchasables[purchasableId] = decimalUtility.new(loadedState.ownedPurchasables[purchasableId]).toString();
+                for (const purchasableId in staticModuleData.purchasables) { // Iterate through all defined purchasables
+                    if (staticModuleData.purchasables[purchasableId].costGrowthFactor !== "1") { // Only for repeatable ones
+                        if (typeof loadedState.ownedPurchasables[purchasableId] === 'undefined') {
+                            loadedState.ownedPurchasables[purchasableId] = "0";
+                        } else {
+                            loadedState.ownedPurchasables[purchasableId] = decimalUtility.new(loadedState.ownedPurchasables[purchasableId]).toString();
+                        }
+                    }
                 }
                 Object.assign(moduleState, loadedState); // Update local moduleState
                 moduleLogic.onGameLoad(); // Notify logic component

@@ -1,4 +1,4 @@
-// js/main.js (v13)
+// js/main.js (v14)
 
 /**
  * @file main.js
@@ -13,7 +13,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js'; // Corrected import syntax
+import { coreResourceManager } from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -73,12 +73,13 @@ async function initializeGame() {
                 name: "Study Points",
                 initialAmount: 0,
                 isUnlocked: true,
-                showInUI: true
+                showInUI: true,
+                color: '#4F46E5' // Default color for Study Points
             }
         });
         const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
         if (spDef) {
-             coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
+             coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked, spDef.color);
         } else {
             loggingSystem.error("Main", "Failed to define initial Study Points resource from static data.");
         }
@@ -197,7 +198,7 @@ async function initializeGame() {
                             // Re-define initial Study Points resource after reset
                             const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
                             if (spDef) {
-                                coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
+                                coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked, spDef.color);
                             }
                             coreGameStateManager.setGameVersion("0.1.0");
                             coreUIManager.closeModal();
@@ -225,7 +226,7 @@ async function initializeGame() {
         giveSpButton.addEventListener('click', () => {
             const amount = decimalUtility.new('1e11'); // 100,000,000,000 Study Points
             coreResourceManager.addAmount('studyPoints', amount);
-            coreUIManager.showNotification(`+${decimalUtility.format(amount, 0)} Study Points (Test)!`, 'info', 2000);
+            coreUIManager.showNotification(`+${coreUIManager.formatResourceAmountWithColor(amount, 'studyPoints', 0)} Study Points (Test)!`, 'info', 2000);
             loggingSystem.info("Main", `Test: Added ${amount.toString()} Study Points.`);
         });
     } else {

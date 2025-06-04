@@ -1,4 +1,4 @@
-// modules/commerce_module/commerce_ui.js 
+// js/modules/commerce_module/commerce_ui.js (v4)
 
 /**
  * @file commerce_ui.js
@@ -61,10 +61,12 @@ export const ui = {
         for (const purchasableId in staticModuleData.purchasables) {
             const purchasableDef = staticModuleData.purchasables[purchasableId];
             const isUnlocked = moduleLogicRef.isPurchasableUnlocked(purchasableId);
+            const isAlreadyPurchasedOneTime = purchasableDef.type === "flagUnlock" && coreSystemsRef.coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag);
+
 
             const purchasableCard = document.createElement('div');
             purchasableCard.id = `purchasable-card-${purchasableId}`;
-            purchasableCard.className = `bg-surface-dark p-4 rounded-lg shadow-md flex flex-col transition-all duration-200 ${isUnlocked ? '' : 'opacity-50 grayscale cursor-not-allowed'}`;
+            purchasableCard.className = `bg-surface-dark p-4 rounded-lg shadow-md flex flex-col transition-all duration-200 ${isUnlocked && !isAlreadyPurchasedOneTime ? '' : 'opacity-50 grayscale cursor-not-allowed'}`;
 
             const purchasableName = document.createElement('h3');
             purchasableName.className = 'text-xl font-semibold text-textPrimary mb-2';
@@ -73,11 +75,11 @@ export const ui = {
 
             const purchasableDescription = document.createElement('p');
             purchasableDescription.className = 'text-textSecondary text-sm mb-3';
-            purchasableDescription.textContent = purchasableDef.description;
+            purchasDescription.textContent = purchasableDef.description;
             purchasableCard.appendChild(purchasableDescription);
 
-            // Only show owned count for repeatable items (generators)
-            if (purchasableDef.costGrowthFactor !== "1") {
+            // Only show owned count for repeatable items (if any, not currently used for commerce)
+            if (purchasableDef.showOwnedCount) {
                 const ownedDisplay = document.createElement('p');
                 ownedDisplay.id = `purchasable-${purchasableId}-owned`;
                 ownedDisplay.className = 'text-textPrimary text-lg font-bold mb-1';
@@ -100,20 +102,21 @@ export const ui = {
                         buyButton.classList.add('animate-pulse-once');
                         setTimeout(() => buyButton.classList.remove('animate-pulse-once'), 500);
                     } else {
-                        coreUIManager.showNotification(`Not enough ${purchasableDef.costResource} to buy ${purchasableDef.name}.`, 'error', 1500);
+                        coreUIManager.showNotification(`Not enough ${coreSystemsRef.coreResourceManager.getAllResources()[purchasableDef.costResource]?.name || purchasableDef.costResource} to buy ${purchasableDef.name}.`, 'error', 1500);
                     }
                 },
                 ['bg-purple-600', 'hover:bg-purple-700', 'text-white', 'py-2', 'px-4', 'text-md', 'w-full'],
-                `buy-${purchasableId}-button`
+                `buy-${purchasableId}-button`,
+                purchasableDef.costResource // Pass cost resource ID for coloring
             );
             purchasableCard.appendChild(buyButton);
 
             purchasablesContainer.appendChild(purchasableCard);
 
-            // Set up tooltip for locked purchasables
-            if (!isUnlocked) {
+            // Set up tooltip for locked purchasables or already purchased one-time unlocks
+            if (!isUnlocked || isAlreadyPurchasedOneTime) {
                 purchasableCard.classList.add('tooltip-target'); // Add a class to identify tooltip targets
-                purchasableCard.dataset.tooltipContent = this._getUnlockTooltipContent(purchasableDef.unlockCondition);
+                purchasableCard.dataset.tooltipContent = this._getPurchasableTooltipContent(purchasableDef, isAlreadyPurchasedOneTime);
             }
         }
 
@@ -142,25 +145,35 @@ export const ui = {
     },
 
     /**
-     * Generates the tooltip content for a locked purchasable.
-     * @param {object} condition - The unlock condition object.
+     * Generates the tooltip content for a locked or already purchased purchasable.
+     * @param {object} purchasableDef - The purchasable definition object.
+     * @param {boolean} isAlreadyPurchased - True if it's a one-time purchase already made.
      * @returns {string} HTML string for the tooltip.
      * @private
      */
-    _getUnlockTooltipContent(condition) {
-        const { coreResourceManager, decimalUtility, coreGameStateManager, moduleLoader } = coreSystemsRef;
-        let content = '<p class="font-semibold text-primary mb-1">Unlock Condition:</p>';
+    _getPurchasableTooltipContent(purchasableDef, isAlreadyPurchased) {
+        const { coreResourceManager, decimalUtility, coreUIManager, coreGameStateManager } = coreSystemsRef;
+        let content = '';
+
+        if (isAlreadyPurchased) {
+            content += '<p class="font-semibold text-green-400 mb-1">Already Unlocked!</p>';
+            content += `<p class="text-textSecondary">${purchasableDef.name} has already been purchased.</p>`;
+            return content;
+        }
+
+        const condition = purchasableDef.unlockCondition;
+        content += '<p class="font-semibold text-primary mb-1">Unlock Condition:</p>';
 
         switch (condition.type) {
             case "resource":
                 const currentAmount = coreResourceManager.getAmount(condition.resourceId);
                 const requiredAmount = decimalUtility.new(condition.amount);
-                content += `<p>Reach ${decimalUtility.format(requiredAmount, 0)} ${coreResourceManager.getAllResources()[condition.resourceId]?.name || condition.resourceId}.</p>`;
-                content += `<p class="text-xs text-textSecondary">(Current: ${decimalUtility.format(currentAmount, 0)})</p>`;
+                content += `<p>Reach ${coreUIManager.formatResourceAmountWithColor(requiredAmount, condition.resourceId, 0)} ${coreResourceManager.getAllResources()[condition.resourceId]?.name || condition.resourceId}.</p>`;
+                content += `<p class="text-xs text-textSecondary">(Current: ${coreUIManager.formatResourceAmountWithColor(currentAmount, condition.resourceId, 0)})</p>`;
                 break;
             case "producerOwned":
-                const studiesModule = moduleLoader.getModule('studies');
-                if (studiesModule && studiesModule.logic && typeof studiesModule.logic.getOwnedProducerCount === 'function') {
+                const studiesModule = coreSystemsRef.moduleLoader.getModule('studies');
+                if (studiesModule && studiesModule.logic && typeof studiesModule.logic.getOwnedProducerCount === 'function' && studiesModule.staticModuleData) {
                     const producerDef = studiesModule.staticModuleData.producers[condition.producerId]; // Access static data from studies module
                     const ownedCount = studiesModule.logic.getOwnedProducerCount(condition.producerId);
                     content += `<p>Own ${condition.count} ${producerDef.name}${condition.count > 1 ? 's' : ''}.</p>`;
@@ -217,7 +230,7 @@ export const ui = {
     updateDynamicElements() {
         if (!parentElementCache) return; // Not rendered yet or parent cleared
 
-        const { coreResourceManager, decimalUtility, coreGameStateManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, coreUIManager, coreGameStateManager } = coreSystemsRef;
 
         for (const purchasableId in staticModuleData.purchasables) {
             const purchasableDef = staticModuleData.purchasables[purchasableId];
@@ -227,7 +240,7 @@ export const ui = {
             if (!purchasableCard || !buyButton) continue; // Skip if element not found
 
             const isUnlocked = moduleLogicRef.isPurchasableUnlocked(purchasableId);
-            const isAlreadyPurchasedOneTime = purchasableDef.setsGlobalFlag && coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag);
+            const isAlreadyPurchasedOneTime = purchasableDef.type === "flagUnlock" && coreGameStateManager.getGlobalFlag(purchasableDef.setsGlobalFlag.flag);
 
             if (isUnlocked && !isAlreadyPurchasedOneTime) {
                 purchasableCard.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
@@ -241,8 +254,8 @@ export const ui = {
 
                 const currentCost = moduleLogicRef.calculatePurchasableCost(purchasableId);
 
-                // Update owned count for generators
-                if (purchasableDef.costGrowthFactor !== "1") {
+                // Update owned count for repeatable items (if any)
+                if (purchasableDef.showOwnedCount) {
                     const ownedCount = moduleLogicRef.getOwnedPurchasableCount(purchasableId);
                     const ownedDisplay = purchasableCard.querySelector(`#purchasable-${purchasableId}-owned`);
                     if (ownedDisplay) ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
@@ -250,7 +263,7 @@ export const ui = {
 
                 const costDisplay = purchasableCard.querySelector(`#purchasable-${purchasableId}-cost`);
                 if (costDisplay) {
-                    costDisplay.textContent = `Cost: ${decimalUtility.format(currentCost, 2)} ${coreResourceManager.getAllResources()[purchasableDef.costResource]?.name || purchasableDef.costResource}`;
+                    costDisplay.innerHTML = `Cost: ${coreUIManager.formatResourceAmountWithColor(currentCost, purchasableDef.costResource, 2)} ${coreResourceManager.getAllResources()[purchasableDef.costResource]?.name || purchasableDef.costResource}`;
                 }
 
                 if (buyButton) {
@@ -283,7 +296,7 @@ export const ui = {
                 // Ensure tooltip is set up for locked items
                 if (!isAlreadyPurchasedOneTime && !purchasableCard.classList.contains('tooltip-target')) {
                     purchasableCard.classList.add('tooltip-target');
-                    purchasableCard.dataset.tooltipContent = this._getUnlockTooltipContent(purchasableDef.unlockCondition);
+                    purchasableCard.dataset.tooltipContent = this._getPurchasableTooltipContent(purchasableDef, isAlreadyPurchasedOneTime);
                     this._setupTooltips(); // Re-run setup to catch new targets
                 }
             }

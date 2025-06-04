@@ -1,4 +1,4 @@
-// modules/core_gameplay_module/core_gameplay_logic.js
+// js/modules/core_gameplay_module/core_gameplay_logic.js (v4)
 
 /**
  * @file core_gameplay_logic.js
@@ -33,7 +33,7 @@ export const moduleLogic = {
             console.error("CoreGameplayLogic: Core systems not initialized.");
             return;
         }
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         
         const amountGained = decimalUtility.new(staticModuleData.clickAmount);
         coreResourceManager.addAmount(staticModuleData.resourceId, amountGained);
@@ -49,6 +49,26 @@ export const moduleLogic = {
         // The UI component might call this, or this logic might trigger a UI update.
         // For now, coreUIManager handles resource bar updates.
         // If this module had its own display of totalManualClicks, ui.updateDisplay() would be called.
+
+        // Check if Studies tab should be unlocked and trigger menu re-render if it is.
+        const studiesModule = moduleLoader.getModule('studies');
+        if (studiesModule && studiesModule.logic && typeof studiesModule.logic.isStudiesTabUnlocked === 'function') {
+            if (studiesModule.logic.isStudiesTabUnlocked()) {
+                // Only re-render menu if it's not already unlocked to prevent unnecessary calls
+                const studiesTabDef = studiesModule.staticModuleData.ui.studiesTabUnlockCondition;
+                const currentSP = coreResourceManager.getAmount(studiesTabDef.resourceId);
+                const requiredSP = decimalUtility.new(studiesTabDef.amount);
+                if (decimalUtility.gte(currentSP, requiredSP)) {
+                    // Check if the tab is actually registered and visible
+                    const isTabVisible = coreUIManager.getRegisteredMenuTabs().some(tab => tab.id === 'studies' && tab.isUnlocked());
+                    if (!isTabVisible) {
+                        coreUIManager.renderMenu(); // Trigger menu re-render
+                        coreUIManager.showNotification("New tab unlocked: Studies!", 'info', 3000);
+                    }
+                }
+            }
+        }
+
         return {
             amountGained: amountGained,
             newTotal: coreResourceManager.getAmount(staticModuleData.resourceId)

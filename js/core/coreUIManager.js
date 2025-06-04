@@ -1,4 +1,4 @@
-// js/core/coreUIManager.js
+// js/core/coreUIManager.js (v5)
 
 /**
  * @file coreUIManager.js
@@ -268,10 +268,11 @@ const coreUIManager = {
 
                 const amountFormatted = decimalUtility.format(res.amount, 2); // Format with 2 decimal places for <1000
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
+                const resourceColor = coreResourceManager.getResourceColor(res.id); // Get resource color
 
                 displayElement.innerHTML = `
-                    <span class="font-semibold text-primary">${res.name}:</span>
-                    <span id="resource-${res.id}-amount" class="text-textPrimary">${amountFormatted}</span>
+                    <span class="font-semibold" style="color: ${resourceColor};">${res.name}:</span>
+                    <span id="resource-${res.id}-amount" style="color: ${resourceColor};">${amountFormatted}</span>
                     (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)
                 `;
             } else {
@@ -286,6 +287,19 @@ const coreUIManager = {
         if (!hasVisibleResources) {
             UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full">No resources to display yet.</p>';
         }
+    },
+
+    /**
+     * Formats a resource amount with its specific color.
+     * @param {Decimal|number|string} amount - The amount to format.
+     * @param {string} resourceId - The ID of the resource to get its color.
+     * @param {number} [places=2] - Number of decimal places for formatting.
+     * @returns {string} HTML string with the formatted amount and color.
+     */
+    formatResourceAmountWithColor(amount, resourceId, places = 2) {
+        const formattedAmount = decimalUtility.format(amount, places);
+        const resourceColor = coreResourceManager.getResourceColor(resourceId);
+        return `<span style="color: ${resourceColor};">${formattedAmount}</span>`;
     },
 
     /**
@@ -488,7 +502,7 @@ const coreUIManager = {
                 break;
         }
         notificationElement.classList.add(bgColor, textColor);
-        // notificationElement.style.borderLeft = `5px solid ${borderColor}`; // Using Tailwind border classes is also an option
+        // notificationElement.style.borderLeft = `55px solid ${borderColor}`; // Using Tailwind border classes is also an option
 
         notificationElement.innerHTML = `<span class="mr-2">${icon}</span> ${message}`;
         
@@ -540,9 +554,10 @@ const coreUIManager = {
      * @param {function} onClickCallback - Callback for when the button is clicked.
      * @param {string[]} [additionalClasses=[]] - Array of additional Tailwind classes.
      * @param {string} [id] - Optional ID for the button.
+     * @param {string} [costResourceId] - Optional: The ID of the resource this button's cost is associated with, for coloring.
      * @returns {HTMLButtonElement} The created button element.
      */
-    createButton(text, onClickCallback, additionalClasses = [], id) {
+    createButton(text, onClickCallback, additionalClasses = [], id, costResourceId) {
         const button = document.createElement('button');
         button.textContent = text;
         button.className = 'game-button'; // Base class from index.html styles
@@ -554,6 +569,10 @@ const coreUIManager = {
         }
         if (typeof onClickCallback === 'function') {
             button.addEventListener('click', onClickCallback);
+        }
+        // Apply color to button text if costResourceId is provided (for costs displayed on button)
+        if (costResourceId) {
+            button.style.color = coreResourceManager.getResourceColor(costResourceId);
         }
         return button;
     },
