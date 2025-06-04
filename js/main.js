@@ -1,4 +1,4 @@
-// js/main.js (v10)
+// js/main.js (v12)
 
 /**
  * @file main.js
@@ -13,7 +13,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js';
+import { coreResourceManager } = from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -95,9 +95,8 @@ async function initializeGame() {
     
     // 11. Load Game Modules
     try {
-        // Load Core Gameplay Module (Stream 1)
-        // Using relative path from js/ to modules/
-        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../modules/core_gameplay_module/core_gameplay_manifest.js');
+        // Using the path that was previously confirmed to work
+        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         if (coreGameplayModuleLoaded) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
@@ -106,9 +105,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Core gameplay module failed to load. Game may not function correctly.", "error", 10000);
         }
 
-        // Load Studies Module (Stream 2)
-        // Using relative path from js/ to modules/
-        const studiesModuleLoaded = await moduleLoader.loadModule('../modules/studies_module/studies_manifest.js');
+        // Using the path that was previously confirmed to work
+        const studiesModuleLoaded = await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
 
         if (studiesModuleLoaded) {
             loggingSystem.info("Main", "Studies module loading initiated and reported success by moduleLoader.");
@@ -117,9 +115,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Studies module failed to load. Game may not function correctly.", "error", 10000);
         }
 
-        // Load Stream 3 Modules
-        // Using relative path from js/ to modules/
-        const commerceModuleLoaded = await moduleLoader.loadModule('../modules/commerce_module/commerce_manifest.js');
+        // Using the path that was previously confirmed to work
+        const commerceModuleLoaded = await moduleLoader.loadModule('../../modules/commerce_module/commerce_manifest.js');
         if (commerceModuleLoaded) {
             loggingSystem.info("Main", "Commerce module loading initiated and reported success by moduleLoader.");
         } else {
@@ -127,8 +124,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Commerce module failed to load.", "error", 10000);
         }
 
-        // Using relative path from js/ to modules/
-        const skillsModuleLoaded = await moduleLoader.loadModule('../modules/skills_module/skills_manifest.js');
+        // Using the path that was previously confirmed to work
+        const skillsModuleLoaded = await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
         if (skillsModuleLoaded) {
             loggingSystem.info("Main", "Skills module loading initiated and reported success by moduleLoader.");
         } else {
@@ -136,8 +133,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Skills module failed to load.", "error", 10000);
         }
 
-        // Using relative path from js/ to modules/
-        const achievementsModuleLoaded = await moduleLoader.loadModule('../modules/achievements_module/achievements_manifest.js');
+        // Using the path that was previously confirmed to work
+        const achievementsModuleLoaded = await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
         if (achievementsModuleLoaded) {
             loggingSystem.info("Main", "Achievements module loading initiated and reported success by moduleLoader.");
         } else {
@@ -145,8 +142,8 @@ async function initializeGame() {
             coreUIManager.showNotification("Critical Error: Achievements module failed to load.", "error", 10000);
         }
 
-        // Using relative path from js/ to modules/
-        const settingsUIModuleLoaded = await moduleLoader.loadModule('../modules/settings_ui_module/settings_ui_manifest.js');
+        // Using the path that was previously confirmed to work
+        const settingsUIModuleLoaded = await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
         if (settingsUIModuleLoaded) {
             loggingSystem.info("Main", "Settings UI module loading initiated and reported success by moduleLoader.");
         } else {
