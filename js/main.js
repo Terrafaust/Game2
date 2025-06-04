@@ -62,6 +62,7 @@ async function initializeGame() {
 
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found or loading failed. Starting a new game.");
+        // Define initial resources for a new game
         staticDataAggregator.registerStaticData('core_resource_definitions', {
             studyPoints: {
                 id: 'studyPoints',
@@ -89,21 +90,29 @@ async function initializeGame() {
     
     // 10. Load Game Modules
     try {
-        // Corrected path for module loading:
-        // moduleLoader.js is in js/core/, so to reach js/modules/, it needs to go up two levels (../../)
-        // then into the modules directory.
-        const moduleLoadedSuccessfully = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
+        // Load Core Gameplay Module (Stream 1)
+        const coreGameplayModuleLoaded = await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         
-        if (moduleLoadedSuccessfully) {
+        if (coreGameplayModuleLoaded) {
             loggingSystem.info("Main", "Core gameplay module loading initiated and reported success by moduleLoader.");
         } else {
-            // This block will now execute if moduleLoader.loadModule returns false
-            loggingSystem.error("Main", "ModuleLoader reported failure to load core_gameplay_module. This usually means an error occurred within the module's own initialization or manifest. Check ModuleLoader and module-specific logs.");
-            coreUIManager.showNotification("Critical Error: Core gameplay module failed to load (moduleLoader returned false). Game may not function correctly.", "error", 10000);
+            loggingSystem.error("Main", "ModuleLoader reported failure to load core_gameplay_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Core gameplay module failed to load. Game may not function correctly.", "error", 10000);
         }
+
+        // Load Studies Module (Stream 2)
+        const studiesModuleLoaded = await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
+
+        if (studiesModuleLoaded) {
+            loggingSystem.info("Main", "Studies module loading initiated and reported success by moduleLoader.");
+        } else {
+            loggingSystem.error("Main", "ModuleLoader reported failure to load studies_module. Game may not function correctly.");
+            coreUIManager.showNotification("Critical Error: Studies module failed to load. Game may not function correctly.", "error", 10000);
+        }
+
     } catch (error) { // This catch is for unexpected errors from the await operation itself or if loadModule re-throws
-        loggingSystem.error("Main", "Unhandled error during module loading attempt for core_gameplay_module:", error);
-        coreUIManager.showNotification("Critical Error: Core gameplay module failed to load (unexpected error). Game may not function.", "error", 10000);
+        loggingSystem.error("Main", "Unhandled error during module loading attempt:", error);
+        coreUIManager.showNotification("Critical Error: A module failed to load (unexpected error). Game may not function.", "error", 10000);
     }
 
     // 11. Attach Event Listeners for Global Buttons (Save, Load, Reset)
@@ -120,9 +129,6 @@ async function initializeGame() {
                 loggingSystem.info("Main", "Game loaded. Refreshing UI and notifying modules.");
                 coreUIManager.fullUIRefresh();
                 moduleLoader.notifyAllModulesOfLoad(); 
-                // gameLoop might need a restart if state changes affect its timing/logic significantly,
-                // but for now, assume continuous operation is fine or modules handle their needs.
-                // if (!gameLoop.isRunning()) gameLoop.start(); // Example if loop could be stopped
             }
         });
     } else {
@@ -142,6 +148,7 @@ async function initializeGame() {
                             gameLoop.stop();
                             saveLoadSystem.resetGameData(); 
                             
+                            // Re-define initial Study Points resource after reset
                             const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
                             if (spDef) {
                                 coreResourceManager.defineResource(spDef.id, spDef.name, spDef.initialAmount, spDef.showInUI, spDef.isUnlocked);
@@ -174,11 +181,6 @@ async function initializeGame() {
     }
 
     loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
-    // Avoid showing "Game Loaded Successfully" if it was a new game start without explicit load.
-    // The notifications from saveLoadSystem.loadGame() are more specific.
-    // if (gameLoaded) { // Only show if gameWasLoaded is true
-    //    coreUIManager.showNotification("Game Loaded Successfully!", "success", 2000);
-    // }
 }
 
 // --- DOMContentLoaded Listener ---

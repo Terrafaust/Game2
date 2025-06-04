@@ -1,223 +1,210 @@
-// game/js/modules/studies_module/studies_data.js
+// js/modules/studies_module/studies_data.js
 
 /**
- * @fileoverview Static data definitions for the Studies module.
- * This file defines all the fixed data such as producers, their base costs,
- * production rates, unlock conditions, and UI text.
+ * @file studies_data.js
+ * @description Static data definitions for the Studies module.
+ * Defines producers (Student, Classroom, etc.), their costs, production rates,
+ * and unlock conditions. Also defines the "Knowledge" resource.
+ * All numerical values that can grow large are represented as strings to be
+ * converted to Decimal objects by the consuming system (e.g., coreResourceManager, moduleLogic).
  */
 
-/**
- * StudiesData object contains all static configuration for the Studies module.
- */
-const StudiesData = {
-    // Defines resources introduced or primarily managed by this module.
-    // 'knowledge' is a new resource introduced in this module.
+export const staticModuleData = {
+    // Definition for the 'Knowledge' resource
     resources: {
         knowledge: {
             id: 'knowledge',
-            name: 'Knowledge',
-            description: 'Accumulated wisdom from extensive studies.',
-            // Initial amount for Knowledge. It starts at 0.
-            initialAmount: '0',
-            // Indicates if this resource should be displayed in the global resource bar.
-            displayInResourceBar: true
+            name: "Knowledge",
+            initialAmount: 0,
+            isUnlocked: false, // Initially locked, unlocked by Professor production
+            showInUI: false, // Hidden until unlocked
         }
     },
 
-    // Defines the producers within the Studies module.
-    // Each producer has properties like base cost, production, and unlock conditions.
+    // Definitions for various producers
     producers: {
-        // The "Student" producer.
         student: {
             id: 'student',
-            name: 'Student',
-            description: 'A diligent student, generating Study Points.',
-            // The resource required to purchase this producer.
-            costResource: 'studyPoints',
-            // Base cost for the first unit. This will be a Decimal string.
-            baseCost: '10',
-            // Factor by which the cost increases for each subsequent purchase.
-            // This is a crucial balancing parameter.
-            costIncreaseFactor: '1.07', // As per roadmap: 1.07 to 1.15 initially
-            // Base production rate per second.
-            // This student produces 0.5 Study Points per second.
-            production: {
-                resourceId: 'studyPoints',
-                amount: '0.5' // Decimal string
+            name: "Student",
+            description: "A diligent student, generating basic Study Points.",
+            resourceId: "studyPoints", // What resource it produces
+            baseProduction: "0.5", // SP/s per student
+            baseCost: "10", // Initial cost in Study Points
+            costResource: "studyPoints", // What resource is used to buy it
+            costGrowthFactor: "1.07", // Multiplier for cost per purchase
+            unlockCondition: {
+                type: "resource", // Unlocked by having a certain amount of a resource
+                resourceId: "studyPoints",
+                amount: "0", // Student is available from the start (or very low SP)
             },
-            // Unlock condition for this producer.
-            // 'always' means it's available from the start of the module.
-            unlockCondition: 'always',
-            // Tooltip text for when the producer is locked (not applicable for 'always').
-            lockedTooltip: ''
+            ui: {
+                buttonText: (cost) => `Hire Student: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "Classroom" producer.
         classroom: {
             id: 'classroom',
-            name: 'Classroom',
-            description: 'A dedicated space for learning, boosting Study Point generation.',
-            costResource: 'studyPoints',
-            baseCost: '100',
-            costIncreaseFactor: '1.10', // Slightly higher increase factor
-            production: {
-                resourceId: 'studyPoints',
-                amount: '5'
-            },
-            // Unlocks when the player owns 10 "Students".
+            name: "Classroom",
+            description: "A dedicated space for learning, boosting Study Point generation.",
+            resourceId: "studyPoints",
+            baseProduction: "5", // SP/s per classroom
+            baseCost: "100",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.08",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'student',
-                amount: 10
+                type: "producerOwned", // Unlocked by owning a certain number of another producer
+                producerId: "student",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Students to unlock Classrooms.'
+            ui: {
+                buttonText: (cost) => `Build Classroom: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "Kindergarten" producer.
         kindergarten: {
             id: 'kindergarten',
-            name: 'Kindergarten',
-            description: 'Early education, laying the groundwork for future knowledge.',
-            costResource: 'studyPoints',
-            baseCost: '1000',
-            costIncreaseFactor: '1.12',
-            production: {
-                resourceId: 'studyPoints',
-                amount: '50'
-            },
+            name: "Kindergarten",
+            description: "Early education, laying the groundwork for future knowledge.",
+            resourceId: "studyPoints",
+            baseProduction: "25",
+            baseCost: "1000",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.09",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'classroom',
-                amount: 10
+                type: "producerOwned",
+                producerId: "classroom",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Classrooms to unlock Kindergartens.'
+            ui: {
+                buttonText: (cost) => `Open Kindergarten: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "Elementary School" producer.
         elementarySchool: {
             id: 'elementarySchool',
-            name: 'Elementary School',
-            description: 'Fundamental learning, expanding the reach of education.',
-            costResource: 'studyPoints',
-            baseCost: '10000',
-            costIncreaseFactor: '1.13',
-            production: {
-                resourceId: 'studyPoints',
-                amount: '500'
-            },
+            name: "Elementary School",
+            description: "Foundational learning, expanding your academic reach.",
+            resourceId: "studyPoints",
+            baseProduction: "100",
+            baseCost: "10000",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.10",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'kindergarten',
-                amount: 10
+                type: "producerOwned",
+                producerId: "kindergarten",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Kindergartens to unlock Elementary Schools.'
+            ui: {
+                buttonText: (cost) => `Establish Elementary School: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "Middle School" producer.
         middleSchool: {
             id: 'middleSchool',
-            name: 'Middle School',
-            description: 'Developing critical thinking and specialized skills.',
-            costResource: 'studyPoints',
-            baseCost: '100000',
-            costIncreaseFactor: '1.14',
-            production: {
-                resourceId: 'studyPoints',
-                amount: '5000'
-            },
+            name: "Middle School",
+            description: "Developing deeper understanding and critical thinking.",
+            resourceId: "studyPoints",
+            baseProduction: "500",
+            baseCost: "100000",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.11",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'elementarySchool',
-                amount: 10
+                type: "producerOwned",
+                producerId: "elementarySchool",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Elementary Schools to unlock Middle Schools.'
+            ui: {
+                buttonText: (cost) => `Found Middle School: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "High School" producer.
         highSchool: {
             id: 'highSchool',
-            name: 'High School',
-            description: 'Advanced studies, preparing for higher education.',
-            costResource: 'studyPoints',
-            baseCost: '1000000', // 1 Million SP
-            costIncreaseFactor: '1.15',
-            production: {
-                resourceId: 'studyPoints',
-                amount: '50000'
-            },
+            name: "High School",
+            description: "Advanced studies, preparing for higher education.",
+            resourceId: "studyPoints",
+            baseProduction: "2500",
+            baseCost: "1000000",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.12",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'middleSchool',
-                amount: 10
+                type: "producerOwned",
+                producerId: "middleSchool",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Middle Schools to unlock High Schools.'
+            ui: {
+                buttonText: (cost) => `Build High School: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "University" producer.
         university: {
             id: 'university',
-            name: 'University',
-            description: 'Pinnacle of academic pursuit, generating vast Study Points.',
-            costResource: 'studyPoints',
-            baseCost: '100000000', // 100 Million SP
-            costIncreaseFactor: '1.16',
-            production: {
-                resourceId: 'studyPoints',
-                amount: '500000'
-            },
+            name: "University",
+            description: "The pinnacle of academic institutions, generating vast Study Points.",
+            resourceId: "studyPoints",
+            baseProduction: "12500",
+            baseCost: "10000000",
+            costResource: "studyPoints",
+            costGrowthFactor: "1.13",
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'highSchool',
-                amount: 10
+                type: "producerOwned",
+                producerId: "highSchool",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 High Schools to unlock Universities.'
+            ui: {
+                buttonText: (cost) => `Establish University: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Study Points/s. You own ${owned}.`
+            }
         },
-
-        // The "Professor" producer, which generates Knowledge.
         professor: {
             id: 'professor',
-            name: 'Professor',
-            description: 'An esteemed academic, generating valuable Knowledge.',
-            costResource: 'studyPoints',
-            baseCost: '1000000000', // 1 Billion SP
-            costIncreaseFactor: '1.20', // Higher increase factor for a high-tier producer
-            production: {
-                resourceId: 'knowledge', // This producer generates Knowledge
-                amount: '10' // 10 Knowledge per second
-            },
-            // Unlocks when the player owns 10 "Universities".
+            name: "Professor",
+            description: "A wise mentor, producing valuable Knowledge.",
+            resourceId: "knowledge", // This producer generates Knowledge
+            baseProduction: "1", // Knowledge/s per professor
+            baseCost: "1000000000", // 1 Billion SP
+            costResource: "studyPoints",
+            costGrowthFactor: "1.15", // Higher growth factor as it's a prestige producer
             unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'university',
-                amount: 10
+                type: "producerOwned",
+                producerId: "university",
+                count: 10,
             },
-            lockedTooltip: 'Own 10 Universities to unlock Professors.'
+            ui: {
+                buttonText: (cost) => `Hire Professor: ${cost} SP`,
+                tooltip: (prod, owned) => `Produces ${prod} Knowledge/s. You own ${owned}.`
+            }
         }
     },
 
-    // Global flags that can be set by this module to unlock content in other modules.
-    // These flags are set by the logic when certain conditions are met (e.g., owning 10 Professors).
-    globalUnlockFlags: {
+    // Global flags to be set by this module to unlock other content
+    globalFlagsToSet: {
         commerceUnlocked: {
-            flagName: 'commerceUnlocked',
-            unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'professor',
-                amount: 10
-            }
+            flag: "commerceUnlocked",
+            condition: {
+                type: "producerOwned",
+                producerId: "professor",
+                count: 10,
+            },
+            value: true
         },
         ascensionUnlocked: {
-            flagName: 'ascensionUnlocked',
-            unlockCondition: {
-                type: 'producerOwned',
-                producerId: 'professor',
-                amount: 10
-            }
+            flag: "ascensionUnlocked",
+            condition: {
+                type: "producerOwned",
+                producerId: "professor",
+                count: 10,
+            },
+            value: true
+        }
+    },
+
+    ui: {
+        studiesTabLabel: "Studies",
+        studiesTabUnlockCondition: {
+            type: "resource",
+            resourceId: "studyPoints",
+            amount: "10"
         }
     }
 };
-
-// Make StudiesData globally accessible for other modules/core services.
-if (typeof window !== 'undefined') {
-    window.StudiesData = StudiesData;
-}

@@ -105,6 +105,7 @@ const coreUIManager = {
             }
         } else if (!activeTabId && Object.keys(registeredMenuTabs).length > 0) {
             // If no tab is active yet, and this isn't explicitly default, make the first unlocked one active.
+            // This ensures a tab is always active if available.
             const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
             if (firstUnlockedTab) {
                 this.setActiveTab(firstUnlockedTab.id);
@@ -188,7 +189,9 @@ const coreUIManager = {
         }
 
         if (activeTabId === tabId && !forceRender) {
-            return; // Already active, no change unless forced
+            // Even if already active, if it's a forced render, proceed.
+            // Otherwise, do nothing.
+            return;
         }
 
         // Call onHide for the old tab
@@ -220,6 +223,15 @@ const coreUIManager = {
         if (tab && typeof tab.onShowCallback === 'function') {
             tab.onShowCallback();
         }
+    },
+
+    /**
+     * Checks if a specific tab is currently active.
+     * @param {string} tabId - The ID of the tab to check.
+     * @returns {boolean} True if the tab is active, false otherwise.
+     */
+    isActiveTab(tabId) {
+        return activeTabId === tabId;
     },
 
     /**
@@ -383,7 +395,8 @@ const coreUIManager = {
 
     /**
      * Positions the tooltip relative to the mouse or target element.
-     * @param {MouseEvent} [event] - The mouse event, if positioning by mouse.
+     * @param {HTMLElement} targetEl - The element the tooltip is anchored to.
+     * @param {MouseEvent} [event] - The mouse event, if positioning by mouse (optional, for dynamic follow).
      * @private
      */
     _positionTooltip(targetEl, event) {
@@ -392,30 +405,26 @@ const coreUIManager = {
         const tooltipRect = UIElements.tooltipContainer.getBoundingClientRect();
         let x, y;
 
-        if (event) { // Position near mouse
-            x = event.clientX + 15;
-            y = event.clientY + 15;
-        } else if (targetEl) { // Position near target element (bottom-right as default)
-            const targetRect = targetEl.getBoundingClientRect();
-            x = targetRect.left + window.scrollX;
-            y = targetRect.bottom + window.scrollY + 5; // 5px offset below
-        } else {
-            return; // No reference point
-        }
+        // Prefer positioning relative to the target element
+        const targetRect = targetEl.getBoundingClientRect();
+        x = targetRect.right + window.scrollX + 5; // 5px to the right of the target
+        y = targetRect.top + window.scrollY;
 
-        // Keep tooltip within viewport
+        // Adjust if tooltip goes off-screen right
         if (x + tooltipRect.width > window.innerWidth) {
-            x = window.innerWidth - tooltipRect.width - 10; // 10px margin
-        }
-        if (y + tooltipRect.height > window.innerHeight) {
-            y = window.innerHeight - tooltipRect.height - 10; // 10px margin
-             // If still too high (e.g. target is at bottom), try placing above target
-            if (targetEl && y < targetEl.getBoundingClientRect().top + window.scrollY) {
-                 y = targetEl.getBoundingClientRect().top + window.scrollY - tooltipRect.height - 5;
+            x = targetRect.left + window.scrollX - tooltipRect.width - 5; // Place to the left
+            if (x < 0) { // If still off-screen left, reset to right and try to fit
+                x = window.innerWidth - tooltipRect.width - 10;
             }
         }
-        if (x < 0) x = 10;
-        if (y < 0) y = 10;
+        // Adjust if tooltip goes off-screen bottom
+        if (y + tooltipRect.height > window.innerHeight) {
+            y = window.innerHeight - tooltipRect.height - 10; // Place higher up
+        }
+        // Adjust if tooltip goes off-screen top
+        if (y < 0) {
+            y = 10;
+        }
 
 
         UIElements.tooltipContainer.style.left = `${x}px`;
@@ -429,14 +438,14 @@ const coreUIManager = {
     * @private
     */
     _handleTooltipPosition(event) {
-        // If tooltip is meant to follow mouse, use event.clientX/Y
-        // If it's meant to stay near an element, _positionTooltip(targetElement) is called on show.
-        // For simplicity, let's assume tooltips are positioned on show and don't follow mouse directly unless re-shown.
-        // However, if a target element moves, the tooltip would need an update.
-        // This is a complex problem; for now, we position on show.
-        // If currentTooltipTarget exists, we could re-evaluate its position if needed.
+        // If there's a current tooltip target, re-position the tooltip based on its current location
+        // and the mouse position (if relevant for dynamic follow).
         if (currentTooltipTarget && UIElements.tooltipContainer.style.display === 'block') {
-            this._positionTooltip(currentTooltipTarget, event); // Pass event to allow mouse-relative positioning
+            // Re-position relative to the target element, not strictly mouse.
+            // The tooltip's position should be based on the element it's describing,
+            // not directly follow the mouse, unless that's a specific design choice.
+            // For now, we'll re-position based on the target element's current location.
+            this._positionTooltip(currentTooltipTarget);
         }
     },
 

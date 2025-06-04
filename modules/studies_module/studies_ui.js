@@ -1,290 +1,286 @@
-// game/js/modules/studies_module/studies_ui.js
+// js/modules/studies_module/studies_ui.js
 
 /**
- * @fileoverview User Interface (UI) logic for the Studies module.
- * This file is responsible for rendering the Studies tab content,
- * displaying producers, their costs, owned counts, and handling purchase button clicks.
+ * @file studies_ui.js
+ * @description Handles the UI rendering and interactions for the Studies module.
  */
 
-/**
- * StudiesUI object handles the rendering and interaction of the Studies module's UI.
- */
-const StudiesUI = (function() {
-    // Private references to core engine services and module components.
-    let _coreUIManager;
-    let _studiesLogic;
-    let _studiesData;
-    let _studiesState; // Although logic exposes it, direct access for UI is fine.
-    let _decimalUtility;
-    let _loggingSystem;
+import { staticModuleData } from './studies_data.js';
+// moduleState and moduleLogic are passed during initialization
 
-    // Element references for performance.
-    let _mainContentElement;
+let coreSystemsRef = null;
+let moduleLogicRef = null;
+let parentElementCache = null; // Cache the parent element for rendering
 
+export const ui = {
     /**
-     * Initializes the StudiesUI module with necessary dependencies.
-     * This method is called once during game startup.
-     *
-     * @param {Object} coreUIManager The CoreUIManager instance.
-     * @param {Object} studiesLogic The StudiesLogic instance.
-     * @param {Object} studiesData The static data for the Studies module.
-     * @param {Object} studiesState The dynamic state for the Studies module.
-     * @param {Object} decimalUtility The DecimalUtility instance.
-     * @param {Object} loggingSystem The LoggingSystem instance.
+     * Initializes the UI component with core system references and module logic.
+     * @param {object} coreSystems - References to core game systems.
+     * @param {object} logicRef - Reference to the module's logic component.
      */
-    function init(coreUIManager, studiesLogic, studiesData, studiesState, decimalUtility, loggingSystem) {
-        _coreUIManager = coreUIManager;
-        _studiesLogic = studiesLogic;
-        _studiesData = studiesData;
-        _studiesState = studiesState;
-        _decimalUtility = decimalUtility;
-        _loggingSystem = loggingSystem;
-
-        _loggingSystem.log('StudiesUI initialized.', 'StudiesUI');
-
-        // Get reference to the main content area where this module's UI will be rendered.
-        _mainContentElement = document.getElementById('main-content');
-        if (!_mainContentElement) {
-            _loggingSystem.error('Main content element #main-content not found!', 'StudiesUI');
-        }
-    }
+    initialize(coreSystems, logicRef) {
+        coreSystemsRef = coreSystems;
+        moduleLogicRef = logicRef;
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized.");
+    },
 
     /**
      * Renders the main content for the Studies module.
-     * This function is called by CoreUIManager when the Studies tab is active.
+     * This is called by coreUIManager when the tab is activated.
+     * @param {HTMLElement} parentElement - The DOM element to render content into.
      */
-    function render() {
-        if (!_mainContentElement) {
+    renderMainContent(parentElement) {
+        if (!coreSystemsRef || !moduleLogicRef) {
+            parentElement.innerHTML = '<p class="text-red-500">Studies UI not properly initialized.</p>';
             return;
         }
+        parentElementCache = parentElement; // Cache for potential re-renders
+        parentElement.innerHTML = ''; // Clear previous content
 
-        // Clear previous content.
-        _mainContentElement.innerHTML = '';
+        const { coreUIManager, decimalUtility } = coreSystemsRef;
 
-        // Create a container for the Studies module content.
-        const studiesContainer = document.createElement('div');
-        studiesContainer.id = 'studies-module-content';
-        studiesContainer.className = 'space-y-6'; // Tailwind for spacing
+        const container = document.createElement('div');
+        container.className = 'p-4 space-y-6'; // Tailwind classes
 
-        // Add a title for the Studies section.
         const title = document.createElement('h2');
-        title.className = 'text-2xl font-bold text-primary mb-4';
-        title.textContent = 'Studies';
-        studiesContainer.appendChild(title);
+        title.className = 'text-2xl font-semibold text-primary mb-4';
+        title.textContent = 'Studies Department';
+        container.appendChild(title);
 
-        // Create a section for producers.
-        const producersSection = document.createElement('div');
-        producersSection.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'; // Responsive grid for producers
-        studiesContainer.appendChild(producersSection);
+        const description = document.createElement('p');
+        description.className = 'text-textSecondary mb-6';
+        description.textContent = 'Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.';
+        container.appendChild(description);
 
-        // Iterate through all producers defined in StudiesData and render them.
-        for (const producerKey in _studiesData.producers) {
-            if (Object.prototype.hasOwnProperty.call(_studiesData.producers, producerKey)) {
-                const producerDef = _studiesData.producers[producerKey];
-                const producerId = producerDef.id;
+        const producersContainer = document.createElement('div');
+        producersContainer.id = 'studies-producers-container';
+        producersContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+        container.appendChild(producersContainer);
 
-                // Check if the producer is unlocked.
-                const isUnlocked = _studiesLogic.isProducerUnlocked(producerId);
+        // Iterate through all producers defined in staticModuleData
+        for (const producerId in staticModuleData.producers) {
+            const producerDef = staticModuleData.producers[producerId];
+            const isUnlocked = moduleLogicRef.isProducerUnlocked(producerId);
 
-                // Create a card for each producer.
-                const producerCard = document.createElement('div');
-                producerCard.id = `producer-card-${producerId}`;
-                producerCard.className = 'bg-surface p-4 rounded-xl shadow-md flex flex-col justify-between'; // Card styling
+            const producerCard = document.createElement('div');
+            producerCard.id = `producer-card-${producerId}`;
+            producerCard.className = `bg-surface-dark p-4 rounded-lg shadow-md flex flex-col transition-all duration-200 ${isUnlocked ? '' : 'opacity-50 grayscale cursor-not-allowed'}`;
 
-                if (!isUnlocked) {
-                    // If locked, apply a grayscale effect and display unlock info.
-                    producerCard.classList.add('opacity-50', 'cursor-not-allowed');
-                    producerCard.setAttribute('data-tooltip-id', `tooltip-locked-${producerId}`);
-                    producerCard.setAttribute('data-tooltip-content', producerDef.lockedTooltip);
+            const producerName = document.createElement('h3');
+            producerName.className = 'text-xl font-semibold text-textPrimary mb-2';
+            producerName.textContent = producerDef.name;
+            producerCard.appendChild(producerName);
+
+            const producerDescription = document.createElement('p');
+            producerDescription.className = 'text-textSecondary text-sm mb-3';
+            producerDescription.textContent = producerDef.description;
+            producerCard.appendChild(producerDescription);
+
+            const ownedDisplay = document.createElement('p');
+            ownedDisplay.id = `producer-${producerId}-owned`;
+            ownedDisplay.className = 'text-textPrimary text-lg font-bold mb-1';
+            producerCard.appendChild(ownedDisplay);
+
+            const productionDisplay = document.createElement('p');
+            productionDisplay.id = `producer-${producerId}-production`;
+            productionDisplay.className = 'text-green-400 text-sm mb-3';
+            producerCard.appendChild(productionDisplay);
+
+            const costDisplay = document.createElement('p');
+            costDisplay.id = `producer-${producerId}-cost`;
+            costDisplay.className = 'text-textSecondary text-sm mb-4';
+            producerCard.appendChild(costDisplay);
+
+            const buyButton = coreUIManager.createButton(
+                '', // Text will be set dynamically
+                () => {
+                    const purchased = moduleLogicRef.purchaseProducer(producerId);
+                    if (purchased) {
+                        this.updateDynamicElements(); // Update all UI elements
+                        // Check for global flag unlocks after purchase
+                        moduleLogicRef.updateGlobalFlags();
+                        coreUIManager.showNotification(`Purchased ${producerDef.name}!`, 'success', 1500);
+                        // Add a subtle animation to the button
+                        buyButton.classList.add('animate-pulse-once');
+                        setTimeout(() => buyButton.classList.remove('animate-pulse-once'), 500);
+                    } else {
+                        coreUIManager.showNotification(`Not enough ${staticModuleData.producers[producerId].costResource} to buy ${producerDef.name}.`, 'error', 1500);
+                    }
+                },
+                ['bg-blue-600', 'hover:bg-blue-700', 'text-white', 'py-2', 'px-4', 'text-md', 'w-full'],
+                `buy-${producerId}-button`
+            );
+            producerCard.appendChild(buyButton);
+
+            producersContainer.appendChild(producerCard);
+
+            // Set up tooltip for locked producers
+            if (!isUnlocked) {
+                producerCard.classList.add('tooltip-target'); // Add a class to identify tooltip targets
+                producerCard.dataset.tooltipContent = this._getUnlockTooltipContent(producerDef.unlockCondition);
+            }
+        }
+
+        parentElement.appendChild(container);
+
+        // Add a simple CSS animation for the button pulse (if not already in index.html)
+        // Ensure this style is only added once
+        if (!document.head.querySelector('#studies-module-styles')) {
+            const style = document.createElement('style');
+            style.id = 'studies-module-styles';
+            style.textContent = `
+                @keyframes pulse-once {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.02); }
+                    100% { transform: scale(1); }
+                }
+                .animate-pulse-once {
+                    animation: pulse-once 0.5s ease-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        this.updateDynamicElements(); // Initial update for all dynamic elements
+        this._setupTooltips(); // Setup tooltips for all producer cards
+    },
+
+    /**
+     * Generates the tooltip content for a locked producer.
+     * @param {object} condition - The unlock condition object.
+     * @returns {string} HTML string for the tooltip.
+     * @private
+     */
+    _getUnlockTooltipContent(condition) {
+        const { coreResourceManager, decimalUtility } = coreSystemsRef;
+        let content = '<p class="font-semibold text-primary mb-1">Unlock Condition:</p>';
+
+        switch (condition.type) {
+            case "resource":
+                const currentAmount = coreResourceManager.getAmount(condition.resourceId);
+                const requiredAmount = decimalUtility.new(condition.amount);
+                content += `<p>Reach ${decimalUtility.format(requiredAmount, 0)} ${coreResourceManager.getAllResources()[condition.resourceId]?.name || condition.resourceId}.</p>`;
+                content += `<p class="text-xs text-textSecondary">(Current: ${decimalUtility.format(currentAmount, 0)})</p>`;
+                break;
+            case "producerOwned":
+                const producerDef = staticModuleData.producers[condition.producerId];
+                const ownedCount = moduleLogicRef.getOwnedProducerCount(condition.producerId);
+                content += `<p>Own ${condition.count} ${producerDef.name}${condition.count > 1 ? 's' : ''}.</p>`;
+                content += `<p class="text-xs text-textSecondary">(Current: ${decimalUtility.format(ownedCount, 0)})</p>`;
+                break;
+            default:
+                content += `<p>Meet unknown condition.</p>`;
+                break;
+        }
+        return content;
+    },
+
+    /**
+     * Sets up mouseover/mouseout listeners for tooltip targets.
+     * @private
+     */
+    _setupTooltips() {
+        const tooltipTargets = parentElementCache.querySelectorAll('.tooltip-target');
+        tooltipTargets.forEach(target => {
+            target.addEventListener('mouseenter', (event) => {
+                const content = target.dataset.tooltipContent;
+                if (content) {
+                    coreSystemsRef.coreUIManager.showTooltip(content, target);
+                }
+            });
+            target.addEventListener('mouseleave', () => {
+                coreSystemsRef.coreUIManager.hideTooltip();
+            });
+        });
+    },
+
+    /**
+     * Updates dynamic parts of the module's UI, like producer counts, costs, and production rates.
+     * This should be called by the game loop's UI update phase or after purchases.
+     */
+    updateDynamicElements() {
+        if (!parentElementCache) return; // Not rendered yet or parent cleared
+
+        const { coreResourceManager, decimalUtility } = coreSystemsRef;
+
+        for (const producerId in staticModuleData.producers) {
+            const producerDef = staticModuleData.producers[producerId];
+            const producerCard = parentElementCache.querySelector(`#producer-card-${producerId}`);
+            const buyButton = parentElementCache.querySelector(`#buy-${producerId}-button`);
+
+            if (!producerCard || !buyButton) continue; // Skip if element not found
+
+            const isUnlocked = moduleLogicRef.isProducerUnlocked(producerId);
+
+            if (isUnlocked) {
+                producerCard.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
+                producerCard.classList.add('bg-surface-dark'); // Re-add normal background if removed
+                producerCard.removeEventListener('mouseenter', this._tooltipEnterHandler);
+                producerCard.removeEventListener('mouseleave', this._tooltipLeaveHandler);
+                coreSystemsRef.coreUIManager.hideTooltip(); // Hide any active tooltip for this element
+
+                const ownedCount = moduleLogicRef.getOwnedProducerCount(producerId);
+                const currentCost = moduleLogicRef.calculateProducerCost(producerId);
+                const totalProduction = coreResourceManager.getProductionFromSource(producerDef.resourceId, `studies_module_${producerId}`);
+
+                const ownedDisplay = producerCard.querySelector(`#producer-${producerId}-owned`);
+                const productionDisplay = producerCard.querySelector(`#producer-${producerId}-production`);
+                const costDisplay = producerCard.querySelector(`#producer-${producerId}-cost`);
+
+                if (ownedDisplay) ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
+                if (productionDisplay) {
+                    productionDisplay.textContent = `Total Production: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
+                }
+                if (costDisplay) {
+                    costDisplay.textContent = `Cost: ${decimalUtility.format(currentCost, 2)} ${producerDef.costResource}`;
                 }
 
-                const producerName = document.createElement('h3');
-                producerName.className = 'text-xl font-semibold text-secondary mb-2';
-                producerName.textContent = producerDef.name;
-                producerCard.appendChild(producerName);
-
-                const producerDescription = document.createElement('p');
-                producerDescription.className = 'text-textSecondary text-sm mb-3';
-                producerDescription.textContent = producerDef.description;
-                producerCard.appendChild(producerDescription);
-
-                const ownedCount = _studiesState.getProducerCount(producerId);
-                const ownedText = document.createElement('p');
-                ownedText.id = `producer-${producerId}-owned`;
-                ownedText.className = 'text-textPrimary text-lg font-medium mb-2';
-                ownedText.textContent = `Owned: ${ownedCount}`;
-                producerCard.appendChild(ownedText);
-
-                // Only show cost and purchase button if unlocked.
-                if (isUnlocked) {
-                    const currentCost = _studiesLogic.calculateProducerCost(producerId);
-                    const costText = document.createElement('p');
-                    costText.id = `producer-${producerId}-cost`;
-                    costText.className = 'text-textPrimary text-sm mb-3';
-                    costText.textContent = `Cost: ${_decimalUtility.format(currentCost)} ${producerDef.costResource === 'studyPoints' ? 'SP' : producerDef.costResource}`;
-                    producerCard.appendChild(costText);
-
-                    // Display production information.
-                    const productionInfo = document.createElement('p');
-                    productionInfo.className = 'text-textPrimary text-sm mb-3';
-                    const baseProductionAmount = _decimalUtility.new(producerDef.production.amount);
-                    const totalProductionAmount = baseProductionAmount.times(ownedCount); // This will be updated by logic
-                    productionInfo.innerHTML = `Unit Prod: ${_decimalUtility.format(baseProductionAmount)} ${producerDef.production.resourceId}/s<br>Total Prod: <span id="producer-${producerId}-total-production">${_decimalUtility.format(totalProductionAmount)}</span> ${producerDef.production.resourceId}/s`;
-                    producerCard.appendChild(productionInfo);
-
-
-                    const buyButton = document.createElement('button');
-                    buyButton.id = `buy-${producerId}-button`;
-                    buyButton.className = 'game-button w-full mt-auto'; // Tailwind for full width and margin-top
-                    buyButton.textContent = `Buy 1 ${producerDef.name}`;
-                    buyButton.onclick = () => handleBuyProducer(producerId);
-                    producerCard.appendChild(buyButton);
-
-                    // Update button state based on affordability.
-                    updateProducerButtonState(producerId);
-                } else {
-                    // Display locked message instead of purchase button
-                    const lockedMessage = document.createElement('p');
-                    lockedMessage.className = 'text-red-400 text-center italic mt-auto';
-                    lockedMessage.textContent = 'Locked';
-                    producerCard.appendChild(lockedMessage);
+                if (buyButton) {
+                    buyButton.textContent = producerDef.ui.buttonText(decimalUtility.format(currentCost, 2));
+                    const canAfford = coreResourceManager.canAfford(producerDef.costResource, currentCost);
+                    buyButton.disabled = !canAfford;
+                    if (canAfford) {
+                        buyButton.classList.remove('bg-gray-500', 'cursor-not-allowed');
+                        buyButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                    } else {
+                        buyButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                        buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
+                    }
+                    buyButton.title = producerDef.ui.tooltip(decimalUtility.format(producerDef.baseProduction, 2), decimalUtility.format(ownedCount, 0));
                 }
-
-                producersSection.appendChild(producerCard);
-            }
-        }
-
-        _mainContentElement.appendChild(studiesContainer);
-
-        // After rendering, ensure tooltips are initialized for new elements.
-        _coreUIManager.initializeTooltips();
-    }
-
-    /**
-     * Handles the click event for buying a producer.
-     * @param {string} producerId The ID of the producer to buy.
-     */
-    function handleBuyProducer(producerId) {
-        const success = _studiesLogic.purchaseProducer(producerId);
-        if (success) {
-            _loggingSystem.log(`Successfully bought ${producerId}.`, 'StudiesUI');
-            // Re-render the Studies content to update all values.
-            // This is a simple approach; for performance, a more granular update
-            // would target specific elements. For now, full re-render is acceptable.
-            render();
-            // Also force an update of the resource bar, as SP amounts change.
-            _coreUIManager.updateResourceBar();
-        } else {
-            _loggingSystem.warn(`Failed to buy ${producerId}.`, 'StudiesUI');
-            // The logic already logs specific reasons (not enough resources, locked).
-            // No need for a separate user-facing message here unless desired.
-        }
-    }
-
-    /**
-     * Updates the UI elements for a specific producer, including cost, owned count,
-     * total production, and button enablement.
-     * This function is called frequently (e.g., by CoreUIManager's update loop)
-     * to keep the UI in sync with game state changes.
-     *
-     * @param {string} producerId The ID of the producer to update.
-     */
-    function updateProducerUI(producerId) {
-        const producerDef = _studiesData.producers[producerId];
-        if (!producerDef) return;
-
-        const isUnlocked = _studiesLogic.isProducerUnlocked(producerId);
-        const producerCard = document.getElementById(`producer-card-${producerId}`);
-
-        if (!producerCard) {
-            // Producer card might not be rendered yet if the tab isn't active.
-            // Or if it was just unlocked and needs a full re-render.
-            // If it's a newly unlocked producer, a full render() will create its card.
-            // For now, we'll just return.
-            return;
-        }
-
-        // If the producer was just unlocked, we need to re-render the entire section
-        // to show its full UI (cost, button, etc.).
-        if (isUnlocked && producerCard.classList.contains('opacity-50')) {
-            render(); // Full re-render to transition from locked to unlocked view
-            return;
-        }
-
-        // If it's unlocked, update its dynamic elements.
-        if (isUnlocked) {
-            const ownedCount = _studiesState.getProducerCount(producerId);
-            const currentCost = _studiesLogic.calculateProducerCost(producerId);
-            const totalProduction = _studiesLogic.calculateTotalProducerProduction(producerId);
-
-            const ownedText = document.getElementById(`producer-${producerId}-owned`);
-            if (ownedText) {
-                ownedText.textContent = `Owned: ${ownedCount}`;
-            }
-
-            const costText = document.getElementById(`producer-${producerId}-cost`);
-            if (costText) {
-                costText.textContent = `Cost: ${_decimalUtility.format(currentCost)} ${producerDef.costResource === 'studyPoints' ? 'SP' : producerDef.costResource}`;
-            }
-
-            const totalProductionSpan = document.getElementById(`producer-${producerId}-total-production`);
-            if (totalProductionSpan) {
-                totalProductionSpan.textContent = _decimalUtility.format(totalProduction);
-            }
-
-            updateProducerButtonState(producerId);
-        }
-    }
-
-    /**
-     * Updates the enabled/disabled state of a producer's buy button.
-     * @param {string} producerId The ID of the producer.
-     */
-    function updateProducerButtonState(producerId) {
-        const buyButton = document.getElementById(`buy-${producerId}-button`);
-        if (buyButton) {
-            const producerDef = _studiesData.producers[producerId];
-            const currentCost = _studiesLogic.calculateProducerCost(producerId);
-            const costResource = producerDef.costResource;
-
-            if (_coreResourceManager.canAfford(costResource, currentCost)) {
-                buyButton.disabled = false;
-                buyButton.classList.remove('bg-textSecondary', 'cursor-not-allowed');
-                buyButton.classList.add('bg-primary', 'hover:bg-primary-lighter');
             } else {
-                buyButton.disabled = true;
-                buyButton.classList.remove('bg-primary', 'hover:bg-primary-lighter');
-                buyButton.classList.add('bg-textSecondary', 'cursor-not-allowed');
+                // If locked, ensure it's visually disabled and has tooltip setup
+                producerCard.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
+                if (buyButton) {
+                    buyButton.disabled = true;
+                    buyButton.textContent = "Locked";
+                    buyButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
+                }
+                // Re-attach tooltip listeners if they were removed
+                if (!producerCard.classList.contains('tooltip-target')) {
+                    producerCard.classList.add('tooltip-target');
+                    producerCard.dataset.tooltipContent = this._getUnlockTooltipContent(producerDef.unlockCondition);
+                    this._setupTooltips(); // Re-run setup to catch new targets
+                }
             }
         }
-    }
+    },
 
     /**
-     * The main update function for the Studies UI, called by CoreUIManager's update loop.
-     * This function iterates through all producers and updates their UI elements.
+     * Called when the module's tab is shown.
      */
-    function update() {
-        // Only update UI if the Studies tab is currently active.
-        if (!_coreUIManager.isTabActive('studies-tab')) {
-            return;
-        }
+    onShow() {
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "Studies tab shown. Updating dynamic elements.");
+        this.updateDynamicElements(); // Ensure UI is up-to-date when tab is shown
+        this._setupTooltips(); // Re-setup tooltips as content might be re-rendered
+    },
 
-        for (const producerKey in _studiesData.producers) {
-            if (Object.prototype.hasOwnProperty.call(_studiesData.producers, producerKey)) {
-                updateProducerUI(_studiesData.producers[producerKey].id);
-            }
-        }
+    /**
+     * Called when the module's tab is hidden.
+     */
+    onHide() {
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "Studies tab hidden.");
+        coreSystemsRef.coreUIManager.hideTooltip(); // Hide any active tooltip
     }
-
-    // Public API for the StudiesUI module.
-    return {
-        init: init,
-        render: render,
-        update: update // Expose the update function for CoreUIManager
-    };
-})();
-
-// Make StudiesUI globally accessible.
-if (typeof window !== 'undefined') {
-    window.StudiesUI = StudiesUI;
-}
+};

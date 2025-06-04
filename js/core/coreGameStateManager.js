@@ -90,6 +90,25 @@ const coreGameStateManager = {
         gameState.gameVersion = newState.gameVersion || "0.0.0"; // Default if missing
         gameState.lastSaveTime = newState.lastSaveTime || null;
 
+        // IMPORTANT: When loading module states, ensure that any Decimal values stored as strings
+        // are converted back to Decimal objects. This is critical for the module logic to work correctly.
+        // This is a generic approach; individual modules might have more specific revival needs.
+        for (const moduleId in gameState.moduleStates) {
+            const moduleStateData = gameState.moduleStates[moduleId];
+            // Assuming moduleStateData is a plain object and we need to revive nested Decimals.
+            // This is a shallow revival; deep revival would require recursive traversal.
+            // For the 'studies' module, 'ownedProducers' values are strings.
+            if (moduleId === 'studies' && moduleStateData.ownedProducers) {
+                for (const producerId in moduleStateData.ownedProducers) {
+                    // Ensure the value is converted back to string before passing to module state
+                    // (as moduleState itself is exported and expects strings for saving)
+                    moduleStateData.ownedProducers[producerId] = decimalUtility.new(moduleStateData.ownedProducers[producerId]).toString();
+                }
+            }
+            // Add similar logic for other modules as they are developed
+        }
+
+
         loggingSystem.info("CoreGameStateManager", "Full game state has been set.");
         // Potentially trigger events or updates if other systems need to react to a full state load.
     },
@@ -142,7 +161,8 @@ const coreGameStateManager = {
             loggingSystem.warn("CoreGameStateManager", "setModuleState: moduleId must be a non-empty string.");
             return;
         }
-        gameState.moduleStates[moduleId] = moduleStateData;
+        // Ensure moduleStateData is a shallow copy to prevent direct mutation from external refs
+        gameState.moduleStates[moduleId] = { ...moduleStateData };
         loggingSystem.debug("CoreGameStateManager", `State for module '${moduleId}' updated.`);
     },
 
@@ -154,8 +174,10 @@ const coreGameStateManager = {
      */
     getModuleState(moduleId) {
         if (Object.prototype.hasOwnProperty.call(gameState.moduleStates, moduleId)) {
-            // Return a copy to prevent direct modification
+            // Return a deep copy to prevent direct modification
             try {
+                // This ensures any nested objects/arrays are also copied, but Decimals will be strings.
+                // The module's manifest.initialize or onGameLoad should handle reviving Decimals.
                 return JSON.parse(JSON.stringify(gameState.moduleStates[moduleId]));
             } catch (e) {
                 loggingSystem.error("CoreGameStateManager", `Error deep copying state for module ${moduleId}`, e);

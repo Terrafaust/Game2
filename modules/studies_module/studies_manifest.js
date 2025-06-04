@@ -1,127 +1,148 @@
-// game/js/modules/studies_module/studies_manifest.js
+// js/modules/studies_module/studies_manifest.js
 
 /**
- * @fileoverview Manifest file for the Studies module.
- * Defines the module's metadata, dependencies, and UI registration points.
+ * @file studies_manifest.js
+ * @description Manifest file for the Studies Module.
+ * This module introduces automated resource generation and content unlocking.
  */
 
-/**
- * The manifest object for the Studies module.
- * It provides essential information for the ModuleLoader and CoreUIManager.
- */
-const StudiesManifest = {
-    // Unique identifier for this module. Used for loading and referencing.
-    id: 'studies_module',
-    // Display name for the module, used in UI elements like menu tabs.
-    name: 'Studies',
-    // List of other modules or core services this module depends on.
-    // The ModuleLoader will ensure these are loaded before this module.
-    dependencies: [
-        'core_gameplay_module', // Depends on the initial gameplay module for basic resources
-        'coreResourceManager',  // For managing resources like Study Points and Knowledge
-        'coreUIManager',        // For UI interactions, tab registration, and content rendering
-        'coreGameStateManager', // For checking and setting global game state flags (e.g., unlocks)
-        'decimalUtility',       // For all large number calculations
-        'gameLoop',             // For hooking into the game loop for production updates
-        'saveLoadSystem',       // For saving and loading module-specific state
-        'staticDataAggregator', // For registering module's static data
-        'loggingSystem'         // For logging module-specific messages
-    ],
-    // Configuration for how this module's UI should be registered with CoreUIManager.
-    ui: {
-        // Defines a menu tab for this module.
-        menuTab: {
-            // The ID for the tab, used internally by CoreUIManager.
-            id: 'studies-tab',
-            // The text displayed on the menu tab.
-            text: 'Studies',
-            // The target content area where this module's UI will be rendered.
-            // This corresponds to the 'data-tab-target' attribute in index.html.
-            targetContentId: 'studies_content',
-            // A function that returns true if the tab should be visible, false otherwise.
-            // This allows for conditional unlocking of menu tabs.
-            // In this case, the 'Studies' tab unlocks when the player has at least 10 Study Points.
-            // It uses coreResourceManager to check the amount of 'studyPoints'.
-            // The 'coreResourceManager' and 'decimalUtility' objects are passed as arguments
-            // because they are dependencies and will be available in the global scope
-            // after the CoreEngine initializes them.
-            unlockCondition: (coreResourceManager, decimalUtility) => {
-                // Ensure coreResourceManager and decimalUtility are available before checking.
-                if (!coreResourceManager || !decimalUtility) {
-                    return false;
+// Import module components
+import { staticModuleData } from './studies_data.js';
+import { getInitialState, moduleState } from './studies_state.js';
+import { moduleLogic } from './studies_logic.js';
+import { ui } from './studies_ui.js';
+
+const studiesManifest = {
+    id: "studies",
+    name: "Studies",
+    version: "0.1.0",
+    description: "Automate your Study Point generation and unlock new knowledge.",
+    dependencies: ["core_gameplay"], // Depends on core_gameplay for Study Points
+
+    /**
+     * Initializes the Studies module.
+     * This function is called by the moduleLoader.
+     * @param {object} coreSystems - References to core game systems (logger, resourceManager, etc.).
+     * @returns {object} The module's public API or instance.
+     */
+    async initialize(coreSystems) {
+        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
+
+        loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
+
+        // 1. Register Static Data
+        // Register the 'knowledge' resource definition
+        staticDataAggregator.registerStaticData(this.id, {
+            resources: staticModuleData.resources,
+            producers: staticModuleData.producers,
+            ui: staticModuleData.ui
+        });
+
+        // Define the 'knowledge' resource with coreResourceManager
+        const knowledgeDef = staticModuleData.resources.knowledge;
+        if (knowledgeDef) {
+            coreResourceManager.defineResource(
+                knowledgeDef.id,
+                knowledgeDef.name,
+                knowledgeDef.initialAmount,
+                knowledgeDef.showInUI,
+                knowledgeDef.isUnlocked
+            );
+            loggingSystem.info(this.name, `Resource '${knowledgeDef.name}' (${knowledgeDef.id}) defined.`);
+        }
+
+        // 2. Initialize Module State
+        // Load state from coreGameStateManager or use defaults
+        let currentModuleState = coreGameStateManager.getModuleState(this.id);
+        if (!currentModuleState) {
+            loggingSystem.info(this.name, "No saved state found for Studies module. Initializing with default state.");
+            currentModuleState = getInitialState();
+            coreGameStateManager.setModuleState(this.id, currentModuleState);
+        } else {
+            loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Studies module.", currentModuleState);
+            // Ensure Decimal values are revived from strings in loaded state
+            for (const producerId in currentModuleState.ownedProducers) {
+                currentModuleState.ownedProducers[producerId] = decimalUtility.new(currentModuleState.ownedProducers[producerId]).toString(); // Ensure it's a string, logic will convert
+            }
+            Object.assign(moduleState, currentModuleState); // Update local moduleState
+        }
+
+        // 3. Initialize Logic (pass references to core systems)
+        moduleLogic.initialize(coreSystems);
+
+        // 4. Initialize UI (pass references to core systems and logic)
+        ui.initialize(coreSystems, moduleLogic);
+
+        // 5. Register the module's main tab/view with the UIManager
+        coreUIManager.registerMenuTab(
+            this.id,
+            staticModuleData.ui.studiesTabLabel, // Tab Label from data
+            (parentElement) => ui.renderMainContent(parentElement), // Function to render content
+            () => moduleLogic.isStudiesTabUnlocked(), // isUnlocked check
+            () => ui.onShow(),   // onShow callback
+            () => ui.onHide()    // onHide callback
+        );
+
+        // 6. Register update callbacks with the game loop
+        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
+            // This module's logic might not have a continuous update function itself,
+            // but it might trigger global flag checks here.
+            moduleLogic.updateGlobalFlags(); // Check for global flag unlocks periodically
+        });
+        gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
+            ui.updateDynamicElements(); // Update UI elements like costs, owned counts, production
+        });
+
+        // Initial update of all producer productions after state is loaded/initialized
+        moduleLogic.updateAllProducerProductions();
+        // Initial check for global flags
+        moduleLogic.updateGlobalFlags();
+
+
+        loggingSystem.info(this.name, `${this.name} initialized successfully.`);
+
+        // Return a public API for the module if needed
+        return {
+            id: this.id,
+            logic: moduleLogic,
+            ui: ui,
+            // Expose lifecycle methods for moduleLoader to broadcast
+            onGameLoad: () => {
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
+                let loadedState = coreGameStateManager.getModuleState(this.id);
+                if (!loadedState) {
+                    loadedState = getInitialState();
+                    coreGameStateManager.setModuleState(this.id, loadedState);
                 }
-                // Check if the player has 10 or more Study Points.
-                const studyPointsAmount = coreResourceManager.getAmount('studyPoints');
-                return studyPointsAmount && studyPointsAmount.greaterThanOrEqualTo(decimalUtility.new(10));
+                // Ensure Decimals are revived when loading into moduleState
+                for (const producerId in loadedState.ownedProducers) {
+                    loadedState.ownedProducers[producerId] = decimalUtility.new(loadedState.ownedProducers[producerId]).toString();
+                }
+                Object.assign(moduleState, loadedState); // Update local moduleState
+                moduleLogic.onGameLoad(); // Notify logic component
+                if (coreUIManager.isActiveTab(this.id)) {
+                    ui.renderMainContent(document.getElementById('main-content')); // Re-render if active
+                }
             },
-            // A tooltip message to display when the tab is locked.
-            lockedTooltip: 'Reach 10 Study Points to unlock Studies.'
-        }
-    },
-    // Initialization function for the module.
-    // This function will be called by the ModuleLoader after all dependencies are met.
-    // It receives a context object containing references to core engine services.
-    init: (context) => {
-        // Import module-specific components using the provided context.
-        const {
-            coreResourceManager,
-            coreUIManager,
-            coreGameStateManager,
-            decimalUtility,
-            gameLoop,
-            saveLoadSystem,
-            staticDataAggregator,
-            loggingSystem
-        } = context;
-
-        // Load module-specific data, logic, UI, and state.
-        // These are assumed to be available in the global scope or passed via context.
-        // For simplicity in this example, we'll assume they are globally accessible
-        // after their respective script files are loaded.
-        // In a more complex setup, these might be imported directly if using a build system.
-        const studiesData = typeof StudiesData !== 'undefined' ? StudiesData : null;
-        const studiesLogic = typeof StudiesLogic !== 'undefined' ? StudiesLogic : null;
-        const studiesUI = typeof StudiesUI !== 'undefined' ? StudiesUI : null;
-        const studiesState = typeof StudiesState !== 'undefined' ? StudiesState : null;
-
-        // Log the initialization of the Studies module.
-        loggingSystem.log('Studies module initializing...', 'StudiesManifest');
-
-        // Check if all necessary components are loaded.
-        if (!studiesData || !studiesLogic || !studiesUI || !studiesState) {
-            loggingSystem.error('Studies module failed to load one or more components (Data, Logic, UI, State).', 'StudiesManifest');
-            return;
-        }
-
-        // Pass core engine services and module components to the logic and UI for their setup.
-        studiesLogic.init(coreResourceManager, coreGameStateManager, decimalUtility, studiesData, studiesState, loggingSystem);
-        studiesUI.init(coreUIManager, studiesLogic, studiesData, studiesState, decimalUtility, loggingSystem);
-
-        // Register module's static data with the StaticDataAggregator.
-        // This makes producer definitions and other static data accessible globally if needed.
-        staticDataAggregator.registerModuleData(StudiesManifest.id, studiesData);
-
-        // Register the module's state with the SaveLoadSystem.
-        // This ensures the module's dynamic data is saved and loaded.
-        saveLoadSystem.registerModuleState(StudiesManifest.id, studiesState.getState, studiesState.loadState);
-
-        // Register the module's update function with the GameLoop.
-        // This ensures that the module's logic (e.g., production calculations) runs every tick.
-        gameLoop.registerUpdate(studiesLogic.update);
-
-        // Register the module's UI render function with CoreUIManager.
-        // This ensures the UI is rendered when the tab is active.
-        coreUIManager.registerContentRenderer(StudiesManifest.ui.menuTab.targetContentId, studiesUI.render);
-
-        // Register the menu tab with CoreUIManager.
-        coreUIManager.registerMenuTab(StudiesManifest.ui.menuTab);
-
-        loggingSystem.log('Studies module initialized successfully.', 'StudiesManifest');
+            onResetState: () => {
+                loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
+                const initialState = getInitialState();
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(this.id, initialState);
+                moduleLogic.onResetState(); // Notify logic component
+                 if (coreUIManager.isActiveTab(this.id)) {
+                    ui.renderMainContent(document.getElementById('main-content'));
+                }
+            },
+            // Add a public method to retrieve producer data for other modules (e.g., for achievements)
+            getProducerData: (producerId) => {
+                return {
+                    owned: moduleLogic.getOwnedProducerCount(producerId),
+                    production: coreResourceManager.getProductionFromSource(staticModuleData.producers[producerId].resourceId, `studies_module_${producerId}`)
+                };
+            }
+        };
     }
 };
 
-// Make the manifest globally accessible for the ModuleLoader.
-// In a more advanced setup, this would be handled by a module system.
-if (typeof window !== 'undefined') {
-    window.StudiesManifest = StudiesManifest;
-}
+export default studiesManifest;
