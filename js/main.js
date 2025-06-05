@@ -1,4 +1,4 @@
-// js/main.js (v4)
+// js/main.js (v5)
 
 /**
  * @file main.js
@@ -25,22 +25,26 @@ import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System (as early as possible)
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v4).");
+    loggingSystem.info("Main", "Game initialization sequence started (v5).");
 
     // 2. Initialize Global Settings Manager
     globalSettingsManager.initialize();
 
-    // 3. Initialize Core Game State Manager (already initialized at definition)
+    // 3. Initialize Core Game State Manager
+    // coreGameStateManager.initialize(); // Already initialized at definition
 
-    // 4. Initialize Static Data Aggregator (already initialized at definition)
-    
-    // 5. Initialize Core Resource Manager (already initialized at definition)
+    // 4. Initialize Static Data Aggregator
+    // staticDataAggregator is an object, no specific init function needed other than its definition
+
+    // 5. Initialize Core Resource Manager
+    // coreResourceManager.initialize(); // Already initialized at end of its file
 
     // 6. Initialize Core Upgrade Manager
     coreUpgradeManager.initialize();
 
     // 7. Initialize Core UI Manager (requires DOM to be ready)
-    coreUIManager.coreSystems = { staticDataAggregator }; 
+    // Removed: coreUIManager.coreSystems = { staticDataAggregator };
+    // coreUIManager now imports staticDataAggregator directly.
     coreUIManager.initialize();
 
 
@@ -62,7 +66,7 @@ async function initializeGame() {
 
 
     // 9. Initialize Save/Load System & Attempt to Load Game
-    const gameLoaded = saveLoadSystem.loadGame();
+    const gameLoaded = saveLoadSystem.loadGame(); // This might call coreUIManager.updateResourceDisplay
 
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found or loading failed. Starting a new game.");
@@ -82,9 +86,11 @@ async function initializeGame() {
         } else {
             loggingSystem.error("Main", "Failed to define initial Study Points resource from static data.");
         }
-        coreGameStateManager.setGameVersion("0.3.0"); // Bump version for Stream 3 - Skills
+        coreGameStateManager.setGameVersion("0.3.0");
     }
     
+    // Ensure resource display and menu are up-to-date after potential load or new game setup.
+    // UIManager.initialize() already calls these, but a call here ensures it happens *after* save/load.
     coreUIManager.updateResourceDisplay();
     coreUIManager.renderMenu();
 
@@ -106,7 +112,7 @@ async function initializeGame() {
         await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
         await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
-        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js'); // Load Skills module
+        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
 
         // TODO: Add loading for Achievements, SettingsUI modules
 
@@ -127,10 +133,10 @@ async function initializeGame() {
         loadButton.addEventListener('click', () => {
             const wasRunning = gameLoop.isRunning();
             if (wasRunning) gameLoop.stop();
-            if (saveLoadSystem.loadGame()) {
+            if (saveLoadSystem.loadGame()) { // This calls fullUIRefresh internally
                 loggingSystem.info("Main", "Game loaded. Refreshing UI and notifying modules.");
                 moduleLoader.notifyAllModulesOfLoad(); 
-                coreUIManager.fullUIRefresh();
+                // coreUIManager.fullUIRefresh(); // Already called by saveLoadSystem on successful load
             }
             if (wasRunning || !gameLoop.isRunning()) {
                  setTimeout(() => gameLoop.start(), 100); 
@@ -151,14 +157,14 @@ async function initializeGame() {
                         className: "bg-red-600 hover:bg-red-700",
                         callback: () => {
                             gameLoop.stop();
-                            saveLoadSystem.resetGameData(); 
+                            saveLoadSystem.resetGameData(); // This calls fullUIRefresh internally
                             const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
                             if (spDef) {
                                 coreResourceManager.defineResource(spDef.id, spDef.name, decimalUtility.new(spDef.initialAmount), spDef.showInUI, spDef.isUnlocked);
                             }
                             coreGameStateManager.setGameVersion("0.3.0"); 
                             coreUIManager.closeModal();
-                            coreUIManager.fullUIRefresh(); 
+                            // coreUIManager.fullUIRefresh(); // Already called by saveLoadSystem.resetGameData
                             moduleLoader.resetAllModules(); 
                             moduleLoader.notifyAllModulesOfLoad();
                             setTimeout(() => gameLoop.start(), 100);
