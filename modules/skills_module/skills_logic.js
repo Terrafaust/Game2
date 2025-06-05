@@ -1,9 +1,9 @@
-// modules/skills_module/skills_logic.js (v1.1 - Persistent Unlock)
+// modules/skills_module/skills_logic.js (v1.2 - Achievement Support)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
- * v1.1: Implements persistent unlock for Skills tab via global flag.
+ * v1.2: Adds methods for achievement system to query skill states.
  */
 
 import { staticModuleData } from './skills_data.js';
@@ -14,33 +14,23 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.1).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.2).");
         this.registerAllSkillEffects(); 
     },
 
-    /**
-     * Checks if the Skills tab itself should be unlocked.
-     * Now also sets a permanent flag if unlocked.
-     * @returns {boolean}
-     */
     isSkillsTabUnlocked() {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreGameStateManager) {
             console.error("SkillsLogic_isSkillsTabUnlocked_CRITICAL: Core systems missing!", coreSystemsRef);
             return true; 
         }
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
-
-        // Check for the permanent unlock flag first
         if (coreGameStateManager.getGlobalFlag('skillsTabPermanentlyUnlocked', false)) {
             return true;
         }
-
-        // Original condition: Unlocked when the player has at least 1 Study Skill Point.
         const conditionMet = decimalUtility.gte(coreResourceManager.getAmount(staticModuleData.skillPointResourceId), 1);
-
         if (conditionMet) {
             coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', true);
-            if(coreUIManager) coreUIManager.renderMenu(); // Update menu as it's now permanently unlocked
+            if(coreUIManager) coreUIManager.renderMenu(); 
             coreSystemsRef.loggingSystem.info("SkillsLogic", "Skills tab permanently unlocked.");
             return true;
         }
@@ -51,19 +41,39 @@ export const moduleLogic = {
         return moduleState.skillLevels[skillId] || 0;
     },
 
+    // New method for achievements
+    getSkillMaxLevel(skillId) {
+        const skillDef = staticModuleData.skills[skillId];
+        return skillDef ? skillDef.maxLevel : 0;
+    },
+
+    // New method for achievements
+    isTierUnlocked(tierNum) {
+        if (tierNum <= 1) return true; // Tier 1 is always unlocked
+        // Check if all skills in the previous tier (tierNum - 1) are at least level 1
+        const prevTier = tierNum - 1;
+        const skillsInPrevTier = Object.values(staticModuleData.skills).filter(s => s.tier === prevTier);
+        if (skillsInPrevTier.length === 0 && prevTier > 0) { // No skills defined for previous tier implies current tier isn't locked by it
+            return true;
+        }
+        return skillsInPrevTier.every(s => this.getSkillLevel(s.id) >= 1);
+    },
+
+
     isSkillUnlocked(skillId) {
         const skillDef = staticModuleData.skills[skillId];
         if (!skillDef) return false;
         if (!skillDef.unlockCondition) return true; 
 
-        const { type, skillId: requiredSkillId, level: requiredLevel, tier: requiredTier } = skillDef.unlockCondition;
+        const { type, skillId: requiredSkillId, level: requiredLevel, tier: requiredTierNum } = skillDef.unlockCondition;
 
         switch (type) {
             case "skillLevel":
                 return this.getSkillLevel(requiredSkillId) >= requiredLevel;
-            case "allSkillsInTierLevel":
-                const skillsInTier = Object.values(staticModuleData.skills).filter(s => s.tier === requiredTier);
-                return skillsInTier.every(s => this.getSkillLevel(s.id) >= requiredLevel);
+            case "allSkillsInTierLevel": // This condition means all skills in 'requiredTierNum' must be at 'requiredLevel'
+                const skillsInRequiredTier = Object.values(staticModuleData.skills).filter(s => s.tier === requiredTierNum);
+                if (skillsInRequiredTier.length === 0) return true; // No skills in target tier, so condition met
+                return skillsInRequiredTier.every(s => this.getSkillLevel(s.id) >= requiredLevel);
             default:
                 coreSystemsRef.loggingSystem.warn("SkillsLogic", `Unknown skill unlock condition type: ${type} for skill ${skillId}`);
                 return false;
@@ -114,8 +124,6 @@ export const moduleLogic = {
             loggingSystem.info("SkillsLogic", `Purchased level ${moduleState.skillLevels[skillId]} of skill ${skillId} (${skillDef.name}).`);
             coreUIManager.showNotification(`${skillDef.name} leveled up to ${moduleState.skillLevels[skillId]}!`, 'success');
             
-            // Check if this purchase unlocks the skills tab itself (if it wasn't already)
-            // The isSkillsTabUnlocked method will set the permanent flag and call renderMenu.
             this.isSkillsTabUnlocked(); 
 
             if (coreUIManager.isActiveTab('skills')) { 
@@ -207,15 +215,16 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.1).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.2).");
         this.registerAllSkillEffects(); 
-        this.isSkillsTabUnlocked(); // Check and potentially set permanent flag on load
+        this.isSkillsTabUnlocked(); 
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered for Skills module (v1.1).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered for Skills module (v1.2).");
         this.registerAllSkillEffects();
-        // Clear the permanent unlock flag for the skills tab on reset
-        coreSystemsRef.coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', false);
+        if (coreSystemsRef.coreGameStateManager) { // Ensure coreGameStateManager is available
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', false);
+        }
     }
 };

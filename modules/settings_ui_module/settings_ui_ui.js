@@ -1,52 +1,51 @@
-// modules/settings_ui_module/settings_ui_ui.js (v1)
+// modules/settings_ui_module/settings_ui_ui.js (v1.1 - Render Fix)
 
 /**
  * @file settings_ui_ui.js
  * @description Handles UI rendering for the Settings UI module.
+ * v1.1: Ensures onShow correctly re-renders content to the main-content div.
  */
 
 import { staticModuleData } from './settings_ui_data.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;
-let parentElementCache = null;
+// parentElementCache is removed as it's less reliable than querying the DOM directly in onShow or relying on the passed parentElement.
 
 export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1).");
+        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1.1).");
     },
 
     renderMainContent(parentElement) {
         if (!coreSystemsRef || !moduleLogicRef) {
-            parentElement.innerHTML = '<p class="text-red-500">Settings UI not properly initialized.</p>';
+            if(parentElement) parentElement.innerHTML = '<p class="text-red-500">Settings UI not properly initialized.</p>';
+            else console.error("SettingsUI_UI: renderMainContent called with no parentElement and systems not init.");
             return;
         }
-        parentElementCache = parentElement;
-        parentElement.innerHTML = ''; 
+        if (!parentElement) {
+            coreSystemsRef.loggingSystem.error("SettingsUI_UI", "renderMainContent called without a parentElement.");
+            return;
+        }
+        
+        parentElement.innerHTML = ''; // Clear previous content
 
         const container = document.createElement('div');
-        container.className = 'p-4 space-y-8'; // Increased spacing between sections
+        container.className = 'p-4 space-y-8';
 
         const title = document.createElement('h2');
         title.className = 'text-2xl font-semibold text-primary mb-6';
         title.textContent = 'Game Settings';
         container.appendChild(title);
 
-        // --- Display & Theme Section ---
         container.appendChild(this._createThemeSection());
-        // --- Language Section ---
         container.appendChild(this._createLanguageSection());
-        // --- Game Actions Section ---
         container.appendChild(this._createGameActionsSection());
-        // --- Statistics Section ---
         container.appendChild(this._createStatisticsSection());
-        // --- Automation Section (Placeholder) ---
         container.appendChild(this._createPlaceholderSection(staticModuleData.ui.sections.automation));
-        // --- Debug Section ---
         container.appendChild(this._createDebugSection());
-
 
         parentElement.appendChild(container);
     },
@@ -65,6 +64,7 @@ export const ui = {
     _createThemeSection() {
         const { globalSettingsManager } = coreSystemsRef;
         const section = this._createSectionContainer(staticModuleData.ui.sections.display);
+        section.id = 'settings-section-display'; // Add an ID for easier replacement if needed
         
         const currentThemeSettings = globalSettingsManager.getSetting('theme', { name: 'modern', mode: 'day' });
 
@@ -79,15 +79,22 @@ export const ui = {
 
             const modesContainer = document.createElement('div');
             modesContainer.className = 'flex space-x-2';
-            theme.modes.forEach(modeName => { // modeName is "Day" or "Night"
-                const modeId = modeName.toLowerCase(); // "day" or "night"
+            theme.modes.forEach(modeName => { 
+                const modeId = modeName.toLowerCase(); 
                 const button = coreSystemsRef.coreUIManager.createButton(
                     modeName,
-                    () => moduleLogicRef.applyTheme(theme.id, modeId),
+                    () => {
+                        moduleLogicRef.applyTheme(theme.id, modeId);
+                        // After applying theme, re-render this settings page to update button highlights
+                        const mainContentDiv = document.getElementById('main-content');
+                        if (mainContentDiv && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
+                             this.renderMainContent(mainContentDiv);
+                        }
+                    },
                     ['flex-1', 'py-1.5', 'text-sm']
                 );
                 if (currentThemeSettings.name === theme.id && currentThemeSettings.mode === modeId) {
-                    button.classList.add('bg-accentOne', 'text-white'); // Highlight active theme and mode
+                    button.classList.add('bg-accentOne', 'text-white'); 
                     button.classList.remove('bg-primary');
                 } else {
                     button.classList.add('bg-primary');
@@ -103,6 +110,7 @@ export const ui = {
     _createLanguageSection() {
         const { globalSettingsManager } = coreSystemsRef;
         const section = this._createSectionContainer(staticModuleData.ui.sections.language);
+        section.id = 'settings-section-language'; // Add an ID
         const currentLang = globalSettingsManager.getSetting('language', 'en');
 
         const selectLabel = document.createElement('label');
@@ -121,7 +129,13 @@ export const ui = {
             if (lang.id === currentLang) option.selected = true;
             select.appendChild(option);
         });
-        select.addEventListener('change', (e) => moduleLogicRef.applyLanguage(e.target.value));
+        select.addEventListener('change', (e) => {
+            moduleLogicRef.applyLanguage(e.target.value);
+            const mainContentDiv = document.getElementById('main-content');
+            if (mainContentDiv && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
+                 this.renderMainContent(mainContentDiv);
+            }
+        });
         section.appendChild(select);
         return section;
     },
@@ -130,11 +144,10 @@ export const ui = {
         const { saveLoadSystem, coreUIManager } = coreSystemsRef;
         const section = this._createSectionContainer(staticModuleData.ui.sections.gameActions);
         const actionsContainer = document.createElement('div');
-        actionsContainer.className = 'flex flex-wrap gap-2'; // Allow wrapping on small screens
+        actionsContainer.className = 'flex flex-wrap gap-2';
 
         const saveBtn = coreUIManager.createButton("Save Game", () => saveLoadSystem.saveGame(), ['bg-green-600']);
         const loadBtn = coreUIManager.createButton("Load Game", () => {
-            // This logic is similar to main.js, ensure loop is handled
             const wasRunning = coreSystemsRef.gameLoop.isRunning();
             if (wasRunning) coreSystemsRef.gameLoop.stop();
             if (saveLoadSystem.loadGame()) {
@@ -156,7 +169,7 @@ export const ui = {
         const statsContent = document.createElement('div');
         statsContent.id = 'game-statistics-content';
         statsContent.className = 'text-sm text-textSecondary space-y-1';
-        statsContent.innerHTML = moduleLogicRef.getGameStatistics(); // Get HTML string from logic
+        statsContent.innerHTML = moduleLogicRef.getGameStatistics();
         section.appendChild(statsContent);
         return section;
     },
@@ -170,15 +183,17 @@ export const ui = {
             let logHTML = '<div class="max-h-60 overflow-y-auto bg-background p-2 rounded text-xs space-y-1">';
             logHistory.forEach(log => {
                 const time = log.timestamp.toLocaleTimeString();
-                const messages = log.messages.join(' ');
+                // Ensure messages are properly escaped and converted to string
+                const messages = log.messages.map(m => 
+                    String(m).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+                ).join(' ');
                 let color = "text-gray-400";
                 if (log.level.includes("ERROR")) color = "text-red-400";
                 else if (log.level.includes("WARN")) color = "text-yellow-400";
-                else if (log.level.includes("INFO") && log.tag === "Main_DevTools") color = "text-emerald-400";
+                else if (log.level.includes("INFO") && (log.tag === "Main_DevTools" || log.tag === "CoreGameplayLogic" || log.tag.includes("Logic"))) color = "text-emerald-400";
                 else if (log.level.includes("INFO")) color = "text-blue-400";
 
-
-                logHTML += `<p class="${color}"><span class="font-mono">[${time}]${log.level}${log.tag ? '['+log.tag+']' : ''}:</span> ${messages.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</p>`;
+                logHTML += `<p class="${color}"><span class="font-mono">[${time}]${log.level}${log.tag ? '['+log.tag+']' : ''}:</span> ${messages}</p>`;
             });
             logHTML += "</div>";
             coreUIManager.showModal("Game Log History (Last 100)", logHTML, [{label: "Close", callback: () => coreUIManager.closeModal()}]);
@@ -197,30 +212,35 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        // For settings, most updates are handled by globalSettingsManager events or re-rendering the section
-        // However, if statistics need to be live, this is where they'd refresh.
-        if (parentElementCache) {
-            const statsContent = parentElementCache.querySelector('#game-statistics-content');
-            if (statsContent) {
+        const mainContentDiv = document.getElementById('main-content');
+        // Only update if settings tab is active and main-content exists
+        if (mainContentDiv && coreSystemsRef && coreSystemsRef.coreUIManager && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
+            const statsContent = mainContentDiv.querySelector('#game-statistics-content');
+            if (statsContent && moduleLogicRef && typeof moduleLogicRef.getGameStatistics === 'function') {
                 statsContent.innerHTML = moduleLogicRef.getGameStatistics();
             }
-             // Re-render theme section to update button states
-            const oldThemeSection = parentElementCache.querySelector('#settings-section-display'); // Assume an ID for the section
-            if(oldThemeSection) oldThemeSection.replaceWith(this._createThemeSection());
-
-            // Re-render language section to update selection
-            const oldLangSection = parentElementCache.querySelector('#settings-section-language');
-            if(oldLangSection) oldLangSection.replaceWith(this._createLanguageSection());
         }
     },
 
     onShow() {
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
+            console.error("SettingsUI_UI: onShow called before coreSystemsRef is fully initialized.");
+            return;
+        }
         coreSystemsRef.loggingSystem.debug("SettingsUI_UI", "Settings tab shown.");
-        // Re-render content on show to reflect current settings accurately, especially theme buttons
-        if(parentElementCache) this.renderMainContent(parentElementCache);
+        const mainContentDiv = document.getElementById('main-content');
+        if (mainContentDiv) {
+            this.renderMainContent(mainContentDiv);
+        } else {
+            coreSystemsRef.loggingSystem.error("SettingsUI_UI", "onShow: main-content element not found!");
+        }
     },
 
     onHide() {
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
+            console.error("SettingsUI_UI: onHide called before coreSystemsRef is fully initialized.");
+            return;
+        }
         coreSystemsRef.loggingSystem.debug("SettingsUI_UI", "Settings tab hidden.");
     }
 };

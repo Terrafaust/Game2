@@ -1,9 +1,9 @@
-// modules/achievements_module/achievements_logic.js (v1)
+// modules/achievements_module/achievements_logic.js (v1.1 - Skill Achievement Stubs)
 
 /**
  * @file achievements_logic.js
  * @description Business logic for the Achievements module.
- * Handles checking achievement conditions and applying rewards.
+ * v1.1: Adds stubs for skill-related achievement conditions.
  */
 
 import { staticModuleData } from './achievements_data.js';
@@ -14,13 +14,14 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v1).");
-        this.applyAllCompletedAchievementRewards(); // Apply rewards for already completed achievements on load
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v1.1).");
+        this.applyAllCompletedAchievementRewards(); 
     },
 
     isAchievementsTabUnlocked() {
         if (!coreSystemsRef) return false;
-        return coreSystemsRef.coreGameStateManager.getGlobalFlag('achievementsTabUnlocked', false);
+        // Check for the permanent unlock flag first
+        return coreSystemsRef.coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false);
     },
 
     isAchievementCompleted(achievementId) {
@@ -38,9 +39,9 @@ export const moduleLogic = {
         const condition = achievementDef.condition;
         switch (condition.type) {
             case "producerOwned":
-                const studiesModule = moduleLoader.getModule(condition.moduleId); // e.g., 'studies'
-                if (studiesModule && studiesModule.getProducerData) {
-                    const producerData = studiesModule.getProducerData(condition.producerId);
+                const targetModule = moduleLoader.getModule(condition.moduleId); 
+                if (targetModule && targetModule.getProducerData) {
+                    const producerData = targetModule.getProducerData(condition.producerId);
                     return decimalUtility.gte(producerData.owned, decimalUtility.new(condition.count));
                 }
                 loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getProducerData not found for achievement ${achievementId}`);
@@ -48,17 +49,36 @@ export const moduleLogic = {
             case "resourceAmount":
                 const currentAmount = coreResourceManager.getAmount(condition.resourceId);
                 return decimalUtility.gte(currentAmount, decimalUtility.new(condition.amount));
-            // Add other condition types (e.g., total resources earned, skills leveled)
+            case "totalClicks":
+                const coreGameplayModule = moduleLoader.getModule(condition.moduleId); // 'core_gameplay'
+                if (coreGameplayModule && coreGameplayModule.logic && coreGameplayModule.logic.getTotalClicks) {
+                    const totalClicks = coreGameplayModule.logic.getTotalClicks();
+                    return totalClicks >= condition.count;
+                }
+                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getTotalClicks not found for achievement ${achievementId}`);
+                return false;
+            case "skillTierUnlocked": // Stub for skill tier unlock
+                const skillsModuleTier = moduleLoader.getModule(condition.moduleId); // 'skills'
+                if (skillsModuleTier && skillsModuleTier.logic && skillsModuleTier.logic.isTierUnlocked) { // Assuming isTierUnlocked(tierNum) exists in skills_logic
+                    return skillsModuleTier.logic.isTierUnlocked(condition.tier);
+                }
+                loggingSystem.warn("AchievementsLogic", `Skill tier unlock condition for ${achievementId} - skills module or logic.isTierUnlocked not ready.`);
+                return false; 
+            case "skillMaxLevel": // Stub for skill max level
+                 const skillsModuleMax = moduleLoader.getModule(condition.moduleId); // 'skills'
+                 if (skillsModuleMax && skillsModuleMax.logic && skillsModuleMax.logic.getSkillLevel && skillsModuleMax.logic.getSkillMaxLevel) { // Assuming getSkillMaxLevel(skillId) exists
+                    const currentLevel = skillsModuleMax.logic.getSkillLevel(condition.skillId);
+                    const maxLevel = skillsModuleMax.logic.getSkillMaxLevel(condition.skillId); // Need this function in skills_logic
+                    return currentLevel >= maxLevel;
+                 }
+                 loggingSystem.warn("AchievementsLogic", `Skill max level condition for ${achievementId} - skills module or relevant logic not ready.`);
+                return false;
             default:
                 loggingSystem.warn("AchievementsLogic", `Unknown condition type for achievement ${achievementId}: ${condition.type}`);
                 return false;
         }
     },
 
-    /**
-     * Checks all achievements and updates their state if newly completed.
-     * Applies rewards for newly completed achievements.
-     */
     checkAndCompleteAchievements() {
         const { coreGameStateManager, loggingSystem, coreUIManager, coreUpgradeManager, decimalUtility } = coreSystemsRef;
         let newAchievementsCompleted = false;
@@ -72,32 +92,29 @@ export const moduleLogic = {
                     loggingSystem.info("AchievementsLogic", `Achievement Unlocked: ${achievementDef.name}`);
                     coreUIManager.showNotification(`Achievement Unlocked: ${achievementDef.name}!`, 'success', 4000);
 
-                    // Apply reward via CoreUpgradeManager
                     if (achievementDef.reward) {
                         const reward = achievementDef.reward;
-                        const valueProvider = () => {
-                            // For MULTIPLIER, the 'value' is the bonus (e.g., 0.05 for +5%).
-                            // The actual multiplier applied is 1 + value.
-                            return decimalUtility.add(1, decimalUtility.new(reward.value));
-                        };
-                        coreUpgradeManager.registerEffectSource(
-                            'achievements', // moduleId
-                            achievementId,  // sourceKey (unique achievement ID)
-                            reward.targetSystem,
-                            reward.targetId,
-                            reward.type,    // e.g., 'MULTIPLIER'
-                            valueProvider
-                        );
-                        // After registering an effect, relevant systems (like studies_logic) need to re-evaluate their production/costs.
-                        // This is typically handled by their own update loops or when an action triggers recalculation.
-                        // For immediate effect, we might need to trigger a recalculation in studies module for example.
-                        if (reward.targetSystem === "studies_producers" || reward.targetSystem === "global_resource_production") {
-                             const studiesModule = coreSystemsRef.moduleLoader.getModule("studies");
-                             if(studiesModule && studiesModule.logic && studiesModule.logic.updateAllProducerProductions){
-                                studiesModule.logic.updateAllProducerProductions();
-                             }
-                        }
+                        let valueProvider;
 
+                        if (reward.type === "RESOURCE_GAIN") { // Handle one-time resource gain
+                            coreResourceManager.addAmount(reward.resourceId, decimalUtility.new(reward.amount));
+                            loggingSystem.info("AchievementsLogic", `Granted one-time reward for ${achievementId}: ${reward.amount} ${reward.resourceId}`);
+                            // No need to register with CoreUpgradeManager for one-time gains
+                        } else if (reward.type.includes("MULTIPLIER")) { // For persistent multipliers
+                            valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
+                             coreUpgradeManager.registerEffectSource(
+                                'achievements', achievementId, reward.targetSystem,
+                                reward.targetId, reward.type, valueProvider
+                            );
+                             // Trigger recalculation in affected modules
+                            if (reward.targetSystem === "studies_producers" || reward.targetSystem === "global_resource_production" || reward.targetSystem === "core_gameplay_click") {
+                                const studiesModule = coreSystemsRef.moduleLoader.getModule("studies");
+                                if(studiesModule && studiesModule.logic && studiesModule.logic.updateAllProducerProductions){
+                                    studiesModule.logic.updateAllProducerProductions();
+                                }
+                                // If core_gameplay_click, no direct recalculation needed, bonus is applied on click
+                            }
+                        }
                     }
                 }
             }
@@ -105,7 +122,6 @@ export const moduleLogic = {
 
         if (newAchievementsCompleted) {
             coreGameStateManager.setModuleState('achievements', { ...moduleState });
-            // If UI is active, tell it to refresh
             if (coreUIManager.isActiveTab('achievements')) {
                 const achievementsUI = coreSystemsRef.moduleLoader.getModule('achievements')?.ui;
                 if (achievementsUI) achievementsUI.updateDynamicElements();
@@ -113,12 +129,8 @@ export const moduleLogic = {
         }
     },
     
-    /**
-     * Applies rewards for all achievements already marked as completed in the state.
-     * Useful on game load.
-     */
     applyAllCompletedAchievementRewards() {
-        const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        const { coreUpgradeManager, decimalUtility, loggingSystem, coreResourceManager } = coreSystemsRef;
         if (!coreUpgradeManager) {
             loggingSystem.error("AchievementsLogic", "CoreUpgradeManager not available.");
             return;
@@ -129,32 +141,32 @@ export const moduleLogic = {
                 const achievementDef = staticModuleData.achievements[achievementId];
                 if (achievementDef && achievementDef.reward) {
                     const reward = achievementDef.reward;
-                     const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
-                    coreUpgradeManager.registerEffectSource(
-                        'achievements', achievementId, reward.targetSystem,
-                        reward.targetId, reward.type, valueProvider
-                    );
+                    // IMPORTANT: One-time rewards (like RESOURCE_GAIN) should NOT be re-applied on game load.
+                    // They are applied once when the achievement is first completed.
+                    // Only register persistent effects like multipliers here.
+                    if (reward.type.includes("MULTIPLIER")) {
+                        const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
+                        coreUpgradeManager.registerEffectSource(
+                            'achievements', achievementId, reward.targetSystem,
+                            reward.targetId, reward.type, valueProvider
+                        );
+                    }
                 }
             }
         }
-        loggingSystem.info("AchievementsLogic", "Applied rewards for all previously completed achievements.");
+        loggingSystem.info("AchievementsLogic", "Applied persistent rewards for previously completed achievements.");
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered for Achievements module.");
-        // State is loaded by manifest. Re-apply rewards for completed achievements.
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered for Achievements module (v1.1).");
         this.applyAllCompletedAchievementRewards();
-        // Check all achievements in case conditions were met while game was closed (if offline progress were a thing)
-        // or if new achievements were added that might be auto-completed by current state.
         this.checkAndCompleteAchievements();
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered for Achievements module.");
-        // Module state (completedAchievements) will be reset by the manifest.
-        // Effects should be implicitly removed if CoreUpgradeManager clears sources from 'achievements' module,
-        // or if we explicitly unregister them. For now, a full re-registration on load handles it.
-        // On a fresh game, applyAllCompleted will do nothing, and checkAndComplete will handle new ones.
-        // TODO: Consider a mechanism in CoreUpgradeManager to unregister all effects from a given moduleId.
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered for Achievements module (v1.1).");
+        // Unregister effects? CoreUpgradeManager might need a clearByModuleId('achievements')
+        // For now, on next load, only truly completed ones will re-register.
+        // State is cleared by manifest.
     }
 };
