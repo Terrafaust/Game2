@@ -14,16 +14,11 @@
                     fontFamily: {
                         inter: ['Inter', 'sans-serif'],
                     },
-                    // Base Tailwind colors are not directly used for theming; CSS vars are primary
-                    colors: {
-                        tw_primary_base: '#4F46E5',
-                        tw_secondary_base: '#EC4899',
-                        tw_accentOne_base: '#10B981',
-                        tw_accentTwo_base: '#F59E0B',
-                        tw_background_base: '#111827',
-                        tw_surface_base: '#1F2937',
-                        tw_surfaceDark_base: '#374151',
-                        tw_textPrimary_base: '#F3F4F6',
+                    colors: { // These are base Tailwind definitions, CSS vars are primary for theming
+                        tw_primary_base: '#4F46E5', tw_secondary_base: '#EC4899',
+                        tw_accentOne_base: '#10B981', tw_accentTwo_base: '#F59E0B',
+                        tw_background_base: '#111827', tw_surface_base: '#1F2937',
+                        tw_surfaceDark_base: '#374151', tw_textPrimary_base: '#F3F4F6',
                         tw_textSecondary_base: '#9CA3AF',
                     },
                     borderRadius: { 'lg': '0.5rem', 'xl': '0.75rem', '2xl': '1rem' }
@@ -32,325 +27,330 @@
         };
     </script>
     <style>
-        @keyframes rgb-cycle {
-            0% { filter: hue-rotate(0deg); }
-            100% { filter: hue-rotate(360deg); }
+        @keyframes rgb-cycle-bg { /* For backgrounds or elements where hue-rotate is subtle */
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
-        @keyframes rgb-led-glow {
-            0%, 100% { text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary), 0 0 15px var(--color-secondary); filter: hue-rotate(0deg) brightness(1.2); }
-            50% { text-shadow: 0 0 10px var(--color-secondary), 0 0 15px var(--color-secondary), 0 0 20px var(--color-primary); filter: hue-rotate(180deg) brightness(1.2); }
+        @keyframes rgb-cycle-filter { /* For text, borders via filter */
+            0% { filter: hue-rotate(0deg) saturate(1.5); }
+            100% { filter: hue-rotate(360deg) saturate(1.5); }
         }
-        @keyframes rgb-border-glow {
-            0%, 100% { border-color: var(--color-primary); box-shadow: 0 0 5px var(--color-primary), inset 0 0 3px var(--color-primary); filter: hue-rotate(0deg); }
-            50% { border-color: var(--color-secondary); box-shadow: 0 0 5px var(--color-secondary), inset 0 0 3px var(--color-secondary); filter: hue-rotate(180deg); }
+        @keyframes rgb-led-glow-text {
+            0%, 100% { text-shadow: 0 0 3px hsla(var(--hue-cycle), 100%, 70%, 0.7), 0 0 6px hsla(var(--hue-cycle), 100%, 60%, 0.5), 0 0 9px hsla(var(--hue-cycle), 100%, 50%, 0.3); color: hsla(var(--hue-cycle), 100%, 85%,1); animation-timing-function: ease-in-out; }
+            50% { text-shadow: 0 0 5px hsla(var(--hue-cycle), 100%, 70%, 0.9), 0 0 10px hsla(var(--hue-cycle), 100%, 60%, 0.7), 0 0 15px hsla(var(--hue-cycle), 100%, 50%, 0.5); color: hsla(var(--hue-cycle), 100%, 90%,1); animation-timing-function: ease-in-out; }
         }
+        @keyframes rgb-led-glow-border {
+            0%, 100% { border-color: hsla(var(--hue-cycle), 100%, 70%, 1); box-shadow: 0 0 3px hsla(var(--hue-cycle), 100%, 70%, 0.7), inset 0 0 2px hsla(var(--hue-cycle), 100%, 70%, 0.5); animation-timing-function: ease-in-out; }
+            50% { border-color: hsla(var(--hue-cycle), 100%, 60%, 1); box-shadow: 0 0 5px hsla(var(--hue-cycle), 100%, 60%, 0.9), inset 0 0 3px hsla(var(--hue-cycle), 100%, 60%, 0.7); animation-timing-function: ease-in-out; }
+        }
+         @keyframes hue-rotate-anim {
+            0% { --hue-cycle: 0; }
+            100% { --hue-cycle: 360; }
+        }
+
 
         :root {
             --font-main: 'Inter', sans-serif;
             /* Default: Modern Day */
-            --color-primary: #4F46E5;         /* Indigo */
-            --color-primary-lighter: #6366F1;
-            --color-secondary: #EC4899;       /* Pink */
-            --color-accent-one: #10B981;      /* Emerald */
-            --color-accent-two: #F59E0B;      /* Amber */
-            --color-background: #F9FAFB;      /* Light Gray */
-            --color-surface: #FFFFFF;         /* White */
-            --color-surface-dark: #F3F4F6;    /* Lighter Gray for cards */
-            --color-text-primary: #1F2937;    /* Dark Gray */
-            --color-text-secondary: #6B7280;  /* Medium Gray */
-            --color-border: #E5E7EB;          /* Light border */
-            --color-button-text: #FFFFFF;     /* Default text for primary buttons */
-            --animation-rgb: none;
-            --animation-rgb-border: none;
+            --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
+            --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
+            --color-background: #F9FAFB; --color-surface: #FFFFFF; --color-surface-dark: #F3F4F6;
+            --color-text-primary: #111827; --color-text-secondary: #374151; /* Darker for better day contrast */
+            --color-border: #D1D5DB; /* Gray 300 for day borders */
+            --color-button-text: #FFFFFF;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            --animation-rgb-filter: none; --animation-rgb-border: none; --animation-rgb-text: none; --animation-hue-rotate: none;
         }
 
         /* --- Modern Theme --- */
-        [data-theme="modern"][data-mode="day"] {
-            /* Uses :root defaults */
-        }
         [data-theme="modern"][data-mode="night"] {
-            --color-primary: #818CF8;         /* Lighter Indigo for Night */
-            --color-primary-lighter: #A78BFA;
-            --color-secondary: #F472B6;       /* Lighter Pink */
-            --color-accent-one: #34D399;      /* Lighter Emerald */
-            --color-accent-two: #FBBF24;      /* Lighter Amber */
-            --color-background: #111827;      /* Tailwind Gray 900 */
-            --color-surface: #1F2937;         /* Tailwind Gray 800 */
-            --color-surface-dark: #374151;    /* Tailwind Gray 700 */
-            --color-text-primary: #D1D5DB;    /* Gray 300 - Improved Contrast */
-            --color-text-secondary: #9CA3AF;  /* Gray 400 */
-            --color-border: #4B5563;          /* Gray 600 - Darker border */
-            --color-button-text: #E0E0E0;
+            --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
+            --color-accent-one: #34D399; --color-accent-two: #FBBF24;
+            --color-background: #111827; --color-surface: #1F2937; --color-surface-dark: #374151;
+            --color-text-primary: #E5E7EB; /* Gray 200 - Good contrast on Gray 800/900 */
+            --color-text-secondary: #9CA3AF; /* Gray 400 */
+            --color-border: #4B5563; --color-button-text: #F9FAFB;
         }
 
         /* --- Neon Theme --- */
         [data-theme="neon"][data-mode="day"] {
-            --color-primary: #39FF14;        /* Bright Neon Green */
-            --color-secondary: #FF1493;      /* Deep Pink Neon */
-            --color-accent-one: #00FFFF;     /* Cyan Neon */
-            --color-background: #F0F0F0;
-            --color-surface: #FFFFFF;
-            --color-surface-dark: #E5E5E5;
-            --color-text-primary: #1A1A1A;    /* Dark text for contrast */
-            --color-text-secondary: #4A4A4A;
-            --color-border: #39FF14;
-            --color-button-text: #000000;
+            --color-primary: #16A34A; --color-secondary: #DB2777; --color-accent-one: #0891B2;
+            --color-background: #F0FDF4; --color-surface: #FFFFFF; --color-surface-dark: #DCFCE7;
+            --color-text-primary: #14532D; --color-text-secondary: #166534;
+            --color-border: #86EFAC; --color-button-text: #FFFFFF;
         }
         [data-theme="neon"][data-mode="night"] {
-            --color-primary: #39FF14;
-            --color-secondary: #FF1493;
-            --color-accent-one: #00FFFF;
-            --color-background: #0D0D0D;      /* Very Dark, near black */
-            --color-surface: #1A1A1A;
-            --color-surface-dark: #2C2C2C;
-            --color-text-primary: #00FF00;    /* Neon Green Text - Improved Readability */
-            --color-text-secondary: #00CF00;  /* Slightly darker neon green */
-            --color-border: #39FF14;
-            --color-button-text: #000000;
-            --achievement-neon-glow: 0 0 3px #39FF14, 0 0 5px #39FF14, 0 0 7px #FF1493;
+            --color-primary: #22C55E; /* Brighter Neon Green */
+            --color-secondary: #EC4899; /* Bright Pink */
+            --color-accent-one: #06B6D4; /* Bright Cyan */
+            --color-background: #020617; /* Very Dark Blue/Black */
+            --color-surface: #0F172A;    /* Dark Slate Blue */
+            --color-surface-dark: #1E293B; /* Lighter Slate Blue */
+            --color-text-primary: #7EE23C; /* Vibrant Neon Green Text */
+            --color-text-secondary: #69C338; /* Slightly Muted Neon Green */
+            --color-border: #22C55E; --color-button-text: #020617;
+            --achievement-neon-glow: 0 0 5px #22c55e, 0 0 10px #22c55e, 0 0 15px #ec4899;
         }
 
         /* --- Steampunk Theme --- */
         [data-theme="steampunk"][data-mode="day"] {
-            --color-primary: #8B4513;         /* Saddle Brown */
-            --color-secondary: #DAA520;       /* Goldenrod */
-            --color-background: #F5F5DC;      /* Beige */
-            --color-surface: #FFF8DC;         /* Cornsilk */
-            --color-surface-dark: #DEB887;    /* BurlyWood */
-            --color-text-primary: #5D4037;    /* Dark Brown */
-            --color-text-secondary: #A1887F;  /* Lighter Brown */
-            --color-border: #CD853F;          /* Peru */
-            --color-button-text: #FFF8DC;
+            --color-primary: #A16207; --color-secondary: #B45309;
+            --color-background: #FEFDFB; --color-surface: #FFFBEB; --color-surface-dark: #FEF3C7;
+            --color-text-primary: #422006; --color-text-secondary: #78350F;
+            --color-border: #FDE68A; --color-button-text: #FFFBEB;
         }
         [data-theme="steampunk"][data-mode="night"] {
-            --color-primary: #CD853F;         /* Peru */
-            --color-secondary: #FFD700;       /* Gold */
-            --color-background: #4E342E;      /* Dark Brown */
-            --color-surface: #6D4C41;         /* Lighter Brown (Surface) */
-            --color-surface-dark: #3E2723;    /* Darker Brown (Cards) */
-            --color-text-primary: #EFEBE9;    /* Off-white Text */
-            --color-text-secondary: #BCAAA4;  /* Lighter Brown Secondary */
-            --color-border: #8B4513;          /* Saddle Brown Border */
-            --color-button-text: #4E342E;
+            --color-primary: #F59E0B; --color-secondary: #EAB308;
+            --color-background: #26190D; --color-surface: #402A17; --color-surface-dark: #573B21;
+            --color-text-primary: #FDEEDC; --color-text-secondary: #FDE0BB;
+            --color-border: #78350F; --color-button-text: #422006;
         }
 
         /* --- Pink Theme --- */
         [data-theme="pink"][data-mode="day"] {
-            --color-primary: #EC4899;         /* Hot Pink */
-            --color-secondary: #D946EF;       /* Fuchsia */
-            --color-background: #FFF0F5;      /* Lavender Blush */
-            --color-surface: #FFFFFF;
-            --color-surface-dark: #FFE4E1;    /* Misty Rose */
-            --color-text-primary: #701A75;    /* Dark Magenta/Purple */
-            --color-text-secondary: #9D174D;  /* Medium Pink/Red */
-            --color-border: #FBCFE8;          /* Light Pink Border */
-            --color-button-text: #FFFFFF;
+            --color-primary: #EC4899; --color-secondary: #D946EF;
+            --color-background: #FFF0F5; --color-surface: #FFFFFF; --color-surface-dark: #FFE4E1;
+            --color-text-primary: #831843; --color-text-secondary: #9D174D;
+            --color-border: #FBCFE8; --color-button-text: #FFFFFF;
         }
         [data-theme="pink"][data-mode="night"] {
-            --color-primary: #A21CAF;         /* Deep Violet */
-            --color-secondary: #E879F9;       /* Lighter Fuchsia/Orchid */
-            --color-background: #2E103E;      /* Dark Purple */
-            --color-surface: #4A1D55;         /* Medium Dark Purple */
-            --color-surface-dark: #5F276E;    /* Slightly Lighter Dark Purple */
-            --color-text-primary: #F5D0FE;    /* Light Lavender */
-            --color-text-secondary: #E9A8FB;  /* Lighter Orchid */
-            --color-border: #701A75;
-            --color-button-text: #FCE7F3;
+            --color-primary: #DB2777;      /* Deeper Pink */
+            --color-secondary: #C026D3;    /* Deeper Violet */
+            --color-background: #3B071E;   /* Dark Magenta/Wine */
+            --color-surface: #581C37;      /* Darker Magenta/Wine */
+            --color-surface-dark: #701A45; /* Darker Still */
+            --color-text-primary: #FECDD3; /* Light Pink Text */
+            --color-text-secondary: #F9A8D4; /* Lighter Pink */
+            --color-border: #831843; --color-button-text: #FFF0F5;
         }
 
         /* --- Red & Yellow Theme --- */
         [data-theme="redyellow"][data-mode="day"] {
-            --color-primary: #EF4444;         /* Red-500 */
-            --color-secondary: #F59E0B;       /* Amber-500 */
-            --color-background: #FFFBEB;      /* Amber-50 */
-            --color-surface: #FFFFFF;
-            --color-surface-dark: #FEF3C7;    /* Amber-100 */
-            --color-text-primary: #7F1D1D;    /* Red-900 */
-            --color-text-secondary: #B45309;  /* Amber-700 */
-            --color-border: #FCA5A5;          /* Red-300 */
-            --color-button-text: #FFFFFF;
+            --color-primary: #EF4444; --color-secondary: #F59E0B;
+            --color-background: #FFFBEB; --color-surface: #FFFFFF; --color-surface-dark: #FEF3C7;
+            --color-text-primary: #7F1D1D; --color-text-secondary: #B45309;
+            --color-border: #FCA5A5; --color-button-text: #FFFFFF;
         }
         [data-theme="redyellow"][data-mode="night"] {
-            --color-primary: #B91C1C;         /* Dark Red (Red-700) */
-            --color-secondary: #D97706;       /* Golden (Amber-600) */
-            --color-background: #450A0A;      /* Very Dark Red */
-            --color-surface: #7F1D1D;         /* Dark Red (Surface) */
-            --color-surface-dark: #531313;    /* Darker Red (Cards) */
-            --color-text-primary: #FEF3C7;    /* Amber-100 Text */
-            --color-text-secondary: #FDE68A;  /* Amber-200 Secondary */
-            --color-border: #991B1B;          /* Darker Red Border */
-            --color-button-text: #FEF3C7;
+            --color-primary: #DC2626;      /* Brighter Red for Night */
+            --color-secondary: #FACC15;    /* Brighter Yellow for Night */
+            --color-background: #450A0A;   /* Very Dark Red */
+            --color-surface: #7F1D1D;      /* Dark Red (Surface) */
+            --color-surface-dark: #531313; /* Darker Red (Cards) */
+            --color-text-primary: #FEF3C7; --color-text-secondary: #FDE68A;
+            --color-border: #991B1B; --color-button-text: #FEF3C7;
         }
 
         /* --- RGB Theme --- */
-        [data-theme="rgb"] { /* Shared RGB base, mode specific for background */
-             --color-primary-rgb-base: hsl(0, 100%, 60%); /* Start with a red */
-             --color-secondary-rgb-base: hsl(120, 100%, 60%); /* Start with a green */
+        [data-theme="rgb"] {
+            --animation-hue-rotate: hue-rotate-anim 10s linear infinite;
         }
         [data-theme="rgb"][data-mode="day"] {
-            --color-primary: var(--color-primary-rgb-base);
-            --color-secondary: var(--color-secondary-rgb-base);
-            --color-background: #F0F0F0;
+            --color-primary: hsl(var(--hue-cycle, 0), 70%, 55%);
+            --color-primary-lighter: hsl(var(--hue-cycle, 0), 70%, 65%);
+            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 60), 70%, 55%);
+            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 120), 70%, 55%);
+            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 180), 70%, 55%);
+            --color-background: #EEF2F6; /* Light neutral background */
             --color-surface: #FFFFFF;
-            --color-surface-dark: #E5E5E5;
-            --color-text-primary: #222222;
-            --color-text-secondary: #555555;
-            --color-border: var(--color-primary-rgb-base);
+            --color-surface-dark: #F0F4F8;
+            --color-text-primary: #22272E;
+            --color-text-secondary: #48515B;
+            --color-border: hsl(var(--hue-cycle, 0), 60%, 70%);
             --color-button-text: #FFFFFF;
-            --animation-rgb: rgb-cycle 10s linear infinite;
-            --animation-rgb-border: rgb-border-glow 10s linear infinite alternate;
+            --animation-rgb-filter: rgb-cycle-filter 10s linear infinite; /* Use on text if needed */
+            --animation-rgb-border: none;
         }
         [data-theme="rgb"][data-mode="night"] {
-            --color-primary: var(--color-primary-rgb-base);
-            --color-secondary: var(--color-secondary-rgb-base);
-            --color-background: #0A0A0A;      /* Very dark for LED effect */
-            --color-surface: #131313;
-            --color-surface-dark: #1C1C1C;
-            --color-text-primary: #E0E0E0;
-            --color-text-secondary: #A0A0A0;
-            --color-border: var(--color-primary-rgb-base);
-            --color-button-text: #000000;
-             /* Animated properties for RGB Night - Bright "LED" like */
-            --animation-rgb: rgb-led-glow 5s ease-in-out infinite alternate;
-            --animation-rgb-border: rgb-border-glow 5s linear infinite alternate;
+            --color-primary: hsl(var(--hue-cycle, 0), 90%, 65%); /* Bright, saturated */
+            --color-primary-lighter: hsl(var(--hue-cycle, 0), 90%, 75%);
+            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 60), 90%, 65%);
+            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 120), 90%, 65%);
+            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 180), 90%, 65%);
+            --color-background: #030712;      /* Almost Black */
+            --color-surface: #070E24;         /* Very Dark Blue */
+            --color-surface-dark: #111827;    /* Darker Blue/Gray */
+            --color-text-primary: #E0E7FF;    /* Light, slightly desaturated */
+            --color-text-secondary: #A8B9E0;
+            --color-border: hsl(var(--hue-cycle, 0), 80%, 50%);
+            --color-button-text: #030712;
+            --animation-rgb-text: rgb-led-glow-text 4s linear infinite alternate;
+            --animation-rgb-border: rgb-led-glow-border 4s linear infinite alternate;
         }
 
-        body { /* Applies to #game-container which has the data-theme attributes */
+        body {
             font-family: var(--font-main);
             background-color: var(--color-background);
             color: var(--color-text-primary);
-            margin: 0; padding: 0;
-            display: flex; flex-direction: column; min-height: 100vh;
+            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
             transition: background-color 0.4s ease, color 0.4s ease;
+            animation: var(--animation-hue-rotate) forwards; /* For RGB theme body hue cycling */
+        }
+        #game-container { /* This will inherit body's animation for RGB */
+             width: 100%; height: 100%; 
         }
         #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
         .modal-content, .tooltip, .module-card {
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
-        button, input[type="button"] {
+        button, input[type="button"] { /* General button transitions */
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
             box-shadow: var(--shadow-sm);
         }
-        button:hover, input[type="button"]:hover { filter: brightness(1.1); box-shadow: var(--shadow-md); }
-        button:active, input[type="button"]:active { transform: scale(0.98); }
+        button:hover, input[type="button"]:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
+        button:active, input[type="button"]:active { transform: scale(0.97); }
 
-        ::-webkit-scrollbar-track { background: var(--color-surface); }
-        ::-webkit-scrollbar-thumb { background: var(--color-primary); }
+        ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
 
-        .game-button {
+        .game-button { /* Base for most interactable buttons */
             background-color: var(--color-primary);
             color: var(--color-button-text);
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
-            font-weight: 500; cursor: pointer; border: none;
-            animation: var(--animation-rgb) forwards; /* Apply RGB animation to buttons */
+            font-weight: 500; cursor: pointer; border: 1px solid transparent; /* Add transparent border for consistency */
+            animation: var(--animation-rgb-filter) forwards; /* For RGB theme button text color cycling */
         }
-        .game-button:hover {}
         .game-button:disabled {
-            background-color: var(--color-text-secondary) !important; /* Important to override animation */
-            color: var(--color-surface-dark) !important;
-            filter: grayscale(70%); cursor: not-allowed; animation: none !important;
+            background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important;
+            filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important;
         }
-        /* Specific button overrides if needed for Tailwind bg classes */
-        #save-button.bg-green-500 { background-color: var(--color-accent-one) !important; color: white !important; animation: none !important; }
-        #load-button.bg-blue-500 { background-color: var(--color-primary) !important; color: var(--color-button-text) !important; /* Uses primary */ }
-        #reset-button.bg-red-500 { background-color: var(--color-secondary) !important; color: white !important; animation: none !important; }
-        #dev-tools-button.bg-emerald-500 { background-color: var(--color-accent-one) !important; color: white !important; animation: none !important; }
+        /* Footer buttons styling (static colors usually, override RGB animation for clarity) */
+        #save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
+        #load-button { background-color: var(--color-primary); color: var(--color-button-text); /* Primary action color */ }
+        #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
+        #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
 
-        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-primary); /* ... other tooltip styles ... */ }
-        .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); /* ... other modal styles ... */ }
-        .menu-tab { color: var(--color-text-secondary); /* ... */ }
-        .menu-tab:hover { color: var(--color-text-primary); border-bottom-color: var(--color-secondary); }
-        .menu-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); /* Updated border */ }
+        .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); }
 
-        .module-card {
+        /* Menu Styling */
+        #main-menu {
+            background-color: transparent !important; /* Remove nav background */
+            border: none !important; /* Remove nav border */
+            padding: 0; /* Remove nav padding */
+            box-shadow: none !important;
+        }
+        #menu-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem; /* space-y-2 */
+        }
+        .menu-tab { /* Styled as individual buttons */
+            display: block;
+            width: 100%;
+            padding: 0.75rem 1rem; /* py-3 px-4 */
+            text-align: left;
+            font-weight: 500;
+            color: var(--color-text-secondary);
             background-color: var(--color-surface-dark);
             border: 1px solid var(--color-border);
-            /* ... other card styles ... */
-        }
-
-        /* Theming layout elements */
-        #resource-bar, #main-menu, #main-content, footer {
-            background-color: var(--color-surface);
-            border: 1px solid var(--color-border);
-            color: var(--color-text-primary); /* Ensure text inside these containers also inherits */
-        }
-        #resource-bar h2, #main-menu h3 { color: var(--color-primary); /* Themed section titles */ }
-        [data-theme="neon"][data-mode="night"] #resource-bar h2,
-        [data-theme="neon"][data-mode="night"] #main-menu h3 {
-             animation: var(--animation-rgb) forwards; /* Apply RGB text animation to titles in Neon Night */
-        }
-
-
-        /* Theming individual resource display items */
-        #resources-display > div {
-            background-color: var(--color-surface-dark) !important; /* Override potential Tailwind bg */
-            color: var(--color-text-primary) !important; /* Override potential Tailwind text */
-            padding: 0.5rem; /* p-2 */
-            border-radius: var(--border-radius-lg); /* rounded-md */
+            border-radius: var(--border-radius-lg);
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
             box-shadow: var(--shadow-sm);
-            border: 1px solid var(--color-border);
+        }
+        .menu-tab:hover {
+            background-color: var(--color-surface);
+            color: var(--color-primary);
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow-md);
+        }
+        .menu-tab.active {
+            background-color: var(--color-primary);
+            color: var(--color-button-text);
+            border-color: var(--color-primary-lighter);
+            font-weight: 600;
+            box-shadow: var(--shadow-lg);
+        }
+         [data-theme="rgb"] .menu-tab.active {
+            animation: var(--animation-rgb-filter) forwards; /* RGB animation for active menu tab text */
+        }
+
+
+        .module-card {
+            background-color: var(--color-surface-dark); border: 1px solid var(--color-border);
+        }
+
+        #resource-bar, #main-content, footer {
+            background-color: var(--color-surface); border: 1px solid var(--color-border);
+            color: var(--color-text-primary);
+        }
+        #resource-bar h2 { color: var(--color-primary); animation: var(--animation-rgb-text) forwards; }
+        /* Remove h3 for menu */
+
+        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
+
+        #resources-display > div { /* Resource items */
+            background-color: var(--color-surface-dark) !important;
+            color: var(--color-text-primary) !important;
+            border: 1px solid var(--color-border) !important; /* Ensure border is themed and visible */
+            padding: 0.75rem; /* p-3 for better spacing */
+            border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #resources-display .font-semibold { /* Targeting specific classes within resource items */
-             color: var(--color-secondary) !important; /* Example: Resource name in secondary color */
+        #resources-display .font-semibold { /* Resource name */
+             color: var(--color-secondary) !important;
+             animation: var(--animation-rgb-text) forwards; /* RGB text animation */
         }
          [data-theme="neon"][data-mode="night"] #resources-display > div {
-            border-color: var(--color-primary);
-            animation: var(--animation-rgb-border) forwards;
+            border-color: var(--color-primary); box-shadow: 0 0 5px var(--color-primary), inset 0 0 3px var(--color-primary);
         }
-        [data-theme="rgb"] #resources-display > div {
-             animation: var(--animation-rgb-border) forwards;
-        }
+        [data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
+        [data-theme="rgb"] #resources-display .font-semibold { animation: var(--animation-rgb-text) forwards; }
 
 
-        /* Theming Studies Buy Buttons - Assuming they use .game-button or a specific class */
-        /* If studies buttons are created with specific Tailwind classes that don't use CSS vars,
-           those JS files (studies_ui.js) will need to be adjusted.
-           For now, ensure .game-button is effectively themed. */
-        .studies-buy-button { /* Add this class to your studies buy buttons in studies_ui.js */
-            /* It will inherit from .game-button, or you can add specific overrides here */
+        .studies-buy-button { /* This class should be added to Studies module buy buttons */
+            /* Inherits .game-button styles, which are now better themed */
+            /* Specific overrides if needed: */
+            /* background-color: var(--color-accent-two); */
+            /* color: var(--color-text-primary); */
         }
 
-        /* Theming Achievements for Neon Theme */
-        [data-theme="neon"][data-mode="night"] .achievement-item { /* Add .achievement-item to achievement divs */
+        [data-theme="neon"][data-mode="night"] .achievement-item {
             border: 1px solid var(--color-primary);
-            box-shadow: var(--achievement-neon-glow, none); /* Use the glow variable */
-            color: var(--color-text-primary); /* Ensure text is neony */
+            box-shadow: var(--achievement-neon-glow, none);
+            color: var(--color-text-primary); background-color: var(--color-surface-dark);
         }
-        [data-theme="neon"][data-mode="night"] .achievement-item h4 { /* Example for achievement title */
-             color: var(--color-secondary); /* Secondary neon color for titles */
-             text-shadow: var(--achievement-neon-glow, none);
+        [data-theme="neon"][data-mode="night"] .achievement-item h4 {
+             color: var(--color-secondary); text-shadow: var(--achievement-neon-glow, none);
         }
-
 
         select, input[type="text"], input[type="number"], textarea {
-            background-color: var(--color-background);
-            color: var(--color-text-primary);
-            border: 1px solid var(--color-border);
-            /* ... other input styles ... */
+            background-color: var(--color-surface-dark); color: var(--color-text-primary);
+            border: 1px solid var(--color-border); padding: 0.5rem 0.75rem;
+            border-radius: var(--border-radius-lg);
         }
-        /* ... rest of your existing style block ... */
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--color-primary); outline: none;
+            box-shadow: 0 0 0 3px hsla(var(--hue, 240), 90%, 70%, 0.3); /* Fallback focus, ideally themed */
+        }
+        [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3); }
+        [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.4); }
+        /* Add more theme-specific focus styles if desired */
+
     </style>
 </head>
-<body class="font-inter"> <!-- Removed Tailwind bg/text classes from body -->
-    <div id="game-container" data-theme="modern" data-mode="day" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl"> <!-- Default theme set here -->
+<body class="font-inter">
+    <div id="game-container" data-theme="modern" data-mode="day" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl min-h-screen">
         <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
-            <!-- h2 color set by new CSS rule -->
             <h2 class="text-xl font-semibold mb-2">Resources</h2>
-            <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 <!-- Resources will be dynamically added here -->
             </div>
         </header>
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
-            <nav id="main-menu" class="md:w-1/4 rounded-xl p-4 h-fit md:sticky md:top-32">
-                 <!-- h3 color set by new CSS rule -->
-                <h3 class="text-lg font-semibold mb-3">Menu</h3>
+            <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
+                <!-- Menu Title Removed -->
                 <ul id="menu-list" class="space-y-1">
-                    <!-- Menu items will be dynamically added here -->
+                    <!-- Menu items will be dynamically added here as styled buttons -->
                 </ul>
             </nav>
 
@@ -359,12 +359,11 @@
             </section>
         </main>
 
-        <footer class="rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-2">
-             <!-- Tailwind bg classes removed/overridden by .game-button CSS var or specific ID styles -->
-            <button id="save-button" class="game-button bg-green-500">Save Game</button>
-            <button id="load-button" class="game-button bg-blue-500">Load Game</button>
-            <button id="reset-button" class="game-button bg-red-500">Hard Reset</button>
-            <button id="dev-tools-button" class="game-button bg-emerald-500">Developer Tools</button>
+        <footer class="rounded-t-xl p-4 mt-auto text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-3">
+            <button id="save-button" class="game-button">Save Game</button>
+            <button id="load-button" class="game-button">Load Game</button>
+            <button id="reset-button" class="game-button">Hard Reset</button>
+            <button id="dev-tools-button" class="game-button">Developer Tools</button>
         </footer>
     </div>
 
