@@ -1,8 +1,9 @@
-// js/core/moduleLoader.js (v2.2 - Self Reference)
+// js/core/moduleLoader.js (v2.3 - Add globalSettingsManager)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
+ * v2.3: Accepts and passes globalSettingsManager to modules.
  * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
  */
 
@@ -18,14 +19,15 @@ let coreSystemsBase = {
     loggingSystem: null, // This will be the imported loggingSystem instance
     gameLoop: null,
     coreUpgradeManager: null,
-    // moduleLoader: null // This will be added dynamically
+    globalSettingsManager: null, // <<< Added globalSettingsManager
+    // moduleLoader: null // This will be added dynamically in loadModule
 };
 
 const loadedModules = {
     // moduleId: { manifest: object, instance: object (the module's main exported object) }
 };
 
-const moduleLoader = {
+export const moduleLoader = {
     initialize(
         staticDataAggregatorRef,
         coreGameStateManagerRef,
@@ -34,7 +36,8 @@ const moduleLoader = {
         decimalUtilityRef,
         loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
         gameLoopRef,
-        coreUpgradeManagerRef
+        coreUpgradeManagerRef,
+        globalSettingsManagerRef // <<< Added globalSettingsManagerRef parameter
     ) {
         coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
         coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
@@ -44,15 +47,21 @@ const moduleLoader = {
         coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
         coreSystemsBase.gameLoop = gameLoopRef;
         coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
-        // coreSystemsBase.moduleLoader will be 'this' (the moduleLoader object itself)
+        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef; // <<< Assign ref
 
         if (typeof decimalUtilityRef === 'undefined') {
             loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
         } else {
             loggingSystem.info("ModuleLoader", "decimalUtilityRef received successfully in initialize.");
         }
+        if (typeof globalSettingsManagerRef === 'undefined') {
+            loggingSystem.warn("ModuleLoader_Warning", "globalSettingsManagerRef received in initialize is undefined. Settings module may not function correctly.");
+        } else {
+            loggingSystem.info("ModuleLoader", "globalSettingsManagerRef received successfully in initialize.");
+        }
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.2).");
+
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3).");
     },
 
     async loadModule(manifestPath) {
@@ -80,11 +89,20 @@ const moduleLoader = {
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
             // Prepare the coreSystems object to pass to the module, including moduleLoader itself
+            // and ensuring globalSettingsManager is now part of coreSystemsBase
             const systemsForModule = {
                 ...coreSystemsBase,
                 moduleLoader: this // Add reference to the moduleLoader itself
             };
             
+            // --- Diagnostic Log before passing to module ---
+            if (!systemsForModule.globalSettingsManager) {
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule right before passing to module '${manifest.id}'!`, Object.keys(systemsForModule));
+            } else {
+                loggingSystem.debug("ModuleLoader_LoadModule", `globalSettingsManager is PRESENT in systemsForModule for module '${manifest.id}'.`);
+            }
+            // --- End Diagnostic Log ---
+
             const moduleInstance = await manifest.initialize(systemsForModule);
 
             loadedModules[manifest.id] = {
@@ -96,7 +114,7 @@ const moduleLoader = {
             return true;
 
         } catch (error) {
-            loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error);
+            loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error, error.stack);
             if(coreSystemsBase.coreUIManager && coreSystemsBase.coreUIManager.showNotification) {
                 coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}. Details in console.`, "error", 10000);
             } else {
