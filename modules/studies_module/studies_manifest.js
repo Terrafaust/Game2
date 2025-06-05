@@ -1,26 +1,25 @@
-// modules/studies_module/studies_manifest.js (v2)
+// modules/studies_module/studies_manifest.js (v3)
 
 /**
  * @file studies_manifest.js
  * @description Manifest file for the Studies Module.
- * Integrates with CoreUpgradeManager.
+ * v3: Ensures correct initial definition of Knowledge resource.
  */
 
-import { staticModuleData } from './studies_data.js';
+import { staticModuleData } from './studies_data.js'; // v3
 import { getInitialState, moduleState } from './studies_state.js';
-import { moduleLogic } from './studies_logic.js'; // Now v2
+import { moduleLogic } from './studies_logic.js'; // v3
 import { ui } from './studies_ui.js';
 
 const studiesManifest = {
     id: "studies",
     name: "Studies",
-    version: "0.2.0", // Version bump
+    version: "0.2.1", // Minor version bump for fixes
     description: "Automate your Study Point generation and unlock new knowledge. Applies skill effects.",
     dependencies: ["core_gameplay"],
 
     async initialize(coreSystems) {
-        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop, coreUpgradeManager } = coreSystems;
-        // coreUpgradeManager is now available via coreSystems
+        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
@@ -31,15 +30,20 @@ const studiesManifest = {
             ui: staticModuleData.ui
         });
 
+        // Define the 'knowledge' resource with coreResourceManager
+        // Ensure it uses the initial isUnlocked and showInUI values from data.
         const knowledgeDef = staticModuleData.resources.knowledge;
-        if (knowledgeDef && !coreResourceManager.isResourceDefined(knowledgeDef.id)) {
+        if (knowledgeDef) {
+            // Define if not already defined OR if being re-defined ensure it respects initial locked/hidden state
+            // coreResourceManager's defineResource will log if it's a redefinition.
             coreResourceManager.defineResource(
                 knowledgeDef.id,
                 knowledgeDef.name,
                 decimalUtility.new(knowledgeDef.initialAmount),
-                knowledgeDef.showInUI,
-                knowledgeDef.isUnlocked
+                knowledgeDef.showInUI,   // Will be false initially from studies_data_v3
+                knowledgeDef.isUnlocked  // Will be false initially from studies_data_v3
             );
+            loggingSystem.info(this.name, `Resource '${knowledgeDef.name}' (${knowledgeDef.id}) defined with initial showInUI: ${knowledgeDef.showInUI}, isUnlocked: ${knowledgeDef.isUnlocked}.`);
         }
 
         // 2. Initialize Module State
@@ -54,11 +58,11 @@ const studiesManifest = {
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(this.id, { ...moduleState });
 
-        // 3. Initialize Logic (v2 logic now uses coreUpgradeManager from coreSystems)
+        // 3. Initialize Logic
         moduleLogic.initialize(coreSystems);
 
         // 4. Initialize UI
-        ui.initialize(coreSystems, moduleLogic); // Pass logic v2
+        ui.initialize(coreSystems, moduleLogic);
 
         // 5. Register Menu Tab
         coreUIManager.registerMenuTab(
@@ -73,23 +77,17 @@ const studiesManifest = {
         // 6. Register update callbacks
         gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             moduleLogic.updateGlobalFlags();
-            // Production calculations are now more reactive to effect changes,
-            // so might not need to call updateAllProducerProductions every tick unless effects change outside of skill purchases.
-            // For now, let's assume effects are relatively static between purchases or major events.
-            // However, if global multipliers change often, this might be needed.
-            // The Studies UI updateDynamicElements will call calculateProducerCost and updateProducerProduction,
-            // which now inherently use coreUpgradeManager.
         });
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
-             if (coreUIManager.isActiveTab(this.id) || Object.values(staticModuleData.producers).some(p => decimalUtility.gt(moduleState.ownedProducers[p.id] || 0, 0))) {
-                // Update UI if tab is active OR if any producers are owned (because their production might change due to global effects)
-                moduleLogic.updateAllProducerProductions(); // Recalculate all productions first
-                ui.updateDynamicElements(); // Then update UI
+             if (coreUIManager.isActiveTab(this.id) || Object.values(staticModuleData.producers).some(p => decimalUtility.gt(moduleState.ownedProducers[p.id] || "0", 0))) {
+                moduleLogic.updateAllProducerProductions(); 
+                ui.updateDynamicElements(); 
             }
         });
         
-        moduleLogic.updateAllProducerProductions(); // Initial calculation
-        moduleLogic.updateGlobalFlags();
+        // Initial update calls
+        moduleLogic.onGameLoad(); // This will call updateAllProducerProductions and updateGlobalFlags
+                                  // and also handle Knowledge visibility based on loaded state.
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
@@ -98,7 +96,7 @@ const studiesManifest = {
             logic: moduleLogic,
             ui: ui,
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name} (v2).`);
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name} (v3).`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
                 if (!loadedState) loadedState = getInitialState();
                 else {
@@ -108,15 +106,15 @@ const studiesManifest = {
                 }
                 Object.assign(moduleState, loadedState);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState });
-                moduleLogic.onGameLoad(); // Notifies logic, which updates productions considering upgrades
+                moduleLogic.onGameLoad(); 
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 } else {
-                    ui.updateDynamicElements(); // Still update if not active but has producers
+                    ui.updateDynamicElements(); 
                 }
             },
             onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name} (v2).`);
+                loggingSystem.info(this.name, `onResetState called for ${this.name} (v3).`);
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
@@ -127,7 +125,7 @@ const studiesManifest = {
                      ui.updateDynamicElements();
                 }
             },
-            getProducerData: (producerId) => { // For achievements or other modules
+            getProducerData: (producerId) => { 
                 const producerDef = staticModuleData.producers[producerId];
                 if(!producerDef) return { owned: decimalUtility.new(0), production: decimalUtility.new(0)};
                 return {
