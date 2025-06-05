@@ -1,8 +1,9 @@
-// js/main.js (v9.4 - Debug DevTools coreResourceManager)
+// js/main.js (v9.5 - Granular Debug for DevTools)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.5: Added more granular logging for debugging coreResourceManager methods in devToolsButton.
  * v9.4: Added detailed logging for debugging coreResourceManager in devToolsButton.
  * v9.3: Initializes coreResourceManager.
  * v9.2: Passes saveLoadSystem to moduleLoader.initialize, defines all core_resource_definitions on new game.
@@ -27,7 +28,7 @@ import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.4).");
+    loggingSystem.info("Main", "Game initialization sequence started (v9.5).");
 
     // Initialize Core Systems in an order that respects dependencies
     globalSettingsManager.initialize();
@@ -72,7 +73,7 @@ async function initializeGame() {
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.5"); // Version for DevTools debug
+        coreGameStateManager.setGameVersion("0.5.6"); // Version for Granular DevTools debug
 
         for (const resId in coreResourceDefinitions) {
             const resDef = coreResourceDefinitions[resId];
@@ -102,9 +103,9 @@ async function initializeGame() {
                         coreResourceManager.defineResource(
                             resDef.id,
                             resDef.name,
-                            decimalUtility.new(resDef.initialAmount), 
+                            decimalUtility.new(resDef.initialAmount),
                             resDef.showInUI,
-                            false, 
+                            false,
                             resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
                         );
                         loggingSystem.debug("Main_GameLoad", `Ensured core resource definition for: ${resDef.id}`);
@@ -117,7 +118,7 @@ async function initializeGame() {
             }
         }
     }
-    
+
     coreUIManager.updateResourceDisplay();
 
     try {
@@ -131,7 +132,7 @@ async function initializeGame() {
         loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
         coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
     }
-    
+
     coreUIManager.fullUIRefresh();
 
     const saveButton = document.getElementById('save-button');
@@ -139,14 +140,74 @@ async function initializeGame() {
     const resetButton = document.getElementById('reset-button');
     const devToolsButton = document.getElementById('dev-tools-button');
 
-    if (saveButton) saveButton.addEventListener('click', () => { /* ... */ });
-    if (loadButton) loadButton.addEventListener('click', () => { /* ... */ });
-    if (resetButton) resetButton.addEventListener('click', () => { /* ... */ });
+    if (saveButton) { /* Event listener as in v9.3 */
+        saveButton.addEventListener('click', () => {
+            saveLoadSystem.saveGame();
+            coreUIManager.showNotification("Game Saved!", "success", 2000);
+        });
+    }
+    if (loadButton) { /* Event listener as in v9.3 */
+        loadButton.addEventListener('click', () => {
+            coreUIManager.showModal( "Load Game?", "Loading will overwrite your current unsaved progress. Are you sure?",
+                [
+                    { label: "Load Game", className: "bg-blue-600 hover:bg-blue-700", callback: () => {
+                        const wasRunning = gameLoop.isRunning();
+                        if (wasRunning) gameLoop.stop();
+                        if (saveLoadSystem.loadGame()) {
+                            for (const resId in coreResourceDefinitions) {
+                                if (coreResourceManager && typeof coreResourceManager.getResource === 'function' && !coreResourceManager.getResource(resId)) {
+                                    const resDef = coreResourceDefinitions[resId];
+                                     if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                                        coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
+                                     }
+                                }
+                            }
+                            moduleLoader.notifyAllModulesOfLoad();
+                            coreUIManager.fullUIRefresh();
+                            coreUIManager.showNotification("Game Loaded!", "success", 2000);
+                        } else {
+                            coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
+                        }
+                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
+                        coreUIManager.closeModal();
+                    }},
+                    { label: "Cancel", callback: () => coreUIManager.closeModal() }
+                ]
+            );
+        });
+    }
+    if (resetButton) { /* Event listener as in v9.3 */
+        resetButton.addEventListener('click', () => {
+            coreUIManager.showModal("Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
+                [
+                    { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
+                        const wasRunning = gameLoop.isRunning();
+                        if (wasRunning) gameLoop.stop();
+                        saveLoadSystem.resetGameData();
+                        coreGameStateManager.setGameVersion("0.5.6");
+                        for (const resId in coreResourceDefinitions) {
+                            const resDef = coreResourceDefinitions[resId];
+                            if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                                coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
+                            }
+                        }
+                        moduleLoader.resetAllModules();
+                        moduleLoader.notifyAllModulesOfLoad();
+                        coreUIManager.fullUIRefresh();
+                        coreUIManager.showNotification("Game Reset to Defaults.", "warning", 3000);
+                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
+                        coreUIManager.closeModal();
+                    }},
+                    { label: "Cancel", callback: () => coreUIManager.closeModal() }
+                ]
+            );
+        });
+    }
 
-    // Enhanced logging for devToolsButton
+    // Enhanced logging and checking for devToolsButton
     if (devToolsButton) {
         loggingSystem.debug("Main_DevTools_Setup", "Setting up devToolsButton listener.");
-        loggingSystem.debug("Main_DevTools_Setup", "coreResourceManager at listener setup:", coreResourceManager);
+        loggingSystem.debug("Main_DevTools_Setup", "coreResourceManager at listener setup (should be the imported object):", coreResourceManager);
         if(coreResourceManager){
             loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.addAmount:", typeof coreResourceManager.addAmount);
             loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.getResource:", typeof coreResourceManager.getResource);
@@ -156,37 +217,58 @@ async function initializeGame() {
 
         devToolsButton.addEventListener('click', () => {
             loggingSystem.info("Main_DevTools", "Dev tools button clicked.");
-            loggingSystem.debug("Main_DevTools_Click", "coreResourceManager inside click handler:", coreResourceManager);
-            if(coreResourceManager){
-                loggingSystem.debug("Main_DevTools_Click", "typeof coreResourceManager.addAmount (in click):", typeof coreResourceManager.addAmount);
-                loggingSystem.debug("Main_DevTools_Click", "typeof coreResourceManager.getResource (in click):", typeof coreResourceManager.getResource);
-                loggingSystem.debug("Main_DevTools_Click", "typeof coreResourceManager.defineResource (in click):", typeof coreResourceManager.defineResource);
-                loggingSystem.debug("Main_DevTools_Click", "typeof coreResourceManager.unlockResource (in click):", typeof coreResourceManager.unlockResource);
-            }
+            loggingSystem.debug("Main_DevTools_Click", "Accessing coreResourceManager (from module import scope) inside click handler:", coreResourceManager);
 
-            const crmReady = coreResourceManager &&
-                             typeof coreResourceManager.addAmount === 'function' &&
-                             typeof coreResourceManager.getResource === 'function' &&
-                             typeof coreResourceManager.defineResource === 'function' &&
-                             typeof coreResourceManager.unlockResource === 'function';
-
-            if (!crmReady) {
-                loggingSystem.error("Main_DevTools", "coreResourceManager or its methods are not available or not functions at click time.");
-                coreUIManager.showNotification("Dev Tools Error: Resource Manager not ready. Check console.", "error");
+            if (!coreResourceManager) {
+                loggingSystem.error("Main_DevTools_Click", "CRITICAL: coreResourceManager object itself is null or undefined at click time.");
+                coreUIManager.showNotification("Dev Tools Error: CRITICAL - Resource Manager object not found. Check console.", "error");
                 return;
             }
 
-            loggingSystem.info("Main_DevTools", "coreResourceManager and its methods appear to be available.");
+            const methodsState = {
+                addAmount: { exists: 'addAmount' in coreResourceManager, type: typeof coreResourceManager.addAmount },
+                getResource: { exists: 'getResource' in coreResourceManager, type: typeof coreResourceManager.getResource },
+                defineResource: { exists: 'defineResource' in coreResourceManager, type: typeof coreResourceManager.defineResource },
+                unlockResource: { exists: 'unlockResource' in coreResourceManager, type: typeof coreResourceManager.unlockResource }
+            };
+
+            loggingSystem.debug("Main_DevTools_Click", "State of coreResourceManager methods:", methodsState);
+
+            let allMethodsFunctional = true;
+            if (methodsState.addAmount.type !== 'function') {
+                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.addAmount is not a function. Type: ${methodsState.addAmount.type}, Exists: ${methodsState.addAmount.exists}`);
+                allMethodsFunctional = false;
+            }
+            if (methodsState.getResource.type !== 'function') {
+                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.getResource is not a function. Type: ${methodsState.getResource.type}, Exists: ${methodsState.getResource.exists}`);
+                allMethodsFunctional = false;
+            }
+            if (methodsState.defineResource.type !== 'function') {
+                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.defineResource is not a function. Type: ${methodsState.defineResource.type}, Exists: ${methodsState.defineResource.exists}`);
+                allMethodsFunctional = false;
+            }
+            if (methodsState.unlockResource.type !== 'function') {
+                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.unlockResource is not a function. Type: ${methodsState.unlockResource.type}, Exists: ${methodsState.unlockResource.exists}`);
+                allMethodsFunctional = false;
+            }
+
+            if (!allMethodsFunctional) {
+                loggingSystem.error("Main_DevTools_Click", "One or more coreResourceManager methods are not functions. Dev tools cannot proceed.");
+                coreUIManager.showNotification("Dev Tools Error: Resource Manager methods invalid. Check console.", "error");
+                return;
+            }
+
+            loggingSystem.info("Main_DevTools_Click", "coreResourceManager and its methods appear to be available and functional.");
 
             coreResourceManager.addAmount('studyPoints', decimalUtility.new(100000));
-            
+
             if (!coreResourceManager.getResource('knowledge')) {
                 const resDef = staticDataAggregator.getData('core_resource_definitions.knowledge');
                 if(resDef) {
                     coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
-                    loggingSystem.info("Main_DevTools", "Defined 'knowledge' resource before dev interaction.");
+                    loggingSystem.info("Main_DevTools_Click", "Defined 'knowledge' resource before dev interaction.");
                 } else {
-                    loggingSystem.error("Main_DevTools", "'knowledge' definition not found in staticDataAggregator.");
+                    loggingSystem.error("Main_DevTools_Click", "'knowledge' definition not found in staticDataAggregator.");
                     coreUIManager.showNotification("Dev Tools Error: Knowledge resource definition missing.", "error");
                     return;
                 }
