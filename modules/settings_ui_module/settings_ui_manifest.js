@@ -1,8 +1,9 @@
-// modules/settings_ui_module/settings_ui_manifest.js (v1)
+// modules/settings_ui_module/settings_ui_manifest.js (v1.1 - System Pass Fix)
 
 /**
  * @file settings_ui_manifest.js
  * @description Manifest file for the Settings UI Module.
+ * v1.1: Ensures coreSystems is correctly passed to ui.initialize.
  */
 
 import { staticModuleData } from './settings_ui_data.js';
@@ -13,19 +14,26 @@ import { ui } from './settings_ui_ui.js';
 const settingsUiManifest = {
     id: "settings_ui",
     name: "Settings UI",
-    version: "1.0.0",
+    version: "1.0.1", // Version bump for fix
     description: "Provides UI for game settings, statistics, and actions.",
-    dependencies: ["market"], // Depends on market for the `settingsTabUnlocked` flag
+    dependencies: ["market"], 
 
-    async initialize(coreSystems) {
+    async initialize(coreSystems) { // coreSystems is received here from moduleLoader
         const { staticDataAggregator, coreGameStateManager, loggingSystem, coreUIManager, gameLoop } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
+        
+        // --- Diagnostic Log ---
+        if (!coreSystems.globalSettingsManager) {
+            loggingSystem.error("SettingsUIManifest_Init_CRITICAL", "globalSettingsManager is MISSING in coreSystems at manifest init!", Object.keys(coreSystems));
+        } else {
+            loggingSystem.debug("SettingsUIManifest_Init", "globalSettingsManager is PRESENT in coreSystems at manifest init.");
+        }
+        // --- End Diagnostic Log ---
 
-        // 1. Register Static Data
+
         staticDataAggregator.registerStaticData(this.id, staticModuleData);
 
-        // 2. Initialize Module State (if any specific to this module)
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
             currentModuleState = getInitialState();
@@ -33,42 +41,31 @@ const settingsUiManifest = {
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(this.id, { ...moduleState });
 
-        // 3. Initialize Logic
-        moduleLogic.initialize(coreSystems);
+        // Pass the full coreSystems object to logic and ui initialize methods
+        moduleLogic.initialize(coreSystems); 
+        ui.initialize(coreSystems, moduleState, moduleLogic); // Ensure coreSystems is passed here
 
-        // 4. Initialize UI
-        ui.initialize(coreSystems, moduleState, moduleLogic);
-
-        // 5. Register Menu Tab
         coreUIManager.registerMenuTab(
             this.id,
             staticModuleData.ui.settingsTabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
-            () => moduleLogic.isSettingsTabUnlocked(), // Checks permanent flag
+            () => moduleLogic.isSettingsTabUnlocked(), 
             () => ui.onShow(),
             () => ui.onHide()
         );
         
-        // Call onGameLoad once here to ensure flag is checked
         moduleLogic.onGameLoad();
 
-
-        // No specific game loop updates needed for settings UI itself usually,
-        // unless for live stats, which are handled by updateDynamicElements onShow/periodically.
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
             if (coreUIManager.isActiveTab(this.id)) {
-                // Potentially update stats if they need to be very live
-                // For now, stats update on tab show.
-                // ui.updateDynamicElements();
+                // ui.updateDynamicElements(); // Called by onShow, which is called by setActiveTab
             }
-             // Check settings tab unlock if not permanently unlocked yet
             if (!coreGameStateManager.getGlobalFlag('settingsTabPermanentlyUnlocked', false)) {
                  if(moduleLogic.isSettingsTabUnlocked()){
-                     // loggingSystem.debug("SettingsManifest", "Settings tab unlocked via uiUpdate check.");
+                    // This sets the flag and calls coreUIManager.renderMenu()
                  }
             }
         });
-
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
@@ -84,7 +81,8 @@ const settingsUiManifest = {
                 coreGameStateManager.setModuleState(this.id, { ...moduleState });
                 moduleLogic.onGameLoad();
                 if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content'));
+                    const mainContentEl = document.getElementById('main-content');
+                    if (mainContentEl) ui.renderMainContent(mainContentEl);
                 }
             },
             onResetState: () => {
@@ -92,9 +90,10 @@ const settingsUiManifest = {
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.onResetState(); // This will clear 'settingsTabPermanentlyUnlocked'
+                moduleLogic.onResetState(); 
                  if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content'));
+                    const mainContentEl = document.getElementById('main-content');
+                    if (mainContentEl) ui.renderMainContent(mainContentEl);
                 }
             }
         };

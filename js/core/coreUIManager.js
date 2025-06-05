@@ -1,9 +1,9 @@
-// js/core/coreUIManager.js (v4.1 - Menu Render Trigger)
+// js/core/coreUIManager.js (v4.2 - Button Class Fix)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
- * v4.1: Added a method to explicitly trigger menu re-render if a global flag changes.
+ * v4.2: Fixes createButton to handle space-separated classes in additionalClasses.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -49,7 +49,7 @@ const coreUIManager = {
         document.addEventListener('mousemove', this._handleTooltipPosition.bind(this));
         UIElements.menuList.addEventListener('click', this._handleMenuClick.bind(this));
 
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.1).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.2).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -266,7 +266,9 @@ const coreUIManager = {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end space-x-3';
             buttons.forEach(btnInfo => {
-                const button = this.createButton(btnInfo.label, btnInfo.callback, [btnInfo.className || 'bg-primary']);
+                // Ensure btnInfo.className is treated as an array even if it's a single string
+                const classList = Array.isArray(btnInfo.className) ? btnInfo.className : (btnInfo.className ? [btnInfo.className] : ['bg-primary']);
+                const button = this.createButton(btnInfo.label, btnInfo.callback, classList);
                 buttonsDiv.appendChild(button);
             });
             modalContentDiv.appendChild(buttonsDiv);
@@ -388,7 +390,21 @@ const coreUIManager = {
         const button = document.createElement('button');
         button.textContent = text;
         button.className = 'game-button'; 
-        additionalClasses.forEach(cls => button.classList.add(cls)); 
+        // Handle if additionalClasses is a string with spaces or an array
+        if (Array.isArray(additionalClasses)) {
+            additionalClasses.forEach(cls => {
+                if (typeof cls === 'string') {
+                    cls.split(' ').forEach(singleClass => { // Split space-separated classes
+                        if (singleClass) button.classList.add(singleClass);
+                    });
+                }
+            });
+        } else if (typeof additionalClasses === 'string') {
+            additionalClasses.split(' ').forEach(singleClass => {
+                 if (singleClass) button.classList.add(singleClass);
+            });
+        }
+
         if (id) button.id = id;
         if (typeof onClickCallback === 'function') {
             button.addEventListener('click', onClickCallback);
