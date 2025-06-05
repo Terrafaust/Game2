@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        // This Tailwind config is for Tailwind's JIT or for JS use.
-        // CSS custom properties below are derived from these values for use in the <style> block.
         tailwind.config = {
             theme: {
                 extend: {
@@ -17,15 +15,16 @@
                         inter: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        primary: '#4F46E5', // Indigo
-                        secondary: '#EC4899', // Pink
-                        accentOne: '#10B981', // Emerald (used for Dev Tools button)
-                        accentTwo: '#F59E0B', // Amber (could be used for skill points)
-                        background: '#111827', // Gray 900
-                        surface: '#1F2937',    // Gray 800
-                        surfaceDark: '#374151', // Gray 700 (used for cards, slightly lighter than surface)
-                        textPrimary: '#F3F4F6', // Gray 100
-                        textSecondary: '#9CA3AF', // Gray 400
+                        // These are base Tailwind definitions, CSS variables below will be themed
+                        primary_base: '#4F46E5', // Indigo
+                        secondary_base: '#EC4899', // Pink
+                        accentOne_base: '#10B981', // Emerald
+                        accentTwo_base: '#F59E0B', // Amber
+                        background_base: '#111827', // Gray 900
+                        surface_base: '#1F2937',    // Gray 800
+                        surfaceDark_base: '#374151', // Gray 700
+                        textPrimary_base: '#F3F4F6', // Gray 100
+                        textSecondary_base: '#9CA3AF', // Gray 400
                     },
                     borderRadius: {
                         'lg': '0.5rem',
@@ -37,26 +36,103 @@
         };
     </script>
     <style>
-        /* Define CSS Custom Properties based on Tailwind config for use in this style block */
+        /* Base CSS Custom Properties (Default Theme - e.g., Modern Day) */
         :root {
-            --color-primary: #4F46E5;
-            --color-secondary: #EC4899;
+            --font-main: 'Inter', sans-serif;
+
+            /* Default to Modern - Day */
+            --color-primary: #4F46E5; /* Indigo */
+            --color-primary-lighter: #6366F1;
+            --color-secondary: #EC4899; /* Pink */
             --color-accent-one: #10B981; /* Emerald */
             --color-accent-two: #F59E0B; /* Amber */
-            --color-background: #111827;
-            --color-surface: #1F2937;
-            --color-surface-dark: #374151;
-            --color-text-primary: #F3F4F6;
-            --color-text-secondary: #9CA3AF;
-            --color-primary-lighter: #6366F1;
+            --color-background: #F9FAFB; /* Lighter Gray for Day Mode */
+            --color-surface: #FFFFFF; /* White for Day Mode surfaces */
+            --color-surface-dark: #F3F4F6; /* Light Gray for cards in Day Mode */
+            --color-text-primary: #1F2937; /* Dark Gray for text in Day Mode */
+            --color-text-secondary: #6B7280; /* Medium Gray for text in Day Mode */
+            --color-border: #E5E7EB; /* Light border for day mode */
 
             --border-radius-lg: 0.5rem;
             --border-radius-xl: 0.75rem;
             --border-radius-2xl: 1rem;
+
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 10px 10px -5px rgba(0,0,0,0.03);
         }
 
+        /* --- Modern Theme --- */
+        [data-theme="modern"][data-mode="day"] {
+            /* Uses :root defaults essentially, or can be specified explicitly */
+            --color-primary: #4F46E5;
+            --color-secondary: #EC4899;
+            --color-background: #F9FAFB;
+            --color-surface: #FFFFFF;
+            --color-surface-dark: #F3F4F6; /* Slightly darker cards */
+            --color-text-primary: #1F2937;
+            --color-text-secondary: #6B7280;
+            --color-border: #E5E7EB;
+        }
+        [data-theme="modern"][data-mode="night"] {
+            --color-primary: #6366F1; /* Lighter Indigo for Night */
+            --color-secondary: #F472B6; /* Lighter Pink */
+            --color-background: #111827; /* Tailwind Gray 900 */
+            --color-surface: #1F2937;    /* Tailwind Gray 800 */
+            --color-surface-dark: #374151; /* Tailwind Gray 700 */
+            --color-text-primary: #F3F4F6; /* Tailwind Gray 100 */
+            --color-text-secondary: #9CA3AF; /* Tailwind Gray 400 */
+            --color-border: #374151; /* Darker border for night mode */
+        }
+
+        /* --- Neon Theme --- */
+        [data-theme="neon"][data-mode="day"] { /* Neon Day might be a bit unusual, but for completeness */
+            --color-primary: #39FF14; /* Bright Neon Green */
+            --color-secondary: #FF1493; /* Deep Pink Neon */
+            --color-background: #F0F0F0; /* Very light gray */
+            --color-surface: #FFFFFF;
+            --color-surface-dark: #E5E5E5;
+            --color-text-primary: #222222;
+            --color-text-secondary: #555555;
+            --color-border: #D0D0D0;
+        }
+        [data-theme="neon"][data-mode="night"] {
+            --color-primary: #39FF14; /* Bright Neon Green */
+            --color-secondary: #FF1493; /* Deep Pink Neon */
+            --color-background: #000000; /* Pure Black */
+            --color-surface: #1A1A1A;    /* Very Dark Gray */
+            --color-surface-dark: #2C2C2C; /* Dark Gray */
+            --color-text-primary: #00FF00; /* Neon Green Text */
+            --color-text-secondary: #B0B0B0; /* Light Gray Secondary */
+            --color-border: #39FF14; /* Neon Green Border */
+        }
+
+        /* --- Steampunk Theme --- */
+        [data-theme="steampunk"][data-mode="day"] {
+            --color-primary: #8B4513; /* Saddle Brown */
+            --color-secondary: #DAA520; /* Goldenrod */
+            --color-background: #F5F5DC; /* Beige */
+            --color-surface: #FFF8DC;    /* Cornsilk */
+            --color-surface-dark: #DEB887; /* BurlyWood */
+            --color-text-primary: #5D4037; /* Dark Brown */
+            --color-text-secondary: #A1887F; /* Lighter Brown */
+            --color-border: #CD853F; /* Peru */
+        }
+        [data-theme="steampunk"][data-mode="night"] {
+            --color-primary: #CD853F; /* Peru */
+            --color-secondary: #FFD700; /* Gold */
+            --color-background: #5D4037; /* Dark Brown */
+            --color-surface: #795548;    /* Lighter Brown (Surface) */
+            --color-surface-dark: #4E342E; /* Darker Brown (Cards) */
+            --color-text-primary: #FFF8DC; /* Cornsilk Text */
+            --color-text-secondary: #D2B48C; /* Tan Secondary */
+            --color-border: #8B4513; /* Saddle Brown Border */
+        }
+
+
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: var(--font-main);
             background-color: var(--color-background);
             color: var(--color-text-primary);
             margin: 0;
@@ -64,19 +140,24 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
+        /* Ensure child elements also transition smoothly */
+        #game-container, #resource-bar, #main-menu, #main-content, footer, .modal-content, .tooltip {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
         button, input[type="button"] {
-            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
-            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Tailwind shadow-sm */
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
+            box-shadow: var(--shadow-sm);
         }
         button:hover, input[type="button"]:hover {
             filter: brightness(1.1);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
+            box-shadow: var(--shadow-md);
         }
         button:active, input[type="button"]:active {
             transform: scale(0.98);
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 10px; }
         ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 10px; }
@@ -84,38 +165,42 @@
 
         .game-button {
             background-color: var(--color-primary);
-            color: white;
-            padding: 0.6rem 1.2rem; /* Slightly adjusted padding */
+            color: var(--color-background); /* Text color to contrast with button bg */
+            padding: 0.6rem 1.2rem;
             border-radius: var(--border-radius-lg);
             font-weight: 500;
             cursor: pointer;
             border: none;
         }
-        .game-button:hover {
-            /* Hover brightness is handled globally */
-        }
+        /* Adjust specific button text colors if needed, e.g. for accent buttons */
+        .game-button.bg-green-500, .game-button.bg-emerald-500 { color: white; /* Assuming these are Tailwind classes for bg */ }
+        .game-button.bg-blue-500 { color: white; }
+        .game-button.bg-red-500 { color: white; }
+
+
         .game-button:disabled {
             background-color: var(--color-text-secondary);
             filter: grayscale(50%);
             cursor: not-allowed;
+            color: var(--color-surface-dark);
         }
         .tooltip {
-            position: fixed; /* Changed from absolute for better viewport handling */
-            background-color: var(--color-surface-dark); /* Darker tooltip */
+            position: fixed;
+            background-color: var(--color-surface-dark);
             color: var(--color-text-primary);
             border: 1px solid var(--color-primary);
             padding: 0.5rem 0.75rem;
             border-radius: var(--border-radius-lg);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Enhanced shadow */
-            z-index: 10000; /* Ensure tooltip is on top */
+            box-shadow: var(--shadow-xl);
+            z-index: 10000;
             font-size: 0.875rem;
             display: none;
-            pointer-events: none; /* Tooltip shouldn't interfere with mouse events */
-            max-width: 300px; /* Max width for readability */
+            pointer-events: none;
+            max-width: 300px;
         }
         .modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.75); /* Slightly darker backdrop */
+            background-color: rgba(0,0,0,0.75);
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; opacity: 0; visibility: hidden;
             transition: opacity 0.25s ease, visibility 0.25s ease;
@@ -124,16 +209,16 @@
         .modal-content {
             background-color: var(--color-surface);
             padding: 1.5rem; border-radius: var(--border-radius-xl);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2); /* Softer, larger shadow */
+            box-shadow: var(--shadow-xl);
             width: 90%; max-width: 500px; color: var(--color-text-primary);
             transform: scale(0.95);
-            transition: transform 0.25s ease;
+            transition: transform 0.25s ease, background-color 0.3s ease, color 0.3s ease;
         }
         .modal.active .modal-content { transform: scale(1); }
 
         .menu-tab {
             padding: 0.75rem 1rem; cursor: pointer;
-            border-bottom: 3px solid transparent; /* Thicker indicator line */
+            border-bottom: 3px solid transparent;
             color: var(--color-text-secondary);
             transition: color 0.2s ease, border-color 0.2s ease;
         }
@@ -146,53 +231,88 @@
             border-bottom-color: var(--color-primary);
             font-weight: 600;
         }
-        /* Card styles (used by modules) */
         .module-card {
             background-color: var(--color-surface-dark);
-            padding: 1rem; /* p-4 */
+            padding: 1rem; 
             border-radius: var(--border-radius-lg);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: box-shadow 0.2s ease;
+            box-shadow: var(--shadow-md);
+            transition: box-shadow 0.2s ease, background-color 0.3s ease;
+            border: 1px solid var(--color-border);
         }
         .module-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-lg);
         }
+
+        /* Apply themed styles to main layout elements */
+        #resource-bar {
+            background-color: var(--color-surface);
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-border);
+        }
+        #main-menu {
+            background-color: var(--color-surface);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
+        }
+        #main-content {
+            background-color: var(--color-surface);
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--color-border);
+        }
+        footer {
+            background-color: var(--color-surface);
+            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.08), 0 -2px 4px -1px rgba(0, 0, 0, 0.05); /* shadow-top */
+            border-top: 1px solid var(--color-border);
+        }
+        /* Input elements theming */
+        select, input[type="text"], input[type="number"], textarea {
+            background-color: var(--color-background);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius-lg);
+            padding: 0.5rem 0.75rem;
+        }
+        select:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
+            border-color: var(--color-primary);
+            outline: none;
+            box-shadow: 0 0 0 2px var(--color-primary-lighter);
+        }
+
     </style>
 </head>
-<body class="bg-background text-textPrimary font-inter">
-    <div id="game-container" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl"> <!-- Max-width increased -->
-        <header id="resource-bar" class="bg-surface shadow-lg rounded-xl p-4 mb-6 sticky top-4 z-50"> <!-- Added top-4 for spacing -->
-            <h2 class="text-xl font-semibold text-primary mb-2">Resources</h2>
+<body class="font-inter"> <!-- Removed Tailwind bg/text classes, will be controlled by CSS vars -->
+    <div id="game-container" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl">
+        <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
+            <h2 class="text-xl font-semibold mb-2" style="color: var(--color-primary);">Resources</h2>
             <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 <!-- Resources will be dynamically added here -->
             </div>
         </header>
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
-            <nav id="main-menu" class="md:w-1/4 bg-surface shadow-md rounded-xl p-4 h-fit md:sticky md:top-32"> <!-- Adjusted sticky top -->
-                <h3 class="text-lg font-semibold text-secondary mb-3">Menu</h3>
-                <ul id="menu-list" class="space-y-1"> <!-- Reduced space-y for denser menu -->
+            <nav id="main-menu" class="md:w-1/4 rounded-xl p-4 h-fit md:sticky md:top-32">
+                <h3 class="text-lg font-semibold mb-3" style="color: var(--color-secondary);">Menu</h3>
+                <ul id="menu-list" class="space-y-1">
                     <!-- Menu items will be dynamically added here -->
                 </ul>
             </nav>
 
-            <section id="main-content" class="md:w-3/4 bg-surface shadow-md rounded-xl p-6 flex-grow">
+            <section id="main-content" class="md:w-3/4 rounded-xl p-6 flex-grow">
                 <p>Loading game content...</p>
             </section>
         </main>
 
-        <footer class="bg-surface shadow-top rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-2">
-            <button id="save-button" class="game-button bg-green-500 hover:bg-green-600">Save Game</button>
-            <button id="load-button" class="game-button bg-blue-500 hover:bg-blue-600">Load Game</button>
-            <button id="reset-button" class="game-button bg-red-500 hover:bg-red-600">Hard Reset</button>
-            <button id="dev-tools-button" class="game-button bg-emerald-500 hover:bg-emerald-600">Developer Tools</button> <!-- New Button -->
+        <footer class="rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-2">
+            <button id="save-button" class="game-button">Save Game</button>
+            <button id="load-button" class="game-button">Load Game</button>
+            <button id="reset-button" class="game-button">Hard Reset</button>
+            <button id="dev-tools-button" class="game-button">Developer Tools</button>
         </footer>
     </div>
 
     <div id="modal-container"></div>
     <div id="tooltip-container" class="tooltip"></div>
     <div id="notification-area" class="fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full"></div>
-
 
     <script src="js/lib/break_infinity.min.js"></script>
     <script type="module" src="js/main.js"></script>
