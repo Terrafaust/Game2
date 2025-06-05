@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v4.2 - Button Class Fix)
+// js/core/coreUIManager.js (v4.3 - Resource Display Logging)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v4.3: Added detailed logging to updateResourceDisplay.
  * v4.2: Fixes createButton to handle space-separated classes in additionalClasses.
  */
 
@@ -43,22 +44,27 @@ const coreUIManager = {
             return;
         }
 
-        this.updateResourceDisplay();
+        this.updateResourceDisplay(); // Initial call
         this.renderMenu();
 
         document.addEventListener('mousemove', this._handleTooltipPosition.bind(this));
-        UIElements.menuList.addEventListener('click', this._handleMenuClick.bind(this));
+        if (UIElements.menuList) { // Add null check for safety
+            UIElements.menuList.addEventListener('click', this._handleMenuClick.bind(this));
+        } else {
+            loggingSystem.error("CoreUIManager_Init", "menuList element not found, click handler not attached.");
+        }
+        
 
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.2).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.3).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
         if (typeof moduleId !== 'string' || moduleId.trim() === '') {
-            loggingSystem.warn("CoreUIManager", "registerMenuTab: moduleId must be a non-empty string.");
+            loggingSystem.warn("CoreUIManager_RegisterTab", "moduleId must be a non-empty string.");
             return;
         }
         if (typeof renderCallback !== 'function') {
-            loggingSystem.warn("CoreUIManager", `registerMenuTab: renderCallback for '${moduleId}' must be a function.`);
+            loggingSystem.warn("CoreUIManager_RegisterTab", `renderCallback for '${moduleId}' must be a function.`);
             return;
         }
 
@@ -70,7 +76,7 @@ const coreUIManager = {
             onShowCallback: onShowCallback,
             onHideCallback: onHideCallback,
         };
-        loggingSystem.info("CoreUIManager", `Menu tab '${label}' (${moduleId}) registered.`);
+        loggingSystem.info("CoreUIManager_RegisterTab", `Menu tab '${label}' (${moduleId}) registered.`);
         this.renderMenu();
 
         if (isDefaultTab && !activeTabId) {
@@ -87,7 +93,10 @@ const coreUIManager = {
     },
 
     renderMenu() {
-        if (!UIElements.menuList) return;
+        if (!UIElements.menuList) {
+            loggingSystem.warn("CoreUIManager_RenderMenu", "menuList element not found. Cannot render menu.");
+            return;
+        }
         UIElements.menuList.innerHTML = '';
 
         let hasActiveTabBeenSetOrRemainsValid = false;
@@ -102,18 +111,27 @@ const coreUIManager = {
                     hasActiveTabBeenSetOrRemainsValid = true;
                 }
                 UIElements.menuList.appendChild(listItem);
+            } else {
+                loggingSystem.debug("CoreUIManager_RenderMenu", `Tab '${tab.id}' (${tab.label}) is locked, not rendering.`);
             }
         });
         
         if (!hasActiveTabBeenSetOrRemainsValid && Object.keys(registeredMenuTabs).length > 0) {
-            activeTabId = null;
+            activeTabId = null; // Reset activeTabId if current one is no longer valid/unlocked
             const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
             if (firstUnlockedTab) {
-                this.setActiveTab(firstUnlockedTab.id, true);
+                loggingSystem.debug("CoreUIManager_RenderMenu", `No active valid tab, setting to first unlocked: ${firstUnlockedTab.id}`);
+                this.setActiveTab(firstUnlockedTab.id, true); // Force render for the new default
             } else {
+                loggingSystem.debug("CoreUIManager_RenderMenu", "No unlocked tabs available.");
                 this.clearMainContent();
                 if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features unlocked yet.</p>';
             }
+        } else if (activeTabId && !registeredMenuTabs[activeTabId]?.isUnlocked()){
+            // If the current activeTabId became locked, find a new one
+            activeTabId = null;
+            const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
+            if (firstUnlockedTab) this.setActiveTab(firstUnlockedTab.id, true);
         } else if (Object.keys(registeredMenuTabs).length === 0) {
              this.clearMainContent();
              if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No modules loaded.</p>';
@@ -127,36 +145,44 @@ const coreUIManager = {
             if (registeredMenuTabs[tabId] && registeredMenuTabs[tabId].isUnlocked()) {
                 this.setActiveTab(tabId);
             } else {
-                loggingSystem.warn("CoreUIManager", `Attempted to switch to locked or non-existent tab: ${tabId}`);
+                loggingSystem.warn("CoreUIManager_MenuClick", `Attempted to switch to locked or non-existent tab: ${tabId}`);
             }
         }
     },
 
     setActiveTab(tabId, forceRender = false) {
         if (!registeredMenuTabs[tabId] || !registeredMenuTabs[tabId].isUnlocked()) {
-            loggingSystem.warn("CoreUIManager", `Cannot set active tab: '${tabId}' not registered, not unlocked, or no render callback.`);
-            if (activeTabId === tabId || !activeTabId) {
+            loggingSystem.warn("CoreUIManager_SetActiveTab", `Cannot set active tab: '${tabId}' not registered, not unlocked, or no render callback.`);
+            // If the intended tab is invalid, try to set a default valid one
+            if (activeTabId === tabId || !activeTabId) { // Current tab is bad or no tab is set
                 const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
-                if (firstUnlocked && firstUnlocked.id !== tabId) {
-                    this.setActiveTab(firstUnlocked.id);
-                } else if (!firstUnlocked) {
+                if (firstUnlocked && firstUnlocked.id !== tabId) { // Found a different valid tab
+                    this.setActiveTab(firstUnlocked.id, true); // Recursive call with forceRender
+                } else if (!firstUnlocked) { // No tabs are unlockable
                      this.clearMainContent();
                      if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available.</p>';
-                     activeTabId = null;
-                     this.renderMenu();
+                     activeTabId = null; // Clear activeTabId
+                     this.renderMenu(); // Re-render menu (will show empty or appropriate message)
                 }
             }
             return;
         }
 
-        if (activeTabId === tabId && !forceRender) return;
+        if (activeTabId === tabId && !forceRender) {
+            loggingSystem.debug("CoreUIManager_SetActiveTab", `Tab ${tabId} is already active and no force render. Skipping.`);
+            return;
+        }
 
         if (activeTabId && registeredMenuTabs[activeTabId] && typeof registeredMenuTabs[activeTabId].onHideCallback === 'function') {
-            registeredMenuTabs[activeTabId].onHideCallback();
+            try {
+                registeredMenuTabs[activeTabId].onHideCallback();
+            } catch (e) {
+                loggingSystem.error("CoreUIManager_SetActiveTab", `Error in onHideCallback for ${activeTabId}:`, e);
+            }
         }
 
         activeTabId = tabId;
-        loggingSystem.debug("CoreUIManager", `Active tab set to: ${tabId}`);
+        loggingSystem.debug("CoreUIManager_SetActiveTab", `Active tab set to: ${tabId}`);
         this.renderMenu(); 
         this.clearMainContent();
 
@@ -165,16 +191,20 @@ const coreUIManager = {
             try {
                 tab.renderCallback(UIElements.mainContent);
             } catch (error) {
-                loggingSystem.error("CoreUIManager", `Error rendering content for tab '${tabId}':`, error);
+                loggingSystem.error("CoreUIManager_SetActiveTab", `Error rendering content for tab '${tabId}':`, error);
                 if (UIElements.mainContent) UIElements.mainContent.innerHTML = `<p class="text-red-500">Error loading content for ${tab.label}. Check console.</p>`;
             }
         } else {
-            loggingSystem.error("CoreUIManager", `Render callback not found for tab '${tabId}'.`);
+            loggingSystem.error("CoreUIManager_SetActiveTab", `Render callback not found or invalid for tab '${tabId}'.`);
             if (UIElements.mainContent) UIElements.mainContent.innerHTML = `<p>Content for ${tabId} is not available.</p>`;
         }
         
         if (tab && typeof tab.onShowCallback === 'function') {
-            tab.onShowCallback();
+            try {
+                tab.onShowCallback();
+            } catch (e) {
+                loggingSystem.error("CoreUIManager_SetActiveTab", `Error in onShowCallback for ${tabId}:`, e);
+            }
         }
     },
 
@@ -188,19 +218,26 @@ const coreUIManager = {
 
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) {
+            loggingSystem.warn("CoreUIManager_UpdateResourceDisplay", "resourcesDisplay element not found.");
             return;
         }
 
         const allResources = coreResourceManager.getAllResources();
+        loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", "Starting update. All defined resources from CRM:", allResources);
+
         let hasVisibleResources = false;
-        UIElements.resourcesDisplay.innerHTML = '';
+        UIElements.resourcesDisplay.innerHTML = ''; // Clear existing
 
         Object.values(allResources).forEach(res => {
-            const staticResData = staticDataAggregator.getData(`market.resources.${res.id}`) || 
-                                  staticDataAggregator.getData(`studies.resources.${res.id}`) ||
-                                  staticDataAggregator.getData(`core_resource_definitions.${res.id}`);
+            loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Processing resource: ${res.id}, Name: ${res.name}, Amount: ${res.amount?.toString()}, Unlocked: ${res.isUnlocked}, ShowInUI: ${res.showInUI}, HasRate: ${res.hasProductionRate}`);
             
-            const showRate = staticResData ? (staticResData.hasProductionRate !== false) : true;
+            const staticResDataCore = staticDataAggregator.getData(`core_resource_definitions.${res.id}`);
+            // It's possible a resource is defined by a module and not in core_resource_definitions initially
+            // For 'hasProductionRate', we should rely on the resource's own property if CRM stores it,
+            // or fall back to static data if not directly on the resource object from CRM.
+            // The `res` object from `coreResourceManager.getAllResources()` now includes `hasProductionRate`.
+            const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : (staticResDataCore ? (staticResDataCore.hasProductionRate !== false) : true);
+
 
             if (res.isUnlocked && res.showInUI) {
                 hasVisibleResources = true;
@@ -208,7 +245,8 @@ const coreUIManager = {
                 if (!displayElement) {
                     displayElement = document.createElement('div');
                     displayElement.id = `resource-${res.id}-display`;
-                    displayElement.className = 'p-2 bg-gray-700 rounded-md shadow'; 
+                    // Base classes, specific theme classes applied in main.css or via theme variables
+                    displayElement.className = 'p-3 bg-surface-dark rounded-lg shadow-md text-sm'; 
                     UIElements.resourcesDisplay.appendChild(displayElement);
                 }
 
@@ -216,23 +254,32 @@ const coreUIManager = {
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
                 let rateHTML = '';
 
-                if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || Object.keys(res.productionSources || {}).length > 0)) {
+                // Show rate if it's defined to have one and either production is positive or sources exist
+                // (sources might exist but yield 0 temporarily due to other game conditions)
+                if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
                     rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
                 }
 
                 displayElement.innerHTML = `
-                    <span class="font-semibold text-primary">${res.name}:</span>
-                    <span id="resource-${res.id}-amount" class="text-textPrimary">${amountFormatted}</span>
+                    <span class="font-semibold text-secondary">${res.name}:</span>
+                    <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>
                     ${rateHTML}
                 `;
+                loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Displayed resource: ${res.id}`);
             } else {
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
-                if (displayElement) displayElement.remove();
+                if (displayElement) {
+                    displayElement.remove();
+                    loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Removed resource from display (not unlocked/visible): ${res.id}`);
+                } else {
+                     loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Resource not displayed (not unlocked/visible or no element): ${res.id}`);
+                }
             }
         });
 
         if (!hasVisibleResources) {
-            UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full">No resources to display yet.</p>';
+            UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full text-center py-2">No resources to display yet.</p>';
+             loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", "No visible resources to display.");
         }
     },
 
@@ -266,7 +313,6 @@ const coreUIManager = {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end space-x-3';
             buttons.forEach(btnInfo => {
-                // Ensure btnInfo.className is treated as an array even if it's a single string
                 const classList = Array.isArray(btnInfo.className) ? btnInfo.className : (btnInfo.className ? [btnInfo.className] : ['bg-primary']);
                 const button = this.createButton(btnInfo.label, btnInfo.callback, classList);
                 buttonsDiv.appendChild(button);
@@ -383,18 +429,17 @@ const coreUIManager = {
         if (!UIElements.gameContainer) return;
         UIElements.gameContainer.dataset.theme = themeName;
         UIElements.gameContainer.dataset.mode = mode; 
-        loggingSystem.info("CoreUIManager", `Theme applied: ${themeName}, Mode: ${mode}`);
+        loggingSystem.info("CoreUIManager_ApplyTheme", `Theme applied: ${themeName}, Mode: ${mode}`);
     },
 
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
         button.textContent = text;
         button.className = 'game-button'; 
-        // Handle if additionalClasses is a string with spaces or an array
         if (Array.isArray(additionalClasses)) {
             additionalClasses.forEach(cls => {
                 if (typeof cls === 'string') {
-                    cls.split(' ').forEach(singleClass => { // Split space-separated classes
+                    cls.split(' ').forEach(singleClass => { 
                         if (singleClass) button.classList.add(singleClass);
                     });
                 }
@@ -413,15 +458,15 @@ const coreUIManager = {
     },
     
     fullUIRefresh() {
-        loggingSystem.debug("CoreUIManager", "Performing full UI refresh...");
+        loggingSystem.debug("CoreUIManager_FullRefresh", "Performing full UI refresh...");
         this.updateResourceDisplay();
         this.renderMenu(); 
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
-            this.setActiveTab(activeTabId, true);
+            this.setActiveTab(activeTabId, true); // Force render current tab
         } else if (Object.keys(registeredMenuTabs).length > 0) {
             const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
             if (firstUnlocked) {
-                this.setActiveTab(firstUnlocked.id, true);
+                this.setActiveTab(firstUnlocked.id, true); // Force render first available tab
             } else {
                  this.clearMainContent();
                  if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';
