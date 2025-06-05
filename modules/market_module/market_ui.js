@@ -1,10 +1,10 @@
-// modules/market_module/market_ui.js (v1.3 - Button Text Fix)
+// modules/market_module/market_ui.js (v1.4 - Logging & Button Text Refinement)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v1.4: Added detailed logging for button states and refined text replacement.
  * v1.3: Improved button text for unlocks.
- * v1.2: Corrects the ID passed to purchaseUnlock logic.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -17,7 +17,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.3).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.4).");
     },
 
     renderMainContent(parentElement) {
@@ -57,7 +57,7 @@ export const ui = {
 
         for (const itemId in staticModuleData.marketItems) {
             const itemDef = staticModuleData.marketItems[itemId];
-            let buttonText = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`; // Cleaner button text
+            let buttonText = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`; 
 
             const itemCard = this._createMarketItemCard(
                 itemDef.id, 
@@ -89,8 +89,8 @@ export const ui = {
 
         for (const unlockKey in staticModuleData.marketUnlocks) { 
             const unlockDef = staticModuleData.marketUnlocks[unlockKey];
-            // Cleaner button text for unlocks
-            let buttonText = `Unlock ${unlockDef.name.replace('Unlock ', '').replace(' Menu', '')}`;
+            let buttonText = `Unlock ${unlockDef.name.replace(/^Unlock /i, '').replace(/ Menu$/i, '')}`;
+            coreSystemsRef.loggingSystem.debug("MarketUI_CreateUnlock", `For ${unlockKey}, original name: '${unlockDef.name}', generated button text: '${buttonText}'`);
             
             const unlockCard = this._createMarketItemCard(
                 unlockDef.id, 
@@ -132,10 +132,12 @@ export const ui = {
         card.appendChild(contentDiv);
 
         const button = coreUIManager.createButton(
-            initialButtonText,
+            initialButtonText, // This is the text set during creation
             () => {
                 purchaseCallback(); 
-                this.updateDynamicElements(); 
+                // updateDynamicElements is called by the game loop's uiUpdate, 
+                // or could be called here if immediate feedback is essential beyond notification.
+                // For now, rely on game loop or explicit call in purchase logic if needed.
             },
             ['w-full', 'mt-auto'], 
             `market-${domIdBase}-button` 
@@ -146,8 +148,9 @@ export const ui = {
 
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
-        const { decimalUtility, coreResourceManager } = coreSystemsRef;
+        const { decimalUtility, coreResourceManager, loggingSystem } = coreSystemsRef;
 
+        // Update Scalable Items
         for (const itemId in staticModuleData.marketItems) { 
             const itemDef = staticModuleData.marketItems[itemId];
             const card = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
@@ -163,8 +166,7 @@ export const ui = {
             if (button) {
                 const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
                 button.disabled = !canAfford;
-                // Update button text if it was generic initially or if needed
-                button.textContent = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`;
+                button.textContent = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`; // Ensure text is set
                  if (canAfford) {
                     button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'opacity-50');
                     button.classList.add('bg-primary', 'hover:bg-primary-lighter');
@@ -175,39 +177,49 @@ export const ui = {
             }
         }
 
+        // Update Feature Unlocks
         for (const unlockKey in staticModuleData.marketUnlocks) { 
             const unlockDef = staticModuleData.marketUnlocks[unlockKey];
             const card = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
-            if (!card) continue;
+            if (!card) {
+                loggingSystem.warn("MarketUI_UpdateDynamic", `Card not found for unlockKey: ${unlockKey} (DOM ID: market-unlock-${unlockDef.id})`);
+                continue;
+            }
 
             const costDisplay = card.querySelector(`#market-${unlockDef.id}-cost`);
             const button = card.querySelector(`#market-${unlockDef.id}-button`);
+            
+            if (!button || !costDisplay) {
+                loggingSystem.warn("MarketUI_UpdateDynamic", `Button or costDisplay missing for ${unlockKey}`);
+                continue;
+            }
 
-            if (moduleLogicRef.isUnlockPurchased(unlockKey)) { 
-                if (costDisplay) costDisplay.textContent = "Already Unlocked via Market!";
-                if (button) {
-                    button.textContent = "Unlocked";
-                    button.disabled = true;
-                    button.classList.remove('bg-primary', 'hover:bg-primary-lighter', 'bg-gray-500', 'opacity-50');
-                    button.classList.add('bg-green-600', 'cursor-default', 'text-white');
-                }
+            const isPurchased = moduleLogicRef.isUnlockPurchased(unlockKey);
+            loggingSystem.debug("MarketUI_UpdateDynamic", `Unlock: ${unlockKey}, Name: '${unlockDef.name}', Purchased: ${isPurchased}`);
+
+            if (isPurchased) { 
+                costDisplay.textContent = "Already Unlocked via Market!";
+                button.textContent = "Unlocked";
+                button.disabled = true;
+                button.classList.remove('bg-primary', 'hover:bg-primary-lighter', 'bg-gray-500', 'opacity-50');
+                button.classList.add('bg-green-600', 'cursor-default', 'text-white');
             } else {
                 const costAmount = decimalUtility.new(unlockDef.costAmount);
-                 if (costDisplay) { 
-                    costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${unlockDef.costResource}`;
-                }
-                if (button) {
-                    const canAfford = moduleLogicRef.canAffordUnlock(unlockKey); 
-                    button.disabled = !canAfford;
-                    // Use the cleaner button text
-                    button.textContent = `Unlock ${unlockDef.name.replace('Unlock ', '').replace(' Menu', '')}`;
-                     if (canAfford) {
-                        button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'opacity-50', 'bg-green-600');
-                        button.classList.add('bg-primary', 'hover:bg-primary-lighter');
-                    } else {
-                        button.classList.remove('bg-primary', 'hover:bg-primary-lighter', 'bg-green-600');
-                        button.classList.add('bg-gray-500', 'cursor-not-allowed', 'opacity-50');
-                    }
+                costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${unlockDef.costResource}`;
+                
+                const canAfford = moduleLogicRef.canAffordUnlock(unlockKey); 
+                button.disabled = !canAfford;
+                // More robust replacement for button text
+                let newButtonText = `Unlock ${unlockDef.name.replace(/^unlock\s+/i, '').replace(/\s+menu$/i, '')}`;
+                button.textContent = newButtonText;
+                loggingSystem.debug("MarketUI_UpdateDynamic", `Button text for ${unlockKey} (not purchased): '${newButtonText}' (from name '${unlockDef.name}')`);
+
+                 if (canAfford) {
+                    button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'opacity-50', 'bg-green-600');
+                    button.classList.add('bg-primary', 'hover:bg-primary-lighter');
+                } else {
+                    button.classList.remove('bg-primary', 'hover:bg-primary-lighter', 'bg-green-600');
+                    button.classList.add('bg-gray-500', 'cursor-not-allowed', 'opacity-50');
                 }
             }
         }
@@ -216,7 +228,8 @@ export const ui = {
     onShow() {
         coreSystemsRef.loggingSystem.debug("MarketUI", "Market tab shown.");
         if (parentElementCache) { 
-            this.updateDynamicElements();
+            this.renderMainContent(parentElementCache); // Re-render to ensure fresh state for buttons
+            // this.updateDynamicElements(); // Alternatively, just update, but re-render is safer for complex states
         }
     },
 
