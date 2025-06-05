@@ -1,52 +1,59 @@
-// modules/studies_module/studies_manifest.js (v3)
+// modules/studies_module/studies_manifest.js (v3.1 - Persistent Unlock)
 
 /**
  * @file studies_manifest.js
  * @description Manifest file for the Studies Module.
- * v3: Ensures correct initial definition of Knowledge resource.
+ * v3.1: Uses studies_logic_v3.3 for persistent tab unlock.
  */
 
 import { staticModuleData } from './studies_data.js'; // v3
 import { getInitialState, moduleState } from './studies_state.js';
-import { moduleLogic } from './studies_logic.js'; // v3
+import { moduleLogic } from './studies_logic.js'; // v3.3
 import { ui } from './studies_ui.js';
 
 const studiesManifest = {
     id: "studies",
     name: "Studies",
-    version: "0.2.1", // Minor version bump for fixes
+    version: "0.2.3", // Version bump for unlock logic change
     description: "Automate your Study Point generation and unlock new knowledge. Applies skill effects.",
     dependencies: ["core_gameplay"],
 
     async initialize(coreSystems) {
         const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
 
+        // --- Diagnostic Log Added ---
+        if (coreSystems && coreSystems.loggingSystem) {
+            coreSystems.loggingSystem.debug("StudiesManifest_Init", "coreSystems received in manifest:", 
+                Object.keys(coreSystems), 
+                "Has decimalUtility:", !!(coreSystems.decimalUtility)
+            );
+            if (!coreSystems.decimalUtility) {
+                coreSystems.loggingSystem.error("StudiesManifest_Init_CRITICAL", "decimalUtility is MISSING in coreSystems received by manifest!");
+            }
+        } else {
+            console.error("StudiesManifest_Init_CRITICAL: coreSystems or loggingSystem missing in manifest!", coreSystems);
+        }
+        // --- End Diagnostic Log ---
+
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
-        // 1. Register Static Data
         staticDataAggregator.registerStaticData(this.id, {
             resources: staticModuleData.resources,
             producers: staticModuleData.producers,
             ui: staticModuleData.ui
         });
 
-        // Define the 'knowledge' resource with coreResourceManager
-        // Ensure it uses the initial isUnlocked and showInUI values from data.
         const knowledgeDef = staticModuleData.resources.knowledge;
         if (knowledgeDef) {
-            // Define if not already defined OR if being re-defined ensure it respects initial locked/hidden state
-            // coreResourceManager's defineResource will log if it's a redefinition.
             coreResourceManager.defineResource(
                 knowledgeDef.id,
                 knowledgeDef.name,
                 decimalUtility.new(knowledgeDef.initialAmount),
-                knowledgeDef.showInUI,   // Will be false initially from studies_data_v3
-                knowledgeDef.isUnlocked  // Will be false initially from studies_data_v3
+                knowledgeDef.showInUI,
+                knowledgeDef.isUnlocked
             );
-            loggingSystem.info(this.name, `Resource '${knowledgeDef.name}' (${knowledgeDef.id}) defined with initial showInUI: ${knowledgeDef.showInUI}, isUnlocked: ${knowledgeDef.isUnlocked}.`);
         }
 
-        // 2. Initialize Module State
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
             currentModuleState = getInitialState();
@@ -58,25 +65,27 @@ const studiesManifest = {
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(this.id, { ...moduleState });
 
-        // 3. Initialize Logic
         moduleLogic.initialize(coreSystems);
-
-        // 4. Initialize UI
         ui.initialize(coreSystems, moduleLogic);
 
-        // 5. Register Menu Tab
         coreUIManager.registerMenuTab(
             this.id,
             staticModuleData.ui.studiesTabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
-            () => moduleLogic.isStudiesTabUnlocked(),
+            () => moduleLogic.isStudiesTabUnlocked(), // This now checks the permanent flag
             () => ui.onShow(),
             () => ui.onHide()
         );
 
-        // 6. Register update callbacks
         gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             moduleLogic.updateGlobalFlags();
+            // Check studies tab unlock condition here as well, as SP can increase passively
+            // This ensures the tab appears as soon as condition is met, not just on next menu render
+            if (!coreGameStateManager.getGlobalFlag('studiesTabPermanentlyUnlocked', false)) {
+                 if(moduleLogic.isStudiesTabUnlocked()){ // This will set the flag and render menu
+                     // loggingSystem.debug("StudiesManifest", "Studies tab unlocked via generalLogic check.");
+                 }
+            }
         });
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
              if (coreUIManager.isActiveTab(this.id) || Object.values(staticModuleData.producers).some(p => decimalUtility.gt(moduleState.ownedProducers[p.id] || "0", 0))) {
@@ -85,9 +94,7 @@ const studiesManifest = {
             }
         });
         
-        // Initial update calls
-        moduleLogic.onGameLoad(); // This will call updateAllProducerProductions and updateGlobalFlags
-                                  // and also handle Knowledge visibility based on loaded state.
+        moduleLogic.onGameLoad();
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
@@ -96,7 +103,7 @@ const studiesManifest = {
             logic: moduleLogic,
             ui: ui,
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name} (v3).`);
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name} (manifest v${this.version}).`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
                 if (!loadedState) loadedState = getInitialState();
                 else {
@@ -114,11 +121,11 @@ const studiesManifest = {
                 }
             },
             onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name} (v3).`);
+                loggingSystem.info(this.name, `onResetState called for ${this.name} (manifest v${this.version}).`);
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.onResetState();
+                moduleLogic.onResetState(); // This will clear 'studiesTabPermanentlyUnlocked'
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 } else {
@@ -127,7 +134,8 @@ const studiesManifest = {
             },
             getProducerData: (producerId) => { 
                 const producerDef = staticModuleData.producers[producerId];
-                if(!producerDef) return { owned: decimalUtility.new(0), production: decimalUtility.new(0)};
+                if(!producerDef || !coreSystems.decimalUtility) return { owned: new Decimal(0), production: new Decimal(0)}; // Guard against missing decimalUtility
+                const { decimalUtility } = coreSystems;
                 return {
                     owned: moduleLogic.getOwnedProducerCount(producerId),
                     production: coreResourceManager.getProductionFromSource(producerDef.resourceId, `studies_module_${producerId}`)

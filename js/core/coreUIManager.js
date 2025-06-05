@@ -1,19 +1,17 @@
-// js/core/coreUIManager.js (v4)
+// js/core/coreUIManager.js (v4.1 - Menu Render Trigger)
 
 /**
  * @file coreUIManager.js
- * @description Manages the main UI structure (navigation menu, resource bar, main content area)
- * and provides hooks for modules to inject their UI. Handles dynamic updates to these areas.
- * Also responsible for modals, tooltips, and notifications.
+ * @description Manages the main UI structure.
+ * v4.1: Added a method to explicitly trigger menu re-render if a global flag changes.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
-import { coreGameStateManager } from './coreGameStateManager.js';
-import { staticDataAggregator } from './staticDataAggregator.js'; // Directly import staticDataAggregator
+import { coreGameStateManager } from './coreGameStateManager.js'; 
+import { staticDataAggregator } from './staticDataAggregator.js'; 
 
-// --- DOM Element References ---
 const UIElements = {
     resourceBar: null,
     resourcesDisplay: null,
@@ -25,17 +23,11 @@ const UIElements = {
     gameContainer: null,
 };
 
-// --- UI State ---
-let registeredMenuTabs = {
-    // moduleId: { id: 'moduleId', label: 'Module Label', renderCallback: function(parentElement), onShowCallback: function(), onHideCallback: function(), isUnlocked: () => boolean }
-};
+let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
 
 const coreUIManager = {
-    /**
-     * Initializes the UI Manager by caching DOM elements.
-     */
     initialize() {
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
@@ -51,25 +43,15 @@ const coreUIManager = {
             return;
         }
 
-        this.updateResourceDisplay(); // Call this after DOM elements are cached
-        this.renderMenu(); // Call this after DOM elements are cached
+        this.updateResourceDisplay();
+        this.renderMenu();
 
         document.addEventListener('mousemove', this._handleTooltipPosition.bind(this));
         UIElements.menuList.addEventListener('click', this._handleMenuClick.bind(this));
 
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.1).");
     },
 
-    /**
-     * Registers a main menu tab for a module.
-     * @param {string} moduleId - Unique ID for the module/tab.
-     * @param {string} label - The text label for the tab.
-     * @param {function(HTMLElement): void} renderCallback - Function to render content.
-     * @param {function(): boolean} [isUnlockedCheck=() => true] - Function to check if tab is unlocked.
-     * @param {function(): void} [onShowCallback] - Callback when tab is shown.
-     * @param {function(): void} [onHideCallback] - Callback when tab is hidden.
-     * @param {boolean} [isDefaultTab=false] - If true, becomes default active tab.
-     */
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
         if (typeof moduleId !== 'string' || moduleId.trim() === '') {
             loggingSystem.warn("CoreUIManager", "registerMenuTab: moduleId must be a non-empty string.");
@@ -104,9 +86,6 @@ const coreUIManager = {
         }
     },
 
-    /**
-     * Renders the main navigation menu.
-     */
     renderMenu() {
         if (!UIElements.menuList) return;
         UIElements.menuList.innerHTML = '';
@@ -178,7 +157,7 @@ const coreUIManager = {
 
         activeTabId = tabId;
         loggingSystem.debug("CoreUIManager", `Active tab set to: ${tabId}`);
-        this.renderMenu(); // Re-render menu to update active class
+        this.renderMenu(); 
         this.clearMainContent();
 
         const tab = registeredMenuTabs[tabId];
@@ -209,18 +188,14 @@ const coreUIManager = {
 
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) {
-            // It might be too early in initialization, e.g. called by saveLoadSystem before UIManager.initialize() fully completes
-            // Or, the element is genuinely missing.
-            // loggingSystem.debug("CoreUIManager", "updateResourceDisplay called but resourcesDisplay element not ready or found.");
             return;
         }
 
         const allResources = coreResourceManager.getAllResources();
         let hasVisibleResources = false;
-        UIElements.resourcesDisplay.innerHTML = ''; // Clear previous entries
+        UIElements.resourcesDisplay.innerHTML = '';
 
         Object.values(allResources).forEach(res => {
-            // Use staticDataAggregator directly as it's now imported.
             const staticResData = staticDataAggregator.getData(`market.resources.${res.id}`) || 
                                   staticDataAggregator.getData(`studies.resources.${res.id}`) ||
                                   staticDataAggregator.getData(`core_resource_definitions.${res.id}`);
@@ -233,7 +208,7 @@ const coreUIManager = {
                 if (!displayElement) {
                     displayElement = document.createElement('div');
                     displayElement.id = `resource-${res.id}-display`;
-                    displayElement.className = 'p-2 bg-gray-700 rounded-md shadow'; // Tailwind classes
+                    displayElement.className = 'p-2 bg-gray-700 rounded-md shadow'; 
                     UIElements.resourcesDisplay.appendChild(displayElement);
                 }
 
@@ -263,14 +238,14 @@ const coreUIManager = {
 
     showModal(title, content, buttons) {
         if (!UIElements.modalContainer) return;
-        this.closeModal(); // Close any existing modal first
+        this.closeModal(); 
 
         const modalElement = document.createElement('div');
         modalElement.id = 'active-modal';
-        modalElement.className = 'modal active'; // Tailwind for modal container
+        modalElement.className = 'modal active'; 
 
         const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'modal-content'; // Tailwind for modal content box
+        modalContentDiv.className = 'modal-content'; 
 
         modalContentDiv.innerHTML = `
             <div class="flex justify-between items-center mb-4">
@@ -301,7 +276,7 @@ const coreUIManager = {
         UIElements.modalContainer.appendChild(modalElement);
 
         document.getElementById('modal-close-button').addEventListener('click', () => this.closeModal());
-        modalElement.addEventListener('click', (event) => { // Click outside to close
+        modalElement.addEventListener('click', (event) => { 
             if (event.target === modalElement) this.closeModal();
         });
     },
@@ -321,7 +296,7 @@ const coreUIManager = {
             UIElements.tooltipContainer.appendChild(content);
         }
         UIElements.tooltipContainer.style.display = 'block';
-        this._positionTooltip(targetElement); // Position it immediately
+        this._positionTooltip(targetElement); 
     },
 
     hideTooltip() {
@@ -360,10 +335,8 @@ const coreUIManager = {
     },
     
     _handleTooltipPosition(event) {
-        // Only reposition if there's an active target and tooltip is visible
-        if (currentTooltipTarget && UIElements.tooltipContainer.style.display === 'block') {
-            // this._positionTooltip(currentTooltipTarget); // This can be jittery; usually better to position on show
-        }
+        // if (currentTooltipTarget && UIElements.tooltipContainer.style.display === 'block') {
+        // }
     },
 
     showNotification(message, type = 'info', duration = 3000) {
@@ -371,7 +344,7 @@ const coreUIManager = {
         if (!notificationArea) {
             notificationArea = document.createElement('div');
             notificationArea.id = 'notification-area';
-            notificationArea.className = 'fixed bottom-5 right-5 z-[1000] space-y-3 max-w-xs w-full';
+            notificationArea.className = 'fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full';
             document.body.appendChild(notificationArea);
         }
 
@@ -390,34 +363,32 @@ const coreUIManager = {
         
         notificationArea.insertBefore(notificationElement, notificationArea.firstChild);
 
-        requestAnimationFrame(() => { // Ensure transition applies after element is in DOM
+        requestAnimationFrame(() => { 
             notificationElement.classList.remove('opacity-0', 'translate-x-full');
             notificationElement.classList.add('opacity-100', 'translate-x-0');
         });
 
-        if (duration > 0) { // Allow duration 0 for persistent notifications
+        if (duration > 0) { 
             setTimeout(() => {
                 notificationElement.classList.remove('opacity-100', 'translate-x-0');
                 notificationElement.classList.add('opacity-0', 'translate-x-full');
-                setTimeout(() => notificationElement.remove(), 500); // Remove after transition
+                setTimeout(() => notificationElement.remove(), 500); 
             }, duration);
         }
     },
 
     applyTheme(themeName, mode) {
         if (!UIElements.gameContainer) return;
-        // Assuming themes are managed by data-attributes on body or gameContainer as per index.html
         UIElements.gameContainer.dataset.theme = themeName;
-        UIElements.gameContainer.dataset.mode = mode; // e.g., day/night
+        UIElements.gameContainer.dataset.mode = mode; 
         loggingSystem.info("CoreUIManager", `Theme applied: ${themeName}, Mode: ${mode}`);
-        // Further theme application logic might involve changing CSS variables or classes.
     },
 
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
         button.textContent = text;
-        button.className = 'game-button'; // Base styling class
-        additionalClasses.forEach(cls => button.classList.add(cls)); // Add Tailwind or custom classes
+        button.className = 'game-button'; 
+        additionalClasses.forEach(cls => button.classList.add(cls)); 
         if (id) button.id = id;
         if (typeof onClickCallback === 'function') {
             button.addEventListener('click', onClickCallback);
