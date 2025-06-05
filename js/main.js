@@ -1,10 +1,10 @@
-// js/main.js (v9.1 - Pass globalSettingsManager to ModuleLoader v2.3)
+// js/main.js (v9.2 - Pass saveLoadSystem & Define All Core Resources)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
- * v9.1: Passes globalSettingsManager to moduleLoader.initialize (compatible with moduleLoader v2.3).
- * v9: Loads SettingsUI module.
+ * v9.2: Passes saveLoadSystem to moduleLoader.initialize, defines all core_resource_definitions on new game.
+ * v9.1: Passes globalSettingsManager to moduleLoader.initialize.
  */
 
 // --- Core System Imports ---
@@ -25,88 +25,107 @@ import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.1 for moduleLoader v2.3).");
+    loggingSystem.info("Main", "Game initialization sequence started (v9.2).");
 
-    // Initialize Core Systems that don't depend on others first
-    // globalSettingsManager needs to be initialized before coreUIManager if UIManager applies theme on init.
-    globalSettingsManager.initialize(); // Initializes and loads settings
+    // Initialize Core Systems
+    globalSettingsManager.initialize();
     coreUpgradeManager.initialize();
-    coreUIManager.initialize(); // Sets up UI elements
+    coreUIManager.initialize();
 
-    // Apply initial theme settings after both managers are initialized
     const initialTheme = globalSettingsManager.getSetting('theme');
     if (initialTheme && initialTheme.name && initialTheme.mode) {
         coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
     }
 
-    // Listen for theme changes from globalSettingsManager
     document.addEventListener('themeChanged', (event) => {
         const { name, mode } = event.detail;
         coreUIManager.applyTheme(name, mode);
-        loggingSystem.debug("Main", `Theme changed event received: ${name}, ${mode}. Applied by CoreUIManager.`);
     });
-
     document.addEventListener('languageChanged', (event) => {
-        // Placeholder for actual language application logic
         coreUIManager.showNotification(`Language setting changed to: ${event.detail}. (Localization TBD)`, 'info');
-        loggingSystem.debug("Main", `Language changed event received: ${event.detail}.`);
     });
 
-    // Initialize Module Loader
-    // Order of arguments MUST match moduleLoader.js (v2.3) initialize method signature
+    // Initialize Module Loader - Ensure all core systems are passed
+    // Order of arguments MUST match moduleLoader.js (v2.3.2) initialize method signature
     moduleLoader.initialize(
         staticDataAggregator,
         coreGameStateManager,
         coreResourceManager,
         coreUIManager,
         decimalUtility,
-        loggingSystem, // Pass the imported loggingSystem instance itself
+        loggingSystem,
         gameLoop,
         coreUpgradeManager,
-        globalSettingsManager // <<< Added globalSettingsManager here
+        globalSettingsManager,
+        saveLoadSystem // <<< Added saveLoadSystem here
     );
 
+    // Define ALL core resources that should exist from the start.
+    // Modules can define their own later.
+    const coreResourceDefinitions = {
+        studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
+        knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: true },
+        images: { id: 'images', name: "Images", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false }, // Typically no direct production rate
+        studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false } // Typically no direct production rate
+        // Add other truly core resources here if any
+    };
+    staticDataAggregator.registerStaticData('core_resource_definitions', coreResourceDefinitions);
+
+
     // Load Game or Start New
-    const gameLoaded = saveLoadSystem.loadGame(); // This loads state into managers
+    const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        // Define core resources if it's a new game
-        staticDataAggregator.registerStaticData('core_resource_definitions', {
-            studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
-            knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: true },
-            images: { id: 'images', name: "Images", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false },
-            studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false },
-        });
+        coreGameStateManager.setGameVersion("0.5.3"); // Version for Stream 3 (SettingsUI fix + saveLoadSystem + all core resources defined)
 
-        const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
-        if (spDef) {
-             coreResourceManager.defineResource(spDef.id, spDef.name, decimalUtility.new(spDef.initialAmount), spDef.showInUI, spDef.isUnlocked, spDef.hasProductionRate);
+        // Define all core resources for a new game
+        for (const resId in coreResourceDefinitions) {
+            const resDef = coreResourceDefinitions[resId];
+            if (resDef) {
+                coreResourceManager.defineResource(
+                    resDef.id,
+                    resDef.name,
+                    decimalUtility.new(resDef.initialAmount),
+                    resDef.showInUI,
+                    resDef.isUnlocked,
+                    resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true // Default to true if not specified
+                );
+                loggingSystem.debug("Main_NewGame", `Defined core resource: ${resDef.id}`);
+            }
         }
-        coreGameStateManager.setGameVersion("0.5.2"); // Version for Stream 3 (SettingsUI fix with moduleLoader v2.3)
     } else {
         loggingSystem.info("Main", "Save game loaded.");
+        // Ensure resources defined in core_resource_definitions are known to coreResourceManager even on load
+        // This handles cases where a save game might be from an older version before all core resources were defined in main.js
+        for (const resId in coreResourceDefinitions) {
+            if (!coreResourceManager.getResource(resId)) {
+                const resDef = coreResourceDefinitions[resId];
+                 coreResourceManager.defineResource(
+                    resDef.id,
+                    resDef.name,
+                    decimalUtility.new(resDef.initialAmount), // Will be overwritten by loaded value if present
+                    resDef.showInUI,
+                    false, // Start as locked, loaded state will unlock if applicable
+                    resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
+                );
+                loggingSystem.debug("Main_GameLoad", `Ensured core resource definition for: ${resDef.id}`);
+            }
+        }
     }
     
     coreUIManager.updateResourceDisplay();
 
     // Load Game Modules
     try {
-        loggingSystem.info("Main", "Loading CoreGameplay module...");
         await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
-        loggingSystem.info("Main", "Loading Studies module...");
         await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
-        loggingSystem.info("Main", "Loading Market module...");
         await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
-        loggingSystem.info("Main", "Loading Skills module...");
         await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
-        loggingSystem.info("Main", "Loading Achievements module...");
         await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
-        loggingSystem.info("Main", "Loading SettingsUI module...");
         await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
-        loggingSystem.info("Main", "All specified modules have been processed by moduleLoader.");
     } catch (error) {
         loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
-        coreUIManager.showNotification("Critical Error: A module failed to load. Game may not function as expected.", "error", 0);
+        coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
     }
     
     coreUIManager.fullUIRefresh();
@@ -124,28 +143,28 @@ async function initializeGame() {
 
     if (loadButton) {
         loadButton.addEventListener('click', () => {
-            coreUIManager.showModal(
-                "Load Game?",
-                "Loading will overwrite your current unsaved progress. Are you sure?",
+            coreUIManager.showModal( "Load Game?", "Loading will overwrite your current unsaved progress. Are you sure?",
                 [
-                    {
-                        label: "Load Game", className: "bg-blue-600 hover:bg-blue-700",
-                        callback: () => {
-                            const wasRunning = gameLoop.isRunning();
-                            if (wasRunning) gameLoop.stop();
-                            if (saveLoadSystem.loadGame()) {
-                                moduleLoader.notifyAllModulesOfLoad();
-                                coreUIManager.fullUIRefresh();
-                                coreUIManager.showNotification("Game Loaded!", "success", 2000);
-                            } else {
-                                coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
+                    { label: "Load Game", className: "bg-blue-600 hover:bg-blue-700", callback: () => {
+                        const wasRunning = gameLoop.isRunning();
+                        if (wasRunning) gameLoop.stop();
+                        if (saveLoadSystem.loadGame()) {
+                            // Re-ensure core resource definitions after load, in case save is old
+                            for (const resId in coreResourceDefinitions) {
+                                if (!coreResourceManager.getResource(resId)) {
+                                    const resDef = coreResourceDefinitions[resId];
+                                    coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
+                                }
                             }
-                            if (wasRunning || !gameLoop.isRunning()) {
-                                 setTimeout(() => gameLoop.start(), 100);
-                            }
-                            coreUIManager.closeModal();
+                            moduleLoader.notifyAllModulesOfLoad();
+                            coreUIManager.fullUIRefresh();
+                            coreUIManager.showNotification("Game Loaded!", "success", 2000);
+                        } else {
+                            coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
                         }
-                    },
+                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
+                        coreUIManager.closeModal();
+                    }},
                     { label: "Cancel", callback: () => coreUIManager.closeModal() }
                 ]
             );
@@ -154,31 +173,25 @@ async function initializeGame() {
 
     if (resetButton) {
         resetButton.addEventListener('click', () => {
-            coreUIManager.showModal(
-                "Reset Game?",
-                "All progress will be lost permanently. This cannot be undone. Are you sure you want to reset the game to its initial state?",
+            coreUIManager.showModal("Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
                 [
-                    {
-                        label: "Reset Game", className: "bg-red-600 hover:bg-red-700",
-                        callback: () => {
-                            const wasRunning = gameLoop.isRunning();
-                            if (wasRunning) gameLoop.stop();
-                            saveLoadSystem.resetGameData();
-                            const spDef = staticDataAggregator.getData('core_resource_definitions.studyPoints');
-                            if (spDef) {
-                                coreResourceManager.defineResource(spDef.id, spDef.name, decimalUtility.new(spDef.initialAmount), spDef.showInUI, spDef.isUnlocked, spDef.hasProductionRate);
-                            }
-                            coreGameStateManager.setGameVersion("0.5.2");
-                            moduleLoader.resetAllModules();
-                            moduleLoader.notifyAllModulesOfLoad();
-                            coreUIManager.fullUIRefresh();
-                            coreUIManager.showNotification("Game Reset to Defaults.", "warning", 3000);
-                            if (wasRunning || !gameLoop.isRunning()) {
-                                 setTimeout(() => gameLoop.start(), 100);
-                            }
-                            coreUIManager.closeModal();
+                    { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
+                        const wasRunning = gameLoop.isRunning();
+                        if (wasRunning) gameLoop.stop();
+                        saveLoadSystem.resetGameData(); // This should clear state from managers
+                        coreGameStateManager.setGameVersion("0.5.3");
+                        // Re-define all core resources for the fresh state
+                        for (const resId in coreResourceDefinitions) {
+                            const resDef = coreResourceDefinitions[resId];
+                            coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
                         }
-                    },
+                        moduleLoader.resetAllModules();
+                        moduleLoader.notifyAllModulesOfLoad(); // Modules should pick up fresh state
+                        coreUIManager.fullUIRefresh();
+                        coreUIManager.showNotification("Game Reset to Defaults.", "warning", 3000);
+                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
+                        coreUIManager.closeModal();
+                    }},
                     { label: "Cancel", callback: () => coreUIManager.closeModal() }
                 ]
             );
@@ -188,10 +201,20 @@ async function initializeGame() {
     if (devToolsButton) {
         devToolsButton.addEventListener('click', () => {
             coreResourceManager.addAmount('studyPoints', decimalUtility.new(100000));
-            if(coreResourceManager.getResource('knowledge')){
-                 coreResourceManager.addAmount('knowledge', decimalUtility.new(1000));
-                 coreResourceManager.unlockResource('knowledge');
+            // Ensure 'knowledge' is defined before trying to add to it or unlock it
+            if (!coreResourceManager.getResource('knowledge')) {
+                 const resDef = staticDataAggregator.getData('core_resource_definitions.knowledge');
+                 if(resDef) {
+                    coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
+                    loggingSystem.info("Main_DevTools", "Defined 'knowledge' resource before dev interaction.");
+                 } else {
+                    loggingSystem.error("Main_DevTools", "'knowledge' definition not found in staticDataAggregator.");
+                    coreUIManager.showNotification("Dev Tools Error: Knowledge resource definition missing.", "error");
+                    return;
+                 }
             }
+            coreResourceManager.addAmount('knowledge', decimalUtility.new(1000));
+            coreResourceManager.unlockResource('knowledge');
             coreUIManager.showNotification("Dev Tools: Added 100k SP & 1k Knowledge!", "info", 3000);
             coreUIManager.updateResourceDisplay();
         });
@@ -208,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loggingSystem.error("Main_DOMContentLoaded", "Unhandled error during game initialization:", error, error.stack);
         try {
             if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
-                 coreUIManager.showNotification("A critical error occurred during game startup. Please check console & try refreshing.", "error", 0);
+                 coreUIManager.showNotification("A critical error occurred during game startup. Check console & try refreshing.", "error", 0);
             } else {
                 document.body.innerHTML = '<div style="color: white; background-color: #333; padding: 20px; font-family: sans-serif; text-align: center; border: 2px solid red;"><h1>Critical Error</h1><p>Game failed to start. Please check the browser console (F12) for details and try refreshing the page.</p></div>';
             }
