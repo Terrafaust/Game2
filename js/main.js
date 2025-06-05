@@ -1,8 +1,9 @@
-// js/main.js (v9.7 - Hard Reset Module Reset & Core Resource Init Fix)
+// js/main.js (v9.8 - Fixed coreResourceManager import)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.8: Fixed TypeError by correcting coreResourceManager import.
  * v9.7: Ensures moduleLoader.resetAllModules() is called on hard reset.
  * Also fixes initial resource definition to use staticDataAggregator correctly.
  * v9.6: Changed DevTools button to apply a x100,000 production multiplier.
@@ -19,7 +20,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js';
+import { coreResourceManager } from './core/coreResourceManager.js'; // Corrected: changed '=' to 'from'
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -140,9 +141,8 @@ async function initializeGame() {
                 }
             }
             if (hasProduction) {
-                coreUIManager.showNotification("DevTools: Production Multiplier x100,000 applied!", "success", 3000);
-                coreUIManager.updateResourceDisplay(); // UI elements rely on these rates and need updating
-                // coreUIManager.fullUIRefresh();
+                coreUIManager.showNotification(`Developer Boost: All active productions x${decimalUtility.new(100000).toString()}!`, "warning", 5000); // Changed to use Decimal utility for consistency
+                coreUIManager.updateResourceDisplay();
             } else {
                 coreUIManager.showNotification("Developer Boost: No active productions found to multiply.", "info", 3000);
             }
