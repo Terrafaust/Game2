@@ -48,16 +48,12 @@ export const moduleLogic = {
         );
 
         // Apply cost reduction multipliers from CoreUpgradeManager
-        // targetSystem for studies producers could be 'studies_producers_cost' or similar
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
         currentCost = decimalUtility.multiply(currentCost, costReductionMultiplier);
         
-        // Ensure cost doesn't go below a minimum (e.g., 1 or a small fraction of base cost)
-        // For simplicity, not adding a floor now, but could be important for balance.
-        if (decimalUtility.lt(currentCost, 1) && decimalUtility.neq(currentCost, 0)) { // Avoid cost 0 unless intended
+        if (decimalUtility.lt(currentCost, 1) && decimalUtility.neq(currentCost, 0)) {
              // currentCost = decimalUtility.new(1); // Example floor
         }
-
 
         return currentCost;
     },
@@ -95,7 +91,6 @@ export const moduleLogic = {
 
             loggingSystem.info("StudiesLogic", `Purchased ${producerDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. Owned: ${moduleState.ownedProducers[producerId]}`);
             
-            // UI update for the specific producer card and potentially resource bar is handled by studies_ui and gameLoop tick
             return true;
         } else {
             loggingSystem.debug("StudiesLogic", `Cannot afford ${producerDef.name}. Need ${decimalUtility.format(cost)} ${costResource}. Have ${decimalUtility.format(coreResourceManager.getAmount(costResource))}`);
@@ -120,15 +115,11 @@ export const moduleLogic = {
         const baseProductionPerUnit = decimalUtility.new(producerDef.baseProduction);
         let totalProduction = decimalUtility.multiply(baseProductionPerUnit, ownedCount);
 
-        // Apply production multipliers from CoreUpgradeManager
-        // targetSystem for studies producers production could be 'studies_producers_production' or just 'studies_producers'
         const productionMultiplier = coreUpgradeManager.getProductionMultiplier('studies_producers', producerId);
         totalProduction = decimalUtility.multiply(totalProduction, productionMultiplier);
         
-        // Apply global resource production multipliers (e.g. a global SP multiplier)
         const globalResourceMultiplier = coreUpgradeManager.getProductionMultiplier('global_resource_production', producerDef.resourceId);
         totalProduction = decimalUtility.multiply(totalProduction, globalResourceMultiplier);
-
 
         const sourceKey = `studies_module_${producerId}`;
         coreResourceManager.setProductionPerSecond(producerDef.resourceId, sourceKey, totalProduction);
@@ -140,18 +131,16 @@ export const moduleLogic = {
      * Calculates and updates the production for all producers in the Studies module.
      */
     updateAllProducerProductions() {
+        // Destructure decimalUtility here to make it available in this function's scope
+        const { decimalUtility } = coreSystemsRef; 
         for (const producerId in staticModuleData.producers) {
-            if (this.isProducerUnlocked(producerId) || decimalUtility.gt(moduleState.ownedProducers[producerId] || 0, 0) ) { // Update if unlocked or if any owned (in case it became locked but still produces)
+            if (this.isProducerUnlocked(producerId) || decimalUtility.gt(moduleState.ownedProducers[producerId] || "0", 0) ) { 
                  this.updateProducerProduction(producerId);
             }
         }
         coreSystemsRef.loggingSystem.debug("StudiesLogic", "All active producer productions updated.");
     },
 
-    /**
-     * Checks if a producer is unlocked based on its unlock condition.
-     * (Identical to v1, no changes here unless unlock conditions depend on new systems)
-     */
     isProducerUnlocked(producerId) {
         const { coreResourceManager, decimalUtility, loggingSystem } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
@@ -203,7 +192,7 @@ export const moduleLogic = {
                 coreGameStateManager.setGlobalFlag(flagDef.flag, flagDef.value);
                 loggingSystem.info("StudiesLogic", `Global flag '${flagDef.flag}' set to ${flagDef.value}.`);
                 coreUIManager.showNotification(`New feature unlocked via Studies progress! Check the menu.`, 'info', 3000);
-                coreUIManager.renderMenu(); // Re-render menu to show newly unlocked tab like Market
+                coreUIManager.renderMenu();
             }
         }
     },
