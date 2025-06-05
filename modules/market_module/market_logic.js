@@ -1,9 +1,9 @@
-// modules/market_module/market_logic.js (v1.2 - Settings Unlock Flag)
+// modules/market_module/market_logic.js (v1.3 - Reset Fix)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
- * v1.2: Ensures settingsTabPermanentlyUnlocked flag is used for Settings tab.
+ * v1.3: Clears permanent unlock flags on reset.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -14,12 +14,24 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.3).");
     },
 
     isMarketTabUnlocked() {
-        if (!coreSystemsRef) return false;
-        return coreSystemsRef.coreGameStateManager.getGlobalFlag('marketUnlocked', false);
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) return false;
+        // Check permanent flag first
+        if (coreSystemsRef.coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) {
+            return true;
+        }
+        // Original condition (e.g., from studies module)
+        const conditionMet = coreSystemsRef.coreGameStateManager.getGlobalFlag('marketUnlocked', false);
+        if (conditionMet) {
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
+            if (coreSystemsRef.coreUIManager) coreSystemsRef.coreUIManager.renderMenu();
+            coreSystemsRef.loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
+            return true;
+        }
+        return false;
     },
 
     calculateScalableItemCost(itemId) {
@@ -40,7 +52,7 @@ export const moduleLogic = {
     },
 
     purchaseScalableItem(itemId) {
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
 
         if (!itemDef) {
@@ -61,16 +73,15 @@ export const moduleLogic = {
 
             coreGameStateManager.setModuleState('market', { ...moduleState });
 
-            loggingSystem.info("MarketLogic", `Purchased ${itemDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. New total ${itemDef.benefitResource}: ${coreResourceManager.getAmount(itemDef.benefitResource).toString()}`);
+            loggingSystem.info("MarketLogic", `Purchased ${itemDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}.`);
             coreUIManager.showNotification(`Acquired 1 ${itemDef.benefitResource === 'images' ? 'Image' : 'Study Skill Point'}!`, 'success', 2000);
 
             if (itemDef.benefitResource === 'studySkillPoints') {
-                 // Check if this purchase now unlocks the skills tab (which calls renderMenu)
-                const skillsModule = coreSystemsRef.moduleLoader.getModule('skills');
+                const skillsModule = moduleLoader.getModule('skills');
                 if (skillsModule && skillsModule.logic && typeof skillsModule.logic.isSkillsTabUnlocked === 'function') {
-                    skillsModule.logic.isSkillsTabUnlocked();
+                    skillsModule.logic.isSkillsTabUnlocked(); // This will set permanent flag and render menu
                 } else {
-                    coreUIManager.renderMenu(); // Fallback to generic render
+                    coreUIManager.renderMenu(); 
                 }
             }
             return true;
@@ -81,31 +92,28 @@ export const moduleLogic = {
         }
     },
 
-    canAffordUnlock(unlockId) {
+    canAffordUnlock(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return false;
         return coreResourceManager.canAfford(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
     },
 
-    isUnlockPurchased(unlockId) {
+    isUnlockPurchased(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
         const { coreGameStateManager } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return true; 
 
-        // For settings tab, use a permanent flag
-        if (unlockDef.flagToSet === 'settingsTabUnlocked') {
+        if (unlockId === 'settingsTab') {
             return coreGameStateManager.getGlobalFlag('settingsTabPermanentlyUnlocked', false);
         }
-        // For achievements tab, use a permanent flag
-        if (unlockDef.flagToSet === 'achievementsTabUnlocked') {
+        if (unlockId === 'achievementsTab') {
             return coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false);
         }
-        // Fallback for any other potential future direct flags
-        return coreGameStateManager.getGlobalFlag(unlockDef.flagToSet, false);
+        return coreGameStateManager.getGlobalFlag(unlockDef.flagToSet, false); // Fallback for original flag
     },
 
-    purchaseUnlock(unlockId) {
+    purchaseUnlock(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
 
@@ -124,19 +132,16 @@ export const moduleLogic = {
         if (coreResourceManager.canAfford(unlockDef.costResource, costAmount)) {
             coreResourceManager.spendAmount(unlockDef.costResource, costAmount);
             
-            // Set the specific permanent flag based on the unlock definition
-            let permanentFlag = unlockDef.flagToSet; // e.g., 'settingsTabUnlocked'
-            if (unlockDef.flagToSet === 'settingsTabUnlocked') {
+            let permanentFlag = unlockDef.flagToSet; // Original e.g. 'settingsTabUnlocked'
+            if (unlockId === 'settingsTab') {
                 permanentFlag = 'settingsTabPermanentlyUnlocked';
-            } else if (unlockDef.flagToSet === 'achievementsTabUnlocked') {
+            } else if (unlockId === 'achievementsTab') {
                 permanentFlag = 'achievementsTabPermanentlyUnlocked';
             }
-            // Set both the original flag (for immediate checks if any system uses it) AND the permanent one
             coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true); 
             coreGameStateManager.setGlobalFlag(permanentFlag, true);
 
-
-            loggingSystem.info("MarketLogic", `Purchased ${unlockDef.name}. Cost: ${decimalUtility.format(costAmount)} ${unlockDef.costResource}. Flag '${permanentFlag}' set.`);
+            loggingSystem.info("MarketLogic", `Purchased ${unlockDef.name}. Flag '${permanentFlag}' set.`);
             coreUIManager.showNotification(`${unlockDef.name} Unlocked!`, 'success', 3000);
             coreUIManager.renderMenu(); 
             return true;
@@ -159,6 +164,8 @@ export const moduleLogic = {
             const initialState = getInitialState();
             Object.assign(moduleState.purchaseCounts, initialState.purchaseCounts);
         }
+        // Check permanent unlock on load
+        this.isMarketTabUnlocked(); 
     },
 
     onResetState() {
@@ -167,6 +174,9 @@ export const moduleLogic = {
         const initialState = getInitialState();
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
-        // Permanent unlock flags for settings/achievements will be cleared by their respective modules' onResetState.
+        // Clear permanent unlock flags specific to this module's unlocks
+        coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
+        // The flags for settingsTabPermanentlyUnlocked and achievementsTabPermanentlyUnlocked
+        // will be handled by their respective modules' onResetState.
     }
 };
