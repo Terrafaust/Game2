@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Incremental Game</title>
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="main.css"> <!-- main.css is mostly a placeholder -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -14,276 +14,332 @@
                     fontFamily: {
                         inter: ['Inter', 'sans-serif'],
                     },
+                    // Base Tailwind colors are not directly used for theming; CSS vars are primary
                     colors: {
-                        // These are base Tailwind definitions, CSS variables below will be themed
-                        primary_base: '#4F46E5', // Indigo
-                        secondary_base: '#EC4899', // Pink
-                        accentOne_base: '#10B981', // Emerald
-                        accentTwo_base: '#F59E0B', // Amber
-                        background_base: '#111827', // Gray 900
-                        surface_base: '#1F2937',    // Gray 800
-                        surfaceDark_base: '#374151', // Gray 700
-                        textPrimary_base: '#F3F4F6', // Gray 100
-                        textSecondary_base: '#9CA3AF', // Gray 400
+                        tw_primary_base: '#4F46E5',
+                        tw_secondary_base: '#EC4899',
+                        tw_accentOne_base: '#10B981',
+                        tw_accentTwo_base: '#F59E0B',
+                        tw_background_base: '#111827',
+                        tw_surface_base: '#1F2937',
+                        tw_surfaceDark_base: '#374151',
+                        tw_textPrimary_base: '#F3F4F6',
+                        tw_textSecondary_base: '#9CA3AF',
                     },
-                    borderRadius: {
-                        'lg': '0.5rem',
-                        'xl': '0.75rem',
-                        '2xl': '1rem',
-                    }
+                    borderRadius: { 'lg': '0.5rem', 'xl': '0.75rem', '2xl': '1rem' }
                 }
             }
         };
     </script>
     <style>
-        /* Base CSS Custom Properties (Default Theme - e.g., Modern Day) */
+        @keyframes rgb-cycle {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+        @keyframes rgb-led-glow {
+            0%, 100% { text-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary), 0 0 15px var(--color-secondary); filter: hue-rotate(0deg) brightness(1.2); }
+            50% { text-shadow: 0 0 10px var(--color-secondary), 0 0 15px var(--color-secondary), 0 0 20px var(--color-primary); filter: hue-rotate(180deg) brightness(1.2); }
+        }
+        @keyframes rgb-border-glow {
+            0%, 100% { border-color: var(--color-primary); box-shadow: 0 0 5px var(--color-primary), inset 0 0 3px var(--color-primary); filter: hue-rotate(0deg); }
+            50% { border-color: var(--color-secondary); box-shadow: 0 0 5px var(--color-secondary), inset 0 0 3px var(--color-secondary); filter: hue-rotate(180deg); }
+        }
+
         :root {
             --font-main: 'Inter', sans-serif;
-
-            /* Default to Modern - Day */
-            --color-primary: #4F46E5; /* Indigo */
+            /* Default: Modern Day */
+            --color-primary: #4F46E5;         /* Indigo */
             --color-primary-lighter: #6366F1;
-            --color-secondary: #EC4899; /* Pink */
-            --color-accent-one: #10B981; /* Emerald */
-            --color-accent-two: #F59E0B; /* Amber */
-            --color-background: #F9FAFB; /* Lighter Gray for Day Mode */
-            --color-surface: #FFFFFF; /* White for Day Mode surfaces */
-            --color-surface-dark: #F3F4F6; /* Light Gray for cards in Day Mode */
-            --color-text-primary: #1F2937; /* Dark Gray for text in Day Mode */
-            --color-text-secondary: #6B7280; /* Medium Gray for text in Day Mode */
-            --color-border: #E5E7EB; /* Light border for day mode */
-
-            --border-radius-lg: 0.5rem;
-            --border-radius-xl: 0.75rem;
-            --border-radius-2xl: 1rem;
-
-            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
-            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.08), 0 10px 10px -5px rgba(0,0,0,0.03);
+            --color-secondary: #EC4899;       /* Pink */
+            --color-accent-one: #10B981;      /* Emerald */
+            --color-accent-two: #F59E0B;      /* Amber */
+            --color-background: #F9FAFB;      /* Light Gray */
+            --color-surface: #FFFFFF;         /* White */
+            --color-surface-dark: #F3F4F6;    /* Lighter Gray for cards */
+            --color-text-primary: #1F2937;    /* Dark Gray */
+            --color-text-secondary: #6B7280;  /* Medium Gray */
+            --color-border: #E5E7EB;          /* Light border */
+            --color-button-text: #FFFFFF;     /* Default text for primary buttons */
+            --animation-rgb: none;
+            --animation-rgb-border: none;
         }
 
         /* --- Modern Theme --- */
         [data-theme="modern"][data-mode="day"] {
-            /* Uses :root defaults essentially, or can be specified explicitly */
-            --color-primary: #4F46E5;
-            --color-secondary: #EC4899;
-            --color-background: #F9FAFB;
-            --color-surface: #FFFFFF;
-            --color-surface-dark: #F3F4F6; /* Slightly darker cards */
-            --color-text-primary: #1F2937;
-            --color-text-secondary: #6B7280;
-            --color-border: #E5E7EB;
+            /* Uses :root defaults */
         }
         [data-theme="modern"][data-mode="night"] {
-            --color-primary: #6366F1; /* Lighter Indigo for Night */
-            --color-secondary: #F472B6; /* Lighter Pink */
-            --color-background: #111827; /* Tailwind Gray 900 */
-            --color-surface: #1F2937;    /* Tailwind Gray 800 */
-            --color-surface-dark: #374151; /* Tailwind Gray 700 */
-            --color-text-primary: #F3F4F6; /* Tailwind Gray 100 */
-            --color-text-secondary: #9CA3AF; /* Tailwind Gray 400 */
-            --color-border: #374151; /* Darker border for night mode */
+            --color-primary: #818CF8;         /* Lighter Indigo for Night */
+            --color-primary-lighter: #A78BFA;
+            --color-secondary: #F472B6;       /* Lighter Pink */
+            --color-accent-one: #34D399;      /* Lighter Emerald */
+            --color-accent-two: #FBBF24;      /* Lighter Amber */
+            --color-background: #111827;      /* Tailwind Gray 900 */
+            --color-surface: #1F2937;         /* Tailwind Gray 800 */
+            --color-surface-dark: #374151;    /* Tailwind Gray 700 */
+            --color-text-primary: #D1D5DB;    /* Gray 300 - Improved Contrast */
+            --color-text-secondary: #9CA3AF;  /* Gray 400 */
+            --color-border: #4B5563;          /* Gray 600 - Darker border */
+            --color-button-text: #E0E0E0;
         }
 
         /* --- Neon Theme --- */
-        [data-theme="neon"][data-mode="day"] { /* Neon Day might be a bit unusual, but for completeness */
-            --color-primary: #39FF14; /* Bright Neon Green */
-            --color-secondary: #FF1493; /* Deep Pink Neon */
-            --color-background: #F0F0F0; /* Very light gray */
+        [data-theme="neon"][data-mode="day"] {
+            --color-primary: #39FF14;        /* Bright Neon Green */
+            --color-secondary: #FF1493;      /* Deep Pink Neon */
+            --color-accent-one: #00FFFF;     /* Cyan Neon */
+            --color-background: #F0F0F0;
             --color-surface: #FFFFFF;
             --color-surface-dark: #E5E5E5;
-            --color-text-primary: #222222;
-            --color-text-secondary: #555555;
-            --color-border: #D0D0D0;
+            --color-text-primary: #1A1A1A;    /* Dark text for contrast */
+            --color-text-secondary: #4A4A4A;
+            --color-border: #39FF14;
+            --color-button-text: #000000;
         }
         [data-theme="neon"][data-mode="night"] {
-            --color-primary: #39FF14; /* Bright Neon Green */
-            --color-secondary: #FF1493; /* Deep Pink Neon */
-            --color-background: #000000; /* Pure Black */
-            --color-surface: #1A1A1A;    /* Very Dark Gray */
-            --color-surface-dark: #2C2C2C; /* Dark Gray */
-            --color-text-primary: #00FF00; /* Neon Green Text */
-            --color-text-secondary: #B0B0B0; /* Light Gray Secondary */
-            --color-border: #39FF14; /* Neon Green Border */
+            --color-primary: #39FF14;
+            --color-secondary: #FF1493;
+            --color-accent-one: #00FFFF;
+            --color-background: #0D0D0D;      /* Very Dark, near black */
+            --color-surface: #1A1A1A;
+            --color-surface-dark: #2C2C2C;
+            --color-text-primary: #00FF00;    /* Neon Green Text - Improved Readability */
+            --color-text-secondary: #00CF00;  /* Slightly darker neon green */
+            --color-border: #39FF14;
+            --color-button-text: #000000;
+            --achievement-neon-glow: 0 0 3px #39FF14, 0 0 5px #39FF14, 0 0 7px #FF1493;
         }
 
         /* --- Steampunk Theme --- */
         [data-theme="steampunk"][data-mode="day"] {
-            --color-primary: #8B4513; /* Saddle Brown */
-            --color-secondary: #DAA520; /* Goldenrod */
-            --color-background: #F5F5DC; /* Beige */
-            --color-surface: #FFF8DC;    /* Cornsilk */
-            --color-surface-dark: #DEB887; /* BurlyWood */
-            --color-text-primary: #5D4037; /* Dark Brown */
-            --color-text-secondary: #A1887F; /* Lighter Brown */
-            --color-border: #CD853F; /* Peru */
+            --color-primary: #8B4513;         /* Saddle Brown */
+            --color-secondary: #DAA520;       /* Goldenrod */
+            --color-background: #F5F5DC;      /* Beige */
+            --color-surface: #FFF8DC;         /* Cornsilk */
+            --color-surface-dark: #DEB887;    /* BurlyWood */
+            --color-text-primary: #5D4037;    /* Dark Brown */
+            --color-text-secondary: #A1887F;  /* Lighter Brown */
+            --color-border: #CD853F;          /* Peru */
+            --color-button-text: #FFF8DC;
         }
         [data-theme="steampunk"][data-mode="night"] {
-            --color-primary: #CD853F; /* Peru */
-            --color-secondary: #FFD700; /* Gold */
-            --color-background: #5D4037; /* Dark Brown */
-            --color-surface: #795548;    /* Lighter Brown (Surface) */
-            --color-surface-dark: #4E342E; /* Darker Brown (Cards) */
-            --color-text-primary: #FFF8DC; /* Cornsilk Text */
-            --color-text-secondary: #D2B48C; /* Tan Secondary */
-            --color-border: #8B4513; /* Saddle Brown Border */
+            --color-primary: #CD853F;         /* Peru */
+            --color-secondary: #FFD700;       /* Gold */
+            --color-background: #4E342E;      /* Dark Brown */
+            --color-surface: #6D4C41;         /* Lighter Brown (Surface) */
+            --color-surface-dark: #3E2723;    /* Darker Brown (Cards) */
+            --color-text-primary: #EFEBE9;    /* Off-white Text */
+            --color-text-secondary: #BCAAA4;  /* Lighter Brown Secondary */
+            --color-border: #8B4513;          /* Saddle Brown Border */
+            --color-button-text: #4E342E;
         }
 
+        /* --- Pink Theme --- */
+        [data-theme="pink"][data-mode="day"] {
+            --color-primary: #EC4899;         /* Hot Pink */
+            --color-secondary: #D946EF;       /* Fuchsia */
+            --color-background: #FFF0F5;      /* Lavender Blush */
+            --color-surface: #FFFFFF;
+            --color-surface-dark: #FFE4E1;    /* Misty Rose */
+            --color-text-primary: #701A75;    /* Dark Magenta/Purple */
+            --color-text-secondary: #9D174D;  /* Medium Pink/Red */
+            --color-border: #FBCFE8;          /* Light Pink Border */
+            --color-button-text: #FFFFFF;
+        }
+        [data-theme="pink"][data-mode="night"] {
+            --color-primary: #A21CAF;         /* Deep Violet */
+            --color-secondary: #E879F9;       /* Lighter Fuchsia/Orchid */
+            --color-background: #2E103E;      /* Dark Purple */
+            --color-surface: #4A1D55;         /* Medium Dark Purple */
+            --color-surface-dark: #5F276E;    /* Slightly Lighter Dark Purple */
+            --color-text-primary: #F5D0FE;    /* Light Lavender */
+            --color-text-secondary: #E9A8FB;  /* Lighter Orchid */
+            --color-border: #701A75;
+            --color-button-text: #FCE7F3;
+        }
 
-        body {
+        /* --- Red & Yellow Theme --- */
+        [data-theme="redyellow"][data-mode="day"] {
+            --color-primary: #EF4444;         /* Red-500 */
+            --color-secondary: #F59E0B;       /* Amber-500 */
+            --color-background: #FFFBEB;      /* Amber-50 */
+            --color-surface: #FFFFFF;
+            --color-surface-dark: #FEF3C7;    /* Amber-100 */
+            --color-text-primary: #7F1D1D;    /* Red-900 */
+            --color-text-secondary: #B45309;  /* Amber-700 */
+            --color-border: #FCA5A5;          /* Red-300 */
+            --color-button-text: #FFFFFF;
+        }
+        [data-theme="redyellow"][data-mode="night"] {
+            --color-primary: #B91C1C;         /* Dark Red (Red-700) */
+            --color-secondary: #D97706;       /* Golden (Amber-600) */
+            --color-background: #450A0A;      /* Very Dark Red */
+            --color-surface: #7F1D1D;         /* Dark Red (Surface) */
+            --color-surface-dark: #531313;    /* Darker Red (Cards) */
+            --color-text-primary: #FEF3C7;    /* Amber-100 Text */
+            --color-text-secondary: #FDE68A;  /* Amber-200 Secondary */
+            --color-border: #991B1B;          /* Darker Red Border */
+            --color-button-text: #FEF3C7;
+        }
+
+        /* --- RGB Theme --- */
+        [data-theme="rgb"] { /* Shared RGB base, mode specific for background */
+             --color-primary-rgb-base: hsl(0, 100%, 60%); /* Start with a red */
+             --color-secondary-rgb-base: hsl(120, 100%, 60%); /* Start with a green */
+        }
+        [data-theme="rgb"][data-mode="day"] {
+            --color-primary: var(--color-primary-rgb-base);
+            --color-secondary: var(--color-secondary-rgb-base);
+            --color-background: #F0F0F0;
+            --color-surface: #FFFFFF;
+            --color-surface-dark: #E5E5E5;
+            --color-text-primary: #222222;
+            --color-text-secondary: #555555;
+            --color-border: var(--color-primary-rgb-base);
+            --color-button-text: #FFFFFF;
+            --animation-rgb: rgb-cycle 10s linear infinite;
+            --animation-rgb-border: rgb-border-glow 10s linear infinite alternate;
+        }
+        [data-theme="rgb"][data-mode="night"] {
+            --color-primary: var(--color-primary-rgb-base);
+            --color-secondary: var(--color-secondary-rgb-base);
+            --color-background: #0A0A0A;      /* Very dark for LED effect */
+            --color-surface: #131313;
+            --color-surface-dark: #1C1C1C;
+            --color-text-primary: #E0E0E0;
+            --color-text-secondary: #A0A0A0;
+            --color-border: var(--color-primary-rgb-base);
+            --color-button-text: #000000;
+             /* Animated properties for RGB Night - Bright "LED" like */
+            --animation-rgb: rgb-led-glow 5s ease-in-out infinite alternate;
+            --animation-rgb-border: rgb-border-glow 5s linear infinite alternate;
+        }
+
+        body { /* Applies to #game-container which has the data-theme attributes */
             font-family: var(--font-main);
             background-color: var(--color-background);
             color: var(--color-text-primary);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            transition: background-color 0.3s ease, color 0.3s ease;
+            margin: 0; padding: 0;
+            display: flex; flex-direction: column; min-height: 100vh;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
-        /* Ensure child elements also transition smoothly */
-        #game-container, #resource-bar, #main-menu, #main-content, footer, .modal-content, .tooltip {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
+        .modal-content, .tooltip, .module-card {
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
         button, input[type="button"] {
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
             box-shadow: var(--shadow-sm);
         }
-        button:hover, input[type="button"]:hover {
-            filter: brightness(1.1);
-            box-shadow: var(--shadow-md);
-        }
-        button:active, input[type="button"]:active {
-            transform: scale(0.98);
-        }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 10px; }
+        button:hover, input[type="button"]:hover { filter: brightness(1.1); box-shadow: var(--shadow-md); }
+        button:active, input[type="button"]:active { transform: scale(0.98); }
+
+        ::-webkit-scrollbar-track { background: var(--color-surface); }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); }
         ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
 
         .game-button {
             background-color: var(--color-primary);
-            color: var(--color-background); /* Text color to contrast with button bg */
-            padding: 0.6rem 1.2rem;
-            border-radius: var(--border-radius-lg);
-            font-weight: 500;
-            cursor: pointer;
-            border: none;
+            color: var(--color-button-text);
+            padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
+            font-weight: 500; cursor: pointer; border: none;
+            animation: var(--animation-rgb) forwards; /* Apply RGB animation to buttons */
         }
-        /* Adjust specific button text colors if needed, e.g. for accent buttons */
-        .game-button.bg-green-500, .game-button.bg-emerald-500 { color: white; /* Assuming these are Tailwind classes for bg */ }
-        .game-button.bg-blue-500 { color: white; }
-        .game-button.bg-red-500 { color: white; }
-
-
+        .game-button:hover {}
         .game-button:disabled {
-            background-color: var(--color-text-secondary);
-            filter: grayscale(50%);
-            cursor: not-allowed;
-            color: var(--color-surface-dark);
+            background-color: var(--color-text-secondary) !important; /* Important to override animation */
+            color: var(--color-surface-dark) !important;
+            filter: grayscale(70%); cursor: not-allowed; animation: none !important;
         }
-        .tooltip {
-            position: fixed;
-            background-color: var(--color-surface-dark);
-            color: var(--color-text-primary);
-            border: 1px solid var(--color-primary);
-            padding: 0.5rem 0.75rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-xl);
-            z-index: 10000;
-            font-size: 0.875rem;
-            display: none;
-            pointer-events: none;
-            max-width: 300px;
-        }
-        .modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0,0,0,0.75);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 1000; opacity: 0; visibility: hidden;
-            transition: opacity 0.25s ease, visibility 0.25s ease;
-        }
-        .modal.active { opacity: 1; visibility: visible; }
-        .modal-content {
-            background-color: var(--color-surface);
-            padding: 1.5rem; border-radius: var(--border-radius-xl);
-            box-shadow: var(--shadow-xl);
-            width: 90%; max-width: 500px; color: var(--color-text-primary);
-            transform: scale(0.95);
-            transition: transform 0.25s ease, background-color 0.3s ease, color 0.3s ease;
-        }
-        .modal.active .modal-content { transform: scale(1); }
+        /* Specific button overrides if needed for Tailwind bg classes */
+        #save-button.bg-green-500 { background-color: var(--color-accent-one) !important; color: white !important; animation: none !important; }
+        #load-button.bg-blue-500 { background-color: var(--color-primary) !important; color: var(--color-button-text) !important; /* Uses primary */ }
+        #reset-button.bg-red-500 { background-color: var(--color-secondary) !important; color: white !important; animation: none !important; }
+        #dev-tools-button.bg-emerald-500 { background-color: var(--color-accent-one) !important; color: white !important; animation: none !important; }
 
-        .menu-tab {
-            padding: 0.75rem 1rem; cursor: pointer;
-            border-bottom: 3px solid transparent;
-            color: var(--color-text-secondary);
-            transition: color 0.2s ease, border-color 0.2s ease;
-        }
-        .menu-tab:hover {
-            color: var(--color-text-primary);
-            border-bottom-color: var(--color-secondary);
-        }
-        .menu-tab.active {
-            color: var(--color-primary);
-            border-bottom-color: var(--color-primary);
-            font-weight: 600;
-        }
+
+        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-primary); /* ... other tooltip styles ... */ }
+        .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); /* ... other modal styles ... */ }
+        .menu-tab { color: var(--color-text-secondary); /* ... */ }
+        .menu-tab:hover { color: var(--color-text-primary); border-bottom-color: var(--color-secondary); }
+        .menu-tab.active { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
         .module-card {
             background-color: var(--color-surface-dark);
-            padding: 1rem; 
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-md);
-            transition: box-shadow 0.2s ease, background-color 0.3s ease;
             border: 1px solid var(--color-border);
-        }
-        .module-card:hover {
-            box-shadow: var(--shadow-lg);
+            /* ... other card styles ... */
         }
 
-        /* Apply themed styles to main layout elements */
-        #resource-bar {
+        /* Theming layout elements */
+        #resource-bar, #main-menu, #main-content, footer {
             background-color: var(--color-surface);
-            box-shadow: var(--shadow-lg);
             border: 1px solid var(--color-border);
+            color: var(--color-text-primary); /* Ensure text inside these containers also inherits */
         }
-        #main-menu {
-            background-color: var(--color-surface);
-            box-shadow: var(--shadow-md);
+        #resource-bar h2, #main-menu h3 { color: var(--color-primary); /* Themed section titles */ }
+        [data-theme="neon"][data-mode="night"] #resource-bar h2,
+        [data-theme="neon"][data-mode="night"] #main-menu h3 {
+             animation: var(--animation-rgb) forwards; /* Apply RGB text animation to titles in Neon Night */
+        }
+
+
+        /* Theming individual resource display items */
+        #resources-display > div {
+            background-color: var(--color-surface-dark) !important; /* Override potential Tailwind bg */
+            color: var(--color-text-primary) !important; /* Override potential Tailwind text */
+            padding: 0.5rem; /* p-2 */
+            border-radius: var(--border-radius-lg); /* rounded-md */
+            box-shadow: var(--shadow-sm);
             border: 1px solid var(--color-border);
+            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #main-content {
-            background-color: var(--color-surface);
-            box-shadow: var(--shadow-md);
-            border: 1px solid var(--color-border);
+        #resources-display .font-semibold { /* Targeting specific classes within resource items */
+             color: var(--color-secondary) !important; /* Example: Resource name in secondary color */
         }
-        footer {
-            background-color: var(--color-surface);
-            box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.08), 0 -2px 4px -1px rgba(0, 0, 0, 0.05); /* shadow-top */
-            border-top: 1px solid var(--color-border);
+         [data-theme="neon"][data-mode="night"] #resources-display > div {
+            border-color: var(--color-primary);
+            animation: var(--animation-rgb-border) forwards;
         }
-        /* Input elements theming */
+        [data-theme="rgb"] #resources-display > div {
+             animation: var(--animation-rgb-border) forwards;
+        }
+
+
+        /* Theming Studies Buy Buttons - Assuming they use .game-button or a specific class */
+        /* If studies buttons are created with specific Tailwind classes that don't use CSS vars,
+           those JS files (studies_ui.js) will need to be adjusted.
+           For now, ensure .game-button is effectively themed. */
+        .studies-buy-button { /* Add this class to your studies buy buttons in studies_ui.js */
+            /* It will inherit from .game-button, or you can add specific overrides here */
+        }
+
+        /* Theming Achievements for Neon Theme */
+        [data-theme="neon"][data-mode="night"] .achievement-item { /* Add .achievement-item to achievement divs */
+            border: 1px solid var(--color-primary);
+            box-shadow: var(--achievement-neon-glow, none); /* Use the glow variable */
+            color: var(--color-text-primary); /* Ensure text is neony */
+        }
+        [data-theme="neon"][data-mode="night"] .achievement-item h4 { /* Example for achievement title */
+             color: var(--color-secondary); /* Secondary neon color for titles */
+             text-shadow: var(--achievement-neon-glow, none);
+        }
+
+
         select, input[type="text"], input[type="number"], textarea {
             background-color: var(--color-background);
             color: var(--color-text-primary);
             border: 1px solid var(--color-border);
-            border-radius: var(--border-radius-lg);
-            padding: 0.5rem 0.75rem;
+            /* ... other input styles ... */
         }
-        select:focus, input[type="text"]:focus, input[type="number"]:focus, textarea:focus {
-            border-color: var(--color-primary);
-            outline: none;
-            box-shadow: 0 0 0 2px var(--color-primary-lighter);
-        }
-
+        /* ... rest of your existing style block ... */
     </style>
 </head>
-<body class="font-inter"> <!-- Removed Tailwind bg/text classes, will be controlled by CSS vars -->
-    <div id="game-container" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl">
+<body class="font-inter"> <!-- Removed Tailwind bg/text classes from body -->
+    <div id="game-container" data-theme="modern" data-mode="day" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl"> <!-- Default theme set here -->
         <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
-            <h2 class="text-xl font-semibold mb-2" style="color: var(--color-primary);">Resources</h2>
+            <!-- h2 color set by new CSS rule -->
+            <h2 class="text-xl font-semibold mb-2">Resources</h2>
             <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 <!-- Resources will be dynamically added here -->
             </div>
@@ -291,7 +347,8 @@
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
             <nav id="main-menu" class="md:w-1/4 rounded-xl p-4 h-fit md:sticky md:top-32">
-                <h3 class="text-lg font-semibold mb-3" style="color: var(--color-secondary);">Menu</h3>
+                 <!-- h3 color set by new CSS rule -->
+                <h3 class="text-lg font-semibold mb-3">Menu</h3>
                 <ul id="menu-list" class="space-y-1">
                     <!-- Menu items will be dynamically added here -->
                 </ul>
@@ -303,10 +360,11 @@
         </main>
 
         <footer class="rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-2">
-            <button id="save-button" class="game-button">Save Game</button>
-            <button id="load-button" class="game-button">Load Game</button>
-            <button id="reset-button" class="game-button">Hard Reset</button>
-            <button id="dev-tools-button" class="game-button">Developer Tools</button>
+             <!-- Tailwind bg classes removed/overridden by .game-button CSS var or specific ID styles -->
+            <button id="save-button" class="game-button bg-green-500">Save Game</button>
+            <button id="load-button" class="game-button bg-blue-500">Load Game</button>
+            <button id="reset-button" class="game-button bg-red-500">Hard Reset</button>
+            <button id="dev-tools-button" class="game-button bg-emerald-500">Developer Tools</button>
         </footer>
     </div>
 
