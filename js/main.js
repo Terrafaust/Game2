@@ -1,8 +1,9 @@
-// js/main.js (v9.8 - Fixed coreResourceManager import)
+// js/main.js (v9.9 - Diagnostic Log for coreResourceManager)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.9: Added diagnostic log for coreResourceManager before initialization.
  * v9.8: Fixed TypeError by correcting coreResourceManager import.
  * v9.7: Ensures moduleLoader.resetAllModules() is called on hard reset.
  * Also fixes initial resource definition to use staticDataAggregator correctly.
@@ -20,7 +21,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js'; // Corrected: changed '=' to 'from'
+import { coreResourceManager } from './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -38,7 +39,12 @@ async function initializeGame() {
     globalSettingsManager.initialize();
     coreGameStateManager.initialize();
     staticDataAggregator.initialize();
-    coreResourceManager.initialize(); // Initialize resource manager
+
+    // --- DIAGNOSTIC LOG: Check coreResourceManager before calling initialize() ---
+    console.log('[DEBUG Main] coreResourceManager before initialize:', coreResourceManager);
+    // --- END DIAGNOSTIC LOG ---
+
+    coreResourceManager.initialize(); // Initialize resource manager (This is line 36)
     coreUIManager.initialize();
     coreUpgradeManager.initialize();
 
