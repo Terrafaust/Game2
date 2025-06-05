@@ -1,8 +1,9 @@
-// js/main.js (v9.5 - Granular Debug for DevTools)
+// js/main.js (v9.6 - DevTools Production Multiplier)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.6: Changed DevTools button to apply a x100,000 production multiplier.
  * v9.5: Added more granular logging for debugging coreResourceManager methods in devToolsButton.
  * v9.4: Added detailed logging for debugging coreResourceManager in devToolsButton.
  * v9.3: Initializes coreResourceManager.
@@ -28,7 +29,7 @@ import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.5).");
+    loggingSystem.info("Main", "Game initialization sequence started (v9.6).");
 
     // Initialize Core Systems in an order that respects dependencies
     globalSettingsManager.initialize();
@@ -73,7 +74,7 @@ async function initializeGame() {
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.6"); // Version for Granular DevTools debug
+        coreGameStateManager.setGameVersion("0.5.7"); // Version for DevTools multiplier
 
         for (const resId in coreResourceDefinitions) {
             const resDef = coreResourceDefinitions[resId];
@@ -87,7 +88,6 @@ async function initializeGame() {
                         resDef.isUnlocked,
                         resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
                     );
-                    loggingSystem.debug("Main_NewGame", `Defined core resource: ${resDef.id}`);
                 } else {
                     loggingSystem.error("Main_NewGame", `coreResourceManager or defineResource is not available for ${resDef.id}.`);
                 }
@@ -108,13 +108,8 @@ async function initializeGame() {
                             false,
                             resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
                         );
-                        loggingSystem.debug("Main_GameLoad", `Ensured core resource definition for: ${resDef.id}`);
-                    } else {
-                         loggingSystem.error("Main_GameLoad", `coreResourceManager or defineResource not available for ensuring ${resDef.id}.`);
                     }
                 }
-            } else {
-                 loggingSystem.error("Main_GameLoad", `coreResourceManager or getResource is not available for checking ${resId}.`);
             }
         }
     }
@@ -140,13 +135,13 @@ async function initializeGame() {
     const resetButton = document.getElementById('reset-button');
     const devToolsButton = document.getElementById('dev-tools-button');
 
-    if (saveButton) { /* Event listener as in v9.3 */
+    if (saveButton) {
         saveButton.addEventListener('click', () => {
             saveLoadSystem.saveGame();
             coreUIManager.showNotification("Game Saved!", "success", 2000);
         });
     }
-    if (loadButton) { /* Event listener as in v9.3 */
+    if (loadButton) {
         loadButton.addEventListener('click', () => {
             coreUIManager.showModal( "Load Game?", "Loading will overwrite your current unsaved progress. Are you sure?",
                 [
@@ -176,7 +171,7 @@ async function initializeGame() {
             );
         });
     }
-    if (resetButton) { /* Event listener as in v9.3 */
+    if (resetButton) {
         resetButton.addEventListener('click', () => {
             coreUIManager.showModal("Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
                 [
@@ -184,7 +179,7 @@ async function initializeGame() {
                         const wasRunning = gameLoop.isRunning();
                         if (wasRunning) gameLoop.stop();
                         saveLoadSystem.resetGameData();
-                        coreGameStateManager.setGameVersion("0.5.6");
+                        coreGameStateManager.setGameVersion("0.5.7");
                         for (const resId in coreResourceDefinitions) {
                             const resDef = coreResourceDefinitions[resId];
                             if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
@@ -204,79 +199,52 @@ async function initializeGame() {
         });
     }
 
-    // Enhanced logging and checking for devToolsButton
     if (devToolsButton) {
-        loggingSystem.debug("Main_DevTools_Setup", "Setting up devToolsButton listener.");
-        loggingSystem.debug("Main_DevTools_Setup", "coreResourceManager at listener setup (should be the imported object):", coreResourceManager);
-        if(coreResourceManager){
-            loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.addAmount:", typeof coreResourceManager.addAmount);
-            loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.getResource:", typeof coreResourceManager.getResource);
-            loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.defineResource:", typeof coreResourceManager.defineResource);
-            loggingSystem.debug("Main_DevTools_Setup", "typeof coreResourceManager.unlockResource:", typeof coreResourceManager.unlockResource);
-        }
-
         devToolsButton.addEventListener('click', () => {
-            loggingSystem.info("Main_DevTools", "Dev tools button clicked.");
-            loggingSystem.debug("Main_DevTools_Click", "Accessing coreResourceManager (from module import scope) inside click handler:", coreResourceManager);
+            loggingSystem.info("Main_DevTools", "Dev tools button clicked: Applying production multiplier.");
 
-            if (!coreResourceManager) {
-                loggingSystem.error("Main_DevTools_Click", "CRITICAL: coreResourceManager object itself is null or undefined at click time.");
-                coreUIManager.showNotification("Dev Tools Error: CRITICAL - Resource Manager object not found. Check console.", "error");
+            const crmReady = coreResourceManager &&
+                             typeof coreResourceManager.getAllResources === 'function' &&
+                             typeof coreResourceManager.getProductionFromSource === 'function' &&
+                             typeof coreResourceManager.setProductionPerSecond === 'function';
+
+            if (!crmReady) {
+                loggingSystem.error("Main_DevTools", "coreResourceManager or its necessary methods (getAllResources, getProductionFromSource, setProductionPerSecond) are not available.");
+                coreUIManager.showNotification("Dev Tools Error: Resource Manager methods missing for multiplier. Check console.", "error");
                 return;
             }
 
-            const methodsState = {
-                addAmount: { exists: 'addAmount' in coreResourceManager, type: typeof coreResourceManager.addAmount },
-                getResource: { exists: 'getResource' in coreResourceManager, type: typeof coreResourceManager.getResource },
-                defineResource: { exists: 'defineResource' in coreResourceManager, type: typeof coreResourceManager.defineResource },
-                unlockResource: { exists: 'unlockResource' in coreResourceManager, type: typeof coreResourceManager.unlockResource }
-            };
+            const boostFactor = decimalUtility.new(100000);
+            let changesMade = false;
+            const allResources = coreResourceManager.getAllResources(); // Gets a copy
 
-            loggingSystem.debug("Main_DevTools_Click", "State of coreResourceManager methods:", methodsState);
+            for (const resourceId in allResources) {
+                const resource = allResources[resourceId]; // This is a copy from getAllResources
+                // We need to interact with the live resource manager using resourceId for actual resource object.
+                const liveResourceData = coreResourceManager.getResource(resourceId); // Get live data to check productionSources
 
-            let allMethodsFunctional = true;
-            if (methodsState.addAmount.type !== 'function') {
-                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.addAmount is not a function. Type: ${methodsState.addAmount.type}, Exists: ${methodsState.addAmount.exists}`);
-                allMethodsFunctional = false;
-            }
-            if (methodsState.getResource.type !== 'function') {
-                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.getResource is not a function. Type: ${methodsState.getResource.type}, Exists: ${methodsState.getResource.exists}`);
-                allMethodsFunctional = false;
-            }
-            if (methodsState.defineResource.type !== 'function') {
-                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.defineResource is not a function. Type: ${methodsState.defineResource.type}, Exists: ${methodsState.defineResource.exists}`);
-                allMethodsFunctional = false;
-            }
-            if (methodsState.unlockResource.type !== 'function') {
-                loggingSystem.error("Main_DevTools_Click", `coreResourceManager.unlockResource is not a function. Type: ${methodsState.unlockResource.type}, Exists: ${methodsState.unlockResource.exists}`);
-                allMethodsFunctional = false;
-            }
-
-            if (!allMethodsFunctional) {
-                loggingSystem.error("Main_DevTools_Click", "One or more coreResourceManager methods are not functions. Dev tools cannot proceed.");
-                coreUIManager.showNotification("Dev Tools Error: Resource Manager methods invalid. Check console.", "error");
-                return;
-            }
-
-            loggingSystem.info("Main_DevTools_Click", "coreResourceManager and its methods appear to be available and functional.");
-
-            coreResourceManager.addAmount('studyPoints', decimalUtility.new(100000));
-
-            if (!coreResourceManager.getResource('knowledge')) {
-                const resDef = staticDataAggregator.getData('core_resource_definitions.knowledge');
-                if(resDef) {
-                    coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
-                    loggingSystem.info("Main_DevTools_Click", "Defined 'knowledge' resource before dev interaction.");
-                } else {
-                    loggingSystem.error("Main_DevTools_Click", "'knowledge' definition not found in staticDataAggregator.");
-                    coreUIManager.showNotification("Dev Tools Error: Knowledge resource definition missing.", "error");
-                    return;
+                if (liveResourceData && liveResourceData.productionSources && liveResourceData.hasProductionRate) {
+                    loggingSystem.debug("Main_DevTools", `Processing resource: ${resourceId}`);
+                    for (const sourceKey in liveResourceData.productionSources) {
+                        const currentProd = coreResourceManager.getProductionFromSource(resourceId, sourceKey);
+                        if (decimalUtility.neq(currentProd, 0)) {
+                            const boostedProd = decimalUtility.multiply(currentProd, boostFactor);
+                            coreResourceManager.setProductionPerSecond(resourceId, sourceKey, boostedProd);
+                            loggingSystem.info("Main_DevTools", `Resource '${resourceId}', source '${sourceKey}': production boosted from ${currentProd.toString()} to ${boostedProd.toString()}`);
+                            changesMade = true;
+                        }
+                    }
                 }
             }
-            coreResourceManager.addAmount('knowledge', decimalUtility.new(1000));
-            coreResourceManager.unlockResource('knowledge');
-            coreUIManager.showNotification("Dev Tools: Added 100k SP & 1k Knowledge!", "info", 3000);
-            coreUIManager.updateResourceDisplay();
+
+            if (changesMade) {
+                coreUIManager.showNotification(`Developer Boost: All active productions x${boostFactor.toString()}!`, "warning", 5000);
+                coreUIManager.updateResourceDisplay(); // Crucial to see the new rates
+                // Consider fullUIRefresh if module UIs also display these rates and need updating
+                // coreUIManager.fullUIRefresh();
+            } else {
+                coreUIManager.showNotification("Developer Boost: No active productions found to multiply.", "info", 3000);
+            }
         });
     } else {
         loggingSystem.warn("Main_DevTools_Setup", "devToolsButton not found in the DOM.");
