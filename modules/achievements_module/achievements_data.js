@@ -10,31 +10,31 @@ const producerAchTierCounts = [10, 25, 50, 100, 250, 500, 750, 1000, 1500, 2500]
 const producerAchTierRewards = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.10, 0.12, 0.15];
 
 const resourceAchTierCounts = {
-    studyPoints: ["1e3", "1e4", "1e5", "1e6", "1e7", "1e8", "1e9", "1e10", "1e12", "1e15"],
-    knowledge:   ["1e1", "1e2", "1e3", "1e4", "1e5", "1e6", "1e7", "1e8", "1e9", "1e10"]
+    studyPoints: ["1e3", "1e4", "1e5", "1e6", "1e7", "1e8", "1e9", "1e10", "1e11", "1e12","1e13", "1e14", "1e15"],
+    knowledge:   ["1e1", "1e2", "1e3", "1e4", "1e5", "1e6", "1e7", "1e8", "1e9", "1e10","1e11", "1e12","1e13"]
 };
-const resourceAchTierRewards = [0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.03, 0.03, 0.04, 0.05];
+const resourceAchTierRewards = [0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.03, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08];
 
 const clickAchTierCounts = [10, 50, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000];
-const clickAchTierRewards = [0.05, 0.07, 0.10, 0.12, 0.15, 0.18, 0.20, 0.22, 0.25, 0.30];
+const clickAchTierRewards = [0.50, 0.70, 1.00, 1.20, 1.50, 1.80, 2.00, 2.20, 2.50, 3.00];
 
 // New: Study Skill Points achievements
 const sspAchTierCounts = [1, 5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 200, 250, 300];
 const sspAchTierRewards = [ // Example: Small global SP boosts or one-time SSP
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.005" }, // +0.5% SP
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "1" }, // +1 SSP
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.005" },
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "1" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.01" },  // +1% SP
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.01" },
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" },
     { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015" }, // +1.5% SP
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "3" },
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" }, // +2 SSP
     { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015" },
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020" },  // +2% SP
     { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "3" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.02" },  // +2% SP
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "5" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020" },
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "3" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035" }, // +3.5% SP
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "4" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035" },
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "4" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.050" },  // +5% SP
+    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "6" },
 ];
 
 
