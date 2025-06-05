@@ -1,8 +1,9 @@
-// modules/market_module/market_ui.js (v1.2 - Unlock ID Fix)
+// modules/market_module/market_ui.js (v1.3 - Button Text Fix)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v1.3: Improved button text for unlocks.
  * v1.2: Corrects the ID passed to purchaseUnlock logic.
  */
 
@@ -16,7 +17,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.3).");
     },
 
     renderMainContent(parentElement) {
@@ -54,21 +55,19 @@ export const ui = {
         const itemsGrid = document.createElement('div');
         itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
 
-        // Iterate over marketItems to create cards
         for (const itemId in staticModuleData.marketItems) {
             const itemDef = staticModuleData.marketItems[itemId];
-            let buttonText = `Buy 1 ${itemDef.benefitResource === 'images' ? 'Image' : 
-                                      itemDef.benefitResource === 'studySkillPoints' ? 'SSP' : itemDef.benefitResource}`;
+            let buttonText = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`; // Cleaner button text
 
             const itemCard = this._createMarketItemCard(
-                itemDef.id, // This is used for DOM element IDs (e.g. market-item-buyImages)
+                itemDef.id, 
                 itemDef.name,
                 itemDef.description,
-                () => moduleLogicRef.purchaseScalableItem(itemId), // Pass the key 'buyImages' or 'buyStudySkillPoints'
+                () => moduleLogicRef.purchaseScalableItem(itemId), 
                 buttonText,
                 true 
             );
-            itemCard.id = `market-item-${itemDef.id}`; // DOM ID uses itemDef.id
+            itemCard.id = `market-item-${itemDef.id}`; 
             itemsGrid.appendChild(itemCard);
         }
         
@@ -88,19 +87,20 @@ export const ui = {
         const unlocksGrid = document.createElement('div');
         unlocksGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
 
-        // Iterate over marketUnlocks to create cards
-        for (const unlockKey in staticModuleData.marketUnlocks) { // unlockKey will be 'settingsTab', 'achievementsTab'
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
             const unlockDef = staticModuleData.marketUnlocks[unlockKey];
+            // Cleaner button text for unlocks
+            let buttonText = `Unlock ${unlockDef.name.replace('Unlock ', '').replace(' Menu', '')}`;
+            
             const unlockCard = this._createMarketItemCard(
-                unlockDef.id, // This is used for DOM element IDs (e.g. market-unlock-unlockSettingsTab)
+                unlockDef.id, 
                 unlockDef.name,
                 unlockDef.description,
-                // Pass the key ('settingsTab' or 'achievementsTab') to purchaseUnlock
                 () => moduleLogicRef.purchaseUnlock(unlockKey), 
-                `Unlock ${unlockDef.name.replace(' Menu', '')}`,
+                buttonText, 
                 false 
             );
-            unlockCard.id = `market-unlock-${unlockDef.id}`; // DOM ID uses unlockDef.id
+            unlockCard.id = `market-unlock-${unlockDef.id}`; 
             unlocksGrid.appendChild(unlockCard);
         }
         
@@ -108,8 +108,6 @@ export const ui = {
         return section;
     },
 
-    // 'domIdBase' is used for generating unique DOM element IDs for cost, button etc.
-    // 'purchaseCallback' will receive the correct key for logic ('itemId' or 'unlockKey')
     _createMarketItemCard(domIdBase, nameText, descriptionText, purchaseCallback, initialButtonText, isScalable) {
         const { coreUIManager } = coreSystemsRef;
         const card = document.createElement('div');
@@ -127,7 +125,7 @@ export const ui = {
         contentDiv.appendChild(description);
 
         const costDisplay = document.createElement('p');
-        costDisplay.id = `market-${domIdBase}-cost`; // Use domIdBase for unique cost display ID
+        costDisplay.id = `market-${domIdBase}-cost`; 
         costDisplay.className = 'text-sm text-yellow-400 mb-4'; 
         contentDiv.appendChild(costDisplay);
         
@@ -136,11 +134,11 @@ export const ui = {
         const button = coreUIManager.createButton(
             initialButtonText,
             () => {
-                purchaseCallback(); // This callback now has the correct key ('settingsTab', etc.)
+                purchaseCallback(); 
                 this.updateDynamicElements(); 
             },
             ['w-full', 'mt-auto'], 
-            `market-${domIdBase}-button` // Use domIdBase for unique button ID
+            `market-${domIdBase}-button` 
         );
         card.appendChild(button);
         return card;
@@ -150,26 +148,23 @@ export const ui = {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         const { decimalUtility, coreResourceManager } = coreSystemsRef;
 
-        // Update Scalable Items (Images, Study Skill Points)
-        for (const itemId in staticModuleData.marketItems) { // itemId is 'buyImages', 'buyStudySkillPoints'
+        for (const itemId in staticModuleData.marketItems) { 
             const itemDef = staticModuleData.marketItems[itemId];
-            // Query card by itemDef.id which was used for DOM element ID
             const card = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
             if (!card) continue;
 
             const costDisplay = card.querySelector(`#market-${itemDef.id}-cost`);
             const button = card.querySelector(`#market-${itemDef.id}-button`);
 
-            const currentCost = moduleLogicRef.calculateScalableItemCost(itemId); // Pass key to logic
+            const currentCost = moduleLogicRef.calculateScalableItemCost(itemId); 
             if (costDisplay) {
                 costDisplay.textContent = `Cost: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
             }
             if (button) {
                 const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
                 button.disabled = !canAfford;
-                let benefitName = itemDef.benefitResource === 'images' ? 'Image' : 
-                                  itemDef.benefitResource === 'studySkillPoints' ? 'Study Skill Point' : itemDef.benefitResource;
-                button.textContent = `Buy 1 ${benefitName}`;
+                // Update button text if it was generic initially or if needed
+                button.textContent = `Buy 1 ${itemDef.name.replace('Acquire ', '')}`;
                  if (canAfford) {
                     button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'opacity-50');
                     button.classList.add('bg-primary', 'hover:bg-primary-lighter');
@@ -180,18 +175,16 @@ export const ui = {
             }
         }
 
-        // Update Feature Unlocks (Settings, Achievements)
-        for (const unlockKey in staticModuleData.marketUnlocks) { // unlockKey is 'settingsTab', 'achievementsTab'
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
             const unlockDef = staticModuleData.marketUnlocks[unlockKey];
-            // Query card by unlockDef.id which was used for DOM element ID
             const card = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
             if (!card) continue;
 
             const costDisplay = card.querySelector(`#market-${unlockDef.id}-cost`);
             const button = card.querySelector(`#market-${unlockDef.id}-button`);
 
-            if (moduleLogicRef.isUnlockPurchased(unlockKey)) { // Pass key to logic
-                if (costDisplay) costDisplay.textContent = "Unlocked!";
+            if (moduleLogicRef.isUnlockPurchased(unlockKey)) { 
+                if (costDisplay) costDisplay.textContent = "Already Unlocked via Market!";
                 if (button) {
                     button.textContent = "Unlocked";
                     button.disabled = true;
@@ -204,9 +197,10 @@ export const ui = {
                     costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${unlockDef.costResource}`;
                 }
                 if (button) {
-                    const canAfford = moduleLogicRef.canAffordUnlock(unlockKey); // Pass key to logic
+                    const canAfford = moduleLogicRef.canAffordUnlock(unlockKey); 
                     button.disabled = !canAfford;
-                    button.textContent = `Unlock ${unlockDef.name.replace(' Menu', '')}`;
+                    // Use the cleaner button text
+                    button.textContent = `Unlock ${unlockDef.name.replace('Unlock ', '').replace(' Menu', '')}`;
                      if (canAfford) {
                         button.classList.remove('bg-gray-500', 'cursor-not-allowed', 'opacity-50', 'bg-green-600');
                         button.classList.add('bg-primary', 'hover:bg-primary-lighter');
