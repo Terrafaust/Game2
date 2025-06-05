@@ -1,8 +1,9 @@
-// js/core/moduleLoader.js (v2.3 - Add globalSettingsManager)
+// js/core/moduleLoader.js (v2.3.1 - Fix Duplicate Export)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
+ * v2.3.1: Fixes duplicate export error by ensuring single export statement. Accepts and passes globalSettingsManager.
  * v2.3: Accepts and passes globalSettingsManager to modules.
  * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
  */
@@ -19,7 +20,7 @@ let coreSystemsBase = {
     loggingSystem: null, // This will be the imported loggingSystem instance
     gameLoop: null,
     coreUpgradeManager: null,
-    globalSettingsManager: null, // <<< Added globalSettingsManager
+    globalSettingsManager: null, // Added globalSettingsManager
     // moduleLoader: null // This will be added dynamically in loadModule
 };
 
@@ -27,7 +28,7 @@ const loadedModules = {
     // moduleId: { manifest: object, instance: object (the module's main exported object) }
 };
 
-export const moduleLoader = {
+const moduleLoader = { // Declared as const, not exported inline
     initialize(
         staticDataAggregatorRef,
         coreGameStateManagerRef,
@@ -37,7 +38,7 @@ export const moduleLoader = {
         loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
         gameLoopRef,
         coreUpgradeManagerRef,
-        globalSettingsManagerRef // <<< Added globalSettingsManagerRef parameter
+        globalSettingsManagerRef // Added globalSettingsManagerRef parameter
     ) {
         coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
         coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
@@ -47,7 +48,7 @@ export const moduleLoader = {
         coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
         coreSystemsBase.gameLoop = gameLoopRef;
         coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
-        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef; // <<< Assign ref
+        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef; // Assign ref
 
         if (typeof decimalUtilityRef === 'undefined') {
             loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
@@ -60,8 +61,7 @@ export const moduleLoader = {
             loggingSystem.info("ModuleLoader", "globalSettingsManagerRef received successfully in initialize.");
         }
 
-
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3).");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3.1).");
     },
 
     async loadModule(manifestPath) {
@@ -88,20 +88,16 @@ export const moduleLoader = {
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
-            // Prepare the coreSystems object to pass to the module, including moduleLoader itself
-            // and ensuring globalSettingsManager is now part of coreSystemsBase
             const systemsForModule = {
                 ...coreSystemsBase,
-                moduleLoader: this // Add reference to the moduleLoader itself
+                moduleLoader: this 
             };
             
-            // --- Diagnostic Log before passing to module ---
             if (!systemsForModule.globalSettingsManager) {
                 loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule right before passing to module '${manifest.id}'!`, Object.keys(systemsForModule));
             } else {
                 loggingSystem.debug("ModuleLoader_LoadModule", `globalSettingsManager is PRESENT in systemsForModule for module '${manifest.id}'.`);
             }
-            // --- End Diagnostic Log ---
 
             const moduleInstance = await manifest.initialize(systemsForModule);
 
@@ -165,4 +161,5 @@ export const moduleLoader = {
     }
 };
 
+// Single export statement at the end of the file
 export { moduleLoader };
