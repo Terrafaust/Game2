@@ -17,12 +17,15 @@
                         inter: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        primary: '#4F46E5',
-                        secondary: '#EC4899',
-                        background: '#111827',
-                        surface: '#1F2937',
-                        textPrimary: '#F3F4F6',
-                        textSecondary: '#9CA3AF',
+                        primary: '#4F46E5', // Indigo
+                        secondary: '#EC4899', // Pink
+                        accentOne: '#10B981', // Emerald (used for Dev Tools button)
+                        accentTwo: '#F59E0B', // Amber (could be used for skill points)
+                        background: '#111827', // Gray 900
+                        surface: '#1F2937',    // Gray 800
+                        surfaceDark: '#374151', // Gray 700 (used for cards, slightly lighter than surface)
+                        textPrimary: '#F3F4F6', // Gray 100
+                        textSecondary: '#9CA3AF', // Gray 400
                     },
                     borderRadius: {
                         'lg': '0.5rem',
@@ -38,18 +41,20 @@
         :root {
             --color-primary: #4F46E5;
             --color-secondary: #EC4899;
+            --color-accent-one: #10B981; /* Emerald */
+            --color-accent-two: #F59E0B; /* Amber */
             --color-background: #111827;
             --color-surface: #1F2937;
+            --color-surface-dark: #374151;
             --color-text-primary: #F3F4F6;
             --color-text-secondary: #9CA3AF;
-            --color-primary-lighter: #6366F1; /* For hover states */
+            --color-primary-lighter: #6366F1;
 
             --border-radius-lg: 0.5rem;
             --border-radius-xl: 0.75rem;
             --border-radius-2xl: 1rem;
         }
 
-        /* General body styling for dark mode and font */
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--color-background);
@@ -60,95 +65,77 @@
             flex-direction: column;
             min-height: 100vh;
         }
-        /* Ensure buttons and interactive elements are clearly visible and styled */
         button, input[type="button"] {
-            transition: background-color 0.3s ease, transform 0.1s ease;
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Tailwind shadow-sm */
         }
         button:hover, input[type="button"]:hover {
             filter: brightness(1.1);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
         }
         button:active, input[type="button"]:active {
             transform: scale(0.98);
         }
-        /* Custom scrollbar for a more modern look */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: var(--color-surface);
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: var(--color-primary);
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--color-primary-lighter); /* Lighter primary */
-        }
-        /* Styles for dynamically added UI elements to ensure consistency */
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
+
         .game-button {
             background-color: var(--color-primary);
             color: white;
-            padding: 0.75rem 1.5rem; /* Tailwind p-3 px-6 */
+            padding: 0.6rem 1.2rem; /* Slightly adjusted padding */
             border-radius: var(--border-radius-lg);
-            font-weight: 500; /* Tailwind font-medium */
+            font-weight: 500;
             cursor: pointer;
             border: none;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-md */
         }
         .game-button:hover {
-            background-color: var(--color-primary-lighter); /* Lighter primary */
+            /* Hover brightness is handled globally */
         }
         .game-button:disabled {
             background-color: var(--color-text-secondary);
+            filter: grayscale(50%);
             cursor: not-allowed;
         }
         .tooltip {
-            position: absolute;
-            background-color: var(--color-surface);
+            position: fixed; /* Changed from absolute for better viewport handling */
+            background-color: var(--color-surface-dark); /* Darker tooltip */
             color: var(--color-text-primary);
             border: 1px solid var(--color-primary);
-            padding: 0.5rem; /* Tailwind p-2 */
+            padding: 0.5rem 0.75rem;
             border-radius: var(--border-radius-lg);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2); /* Tailwind shadow-lg */
-            z-index: 100;
-            font-size: 0.875rem; /* Tailwind text-sm */
-            display: none; /* Hidden by default */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3); /* Enhanced shadow */
+            z-index: 10000; /* Ensure tooltip is on top */
+            font-size: 0.875rem;
+            display: none;
+            pointer-events: none; /* Tooltip shouldn't interfere with mouse events */
+            max-width: 300px; /* Max width for readability */
         }
         .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.7);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.75); /* Slightly darker backdrop */
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
         }
-        .modal.active {
-            opacity: 1;
-            visibility: visible;
-        }
+        .modal.active { opacity: 1; visibility: visible; }
         .modal-content {
             background-color: var(--color-surface);
-            padding: 1.5rem; /* Tailwind p-6 */
-            border-radius: var(--border-radius-xl);
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); /* Tailwind shadow-xl */
-            width: 90%;
-            max-width: 500px; /* Tailwind max-w-lg */
-            color: var(--color-text-primary);
+            padding: 1.5rem; border-radius: var(--border-radius-xl);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); /* Softer, larger shadow */
+            width: 90%; max-width: 500px; color: var(--color-text-primary);
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
         }
+        .modal.active .modal-content { transform: scale(1); }
+
         .menu-tab {
-            padding: 0.75rem 1rem; /* Tailwind py-3 px-4 */
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
+            padding: 0.75rem 1rem; cursor: pointer;
+            border-bottom: 3px solid transparent; /* Thicker indicator line */
             color: var(--color-text-secondary);
+            transition: color 0.2s ease, border-color 0.2s ease;
         }
         .menu-tab:hover {
             color: var(--color-text-primary);
@@ -157,57 +144,57 @@
         .menu-tab.active {
             color: var(--color-primary);
             border-bottom-color: var(--color-primary);
-            font-weight: 600; /* Tailwind font-semibold */
+            font-weight: 600;
+        }
+        /* Card styles (used by modules) */
+        .module-card {
+            background-color: var(--color-surface-dark);
+            padding: 1rem; /* p-4 */
+            border-radius: var(--border-radius-lg);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: box-shadow 0.2s ease;
+        }
+        .module-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
         }
     </style>
 </head>
-<body class="bg-background text-textPrimary font-inter"> <!-- These Tailwind classes will still work -->
-    <!-- Main game container -->
-    <div id="game-container" class="container mx-auto p-4 flex flex-col flex-grow max-w-5xl">
-        <!-- Resource Bar: Displays current amounts of game resources -->
-        <header id="resource-bar" class="bg-surface shadow-lg rounded-xl p-4 mb-6 sticky top-0 z-50">
+<body class="bg-background text-textPrimary font-inter">
+    <div id="game-container" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl"> <!-- Max-width increased -->
+        <header id="resource-bar" class="bg-surface shadow-lg rounded-xl p-4 mb-6 sticky top-4 z-50"> <!-- Added top-4 for spacing -->
             <h2 class="text-xl font-semibold text-primary mb-2">Resources</h2>
-            <!-- Resources will be dynamically added here by coreUIManager.js -->
-            <div id="resources-display" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                <!-- Example: <p>Study Points: <span id="studyPoints-amount">0</span> (<span id="studyPoints-rate">0</span>/s)</p> -->
+            <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <!-- Resources will be dynamically added here -->
             </div>
         </header>
 
-        <!-- Main Game Area: Contains menu and content sections -->
         <main class="flex-grow flex flex-col md:flex-row gap-6">
-            <!-- Main Menu: Navigation for different game sections/modules -->
-            <nav id="main-menu" class="md:w-1/4 bg-surface shadow-md rounded-xl p-4 h-fit md:sticky md:top-24">
+            <nav id="main-menu" class="md:w-1/4 bg-surface shadow-md rounded-xl p-4 h-fit md:sticky md:top-32"> <!-- Adjusted sticky top -->
                 <h3 class="text-lg font-semibold text-secondary mb-3">Menu</h3>
-                <ul id="menu-list" class="space-y-2">
-                    <!-- Menu items will be dynamically added here by coreUIManager.js -->
-                    <!-- Example: <li class="menu-tab active" data-tab-target="core_gameplay">Core Gameplay</li> -->
+                <ul id="menu-list" class="space-y-1"> <!-- Reduced space-y for denser menu -->
+                    <!-- Menu items will be dynamically added here -->
                 </ul>
             </nav>
 
-            <!-- Main Content: Displays the content of the currently active module -->
             <section id="main-content" class="md:w-3/4 bg-surface shadow-md rounded-xl p-6 flex-grow">
-                <!-- Module content will be dynamically rendered here by coreUIManager.js -->
                 <p>Loading game content...</p>
             </section>
         </main>
 
-        <!-- Footer for Save/Load and other global actions -->
-        <footer class="bg-surface shadow-top rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50">
-            <button id="save-button" class="game-button bg-green-500 hover:bg-green-600 mr-2">Save Game</button>
-            <button id="load-button" class="game-button bg-blue-500 hover:bg-blue-600 mr-2">Load Game</button>
-            <button id="reset-button" class="game-button bg-red-500 hover:bg-red-600">Reset Game (Hard)</button>
+        <footer class="bg-surface shadow-top rounded-t-xl p-4 mt-6 text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-2">
+            <button id="save-button" class="game-button bg-green-500 hover:bg-green-600">Save Game</button>
+            <button id="load-button" class="game-button bg-blue-500 hover:bg-blue-600">Load Game</button>
+            <button id="reset-button" class="game-button bg-red-500 hover:bg-red-600">Hard Reset</button>
+            <button id="dev-tools-button" class="game-button bg-emerald-500 hover:bg-emerald-600">Developer Tools</button> <!-- New Button -->
         </footer>
     </div>
 
-    <!-- Modal Container -->
     <div id="modal-container"></div>
-    <!-- Tooltip Container -->
     <div id="tooltip-container" class="tooltip"></div>
+    <div id="notification-area" class="fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full"></div>
 
 
-    <!-- Library for handling large numbers -->
-    <script src="js/lib/break_infinity.min.js"></script> <!-- Corrected filename -->
-    <!-- Main game script, loaded as a module to allow imports/exports -->
+    <script src="js/lib/break_infinity.min.js"></script>
     <script type="module" src="js/main.js"></script>
 </body>
 </html>
