@@ -27,251 +27,269 @@
         };
     </script>
     <style>
-        @keyframes rgb-cycle-bg { /* For backgrounds or elements where hue-rotate is subtle */
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
         @keyframes rgb-cycle-filter { /* For text, borders via filter */
-            0% { filter: hue-rotate(0deg) saturate(1.5); }
-            100% { filter: hue-rotate(360deg) saturate(1.5); }
+            0% { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); }
+            100% { filter: hue-rotate(360deg) saturate(1.5) brightness(1.1); }
         }
         @keyframes rgb-led-glow-text {
-            0%, 100% { text-shadow: 0 0 3px hsla(var(--hue-cycle), 100%, 70%, 0.7), 0 0 6px hsla(var(--hue-cycle), 100%, 60%, 0.5), 0 0 9px hsla(var(--hue-cycle), 100%, 50%, 0.3); color: hsla(var(--hue-cycle), 100%, 85%,1); animation-timing-function: ease-in-out; }
-            50% { text-shadow: 0 0 5px hsla(var(--hue-cycle), 100%, 70%, 0.9), 0 0 10px hsla(var(--hue-cycle), 100%, 60%, 0.7), 0 0 15px hsla(var(--hue-cycle), 100%, 50%, 0.5); color: hsla(var(--hue-cycle), 100%, 90%,1); animation-timing-function: ease-in-out; }
+            0%, 100% {
+                text-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.9), 0 0 8px hsla(var(--hue-cycle), 100%, 70%, 0.7), 0 0 12px hsla(var(--hue-cycle), 100%, 65%, 0.5);
+                color: hsla(var(--hue-cycle), 100%, 90%,1);
+                animation-timing-function: ease-in-out;
+            }
+            50% {
+                text-shadow: 0 0 6px hsla(calc(var(--hue-cycle) + 30), 100%, 75%, 1), 0 0 12px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 0.8), 0 0 18px hsla(calc(var(--hue-cycle) + 30), 100%, 65%, 0.6);
+                color: hsla(calc(var(--hue-cycle) + 30), 100%, 92%,1);
+                animation-timing-function: ease-in-out;
+            }
         }
         @keyframes rgb-led-glow-border {
-            0%, 100% { border-color: hsla(var(--hue-cycle), 100%, 70%, 1); box-shadow: 0 0 3px hsla(var(--hue-cycle), 100%, 70%, 0.7), inset 0 0 2px hsla(var(--hue-cycle), 100%, 70%, 0.5); animation-timing-function: ease-in-out; }
-            50% { border-color: hsla(var(--hue-cycle), 100%, 60%, 1); box-shadow: 0 0 5px hsla(var(--hue-cycle), 100%, 60%, 0.9), inset 0 0 3px hsla(var(--hue-cycle), 100%, 60%, 0.7); animation-timing-function: ease-in-out; }
+            0%, 100% {
+                border-color: hsla(var(--hue-cycle), 100%, 75%, 1);
+                box-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.8), inset 0 0 3px hsla(var(--hue-cycle), 100%, 75%, 0.6);
+                animation-timing-function: ease-in-out;
+            }
+            50% {
+                border-color: hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1);
+                box-shadow: 0 0 6px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1), inset 0 0 4px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 0.7);
+                animation-timing-function: ease-in-out;
+            }
         }
-         @keyframes hue-rotate-anim {
+         @keyframes hue-rotate-anim { /* Drives the --hue-cycle variable */
             0% { --hue-cycle: 0; }
             100% { --hue-cycle: 360; }
         }
-
 
         :root {
             --font-main: 'Inter', sans-serif;
             /* Default: Modern Day */
             --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
             --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
-            --color-background: #F9FAFB; --color-surface: #FFFFFF; --color-surface-dark: #F3F4F6;
-            --color-text-primary: #111827; --color-text-secondary: #374151; /* Darker for better day contrast */
-            --color-border: #D1D5DB; /* Gray 300 for day borders */
-            --color-button-text: #FFFFFF;
-            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
-            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);
+            --color-background: #F3F4F6; /* Defaulting to a slightly off-white for better perceived warmth */
+            --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB; /* Lighter gray for cards */
+            --color-text-primary: #111827; --color-text-secondary: #374151;
+            --color-border: #D1D5DB; --color-button-text: #FFFFFF;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05); /* Softer shadows */
+            --shadow-md: 0 3px 5px -1px rgba(0,0,0,0.07), 0 2px 3px -1px rgba(0,0,0,0.04);
+            --shadow-lg: 0 8px 12px -3px rgba(0,0,0,0.07), 0 3px 5px -2px rgba(0,0,0,0.04);
+            --shadow-xl: 0 15px 20px -5px rgba(0,0,0,0.07), 0 8px 8px -5px rgba(0,0,0,0.03);
             --animation-rgb-filter: none; --animation-rgb-border: none; --animation-rgb-text: none; --animation-hue-rotate: none;
         }
 
         /* --- Modern Theme --- */
+        [data-theme="modern"][data-mode="day"] { /* Explicitly define day mode for Modern */
+            --color-primary: #4F46E5; --color-primary-lighter: #6366F1; --color-secondary: #EC4899;
+            --color-accent-one: #10B981; --color-accent-two: #F59E0B;
+            --color-background: #F3F4F6; --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB;
+            --color-text-primary: #111827; --color-text-secondary: #374151;
+            --color-border: #D1D5DB; --color-button-text: #FFFFFF;
+        }
         [data-theme="modern"][data-mode="night"] {
             --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
             --color-accent-one: #34D399; --color-accent-two: #FBBF24;
-            --color-background: #111827; --color-surface: #1F2937; --color-surface-dark: #374151;
-            --color-text-primary: #E5E7EB; /* Gray 200 - Good contrast on Gray 800/900 */
-            --color-text-secondary: #9CA3AF; /* Gray 400 */
-            --color-border: #4B5563; --color-button-text: #F9FAFB;
+            --color-background: #0F172A; /* Darker Slate background for better contrast */
+            --color-surface: #1E293B;    /* Slate 700 */
+            --color-surface-dark: #334155;/* Slate 600 */
+            --color-text-primary: #E2E8F0; /* Slate 200 - Good contrast */
+            --color-text-secondary: #94A3B8; /* Slate 400 */
+            --color-border: #475569;       /* Slate 500 */
+            --color-button-text: #F1F5F9; /* Slate 100 */
         }
 
         /* --- Neon Theme --- */
-        [data-theme="neon"][data-mode="day"] {
+        [data-theme="neon"][data-mode="day"] { /* Brighter Day for Neon */
             --color-primary: #16A34A; --color-secondary: #DB2777; --color-accent-one: #0891B2;
-            --color-background: #F0FDF4; --color-surface: #FFFFFF; --color-surface-dark: #DCFCE7;
-            --color-text-primary: #14532D; --color-text-secondary: #166534;
-            --color-border: #86EFAC; --color-button-text: #FFFFFF;
+            --color-background: #ECFDF5; /* Very Light Green */
+            --color-surface: #FFFFFF; --color-surface-dark: #D1FAE5;
+            --color-text-primary: #064E3B; --color-text-secondary: #047857;
+            --color-border: #A7F3D0; --color-button-text: #FFFFFF;
         }
         [data-theme="neon"][data-mode="night"] {
-            --color-primary: #22C55E; /* Brighter Neon Green */
-            --color-secondary: #EC4899; /* Bright Pink */
-            --color-accent-one: #06B6D4; /* Bright Cyan */
-            --color-background: #020617; /* Very Dark Blue/Black */
-            --color-surface: #0F172A;    /* Dark Slate Blue */
-            --color-surface-dark: #1E293B; /* Lighter Slate Blue */
-            --color-text-primary: #7EE23C; /* Vibrant Neon Green Text */
-            --color-text-secondary: #69C338; /* Slightly Muted Neon Green */
-            --color-border: #22C55E; --color-button-text: #020617;
-            --achievement-neon-glow: 0 0 5px #22c55e, 0 0 10px #22c55e, 0 0 15px #ec4899;
+            --color-primary: #22D3EE;    /* Bright Cyan for Primary */
+            --color-secondary: #F472B6;  /* Bright Pink for Secondary */
+            --color-accent-one: #4ADE80;  /* Bright Green for Accent */
+            --color-background: #020617;  /* Near Black */
+            --color-surface: #0F172A;     /* Dark Slate */
+            --color-surface-dark: #1E293B; /* Darker Slate */
+            --color-text-primary: #67E8F9; /* Bright Cyan text */
+            --color-text-secondary: #A5F3FC; /* Lighter Cyan text */
+            --color-border: #22D3EE; --color-button-text: #020617;
+            --achievement-neon-glow: 0 0 6px #22D3EE, 0 0 12px #22D3EE, 0 0 18px #F472B6;
         }
 
         /* --- Steampunk Theme --- */
         [data-theme="steampunk"][data-mode="day"] {
-            --color-primary: #A16207; --color-secondary: #B45309;
-            --color-background: #FEFDFB; --color-surface: #FFFBEB; --color-surface-dark: #FEF3C7;
-            --color-text-primary: #422006; --color-text-secondary: #78350F;
-            --color-border: #FDE68A; --color-button-text: #FFFBEB;
+            --color-primary: #8B4513; --color-secondary: #DAA520;
+            --color-background: #FDF6E3; /* Parchment */
+            --color-surface: #FFFDF5;    /* Lighter Parchment */
+            --color-surface-dark: #F5ECCE; /* Darker Parchment */
+            --color-text-primary: #5D4037; --color-text-secondary: #795548;
+            --color-border: #D2B48C; --color-button-text: #FFFDF5;
         }
         [data-theme="steampunk"][data-mode="night"] {
-            --color-primary: #F59E0B; --color-secondary: #EAB308;
-            --color-background: #26190D; --color-surface: #402A17; --color-surface-dark: #573B21;
-            --color-text-primary: #FDEEDC; --color-text-secondary: #FDE0BB;
-            --color-border: #78350F; --color-button-text: #422006;
+            --color-primary: #D4AC0D;    /* Brass/Gold */
+            --color-secondary: #B08D57;  /* Bronze */
+            --color-background: #3E2723;  /* Darkest Brown */
+            --color-surface: #4E342E;     /* Dark Brown */
+            --color-surface-dark: #5D4037;/* Medium Dark Brown */
+            --color-text-primary: #EFEBE9; --color-text-secondary: #D7CCC8;
+            --color-border: #A1887F; --color-button-text: #3E2723;
         }
 
         /* --- Pink Theme --- */
         [data-theme="pink"][data-mode="day"] {
             --color-primary: #EC4899; --color-secondary: #D946EF;
-            --color-background: #FFF0F5; --color-surface: #FFFFFF; --color-surface-dark: #FFE4E1;
+            --color-background: #FEF2F2; /* Rose White */
+            --color-surface: #FFFFFF; --color-surface-dark: #FCE7F3; /* Pink tint */
             --color-text-primary: #831843; --color-text-secondary: #9D174D;
             --color-border: #FBCFE8; --color-button-text: #FFFFFF;
         }
         [data-theme="pink"][data-mode="night"] {
-            --color-primary: #DB2777;      /* Deeper Pink */
-            --color-secondary: #C026D3;    /* Deeper Violet */
-            --color-background: #3B071E;   /* Dark Magenta/Wine */
-            --color-surface: #581C37;      /* Darker Magenta/Wine */
-            --color-surface-dark: #701A45; /* Darker Still */
-            --color-text-primary: #FECDD3; /* Light Pink Text */
-            --color-text-secondary: #F9A8D4; /* Lighter Pink */
+            --color-primary: #F472B6;   /* Lighter Pink for night primary */
+            --color-secondary: #E879F9; /* Orchid */
+            --color-background: #3B071E; /* Dark Wine/Magenta */
+            --color-surface: #581C37;    /* Darker Wine/Magenta */
+            --color-surface-dark: #701A45; /* Darkest Wine/Magenta */
+            --color-text-primary: #FCE7F3; /* Light Pink */
+            --color-text-secondary: #FBCFE8; /* Lighter Pink */
             --color-border: #831843; --color-button-text: #FFF0F5;
         }
 
         /* --- Red & Yellow Theme --- */
         [data-theme="redyellow"][data-mode="day"] {
             --color-primary: #EF4444; --color-secondary: #F59E0B;
-            --color-background: #FFFBEB; --color-surface: #FFFFFF; --color-surface-dark: #FEF3C7;
-            --color-text-primary: #7F1D1D; --color-text-secondary: #B45309;
-            --color-border: #FCA5A5; --color-button-text: #FFFFFF;
+            --color-background: #FFFDEA; /* Light Yellow/Cream */
+            --color-surface: #FFFFFF; --color-surface-dark: #FEF9C3; /* Pale Yellow */
+            --color-text-primary: #991B1B; --color-text-secondary: #B45309;
+            --color-border: #FDBA74; --color-button-text: #FFFFFF;
         }
         [data-theme="redyellow"][data-mode="night"] {
-            --color-primary: #DC2626;      /* Brighter Red for Night */
-            --color-secondary: #FACC15;    /* Brighter Yellow for Night */
-            --color-background: #450A0A;   /* Very Dark Red */
-            --color-surface: #7F1D1D;      /* Dark Red (Surface) */
-            --color-surface-dark: #531313; /* Darker Red (Cards) */
+            --color-primary: #F87171;   /* Lighter Red for Night */
+            --color-secondary: #FBBF24; /* Lighter Amber for Night */
+            --color-background: #450A0A; /* Very Dark Red */
+            --color-surface: #7F1D1D;    /* Dark Red */
+            --color-surface-dark: #531313;/* Darker Red */
             --color-text-primary: #FEF3C7; --color-text-secondary: #FDE68A;
-            --color-border: #991B1B; --color-button-text: #FEF3C7;
+            --color-border: #B91C1C; --color-button-text: #FEF3C7;
         }
 
         /* --- RGB Theme --- */
-        [data-theme="rgb"] {
-            --animation-hue-rotate: hue-rotate-anim 10s linear infinite;
+        [data-theme="rgb"] { /* Apply hue rotation animation to body when RGB theme is active */
+            --animation-hue-rotate: hue-rotate-anim 12s linear infinite;
         }
         [data-theme="rgb"][data-mode="day"] {
-            --color-primary: hsl(var(--hue-cycle, 0), 70%, 55%);
-            --color-primary-lighter: hsl(var(--hue-cycle, 0), 70%, 65%);
-            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 60), 70%, 55%);
-            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 120), 70%, 55%);
-            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 180), 70%, 55%);
-            --color-background: #EEF2F6; /* Light neutral background */
-            --color-surface: #FFFFFF;
-            --color-surface-dark: #F0F4F8;
-            --color-text-primary: #22272E;
-            --color-text-secondary: #48515B;
-            --color-border: hsl(var(--hue-cycle, 0), 60%, 70%);
+            --color-primary: hsl(var(--hue-cycle, 0), 80%, 60%); /* More saturated for day */
+            --color-primary-lighter: hsl(var(--hue-cycle, 0), 80%, 70%);
+            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 80%, 60%);
+            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 80%, 60%);
+            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 80%, 60%);
+            --color-background: #E9EEF2; /* Very Light Neutral Gray */
+            --color-surface: #F7F9FB;
+            --color-surface-dark: #E0E6EB;
+            --color-text-primary: #1C2025;
+            --color-text-secondary: #3E454D;
+            --color-border: hsl(var(--hue-cycle, 0), 70%, 75%);
             --color-button-text: #FFFFFF;
-            --animation-rgb-filter: rgb-cycle-filter 10s linear infinite; /* Use on text if needed */
-            --animation-rgb-border: none;
+            --animation-rgb-filter: rgb-cycle-filter 12s linear infinite;
+            --animation-rgb-border: none; /* Simpler day border */
+            --animation-rgb-text: none;
         }
         [data-theme="rgb"][data-mode="night"] {
-            --color-primary: hsl(var(--hue-cycle, 0), 90%, 65%); /* Bright, saturated */
-            --color-primary-lighter: hsl(var(--hue-cycle, 0), 90%, 75%);
-            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 60), 90%, 65%);
-            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 120), 90%, 65%);
-            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 180), 90%, 65%);
-            --color-background: #030712;      /* Almost Black */
-            --color-surface: #070E24;         /* Very Dark Blue */
-            --color-surface-dark: #111827;    /* Darker Blue/Gray */
-            --color-text-primary: #E0E7FF;    /* Light, slightly desaturated */
-            --color-text-secondary: #A8B9E0;
-            --color-border: hsl(var(--hue-cycle, 0), 80%, 50%);
-            --color-button-text: #030712;
-            --animation-rgb-text: rgb-led-glow-text 4s linear infinite alternate;
-            --animation-rgb-border: rgb-led-glow-border 4s linear infinite alternate;
+            --color-primary: hsl(var(--hue-cycle, 0), 100%, 70%); /* Full saturation for LED */
+            --color-primary-lighter: hsl(var(--hue-cycle, 0), 100%, 80%);
+            --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 100%, 70%);
+            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 100%, 70%);
+            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 100%, 70%);
+            --color-background: #020408;      /* Almost Pitch Black */
+            --color-surface: #050A14;         /* Very Dark Deep Blue */
+            --color-surface-dark: #0A1020;    /* Slightly Lighter Deep Blue */
+            --color-text-primary: #CEDCFF;
+            --color-text-secondary: #9EB0E0;
+            --color-border: hsl(var(--hue-cycle, 0), 90%, 60%);
+            --color-button-text: #020408;
+            --animation-rgb-text: rgb-led-glow-text 3s ease-in-out infinite alternate;
+            --animation-rgb-border: rgb-led-glow-border 3s ease-in-out infinite alternate;
         }
 
+        html { height: 100%; }
         body {
             font-family: var(--font-main);
-            background-color: var(--color-background);
+            background-color: var(--color-background); /* Applied directly to body */
             color: var(--color-text-primary);
-            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100vh;
+            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100%; /* Changed to 100% from 100vh for html */
             transition: background-color 0.4s ease, color 0.4s ease;
-            animation: var(--animation-hue-rotate) forwards; /* For RGB theme body hue cycling */
+            animation: var(--animation-hue-rotate) forwards;
         }
-        #game-container { /* This will inherit body's animation for RGB */
-             width: 100%; height: 100%; 
+        #game-container {
+            /* This container div will now inherit its background from the body via the theme attributes set on it.
+               No explicit background-color needed here if body is correctly themed.
+               If theme attributes are only on #game-container, uncomment the next line. */
+            /* background-color: var(--color-background); */
+            color: var(--color-text-primary); /* Ensures text within game-container is also themed */
+            width: 100%; flex-grow: 1; /* Ensure it fills space if body is flex */
+            display: flex; flex-direction: column;
+            animation: var(--animation-hue-rotate) forwards; /* Also apply hue rotation here */
         }
+
         #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
         .modal-content, .tooltip, .module-card {
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
-        button, input[type="button"] { /* General button transitions */
+        button, input[type="button"] {
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
             box-shadow: var(--shadow-sm);
         }
         button:hover, input[type="button"]:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
         button:active, input[type="button"]:active { transform: scale(0.97); }
 
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
 
-        .game-button { /* Base for most interactable buttons */
+        .game-button {
             background-color: var(--color-primary);
             color: var(--color-button-text);
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
-            font-weight: 500; cursor: pointer; border: 1px solid transparent; /* Add transparent border for consistency */
-            animation: var(--animation-rgb-filter) forwards; /* For RGB theme button text color cycling */
+            font-weight: 500; cursor: pointer; border: 1px solid transparent;
+            animation: var(--animation-rgb-filter) forwards; /* Applies to text for RGB theme */
         }
         .game-button:disabled {
             background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important;
             filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important;
         }
-        /* Footer buttons styling (static colors usually, override RGB animation for clarity) */
         #save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
-        #load-button { background-color: var(--color-primary); color: var(--color-button-text); /* Primary action color */ }
+        #load-button { background-color: var(--color-primary); color: var(--color-button-text); } /* Inherits RGB anim if applicable */
         #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
         #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
-
-        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); /* Updated border */ }
+        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); }
         .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); }
 
-        /* Menu Styling */
+        /* Menu Styling - No overall border, tabs are bordered buttons */
         #main-menu {
-            background-color: transparent !important; /* Remove nav background */
-            border: none !important; /* Remove nav border */
-            padding: 0; /* Remove nav padding */
-            box-shadow: none !important;
+            background-color: transparent !important; border: none !important;
+            padding: 0; box-shadow: none !important;
         }
-        #menu-list {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem; /* space-y-2 */
-        }
-        .menu-tab { /* Styled as individual buttons */
-            display: block;
-            width: 100%;
-            padding: 0.75rem 1rem; /* py-3 px-4 */
-            text-align: left;
-            font-weight: 500;
-            color: var(--color-text-secondary);
-            background-color: var(--color-surface-dark);
-            border: 1px solid var(--color-border);
-            border-radius: var(--border-radius-lg);
+        #menu-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .menu-tab {
+            display: block; width: 100%; padding: 0.75rem 1rem; text-align: left; font-weight: 500;
+            color: var(--color-text-secondary); background-color: var(--color-surface-dark);
+            border: 1px solid var(--color-border); border-radius: var(--border-radius-lg);
             cursor: pointer;
             transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
             box-shadow: var(--shadow-sm);
         }
         .menu-tab:hover {
-            background-color: var(--color-surface);
-            color: var(--color-primary);
-            border-color: var(--color-primary);
-            box-shadow: var(--shadow-md);
+            background-color: var(--color-surface); color: var(--color-primary);
+            border-color: var(--color-primary); box-shadow: var(--shadow-md);
         }
         .menu-tab.active {
-            background-color: var(--color-primary);
-            color: var(--color-button-text);
-            border-color: var(--color-primary-lighter);
-            font-weight: 600;
-            box-shadow: var(--shadow-lg);
+            background-color: var(--color-primary); color: var(--color-button-text);
+            border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg);
         }
-         [data-theme="rgb"] .menu-tab.active {
-            animation: var(--animation-rgb-filter) forwards; /* RGB animation for active menu tab text */
-        }
+         [data-theme="rgb"] .menu-tab.active { animation: var(--animation-rgb-filter) forwards; }
 
 
         .module-card {
@@ -283,32 +301,36 @@
             color: var(--color-text-primary);
         }
         #resource-bar h2 { color: var(--color-primary); animation: var(--animation-rgb-text) forwards; }
-        /* Remove h3 for menu */
+        /* Menu h3 title is removed via HTML change */
 
-        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
+        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; /* Or specific neon animation */ }
 
         #resources-display > div { /* Resource items */
             background-color: var(--color-surface-dark) !important;
             color: var(--color-text-primary) !important;
-            border: 1px solid var(--color-border) !important; /* Ensure border is themed and visible */
-            padding: 0.75rem; /* p-3 for better spacing */
-            border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
+            border: 1px solid var(--color-border) !important;
+            padding: 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #resources-display .font-semibold { /* Resource name */
+        #resources-display .font-semibold { /* Resource name (e.g., Study Points:) */
              color: var(--color-secondary) !important;
-             animation: var(--animation-rgb-text) forwards; /* RGB text animation */
+             animation: var(--animation-rgb-text) forwards;
         }
          [data-theme="neon"][data-mode="night"] #resources-display > div {
-            border-color: var(--color-primary); box-shadow: 0 0 5px var(--color-primary), inset 0 0 3px var(--color-primary);
+            border-color: var(--color-primary);
+            box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary);
+            /* For a more intense border glow: */
+            /* animation: var(--animation-rgb-border) forwards; */
         }
         [data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
         [data-theme="rgb"] #resources-display .font-semibold { animation: var(--animation-rgb-text) forwards; }
 
-
-        .studies-buy-button { /* This class should be added to Studies module buy buttons */
-            /* Inherits .game-button styles, which are now better themed */
-            /* Specific overrides if needed: */
+        /* For studies buy buttons, ensure they use .game-button class in studies_ui.js */
+        /* and do not have hardcoded Tailwind bg- or text- classes. */
+        /* Example: coreUIManager.createButton("Buy Student", ..., ['game-button', 'studies-buy-button']); */
+        .studies-buy-button {
+            /* Inherits .game-button styles. Add specific overrides here if .game-button is too generic. */
+            /* For example, to ensure they always use accent color: */
             /* background-color: var(--color-accent-two); */
             /* color: var(--color-text-primary); */
         }
@@ -317,9 +339,11 @@
             border: 1px solid var(--color-primary);
             box-shadow: var(--achievement-neon-glow, none);
             color: var(--color-text-primary); background-color: var(--color-surface-dark);
+            padding: 0.75rem; border-radius: var(--border-radius-lg); margin-bottom: 0.5rem;
         }
         [data-theme="neon"][data-mode="night"] .achievement-item h4 {
-             color: var(--color-secondary); text-shadow: var(--achievement-neon-glow, none);
+             color: var(--color-secondary);
+             text-shadow: 0 0 3px var(--color-secondary), 0 0 5px var(--color-primary); /* Example neon title */
         }
 
         select, input[type="text"], input[type="number"], textarea {
@@ -329,28 +353,29 @@
         }
         select:focus, input:focus, textarea:focus {
             border-color: var(--color-primary); outline: none;
-            box-shadow: 0 0 0 3px hsla(var(--hue, 240), 90%, 70%, 0.3); /* Fallback focus, ideally themed */
+            box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4); /* Generic focus, picks up RGB hue */
         }
-        [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.3); }
-        [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(57, 255, 20, 0.4); }
-        /* Add more theme-specific focus styles if desired */
+        [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
+        [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
+
 
     </style>
 </head>
-<body class="font-inter">
-    <div id="game-container" data-theme="modern" data-mode="day" class="container mx-auto p-4 flex flex-col flex-grow max-w-6xl min-h-screen">
+<body class="font-inter"> <!-- data-theme and data-mode will be set by JS on #game-container -->
+                            <!-- Body background is now directly themed -->
+    <div id="game-container" data-theme="modern" data-mode="day" class="mx-auto p-4 flex flex-col max-w-6xl">
         <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
             <h2 class="text-xl font-semibold mb-2">Resources</h2>
             <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <!-- Resources will be dynamically added here -->
+                <!-- Resources dynamically added -->
             </div>
         </header>
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
             <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
-                <!-- Menu Title Removed -->
-                <ul id="menu-list" class="space-y-1">
-                    <!-- Menu items will be dynamically added here as styled buttons -->
+                <!-- Menu H3 Title Removed -->
+                <ul id="menu-list"> <!-- Removed space-y-1, gap is now on #menu-list flex */ -->
+                    <!-- Menu items styled as bordered buttons -->
                 </ul>
             </nav>
 
