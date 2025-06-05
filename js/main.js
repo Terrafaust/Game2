@@ -1,8 +1,9 @@
-// js/main.js (v9.9 - Diagnostic Log for coreResourceManager)
+// js/main.js (v9.10 - Diagnostic Log for coreUIManager)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.10: Added diagnostic log for coreUIManager before initialization.
  * v9.9: Added diagnostic log for coreResourceManager before initialization.
  * v9.8: Fixed TypeError by correcting coreResourceManager import.
  * v9.7: Ensures moduleLoader.resetAllModules() is called on hard reset.
@@ -43,10 +44,27 @@ async function initializeGame() {
     // --- DIAGNOSTIC LOG: Check coreResourceManager before calling initialize() ---
     console.log('[DEBUG Main] coreResourceManager before initialize:', coreResourceManager);
     // --- END DIAGNOSTIC LOG ---
+    coreResourceManager.initialize(); // Initialize resource manager
 
-    coreResourceManager.initialize(); // Initialize resource manager (This is line 36)
-    coreUIManager.initialize();
+    // --- DIAGNOSTIC LOG: Check coreUIManager before calling initialize() ---
+    console.log('[DEBUG Main] coreUIManager before initialize:', coreUIManager);
+    // --- END DIAGNOSTIC LOG ---
+    coreUIManager.initialize(); // Initialize UI manager (This is line 37, assuming previous line was 36)
     coreUpgradeManager.initialize();
+
+
+    const initialTheme = globalSettingsManager.getSetting('theme');
+    if (initialTheme && initialTheme.name && initialTheme.mode) {
+        coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
+    }
+
+    document.addEventListener('themeChanged', (event) => {
+        const { name, mode } = event.detail;
+        coreUIManager.applyTheme(name, mode);
+    });
+    document.addEventListener('languageChanged', (event) => {
+        coreUIManager.showNotification(`Language setting changed to: ${event.detail}. (Localization TBD)`, 'info');
+    });
 
     // Pass core systems to module loader
     moduleLoader.initialize(
@@ -79,7 +97,7 @@ async function initializeGame() {
                     resDef.isUnlocked,
                     resDef.hasProductionRate
                 );
-                loggingSystem.info("Main", `Core resource '${resDef.name}' (${resDef.id}) defined.`);
+                loggingSystem.info("Main", `Core resource '${resDef.name}' (${resId}) defined.`); // Changed to use resId for logging consistency
             }
         }
     } else {
