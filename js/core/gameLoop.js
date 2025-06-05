@@ -1,9 +1,10 @@
-// js/core/gameLoop.js
+// js/core/gameLoop.js (v1.1 - Play Time Integration)
 
 /**
  * @file gameLoop.js
  * @description Manages the main game loop, time, and updates for the incremental game.
  * It calls update functions for various game systems and modules at regular intervals.
+ * v1.1: Integrated coreGameStateManager.updatePlayTime for total play time tracking.
  */
 
 import { coreGameStateManager } from './coreGameStateManager.js';
@@ -61,6 +62,11 @@ function loop(currentTime) {
  * @param {number} tickDeltaTime - The time elapsed since the last tick, in seconds.
  */
 function tick(tickDeltaTime) {
+    // --- IMPORTANT: Update total play time here ---
+    // The tickDeltaTime is already in seconds, so we can pass it directly.
+    coreGameStateManager.updatePlayTime(tickDeltaTime);
+    // ------------------------------------------
+
     // 1. Resource Generation (e.g., based on production rates)
     coreResourceManager.updateResourceProduction(tickDeltaTime);
     updateCallbacks.resourceGeneration.forEach(cb => cb(tickDeltaTime));
