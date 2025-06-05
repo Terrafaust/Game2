@@ -1,8 +1,9 @@
-// js/core/moduleLoader.js (v2.3.1 - Fix Duplicate Export)
+// js/core/moduleLoader.js (v2.3.2 - Add saveLoadSystem)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
+ * v2.3.2: Accepts and passes saveLoadSystem.
  * v2.3.1: Fixes duplicate export error by ensuring single export statement. Accepts and passes globalSettingsManager.
  * v2.3: Accepts and passes globalSettingsManager to modules.
  * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
@@ -20,7 +21,8 @@ let coreSystemsBase = {
     loggingSystem: null, // This will be the imported loggingSystem instance
     gameLoop: null,
     coreUpgradeManager: null,
-    globalSettingsManager: null, // Added globalSettingsManager
+    globalSettingsManager: null,
+    saveLoadSystem: null, // <<< Added saveLoadSystem
     // moduleLoader: null // This will be added dynamically in loadModule
 };
 
@@ -38,7 +40,8 @@ const moduleLoader = { // Declared as const, not exported inline
         loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
         gameLoopRef,
         coreUpgradeManagerRef,
-        globalSettingsManagerRef // Added globalSettingsManagerRef parameter
+        globalSettingsManagerRef,
+        saveLoadSystemRef // <<< Added saveLoadSystemRef parameter
     ) {
         coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
         coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
@@ -48,7 +51,8 @@ const moduleLoader = { // Declared as const, not exported inline
         coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
         coreSystemsBase.gameLoop = gameLoopRef;
         coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
-        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef; // Assign ref
+        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef;
+        coreSystemsBase.saveLoadSystem = saveLoadSystemRef; // <<< Assign ref
 
         if (typeof decimalUtilityRef === 'undefined') {
             loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
@@ -60,8 +64,13 @@ const moduleLoader = { // Declared as const, not exported inline
         } else {
             loggingSystem.info("ModuleLoader", "globalSettingsManagerRef received successfully in initialize.");
         }
+        if (typeof saveLoadSystemRef === 'undefined') {
+            loggingSystem.warn("ModuleLoader_Warning", "saveLoadSystemRef received in initialize is undefined. Save/Load in modules might fail.");
+        } else {
+            loggingSystem.info("ModuleLoader", "saveLoadSystemRef received successfully in initialize.");
+        }
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3.1).");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3.2).");
     },
 
     async loadModule(manifestPath) {
@@ -88,16 +97,20 @@ const moduleLoader = { // Declared as const, not exported inline
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
+            // Prepare the coreSystems object to pass to the module
             const systemsForModule = {
-                ...coreSystemsBase,
-                moduleLoader: this 
+                ...coreSystemsBase, // This now includes globalSettingsManager and saveLoadSystem
+                moduleLoader: this
             };
             
+            // Diagnostic log for both critical systems for settings_ui
             if (!systemsForModule.globalSettingsManager) {
-                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule right before passing to module '${manifest.id}'!`, Object.keys(systemsForModule));
-            } else {
-                loggingSystem.debug("ModuleLoader_LoadModule", `globalSettingsManager is PRESENT in systemsForModule for module '${manifest.id}'.`);
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule for module '${manifest.id}'!`);
             }
+            if (!systemsForModule.saveLoadSystem) {
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `saveLoadSystem is MISSING in systemsForModule for module '${manifest.id}'!`);
+            }
+
 
             const moduleInstance = await manifest.initialize(systemsForModule);
 
