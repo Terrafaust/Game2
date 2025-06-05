@@ -1,9 +1,9 @@
-// js/core/coreGameStateManager.js (v2 - Clear All Flags)
+// js/core/coreGameStateManager.js (v2.1 - Ref Fix)
 
 /**
  * @file coreGameStateManager.js
  * @description Manages the global game state.
- * v2: Adds clearAllGlobalFlags method.
+ * v2.1: Removed erroneous coreSystemsRef check from setGlobalFlag.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -22,11 +22,20 @@ const coreGameStateManager = {
             this.setFullGameState(initialState);
             loggingSystem.info("CoreGameStateManager", "Initialized with provided state.", initialState);
         } else {
+            // Ensure default structure if no initial state provided
+            gameState.gameVersion = gameState.gameVersion || "0.1.0";
+            gameState.lastSaveTime = gameState.lastSaveTime || null;
+            gameState.globalFlags = gameState.globalFlags || {};
+            gameState.moduleStates = gameState.moduleStates || {};
             loggingSystem.info("CoreGameStateManager", "Initialized with default state.", JSON.parse(JSON.stringify(gameState)));
         }
     },
 
     getGameState() {
+        // Ensure a deep copy is returned, especially if gameState might contain nested objects.
+        // JSON parse/stringify is okay for POJOs but will lose Decimal instances.
+        // The saveLoadSystem handles Decimal serialization separately.
+        // For internal use, this might be fine, but be cautious.
         return JSON.parse(JSON.stringify(gameState));
     },
 
@@ -35,23 +44,28 @@ const coreGameStateManager = {
             loggingSystem.error("CoreGameStateManager", "setFullGameState called with null or undefined state.");
             return;
         }
+        // Directly assign. Consider a deep merge if partial updates are possible.
         gameState = newState;
+        // Ensure essential properties exist after assignment from potentially older save data
         gameState.globalFlags = newState.globalFlags || {};
         gameState.moduleStates = newState.moduleStates || {};
-        gameState.gameVersion = newState.gameVersion || "0.0.0"; 
+        gameState.gameVersion = newState.gameVersion || "0.0.0"; // Default if missing from save
         gameState.lastSaveTime = newState.lastSaveTime || null;
 
+        // Revive Decimals in module states if they were stringified
+        // This is a generic example; specific modules should handle their own state revival more robustly if needed.
         for (const moduleId in gameState.moduleStates) {
             const moduleStateData = gameState.moduleStates[moduleId];
-            if (moduleId === 'studies' && moduleStateData.ownedProducers) {
+            if (moduleId === 'studies' && moduleStateData && moduleStateData.ownedProducers) {
                 for (const producerId in moduleStateData.ownedProducers) {
-                    // Ensure ownedProducers values are strings after potential Decimal revival issues in older saves
                     if (typeof moduleStateData.ownedProducers[producerId] !== 'string') {
-                         moduleStateData.ownedProducers[producerId] = decimalUtility.new(moduleStateData.ownedProducers[producerId]).toString();
+                        // This implies it might be a number or an actual Decimal from an older save style
+                        // Convert to string to match current practice where logic converts string to Decimal.
+                        moduleStateData.ownedProducers[producerId] = decimalUtility.new(moduleStateData.ownedProducers[producerId]).toString();
                     }
                 }
             }
-            // Add similar revival/validation for other modules if needed
+            // Add similar logic for other modules if their states contain Decimals
         }
         loggingSystem.info("CoreGameStateManager", "Full game state has been set.");
     },
@@ -63,14 +77,10 @@ const coreGameStateManager = {
         }
         gameState.globalFlags[flagName] = value;
         loggingSystem.debug("CoreGameStateManager", `Global flag '${flagName}' set to:`, value);
-
-        // If a flag change might affect menu visibility, re-render the menu
-        // This is a broad check; more specific checks could be done if performance is an issue.
-        if (flagName.includes("Unlocked") && coreSystemsRef && coreSystemsRef.coreUIManager) { // coreSystemsRef would need to be set globally or passed
-            // To avoid direct dependency or global ref, modules that set flags affecting menu
-            // should call coreUIManager.renderMenu() themselves.
-            // This was handled in market_logic.js and skills_logic.js.
-        }
+        
+        // Responsibility for calling coreUIManager.renderMenu() is now fully on the
+        // module logic that sets a flag which should trigger a menu update.
+        // Example: market_logic.js, skills_logic.js, etc. already do this.
     },
 
     getGlobalFlag(flagName, defaultValue = undefined) {
@@ -81,12 +91,9 @@ const coreGameStateManager = {
     },
 
     getAllGlobalFlags() {
-        return { ...gameState.globalFlags };
+        return { ...gameState.globalFlags }; // Return a shallow copy
     },
 
-    /**
-     * Clears all global flags. Called during a hard reset.
-     */
     clearAllGlobalFlags() {
         gameState.globalFlags = {};
         loggingSystem.info("CoreGameStateManager", "All global flags cleared.");
@@ -97,13 +104,16 @@ const coreGameStateManager = {
             loggingSystem.warn("CoreGameStateManager", "setModuleState: moduleId must be a non-empty string.");
             return;
         }
-        gameState.moduleStates[moduleId] = { ...moduleStateData };
+        // Store a shallow copy. If moduleStateData contains nested objects that modules might mutate,
+        // a deep copy or more careful state management within modules would be needed.
+        gameState.moduleStates[moduleId] = { ...moduleStateData }; 
         loggingSystem.debug("CoreGameStateManager", `State for module '${moduleId}' updated.`);
     },
 
     getModuleState(moduleId) {
         if (Object.prototype.hasOwnProperty.call(gameState.moduleStates, moduleId)) {
             try {
+                // Return a deep copy to prevent direct modification of internal state.
                 return JSON.parse(JSON.stringify(gameState.moduleStates[moduleId]));
             } catch (e) {
                 loggingSystem.error("CoreGameStateManager", `Error deep copying state for module ${moduleId}`, e);
@@ -140,20 +150,23 @@ const coreGameStateManager = {
     },
 
     update(deltaTime) {
-        // No specific time-based logic for global state manager itself yet.
+        // No time-dependent logic here currently
     },
 
     resetState() {
-        const defaultVersion = "0.1.0"; // Base version, main.js will set current game version
+        const defaultVersion = "0.1.0"; // Base version, main.js will set the correct running version.
         gameState = {
             gameVersion: defaultVersion,
             lastSaveTime: null,
-            globalFlags: {}, // Flags are cleared, individual modules handle their permanent flags in onResetState
+            globalFlags: {}, // All flags are cleared by re-assigning this. clearAllGlobalFlags() is an explicit call too.
             moduleStates: {},
         };
-        loggingSystem.info("CoreGameStateManager", "Game state has been reset to default (global flags object recreated).");
+        loggingSystem.info("CoreGameStateManager", "Game state (excluding flags explicitly) has been reset to default structure.");
+        // Note: clearAllGlobalFlags() should be called by saveLoadSystem.resetGameData() to ensure flags are truly empty.
     }
 };
 
-// coreGameStateManager.initialize(); // Initialize on load (or let main.js handle)
+// Initialize on load - ensure this doesn't conflict with main.js initialization sequence
+// If main.js loads a save, it will overwrite this. If not, these defaults are used.
+// coreGameStateManager.initialize(); // Typically called by main.js to ensure proper sequence with save/load.
 export { coreGameStateManager };
