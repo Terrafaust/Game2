@@ -1,9 +1,9 @@
-// modules/skills_module/skills_logic.js (v1.2 - Achievement Support)
+// modules/skills_module/skills_logic.js (v1.3 - Reset Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
- * v1.2: Adds methods for achievement system to query skill states.
+ * v1.3: Ensures 'skillsTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
 import { staticModuleData } from './skills_data.js';
@@ -14,7 +14,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.3).");
         this.registerAllSkillEffects(); 
     },
 
@@ -41,24 +41,20 @@ export const moduleLogic = {
         return moduleState.skillLevels[skillId] || 0;
     },
 
-    // New method for achievements
     getSkillMaxLevel(skillId) {
         const skillDef = staticModuleData.skills[skillId];
         return skillDef ? skillDef.maxLevel : 0;
     },
 
-    // New method for achievements
     isTierUnlocked(tierNum) {
-        if (tierNum <= 1) return true; // Tier 1 is always unlocked
-        // Check if all skills in the previous tier (tierNum - 1) are at least level 1
+        if (tierNum <= 1) return true; 
         const prevTier = tierNum - 1;
         const skillsInPrevTier = Object.values(staticModuleData.skills).filter(s => s.tier === prevTier);
-        if (skillsInPrevTier.length === 0 && prevTier > 0) { // No skills defined for previous tier implies current tier isn't locked by it
+        if (skillsInPrevTier.length === 0 && prevTier > 0) { 
             return true;
         }
         return skillsInPrevTier.every(s => this.getSkillLevel(s.id) >= 1);
     },
-
 
     isSkillUnlocked(skillId) {
         const skillDef = staticModuleData.skills[skillId];
@@ -70,9 +66,9 @@ export const moduleLogic = {
         switch (type) {
             case "skillLevel":
                 return this.getSkillLevel(requiredSkillId) >= requiredLevel;
-            case "allSkillsInTierLevel": // This condition means all skills in 'requiredTierNum' must be at 'requiredLevel'
+            case "allSkillsInTierLevel": 
                 const skillsInRequiredTier = Object.values(staticModuleData.skills).filter(s => s.tier === requiredTierNum);
-                if (skillsInRequiredTier.length === 0) return true; // No skills in target tier, so condition met
+                if (skillsInRequiredTier.length === 0) return true; 
                 return skillsInRequiredTier.every(s => this.getSkillLevel(s.id) >= requiredLevel);
             default:
                 coreSystemsRef.loggingSystem.warn("SkillsLogic", `Unknown skill unlock condition type: ${type} for skill ${skillId}`);
@@ -215,16 +211,17 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.2).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.3).");
         this.registerAllSkillEffects(); 
         this.isSkillsTabUnlocked(); 
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered for Skills module (v1.2).");
-        this.registerAllSkillEffects();
-        if (coreSystemsRef.coreGameStateManager) { // Ensure coreGameStateManager is available
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered for Skills module (v1.3).");
+        this.registerAllSkillEffects(); // Re-register to effectively reset (as levels will be 0)
+        if (coreSystemsRef.coreGameStateManager) { 
             coreSystemsRef.coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', false);
+            coreSystemsRef.loggingSystem.info("SkillsLogic", "'skillsTabPermanentlyUnlocked' flag cleared.");
         }
     }
 };

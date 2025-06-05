@@ -1,9 +1,9 @@
-// modules/studies_module/studies_logic.js (v3.3 - Persistent Unlock)
+// modules/studies_module/studies_logic.js (v3.4 - Reset Fix)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
- * v3.3: Implements persistent unlock for Studies tab via global flag.
+ * v3.4: Ensures 'studiesTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -26,7 +26,7 @@ export const moduleLogic = {
             console.error("StudiesLogic_Init_CRITICAL: coreSystemsRef or loggingSystem is missing during initialize!", coreSystemsRef);
         }
         const log = (coreSystemsRef && coreSystemsRef.loggingSystem) ? coreSystemsRef.loggingSystem.info.bind(coreSystemsRef.loggingSystem) : console.log;
-        log("StudiesLogic", "Logic initialized (v3.3).");
+        log("StudiesLogic", "Logic initialized (v3.4).");
     },
 
     calculateProducerCost(producerId) {
@@ -179,11 +179,6 @@ export const moduleLogic = {
         return decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
     },
 
-    /**
-     * Checks if the Studies tab itself should be unlocked.
-     * Now also sets a permanent flag if unlocked.
-     * @returns {boolean}
-     */
     isStudiesTabUnlocked() {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreGameStateManager) {
             console.error("StudiesLogic_isStudiesTabUnlocked_CRITICAL: Core systems missing!", coreSystemsRef);
@@ -191,15 +186,14 @@ export const moduleLogic = {
         }
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
 
-        // Check for the permanent unlock flag first
         if (coreGameStateManager.getGlobalFlag('studiesTabPermanentlyUnlocked', false)) {
             return true;
         }
 
         const condition = staticModuleData.ui.studiesTabUnlockCondition;
-        if (!condition) { // Should not happen if data is correct
-             coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', true); // Unlock if no condition
-             if(coreUIManager) coreUIManager.renderMenu(); // Update menu
+        if (!condition) { 
+             coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', true); 
+             if(coreUIManager) coreUIManager.renderMenu(); 
             return true;
         }
         
@@ -215,7 +209,7 @@ export const moduleLogic = {
 
         if (conditionMet) {
             coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', true);
-            if(coreUIManager) coreUIManager.renderMenu(); // Update menu as it's now permanently unlocked
+            if(coreUIManager) coreUIManager.renderMenu();
             coreSystemsRef.loggingSystem.info("StudiesLogic", "Studies tab permanently unlocked.");
             return true;
         }
@@ -254,10 +248,10 @@ export const moduleLogic = {
              console.error("StudiesLogic_onGameLoad_CRITICAL: Core systems missing!", coreSystemsRef);
              return;
         }
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad (v3.3): Re-calculating all producer productions and flags.");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad (v3.4): Re-calculating all producer productions and flags.");
         this.updateAllProducerProductions();
         this.updateGlobalFlags();
-        this.isStudiesTabUnlocked(); // Check and potentially set permanent flag on load
+        this.isStudiesTabUnlocked(); 
         const { coreResourceManager, decimalUtility } = coreSystemsRef; 
         const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge'];
         if (knowledgeResourceState && (decimalUtility.gt(knowledgeResourceState.amount, 0) || decimalUtility.gt(knowledgeResourceState.totalProductionRate,0))) {
@@ -271,11 +265,12 @@ export const moduleLogic = {
              console.error("StudiesLogic_onResetState_CRITICAL: Core systems missing!", coreSystemsRef);
              return;
         }
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3.3): Resetting Studies module logic state.");
-        this.updateAllProducerProductions();
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3.4): Resetting Studies module logic state.");
+        this.updateAllProducerProductions(); // Recalculate production (will be 0)
         const knowledgeDef = staticModuleData.resources.knowledge;
-        coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI);
-        // Clear the permanent unlock flag for the studies tab on reset
+        coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI); // Reset visibility
+        // Clear the permanent unlock flag for the studies tab
         coreSystemsRef.coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', false);
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "'studiesTabPermanentlyUnlocked' flag cleared.");
     }
 };

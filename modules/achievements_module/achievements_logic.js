@@ -1,9 +1,9 @@
-// modules/achievements_module/achievements_logic.js (v1.2 - Reset Fix)
+// modules/achievements_module/achievements_logic.js (v1.3 - Full Skill/SSP Achievements)
 
 /**
  * @file achievements_logic.js
  * @description Business logic for the Achievements module.
- * v1.2: Clears permanent unlock flag on reset.
+ * v1.3: Fully implements skill-based and SSP achievement conditions.
  */
 
 import { staticModuleData } from './achievements_data.js';
@@ -14,21 +14,24 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v1.3).");
         this.applyAllCompletedAchievementRewards(); 
     },
 
     isAchievementsTabUnlocked() {
-        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) return false;
-        if (coreSystemsRef.coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false)) {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) {
+            console.error("AchievementsLogic_isTabUnlocked_CRITICAL: coreGameStateManager missing!");
+            return true; 
+        }
+        const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
+        if (coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false)) {
             return true;
         }
-        // Original condition (e.g., from market module)
-        const conditionMet = coreSystemsRef.coreGameStateManager.getGlobalFlag('achievementsTabUnlocked', false);
+        const conditionMet = coreGameStateManager.getGlobalFlag('achievementsTabUnlocked', false); 
         if (conditionMet) {
-            coreSystemsRef.coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', true);
-            if (coreSystemsRef.coreUIManager) coreSystemsRef.coreUIManager.renderMenu();
-            coreSystemsRef.loggingSystem.info("AchievementsLogic", "Achievements tab permanently unlocked.");
+            coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu();
+            loggingSystem.info("AchievementsLogic", "Achievements tab permanently unlocked.");
             return true;
         }
         return false;
@@ -39,6 +42,10 @@ export const moduleLogic = {
     },
 
     checkAchievementCondition(achievementId) {
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.moduleLoader) {
+            console.error("AchievementsLogic_checkCondition_CRITICAL: Core systems missing!", coreSystemsRef);
+            return false;
+        }
         const { coreResourceManager, decimalUtility, loggingSystem, moduleLoader } = coreSystemsRef;
         const achievementDef = staticModuleData.achievements[achievementId];
         if (!achievementDef) {
@@ -54,9 +61,9 @@ export const moduleLogic = {
                     const producerData = targetModule.getProducerData(condition.producerId);
                     return decimalUtility.gte(producerData.owned, decimalUtility.new(condition.count));
                 }
-                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getProducerData not found for achievement ${achievementId}`);
+                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getProducerData not found for producer achievement ${achievementId}`);
                 return false;
-            case "resourceAmount":
+            case "resourceAmount": // Handles Study Points, Knowledge, AND Study Skill Points
                 const currentAmount = coreResourceManager.getAmount(condition.resourceId);
                 return decimalUtility.gte(currentAmount, decimalUtility.new(condition.amount));
             case "totalClicks":
@@ -65,23 +72,25 @@ export const moduleLogic = {
                     const totalClicks = coreGameplayModule.logic.getTotalClicks();
                     return totalClicks >= condition.count;
                 }
-                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getTotalClicks not found for achievement ${achievementId}`);
+                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getTotalClicks not found for click achievement ${achievementId}`);
                 return false;
             case "skillTierUnlocked": 
                 const skillsModuleTier = moduleLoader.getModule(condition.moduleId); 
-                if (skillsModuleTier && skillsModuleTier.logic && skillsModuleTier.logic.isTierUnlocked) { 
+                if (skillsModuleTier && skillsModuleTier.logic && typeof skillsModuleTier.logic.isTierUnlocked === 'function') { 
                     return skillsModuleTier.logic.isTierUnlocked(condition.tier);
                 }
-                loggingSystem.warn("AchievementsLogic", `Skill tier unlock condition for ${achievementId} - skills module or logic.isTierUnlocked not ready.`);
+                loggingSystem.warn("AchievementsLogic", `Skill tier unlock condition for ${achievementId} - skills module or logic.isTierUnlocked not ready or not a function.`);
                 return false; 
             case "skillMaxLevel": 
                  const skillsModuleMax = moduleLoader.getModule(condition.moduleId); 
-                 if (skillsModuleMax && skillsModuleMax.logic && skillsModuleMax.logic.getSkillLevel && skillsModuleMax.logic.getSkillMaxLevel) { 
+                 if (skillsModuleMax && skillsModuleMax.logic && 
+                     typeof skillsModuleMax.logic.getSkillLevel === 'function' && 
+                     typeof skillsModuleMax.logic.getSkillMaxLevel === 'function') { 
                     const currentLevel = skillsModuleMax.logic.getSkillLevel(condition.skillId);
                     const maxLevel = skillsModuleMax.logic.getSkillMaxLevel(condition.skillId); 
-                    return currentLevel >= maxLevel;
+                    return maxLevel > 0 && currentLevel >= maxLevel; 
                  }
-                 loggingSystem.warn("AchievementsLogic", `Skill max level condition for ${achievementId} - skills module or relevant logic not ready.`);
+                 loggingSystem.warn("AchievementsLogic", `Skill max level condition for ${achievementId} - skills module or relevant logic methods not ready or not functions.`);
                 return false;
             default:
                 loggingSystem.warn("AchievementsLogic", `Unknown condition type for achievement ${achievementId}: ${condition.type}`);
@@ -90,7 +99,11 @@ export const moduleLogic = {
     },
 
     checkAndCompleteAchievements() {
-        const { coreGameStateManager, loggingSystem, coreUIManager, coreUpgradeManager, decimalUtility } = coreSystemsRef;
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUIManager || !coreSystemsRef.coreUpgradeManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreResourceManager) {
+            console.error("AchievementsLogic_checkAndComplete_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        const { coreGameStateManager, loggingSystem, coreUIManager, coreUpgradeManager, decimalUtility, coreResourceManager } = coreSystemsRef;
         let newAchievementsCompleted = false;
 
         for (const achievementId in staticModuleData.achievements) {
@@ -135,11 +148,12 @@ export const moduleLogic = {
     },
     
     applyAllCompletedAchievementRewards() {
-        const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
-        if (!coreUpgradeManager) {
-            loggingSystem.error("AchievementsLogic", "CoreUpgradeManager not available.");
+        if (!coreSystemsRef || !coreSystemsRef.coreUpgradeManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem) {
+            console.error("AchievementsLogic_applyAll_CRITICAL: Core systems missing!", coreSystemsRef);
             return;
         }
+        const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        
         for (const achievementId in moduleState.completedAchievements) {
             if (moduleState.completedAchievements[achievementId]) {
                 const achievementDef = staticModuleData.achievements[achievementId];
@@ -159,17 +173,25 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered for Achievements module (v1.2).");
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
+            console.error("AchievementsLogic_onGameLoad_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered for Achievements module (v1.3).");
         this.applyAllCompletedAchievementRewards();
         this.checkAndCompleteAchievements();
-        this.isAchievementsTabUnlocked(); // Check and potentially set permanent flag
+        this.isAchievementsTabUnlocked(); 
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered for Achievements module (v1.2).");
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
+            console.error("AchievementsLogic_onResetState_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered for Achievements module (v1.3).");
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', false);
+            coreSystemsRef.loggingSystem.info("AchievementsLogic", "'achievementsTabPermanentlyUnlocked' flag cleared.");
         }
-        // Effects are re-applied on next load/init by applyAllCompletedAchievementRewards
     }
 };

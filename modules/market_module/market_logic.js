@@ -1,9 +1,9 @@
-// modules/market_module/market_logic.js (v1.3 - Reset Fix)
+// modules/market_module/market_logic.js (v1.4 - Reset Fix)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
- * v1.3: Clears permanent unlock flags on reset.
+ * v1.4: Ensures 'marketTabPermanentlyUnlocked' flag is cleared on reset and checks it correctly.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -14,21 +14,24 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.3).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.4).");
     },
 
     isMarketTabUnlocked() {
-        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) return false;
-        // Check permanent flag first
-        if (coreSystemsRef.coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) {
+            console.error("MarketLogic_isMarketTabUnlocked_CRITICAL: coreGameStateManager missing!");
+            return true; // Default to true to avoid hiding content on error
+        }
+        const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
+
+        if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) {
             return true;
         }
-        // Original condition (e.g., from studies module)
-        const conditionMet = coreSystemsRef.coreGameStateManager.getGlobalFlag('marketUnlocked', false);
+        const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); // Original unlock trigger
         if (conditionMet) {
-            coreSystemsRef.coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
-            if (coreSystemsRef.coreUIManager) coreSystemsRef.coreUIManager.renderMenu();
-            coreSystemsRef.loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
+            coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu();
+            loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
             return true;
         }
         return false;
@@ -79,7 +82,7 @@ export const moduleLogic = {
             if (itemDef.benefitResource === 'studySkillPoints') {
                 const skillsModule = moduleLoader.getModule('skills');
                 if (skillsModule && skillsModule.logic && typeof skillsModule.logic.isSkillsTabUnlocked === 'function') {
-                    skillsModule.logic.isSkillsTabUnlocked(); // This will set permanent flag and render menu
+                    skillsModule.logic.isSkillsTabUnlocked(); 
                 } else {
                     coreUIManager.renderMenu(); 
                 }
@@ -101,20 +104,23 @@ export const moduleLogic = {
 
     isUnlockPurchased(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
         const { coreGameStateManager } = coreSystemsRef;
-        const unlockDef = staticModuleData.marketUnlocks[unlockId];
-        if (!unlockDef) return true; 
-
+        // The permanent flags are set by the respective modules (settings, achievements) when their own unlock condition is met
+        // Market module should check if the *initial* unlock via images has been done
+        // However, for UI display purposes (e.g. "Unlocked" button), checking the permanent flag is fine if it exists
         if (unlockId === 'settingsTab') {
             return coreGameStateManager.getGlobalFlag('settingsTabPermanentlyUnlocked', false);
         }
         if (unlockId === 'achievementsTab') {
             return coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false);
         }
-        return coreGameStateManager.getGlobalFlag(unlockDef.flagToSet, false); // Fallback for original flag
+        // Fallback if no permanent flag defined for this type of unlock yet
+        const unlockDef = staticModuleData.marketUnlocks[unlockId];
+        if (!unlockDef) return true;
+        return coreGameStateManager.getGlobalFlag(unlockDef.flagToSet, false);
     },
 
     purchaseUnlock(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
 
         if (!unlockDef) {
@@ -122,28 +128,43 @@ export const moduleLogic = {
             return false;
         }
 
-        if (this.isUnlockPurchased(unlockId)) {
-            loggingSystem.info("MarketLogic", `${unlockDef.name} is already unlocked.`);
-            coreUIManager.showNotification(`${unlockDef.name} is already unlocked.`, 'info');
-            return false; 
+        // Use a more specific check. The market logic should check its own unlock purchase state.
+        // The permanent flags are for the tabs themselves, set by their own modules.
+        // Let's assume a flag like 'marketUnlock_${unlockId}_purchased'
+        const marketPurchaseFlag = `marketUnlock_${unlockDef.flagToSet}_purchased`;
+        if(coreGameStateManager.getGlobalFlag(marketPurchaseFlag, false)){
+            loggingSystem.info("MarketLogic", `${unlockDef.name} market purchase already completed.`);
+            coreUIManager.showNotification(`${unlockDef.name} already unlocked via market.`, 'info');
+            return false;
         }
+
 
         const costAmount = decimalUtility.new(unlockDef.costAmount);
         if (coreResourceManager.canAfford(unlockDef.costResource, costAmount)) {
             coreResourceManager.spendAmount(unlockDef.costResource, costAmount);
             
-            let permanentFlag = unlockDef.flagToSet; // Original e.g. 'settingsTabUnlocked'
-            if (unlockId === 'settingsTab') {
-                permanentFlag = 'settingsTabPermanentlyUnlocked';
-            } else if (unlockId === 'achievementsTab') {
-                permanentFlag = 'achievementsTabPermanentlyUnlocked';
-            }
-            coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true); 
-            coreGameStateManager.setGlobalFlag(permanentFlag, true);
+            // Set the *trigger* flag (e.g., 'settingsTabUnlocked')
+            // The respective module (settings, achievements) will pick this up and set its *permanent* flag.
+            coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true);
+            coreGameStateManager.setGlobalFlag(marketPurchaseFlag, true); // Mark this specific market purchase as done.
 
-            loggingSystem.info("MarketLogic", `Purchased ${unlockDef.name}. Flag '${permanentFlag}' set.`);
-            coreUIManager.showNotification(`${unlockDef.name} Unlocked!`, 'success', 3000);
-            coreUIManager.renderMenu(); 
+            loggingSystem.info("MarketLogic", `Purchased unlock for ${unlockDef.name}. Flag '${unlockDef.flagToSet}' set.`);
+            coreUIManager.showNotification(`${unlockDef.name} Unlocked from Market!`, 'success', 3000);
+            
+            // Trigger the unlock check in the target module
+            if (unlockId === 'settingsTab') {
+                const settingsModule = moduleLoader.getModule('settings_ui');
+                if (settingsModule && settingsModule.logic && settingsModule.logic.isSettingsTabUnlocked) {
+                    settingsModule.logic.isSettingsTabUnlocked(); // This will set permanent flag & render menu
+                } else { coreUIManager.renderMenu(); }
+            } else if (unlockId === 'achievementsTab') {
+                 const achievementsModule = moduleLoader.getModule('achievements');
+                if (achievementsModule && achievementsModule.logic && achievementsModule.logic.isAchievementsTabUnlocked) {
+                    achievementsModule.logic.isAchievementsTabUnlocked(); // This will set permanent flag & render menu
+                } else { coreUIManager.renderMenu(); }
+            } else {
+                 coreUIManager.renderMenu(); // Generic refresh if specific module not handled
+            }
             return true;
         } else {
             loggingSystem.debug("MarketLogic", `Cannot afford ${unlockDef.name}. Need ${decimalUtility.format(costAmount)} ${unlockDef.costResource}.`);
@@ -154,7 +175,7 @@ export const moduleLogic = {
 
     onGameLoad() {
         const { coreGameStateManager, loggingSystem } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module.");
+        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module (v1.4).");
         let loadedState = coreGameStateManager.getModuleState('market');
         if (loadedState && loadedState.purchaseCounts) {
              for (const key in loadedState.purchaseCounts) {
@@ -164,19 +185,21 @@ export const moduleLogic = {
             const initialState = getInitialState();
             Object.assign(moduleState.purchaseCounts, initialState.purchaseCounts);
         }
-        // Check permanent unlock on load
         this.isMarketTabUnlocked(); 
     },
 
     onResetState() {
         const { loggingSystem, coreGameStateManager } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onResetState triggered for Market module.");
+        loggingSystem.info("MarketLogic", "onResetState triggered for Market module (v1.4).");
         const initialState = getInitialState();
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
-        // Clear permanent unlock flags specific to this module's unlocks
+        
         coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
-        // The flags for settingsTabPermanentlyUnlocked and achievementsTabPermanentlyUnlocked
-        // will be handled by their respective modules' onResetState.
+        // Clear flags related to *market purchases* of other tab unlocks
+        coreGameStateManager.setGlobalFlag(`marketUnlock_settingsTabUnlocked_purchased`, false);
+        coreGameStateManager.setGlobalFlag(`marketUnlock_achievementsTabUnlocked_purchased`, false);
+
+        loggingSystem.info("MarketLogic", "'marketTabPermanentlyUnlocked' and related market purchase flags cleared.");
     }
 };
