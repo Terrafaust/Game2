@@ -77,11 +77,7 @@
         }
 
         /* --- Theme CSS Variable Definitions --- */
-        [data-theme="modern"][data-mode="day"] {
-            --color-background: #F3F4F6; --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB;
-            --color-text-primary: #111827; --color-text-secondary: #374151; --color-border: #D1D5DB;
-            /* Other modern day vars... */
-        }
+        /* Modern Day is effectively the :root default */
         [data-theme="modern"][data-mode="night"] {
             --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
             --color-accent-one: #34D399; --color-accent-two: #FBBF24;
@@ -139,7 +135,8 @@
             --color-border: #B91C1C; --color-button-text: #FEF3C7;
         }
         [data-theme="rgb"] {
-            --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate; /* Ensure alternate for smoother loop */
+            /* --animation-hue-rotate is applied to #game-container directly by this rule */
+             --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate;
         }
         [data-theme="rgb"][data-mode="day"] {
             --color-primary: hsl(var(--hue-cycle, 0), 80%, 60%);
@@ -162,40 +159,70 @@
             --animation-rgb-border: rgb-led-glow-border 3s ease-in-out infinite alternate;
         }
 
-        html, body { /* Ensure full viewport coverage and apply base theme */
-            width: 100%;
-            height: 100%;
-            margin: 0;
-            padding: 0;
+        html {
+            width: 100%; height: 100%; margin: 0; padding: 0;
             font-family: var(--font-main);
-            background-color: var(--color-background);
+            background-color: var(--color-background); /* Base background for the entire page */
             color: var(--color-text-primary);
             transition: background-color 0.4s ease, color 0.4s ease;
-            overflow-x: hidden; /* Prevent horizontal scrollbars */
+            overflow-x: hidden;
         }
-        /* Apply RGB hue animation at the highest level if theme is RGB */
-        html[data-theme-applied="rgb"], body[data-theme-applied="rgb"] {
+        body {
+            width: 100%; min-height: 100%; /* Use min-height to allow content to grow */
+            margin: 0; padding: 0;
+            display: flex; /* Make body a flex container to help #game-container fill it */
+            flex-direction: column;
+            background-color: var(--color-background); /* Ensure body also gets themed background */
+            color: var(--color-text-primary);
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+         /* If #game-container has the data-theme attributes, it drives the animation of --hue-cycle */
+        #game-container[data-theme="rgb"] {
              animation: var(--animation-hue-rotate) forwards;
         }
-        /* If data-theme is only on #game-container, this is a fallback */
-        /* This assumes JS will add data-theme-applied to html/body for RGB */
-        /* For simplicity, the JS would ideally target HTML or BODY directly with data-theme */
+
 
         #game-container {
-            background-color: var(--color-background); /* Make game-container also explicitly use the theme background */
+            background-color: var(--color-background);
             color: var(--color-text-primary);
             width: 100%; flex-grow: 1; display: flex; flex-direction: column;
-            /* Apply RGB hue animation here if JS puts data-theme on this element for RGB */
-             animation: var(--animation-hue-rotate) forwards;
+            /* animation: var(--animation-hue-rotate) forwards; */ /* Animation is now on #game-container[data-theme="rgb"] */
             transition: background-color 0.4s ease, color 0.4s ease;
         }
 
-        #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
+        /* Content wrapper for centered layout */
+        .content-wrapper {
+            width: 100%;
+            max-width: 72rem; /* max-w-6xl */
+            margin-left: auto;
+            margin-right: auto;
+            padding: 1rem; /* p-4 */
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+
+        #game-container > .content-wrapper > header,
+        #game-container > .content-wrapper > main > nav,
+        #game-container > .content-wrapper > main > section,
+        #game-container > .content-wrapper > footer,
         .modal-content, .tooltip, .module-card {
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
-        /* ... (rest of the styles from v4.2, with menu style changes included) ... */
+        /* ... (rest of the styles for buttons, scrollbar, menu, etc. from v4.3) ... */
+        button, input[type="button"] {
+            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        button:hover, input[type="button"]:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
+        button:active, input[type="button"]:active { transform: scale(0.97); }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
 
         .game-button {
             background-color: var(--color-primary);
@@ -203,7 +230,7 @@
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
             font-weight: 500; cursor: pointer; border: 1px solid transparent;
         }
-         [data-theme="rgb"] .game-button { /* Apply text filter animation for RGB buttons */
+         #game-container[data-theme="rgb"] .game-button { /* Apply text filter animation for RGB buttons */
             animation: var(--animation-rgb-filter) forwards;
         }
 
@@ -240,24 +267,21 @@
             background-color: var(--color-primary); color: var(--color-button-text);
             border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg);
         }
-         [data-theme="rgb"] .menu-tab.active {
-            /* If button background is animated, text filter might be too much */
-            /* Consider animating text-shadow or border instead for active RGB tab */
-            /* animation: var(--animation-rgb-filter) forwards; */
+         #game-container[data-theme="rgb"] .menu-tab.active {
+            /* Consider specific RGB animation for active tab */
          }
-
 
         .module-card {
             background-color: var(--color-surface-dark); border: 1px solid var(--color-border);
         }
 
-        #resource-bar, #main-content, footer {
+        #resource-bar, #main-content, footer { /* These are inside .content-wrapper */
             background-color: var(--color-surface); border: 1px solid var(--color-border);
             color: var(--color-text-primary);
         }
         #resource-bar h2 { color: var(--color-primary); }
-         [data-theme="rgb"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards;}
-         [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
+         #game-container[data-theme="rgb"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards;}
+         #game-container[data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
 
 
         #resources-display > div {
@@ -270,23 +294,23 @@
         #resources-display .font-semibold { /* Resource Name */
              color: var(--color-secondary) !important;
         }
-         [data-theme="rgb"] #resources-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
-         [data-theme="neon"][data-mode="night"] #resources-display > div {
+         #game-container[data-theme="rgb"] #resources-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
+         #game-container[data-theme="neon"][data-mode="night"] #resources-display > div {
             border-color: var(--color-primary);
             box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary);
         }
-        [data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
+        #game-container[data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
 
 
         .studies-buy-button { /* For studies module buttons */ }
 
-        [data-theme="neon"][data-mode="night"] .achievement-item {
+        #game-container[data-theme="neon"][data-mode="night"] .achievement-item {
             border: 1px solid var(--color-primary);
             box-shadow: var(--achievement-neon-glow, none);
             color: var(--color-text-primary); background-color: var(--color-surface-dark);
             padding: 0.75rem; border-radius: var(--border-radius-lg); margin-bottom: 0.5rem;
         }
-        [data-theme="neon"][data-mode="night"] .achievement-item h4 {
+        #game-container[data-theme="neon"][data-mode="night"] .achievement-item h4 {
              color: var(--color-secondary);
              text-shadow: 0 0 3px var(--color-secondary), 0 0 5px var(--color-primary);
         }
@@ -300,36 +324,43 @@
             border-color: var(--color-primary); outline: none;
             box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4);
         }
-        [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
-        [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
+        #game-container[data-theme="modern"] select:focus, 
+        #game-container[data-theme="modern"] input:focus, 
+        #game-container[data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
+        
+        #game-container[data-theme="neon"] select:focus, 
+        #game-container[data-theme="neon"] input:focus, 
+        #game-container[data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
 
     </style>
 </head>
-<body class="font-inter"> <!-- Body class used for Tailwind, but background-color is by CSS var -->
-    <div id="game-container" data-theme="modern" data-mode="day" class="mx-auto p-4 flex flex-col max-w-6xl">
-        <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
-            <h2 class="text-xl font-semibold mb-2">Resources</h2>
-            <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            </div>
-        </header>
+<body class="font-inter">
+    <div id="game-container" data-theme="modern" data-mode="day"> <!-- Removed mx-auto, p-4, max-w-6xl, flex properties -->
+        <div class="content-wrapper mx-auto max-w-6xl w-full flex flex-col flex-grow p-4"> <!-- New wrapper for centered content -->
+            <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
+                <h2 class="text-xl font-semibold mb-2">Resources</h2>
+                <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                </div>
+            </header>
 
-        <main class="flex-grow flex flex-col md:flex-row gap-6">
-            <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
-                <ul id="menu-list">
-                </ul>
-            </nav>
+            <main class="flex-grow flex flex-col md:flex-row gap-6">
+                <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
+                    <ul id="menu-list">
+                    </ul>
+                </nav>
 
-            <section id="main-content" class="md:w-3/4 rounded-xl p-6 flex-grow">
-                <p>Loading game content...</p>
-            </section>
-        </main>
+                <section id="main-content" class="md:w-3/4 rounded-xl p-6 flex-grow">
+                    <p>Loading game content...</p>
+                </section>
+            </main>
 
-        <footer class="rounded-t-xl p-4 mt-auto text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-3">
-            <button id="save-button" class="game-button">Save Game</button>
-            <button id="load-button" class="game-button">Load Game</button>
-            <button id="reset-button" class="game-button">Hard Reset</button>
-            <button id="dev-tools-button" class="game-button">Developer Tools</button>
-        </footer>
+            <footer class="rounded-t-xl p-4 mt-auto text-center sticky bottom-0 z-50 flex flex-wrap justify-center items-center gap-3">
+                <button id="save-button" class="game-button">Save Game</button>
+                <button id="load-button" class="game-button">Load Game</button>
+                <button id="reset-button" class="game-button">Hard Reset</button>
+                <button id="dev-tools-button" class="game-button">Developer Tools</button>
+            </footer>
+        </div> <!-- End of .content-wrapper -->
     </div>
 
     <div id="modal-container"></div>
