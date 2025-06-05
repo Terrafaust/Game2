@@ -1,22 +1,24 @@
-// js/core/moduleLoader.js (v2.1 - Debug)
+// js/core/moduleLoader.js (v2.2 - Self Reference)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
- * v2.1: Added debug log for decimalUtilityRef.
+ * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 
-let coreSystems = {
+// The moduleLoader itself will be added to coreSystems before passing to modules
+let coreSystemsBase = {
     staticDataAggregator: null,
     coreGameStateManager: null,
     coreResourceManager: null,
     coreUIManager: null,
     decimalUtility: null,
-    loggingSystem: null,
+    loggingSystem: null, // This will be the imported loggingSystem instance
     gameLoop: null,
     coreUpgradeManager: null,
+    // moduleLoader: null // This will be added dynamically
 };
 
 const loadedModules = {
@@ -30,29 +32,27 @@ const moduleLoader = {
         coreResourceManagerRef,
         coreUIManagerRef,
         decimalUtilityRef,
-        loggingSystemRef,
+        loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
         gameLoopRef,
         coreUpgradeManagerRef
     ) {
-        coreSystems.staticDataAggregator = staticDataAggregatorRef;
-        coreSystems.coreGameStateManager = coreGameStateManagerRef;
-        coreSystems.coreResourceManager = coreResourceManagerRef;
-        coreSystems.coreUIManager = coreUIManagerRef;
-        coreSystems.decimalUtility = decimalUtilityRef;
-        coreSystems.loggingSystem = loggingSystemRef; // This is loggingSystem from import, not the ref
-        coreSystems.gameLoop = gameLoopRef;
-        coreSystems.coreUpgradeManager = coreUpgradeManagerRef;
+        coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
+        coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
+        coreSystemsBase.coreResourceManager = coreResourceManagerRef;
+        coreSystemsBase.coreUIManager = coreUIManagerRef;
+        coreSystemsBase.decimalUtility = decimalUtilityRef;
+        coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
+        coreSystemsBase.gameLoop = gameLoopRef;
+        coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
+        // coreSystemsBase.moduleLoader will be 'this' (the moduleLoader object itself)
 
-        // --- Debug Log Added ---
         if (typeof decimalUtilityRef === 'undefined') {
-            console.error("CRITICAL ERROR in ModuleLoader: decimalUtilityRef is undefined!");
-            loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined. This will break modules.");
+            loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
         } else {
-            loggingSystem.info("ModuleLoader", "decimalUtilityRef received successfully in initialize:", decimalUtilityRef);
+            loggingSystem.info("ModuleLoader", "decimalUtilityRef received successfully in initialize.");
         }
-        // --- End Debug Log ---
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.1).");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.2).");
     },
 
     async loadModule(manifestPath) {
@@ -61,14 +61,14 @@ const moduleLoader = {
             const manifestModule = await import(manifestPath);
             if (!manifestModule || !manifestModule.default) {
                 loggingSystem.error("ModuleLoader", `Failed to load manifest from ${manifestPath}. No default export or module is empty.`);
-                if(coreSystems.coreUIManager) coreSystems.coreUIManager.showNotification(`Failed to load structure for: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
+                if(coreSystemsBase.coreUIManager) coreSystemsBase.coreUIManager.showNotification(`Failed to load structure for: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
                 return false;
             }
             const manifest = manifestModule.default;
 
             if (!manifest.id || !manifest.name || !manifest.version || !manifest.initialize) {
                 loggingSystem.error("ModuleLoader", `Manifest for ${manifestPath} is invalid. Missing required fields.`, manifest);
-                if(coreSystems.coreUIManager) coreSystems.coreUIManager.showNotification(`Invalid manifest: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
+                 if(coreSystemsBase.coreUIManager) coreSystemsBase.coreUIManager.showNotification(`Invalid manifest: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
                 return false;
             }
 
@@ -78,7 +78,14 @@ const moduleLoader = {
             }
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
-            const moduleInstance = await manifest.initialize(coreSystems);
+
+            // Prepare the coreSystems object to pass to the module, including moduleLoader itself
+            const systemsForModule = {
+                ...coreSystemsBase,
+                moduleLoader: this // Add reference to the moduleLoader itself
+            };
+            
+            const moduleInstance = await manifest.initialize(systemsForModule);
 
             loadedModules[manifest.id] = {
                 manifest: manifest,
@@ -90,9 +97,8 @@ const moduleLoader = {
 
         } catch (error) {
             loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error);
-            // Check if coreUIManager is available before trying to use it
-            if(coreSystems.coreUIManager && coreSystems.coreUIManager.showNotification) {
-                coreSystems.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}. Game may not function correctly.`, "error", 10000);
+            if(coreSystemsBase.coreUIManager && coreSystemsBase.coreUIManager.showNotification) {
+                coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}. Details in console.`, "error", 10000);
             } else {
                 console.error("CoreUIManager not available to show notification for module load error.");
             }
