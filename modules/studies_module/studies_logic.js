@@ -1,9 +1,9 @@
-// modules/studies_module/studies_logic.js (v3)
+// modules/studies_module/studies_logic.js (v3.1 - Debug)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
- * v3: Explicitly unlocks Knowledge resource and sets its visibility.
+ * v3.1: Added debug logs for coreSystemsRef.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -14,7 +14,17 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3).");
+        // --- Debug Log Added ---
+        if (coreSystemsRef && coreSystemsRef.loggingSystem) {
+            coreSystemsRef.loggingSystem.debug("StudiesLogic_Init", "coreSystemsRef received:", 
+                Object.keys(coreSystemsRef), 
+                "Has decimalUtility:", !!(coreSystemsRef.decimalUtility)
+            );
+        } else {
+            console.error("StudiesLogic_Init: coreSystemsRef or loggingSystem is missing!", coreSystemsRef);
+        }
+        // --- End Debug Log ---
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.1).");
     },
 
     calculateProducerCost(producerId) {
@@ -67,7 +77,7 @@ export const moduleLogic = {
             let currentOwned = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
             moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, 1).toString();
 
-            this.updateProducerProduction(producerId); // This will handle Knowledge unlocking too
+            this.updateProducerProduction(producerId);
             coreGameStateManager.setModuleState('studies', { ...moduleState });
 
             loggingSystem.info("StudiesLogic", `Purchased ${producerDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. Owned: ${moduleState.ownedProducers[producerId]}`);
@@ -100,35 +110,36 @@ export const moduleLogic = {
         const sourceKey = `studies_module_${producerId}`;
         coreResourceManager.setProductionPerSecond(producerDef.resourceId, sourceKey, totalProduction);
 
-        // If this is the professor and knowledge is being produced for the first time (or production starts)
         if (producerId === 'professor' && decimalUtility.gt(totalProduction, 0)) {
-            const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge']; // Get current state
+            const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge'];
             if (knowledgeResourceState && !knowledgeResourceState.isUnlocked) {
                 coreResourceManager.unlockResource('knowledge');
-                // Visibility is set in manifest definition upon defineResource,
-                // but if it was defined as not visible, we make it visible now.
-                // coreResourceManager.setResourceVisibility('knowledge', true); // Already true from data
                 loggingSystem.info("StudiesLogic", "Knowledge resource production started, ensuring it's unlocked.");
-                // The UIManager will pick up the changed state and display it.
             }
-             // Ensure 'showInUI' is true if it wasn't already
             if (knowledgeResourceState && !knowledgeResourceState.showInUI) {
                 coreResourceManager.setResourceVisibility('knowledge', true);
                 loggingSystem.info("StudiesLogic", "Knowledge resource made visible in UI.");
             }
         }
-
-        loggingSystem.debug("StudiesLogic", `Updated production for ${producerDef.name} (${producerId}). Base: ${baseProductionPerUnit} * Own: ${ownedCount} * ProdMulti: ${productionMultiplier} * GlobalResMulti: ${globalResourceMultiplier} = Total: ${decimalUtility.format(totalProduction)} ${producerDef.resourceId}/s`);
+        // Removed verbose log from here for brevity, core functionality is key
     },
 
     updateAllProducerProductions() {
+        // --- Debug Log Added ---
+        if (!coreSystemsRef || typeof coreSystemsRef.decimalUtility === 'undefined') {
+            const logger = coreSystemsRef ? coreSystemsRef.loggingSystem : console;
+            logger.error("StudiesLogic_UpdateAll", "coreSystemsRef or decimalUtility is problematic before loop!", coreSystemsRef);
+        }
+        // --- End Debug Log ---
         const { decimalUtility } = coreSystemsRef; 
         for (const producerId in staticModuleData.producers) {
             if (this.isProducerUnlocked(producerId) || decimalUtility.gt(moduleState.ownedProducers[producerId] || "0", 0) ) { 
                  this.updateProducerProduction(producerId);
             }
         }
-        coreSystemsRef.loggingSystem.debug("StudiesLogic", "All active producer productions updated.");
+        if (coreSystemsRef && coreSystemsRef.loggingSystem) { // Check if loggingSystem is available
+            coreSystemsRef.loggingSystem.debug("StudiesLogic", "All active producer productions updated.");
+        }
     },
 
     isProducerUnlocked(producerId) {
@@ -188,25 +199,20 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad (v3): Re-calculating all producer productions and flags.");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad (v3.1): Re-calculating all producer productions and flags.");
         this.updateAllProducerProductions();
         this.updateGlobalFlags();
-         // Explicitly check and set knowledge visibility on load
         const knowledgeResourceState = coreSystemsRef.coreResourceManager.getAllResources()['knowledge'];
         if (knowledgeResourceState && (decimalUtility.gt(knowledgeResourceState.amount, 0) || decimalUtility.gt(knowledgeResourceState.totalProductionRate,0))) {
             if (!knowledgeResourceState.isUnlocked) coreSystemsRef.coreResourceManager.unlockResource('knowledge');
             if (!knowledgeResourceState.showInUI) coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', true);
         }
-
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3): Resetting Studies module logic state.");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3.1): Resetting Studies module logic state.");
         this.updateAllProducerProductions();
-        // Ensure knowledge is hidden/locked on reset as per its initial definition
         const knowledgeDef = staticModuleData.resources.knowledge;
         coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI);
-        // coreResourceManager.lockResource might be needed if we want to re-lock. For now, visibility is enough.
-        // If a resource is defined as initially locked, resetState in coreResourceManager should handle it.
     }
 };
