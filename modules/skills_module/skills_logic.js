@@ -1,66 +1,94 @@
-// js/modules/skills_module/skills_logic.js (v4)
+// modules/skills_module/skills_logic.js (v1.3 - Reset Fix)
 
 /**
  * @file skills_logic.js
- * @description Contains the business logic for the Skills module,
- * primarily handling skill purchases, level management, and effect application.
+ * @description Business logic for the Skills module.
+ * v1.3: Ensures 'skillsTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
 import { staticModuleData } from './skills_data.js';
 import { moduleState } from './skills_state.js';
 
-let coreSystemsRef = null; // To store references to core game systems
+let coreSystemsRef = null;
 
 export const moduleLogic = {
-    /**
-     * Initializes the logic component with core system references.
-     * @param {object} coreSystems - References to core game systems.
-     */
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.debug("SkillsLogic", "Logic initialized.");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.3).");
+        this.registerAllSkillEffects(); 
     },
 
-    /**
-     * Calculates the current cost to level up a skill.
-     * Formula: baseCost * (costGrowthFactor ^ currentLevel)
-     * @param {string} skillId - The ID of the skill.
-     * @returns {Decimal} The current cost to level up.
-     */
-    calculateSkillCost(skillId) {
-        const { decimalUtility, loggingSystem } = coreSystemsRef;
+    isSkillsTabUnlocked() {
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreGameStateManager) {
+            console.error("SkillsLogic_isSkillsTabUnlocked_CRITICAL: Core systems missing!", coreSystemsRef);
+            return true; 
+        }
+        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
+        if (coreGameStateManager.getGlobalFlag('skillsTabPermanentlyUnlocked', false)) {
+            return true;
+        }
+        const conditionMet = decimalUtility.gte(coreResourceManager.getAmount(staticModuleData.skillPointResourceId), 1);
+        if (conditionMet) {
+            coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu(); 
+            coreSystemsRef.loggingSystem.info("SkillsLogic", "Skills tab permanently unlocked.");
+            return true;
+        }
+        return false;
+    },
+
+    getSkillLevel(skillId) {
+        return moduleState.skillLevels[skillId] || 0;
+    },
+
+    getSkillMaxLevel(skillId) {
         const skillDef = staticModuleData.skills[skillId];
-
-        if (!skillDef) {
-            loggingSystem.error("SkillsLogic", `Skill definition not found for ID: ${skillId}`);
-            return decimalUtility.new(Infinity); // Return a very high cost if not found
-        }
-
-        const baseCost = decimalUtility.new(skillDef.baseCost);
-        const costGrowthFactor = decimalUtility.new(skillDef.costGrowthFactor);
-        const currentLevel = decimalUtility.new(moduleState.skillLevels[skillId] || 0);
-
-        // Cost = baseCost * (costGrowthFactor ^ currentLevel)
-        const currentCost = decimalUtility.multiply(
-            baseCost,
-            decimalUtility.power(costGrowthFactor, currentLevel)
-        );
-
-        return currentCost;
+        return skillDef ? skillDef.maxLevel : 0;
     },
 
-    /**
-     * Handles the purchase of a skill level.
-     * @param {string} skillId - The ID of the skill to level up.
-     * @returns {boolean} True if purchase was successful, false otherwise.
-     */
-    purchaseSkillLevel(skillId) {
-        if (!coreSystemsRef) {
-            console.error("SkillsLogic: Core systems not initialized.");
-            return false;
+    isTierUnlocked(tierNum) {
+        if (tierNum <= 1) return true; 
+        const prevTier = tierNum - 1;
+        const skillsInPrevTier = Object.values(staticModuleData.skills).filter(s => s.tier === prevTier);
+        if (skillsInPrevTier.length === 0 && prevTier > 0) { 
+            return true;
         }
+        return skillsInPrevTier.every(s => this.getSkillLevel(s.id) >= 1);
+    },
 
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, coreUpgradeManager } = coreSystemsRef;
+    isSkillUnlocked(skillId) {
+        const skillDef = staticModuleData.skills[skillId];
+        if (!skillDef) return false;
+        if (!skillDef.unlockCondition) return true; 
+
+        const { type, skillId: requiredSkillId, level: requiredLevel, tier: requiredTierNum } = skillDef.unlockCondition;
+
+        switch (type) {
+            case "skillLevel":
+                return this.getSkillLevel(requiredSkillId) >= requiredLevel;
+            case "allSkillsInTierLevel": 
+                const skillsInRequiredTier = Object.values(staticModuleData.skills).filter(s => s.tier === requiredTierNum);
+                if (skillsInRequiredTier.length === 0) return true; 
+                return skillsInRequiredTier.every(s => this.getSkillLevel(s.id) >= requiredLevel);
+            default:
+                coreSystemsRef.loggingSystem.warn("SkillsLogic", `Unknown skill unlock condition type: ${type} for skill ${skillId}`);
+                return false;
+        }
+    },
+
+    getSkillNextLevelCost(skillId) {
+        const { decimalUtility } = coreSystemsRef;
+        const skillDef = staticModuleData.skills[skillId];
+        const currentLevel = this.getSkillLevel(skillId);
+
+        if (!skillDef || currentLevel >= skillDef.maxLevel) {
+            return null;
+        }
+        return decimalUtility.new(skillDef.costPerLevel[currentLevel]);
+    },
+
+    purchaseSkillLevel(skillId) {
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
         const skillDef = staticModuleData.skills[skillId];
 
         if (!skillDef) {
@@ -68,243 +96,132 @@ export const moduleLogic = {
             return false;
         }
 
-        const currentLevel = moduleState.skillLevels[skillId] || 0;
-        if (currentLevel >= skillDef.maxLevel) {
-            loggingSystem.warn("SkillsLogic", `Skill ${skillId} is already at max level.`);
-            coreUIManager.showNotification(`${skillDef.name} is already at max level!`, 'info', 2000);
+        if (!this.isSkillUnlocked(skillId)) {
+            loggingSystem.debug("SkillsLogic", `Skill ${skillId} is locked.`);
+            coreUIManager.showNotification("This skill is currently locked.", "warning");
             return false;
         }
 
-        const cost = this.calculateSkillCost(skillId);
-        const costResource = skillDef.costResource;
+        const currentLevel = this.getSkillLevel(skillId);
+        if (currentLevel >= skillDef.maxLevel) {
+            loggingSystem.debug("SkillsLogic", `Skill ${skillId} is already at max level.`);
+            coreUIManager.showNotification(`${skillDef.name} is at max level.`, "info");
+            return false;
+        }
 
-        if (coreResourceManager.canAfford(costResource, cost)) {
-            coreResourceManager.spendAmount(costResource, cost);
+        const cost = this.getSkillNextLevelCost(skillId);
+        if (!cost) return false; 
 
-            moduleState.skillLevels[skillId]++; // Increment skill level
-            loggingSystem.info("SkillsLogic", `Leveled up ${skillDef.name} to level ${moduleState.skillLevels[skillId]}. Cost: ${decimalUtility.format(cost)} ${costResource}.`);
-
-            // Apply the skill effect via CoreUpgradeManager
-            this.applySkillEffect(skillId);
-
-            // Persist the updated module state to the global game state
+        if (coreResourceManager.canAfford(staticModuleData.skillPointResourceId, cost)) {
+            coreResourceManager.spendAmount(staticModuleData.skillPointResourceId, cost);
+            moduleState.skillLevels[skillId] = currentLevel + 1;
             coreGameStateManager.setModuleState('skills', { ...moduleState });
+            
+            loggingSystem.info("SkillsLogic", `Purchased level ${moduleState.skillLevels[skillId]} of skill ${skillId} (${skillDef.name}).`);
+            coreUIManager.showNotification(`${skillDef.name} leveled up to ${moduleState.skillLevels[skillId]}!`, 'success');
+            
+            this.isSkillsTabUnlocked(); 
 
-            // Check for tier unlocks if this was the last skill to reach level 1 in its tier
-            this.checkTierUnlocks();
-
+            if (coreUIManager.isActiveTab('skills')) { 
+                const skillsUI = coreSystemsRef.moduleLoader.getModule('skills')?.ui;
+                if (skillsUI) skillsUI.renderMainContent(document.getElementById('main-content'));
+            }
             return true;
         } else {
-            loggingSystem.debug("SkillsLogic", `Cannot afford ${skillDef.name}. Need ${decimalUtility.format(cost)} ${costResource}. Have ${decimalUtility.format(coreResourceManager.getAmount(costResource))}`);
+            loggingSystem.debug("SkillsLogic", `Cannot afford skill ${skillId}. Need ${decimalUtility.format(cost, 0)} ${staticModuleData.skillPointResourceId}.`);
+            coreUIManager.showNotification(`Not enough Study Skill Points for ${skillDef.name}.`, 'error');
             return false;
         }
     },
 
-    /**
-     * Applies the effect of a skill to the game via CoreUpgradeManager.
-     * This should be called after a skill level is purchased or on game load.
-     * @param {string} skillId - The ID of the skill.
-     */
-    applySkillEffect(skillId) {
-        const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
-        const skillDef = staticModuleData.skills[skillId];
-        const currentLevel = moduleState.skillLevels[skillId];
-
-        if (!skillDef || !skillDef.effect) {
-            loggingSystem.warn("SkillsLogic", `No effect defined for skill: ${skillId}`);
+    registerAllSkillEffects() {
+        const { coreUpgradeManager, loggingSystem, decimalUtility } = coreSystemsRef;
+        if (!coreUpgradeManager) {
+            loggingSystem.error("SkillsLogic", "CoreUpgradeManager not available for registering skill effects.");
             return;
         }
 
-        // Remove previous effect from this skill level to re-register the new one
-        const sourceId = `skills_module_${skillId}`;
-        coreUpgradeManager.removeEffect(skillDef.effect.targetType, skillDef.effect.type, skillDef.effect.targetId, sourceId);
-
-        if (currentLevel > 0) {
-            let effectValue = decimalUtility.multiply(decimalUtility.new(skillDef.effect.baseValue), currentLevel);
-
-            // If it's a production multiplier, the base value is the percentage increase (e.g., 0.05 for 5%)
-            // We need to convert this to a multiplier factor (1 + 0.05*level).
-            if (skillDef.effect.type === 'productionMultiplier') {
-                effectValue = decimalUtility.add(decimalUtility.ONE, effectValue);
-            }
-            // If it's a cost reduction, the base value is the percentage reduction (e.g., 0.02 for 2%)
-            // The `getAggregatedModifier` for costReduction will handle `(1 - sumOfReductions)`.
-            // So here, we just register the baseValue * currentLevel.
-
-            coreUpgradeManager.registerEffect(
-                skillDef.effect.targetType,
-                skillDef.effect.type,
-                skillDef.effect.targetId,
-                sourceId,
-                effectValue
-            );
-            loggingSystem.debug("SkillsLogic", `Applied effect for skill '${skillId}' at level ${currentLevel}. Value: ${decimalUtility.format(effectValue)}`);
-        } else {
-            loggingSystem.debug("SkillsLogic", `Skill '${skillId}' at level 0. No effect applied.`);
-        }
-    },
-
-    /**
-     * Applies effects for all owned skills.
-     * This should be called on game load and potentially after a reset.
-     */
-    applyAllSkillEffects() {
-        for (const skillId in moduleState.skillLevels) {
-            this.applySkillEffect(skillId);
-        }
-        coreSystemsRef.loggingSystem.debug("SkillsLogic", "All skill effects applied.");
-    },
-
-    /**
-     * Checks if a skill is unlocked based on its tier's unlock condition.
-     * @param {string} skillId - The ID of the skill.
-     * @returns {boolean} True if unlocked, false otherwise.
-     */
-    isSkillUnlocked(skillId) {
-        const { loggingSystem, coreGameStateManager } = coreSystemsRef;
-        const skillDef = staticModuleData.skills[skillId];
-
-        if (!skillDef) {
-            loggingSystem.error("SkillsLogic", `Skill definition not found for ID: ${skillId}`);
-            return false;
-        }
-
-        if (skillDef.tier === 1) {
-            return true; // Tier 1 skills are always unlocked by default (or when the tab is unlocked)
-        }
-
-        const condition = skillDef.unlockCondition;
-        if (!condition) {
-            return true; // No specific condition, assume unlocked if not tier 1
-        }
-
-        switch (condition.type) {
-            case "allSkillsAtLevel":
-                const targetTier = condition.tier;
-                const requiredLevel = condition.level;
-                for (const otherSkillId in staticModuleData.skills) {
-                    const otherSkillDef = staticModuleData.skills[otherSkillId];
-                    if (otherSkillDef.tier === targetTier) {
-                        if ((moduleState.skillLevels[otherSkillId] || 0) < requiredLevel) {
-                            return false; // Not all skills in the target tier are at the required level
-                        }
-                    }
-                }
-                return true; // All skills in the target tier are at or above the required level
-            case "globalFlag": // Added for completeness, if a skill tier is unlocked by a flag
-                return coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
-            default:
-                loggingSystem.warn("SkillsLogic", `Unknown unlock condition type for skill ${skillId}: ${condition.type}`);
-                return false;
-        }
-    },
-
-    /**
-     * Checks for and applies any new tier unlocks.
-     */
-    checkTierUnlocks() {
-        const { coreUIManager, loggingSystem, coreGameStateManager } = coreSystemsRef;
-        // Iterate through all skills to find tiers and check their unlock conditions
-        const tiers = new Set(Object.values(staticModuleData.skills).map(s => s.tier));
-        tiers.forEach(tier => {
-            // Skip Tier 1 as it's always available
-            if (tier === 1) return;
-
-            // Find a skill in this tier to check its unlock condition (assuming all skills in a tier have the same condition)
-            const skillInTier = Object.values(staticModuleData.skills).find(s => s.tier === tier);
-            if (skillInTier && skillInTier.unlockCondition) {
-                const condition = skillInTier.unlockCondition;
-                let tierUnlocked = false;
-
-                switch (condition.type) {
-                    case "allSkillsAtLevel":
-                        const targetTier = condition.tier;
-                        const requiredLevel = condition.level;
-                        let allPreviousTierSkillsMet = true;
-                        for (const previousSkillId in staticModuleData.skills) {
-                            const previousSkillDef = staticModuleData.skills[previousSkillId];
-                            if (previousSkillDef.tier === targetTier) {
-                                if ((moduleState.skillLevels[previousSkillId] || 0) < requiredLevel) {
-                                    allPreviousTierSkillsMet = false;
-                                    break;
-                                }
-                            }
-                        }
-                        tierUnlocked = allPreviousTierSkillsMet;
-                        break;
-                    case "globalFlag":
-                        tierUnlocked = coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
-                        break;
-                    default:
-                        loggingSystem.warn("SkillsLogic", `Unhandled tier unlock condition type: ${condition.type}`);
-                        break;
-                }
-
-                if (tierUnlocked && !coreGameStateManager.getGlobalFlag(`skillsTier${tier}Unlocked`)) {
-                    coreGameStateManager.setGlobalFlag(`skillsTier${tier}Unlocked`, true);
-                    coreUIManager.showNotification(`New Skill Tier ${tier} Unlocked!`, 'info', 3000);
-                    coreUIManager.renderMenu(); // Re-render menu if new skills tab is unlocked
-                }
-            }
-        });
-    },
-
-    /**
-     * Gets the current level of a skill.
-     * @param {string} skillId - The ID of the skill.
-     * @returns {number} The current level.
-     */
-    getSkillLevel(skillId) {
-        return moduleState.skillLevels[skillId] || 0;
-    },
-
-    /**
-     * Checks if the Skills tab itself should be unlocked.
-     * @returns {boolean}
-     */
-    isSkillsTabUnlocked() {
-        const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        const condition = staticModuleData.ui.skillsTabUnlockCondition;
-
-        if (!condition) {
-            return false; // Must have a condition
-        }
-
-        switch (condition.type) {
-            case "resource":
-                const currentResourceAmount = coreResourceManager.getAmount(condition.resourceId);
-                const requiredResourceAmount = decimalUtility.new(condition.amount);
-                return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
-            default:
-                return false;
-        }
-    },
-
-    /**
-     * Lifecycle method called when the game loads.
-     * Ensures all skill effects are correctly applied based on loaded state.
-     */
-    onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad: Applying all skill effects.");
-        this.applyAllSkillEffects();
-        this.checkTierUnlocks(); // Re-check tier unlocks on load
-    },
-
-    /**
-     * Lifecycle method called when the game resets.
-     * Resets module-specific state and removes effects.
-     */
-    onResetState() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState: Resetting Skills module logic state and removing effects.");
-        // The moduleState will be re-initialized by the manifest, clearing skillLevels.
-        // We need to explicitly remove effects from CoreUpgradeManager.
         for (const skillId in staticModuleData.skills) {
             const skillDef = staticModuleData.skills[skillId];
-            if (skillDef.effect) {
-                const sourceId = `skills_module_${skillId}`;
-                coreSystemsRef.coreUpgradeManager.removeEffect(skillDef.effect.targetType, skillDef.effect.type, skillDef.effect.targetId, sourceId);
+            const processEffect = (effectDef) => {
+                if (!effectDef) return;
+                const valueProvider = () => {
+                    const level = this.getSkillLevel(skillId);
+                    if (level === 0) { 
+                        return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
+                    }
+                    const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel);
+                    let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
+
+                    if (effectDef.type.includes("MULTIPLIER")) {
+                        if (effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER") {
+                            return decimalUtility.add(1, effectValue); 
+                        } else if (effectDef.aggregation === "SUBTRACTIVE_FROM_BASE_FOR_MULTIPLIER") {
+                            return decimalUtility.subtract(1, effectValue); 
+                        }
+                        return effectValue; 
+                    }
+                    return effectValue; 
+                };
+
+                coreUpgradeManager.registerEffectSource(
+                    'skills', 
+                    skillId + (effectDef.targetId ? `_${effectDef.targetId}` : ''), 
+                    effectDef.targetSystem,
+                    effectDef.targetId,
+                    effectDef.type,
+                    valueProvider
+                );
+            };
+            
+            if (skillDef.effect) { 
+                processEffect(skillDef.effect);
+            } else if (skillDef.effects && Array.isArray(skillDef.effects)) { 
+                skillDef.effects.forEach(processEffect);
             }
         }
-        this.applyAllSkillEffects(); // Re-apply (which will be level 0, so no effects)
+        loggingSystem.info("SkillsLogic", "All skill effects registered with CoreUpgradeManager.");
+    },
+
+    getFormattedSkillEffect(skillId, specificEffectDef = null) {
+        const { decimalUtility } = coreSystemsRef;
+        const skillDef = staticModuleData.skills[skillId];
+        const effectDef = specificEffectDef || skillDef.effect || (skillDef.effects ? skillDef.effects[0] : null); 
+
+        if (!skillDef || !effectDef) return "N/A";
+
+        const level = this.getSkillLevel(skillId);
+        if (level === 0 && !specificEffectDef) return "Not active"; 
+
+        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel);
+        let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
+        let effectText = "";
+
+        switch (effectDef.type) {
+            case "MULTIPLIER":
+                effectText = `+${decimalUtility.format(decimalUtility.multiply(currentEffectValue, 100), 0)}%`;
+                break;
+            case "COST_REDUCTION_MULTIPLIER":
+                effectText = `-${decimalUtility.format(decimalUtility.multiply(currentEffectValue, 100), 0)}% Cost`;
+                break;
+            default:
+                effectText = decimalUtility.format(currentEffectValue, 2);
+        }
+        return effectText;
+    },
+
+    onGameLoad() {
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.3).");
+        this.registerAllSkillEffects(); 
+        this.isSkillsTabUnlocked(); 
+    },
+
+    onResetState() {
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered for Skills module (v1.3).");
+        this.registerAllSkillEffects(); // Re-register to effectively reset (as levels will be 0)
+        if (coreSystemsRef.coreGameStateManager) { 
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', false);
+            coreSystemsRef.loggingSystem.info("SkillsLogic", "'skillsTabPermanentlyUnlocked' flag cleared.");
+        }
     }
 };

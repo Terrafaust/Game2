@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_ui.js (v3)
+// js/modules/studies_module/studies_ui.js
 
 /**
  * @file studies_ui.js
@@ -104,12 +104,11 @@ export const ui = {
                         buyButton.classList.add('animate-pulse-once');
                         setTimeout(() => buyButton.classList.remove('animate-pulse-once'), 500);
                     } else {
-                        coreUIManager.showNotification(`Not enough ${coreSystemsRef.coreResourceManager.getAllResources()[producerDef.costResource]?.name || producerDef.costResource} to buy ${producerDef.name}.`, 'error', 1500);
+                        coreUIManager.showNotification(`Not enough ${staticModuleData.producers[producerId].costResource} to buy ${producerDef.name}.`, 'error', 1500);
                     }
                 },
                 ['bg-blue-600', 'hover:bg-blue-700', 'text-white', 'py-2', 'px-4', 'text-md', 'w-full'],
-                `buy-${producerId}-button`,
-                producerDef.costResource // Pass cost resource ID for coloring
+                `buy-${producerId}-button`
             );
             producerCard.appendChild(buyButton);
 
@@ -160,8 +159,8 @@ export const ui = {
             case "resource":
                 const currentAmount = coreResourceManager.getAmount(condition.resourceId);
                 const requiredAmount = decimalUtility.new(condition.amount);
-                content += `<p>Reach ${coreUIManager.formatResourceAmountWithColor(requiredAmount, condition.resourceId, 0)} ${coreResourceManager.getAllResources()[condition.resourceId]?.name || condition.resourceId}.</p>`;
-                content += `<p class="text-xs text-textSecondary">(Current: ${coreUIManager.formatResourceAmountWithColor(currentAmount, condition.resourceId, 0)})</p>`;
+                content += `<p>Reach ${decimalUtility.format(requiredAmount, 0)} ${coreResourceManager.getAllResources()[condition.resourceId]?.name || condition.resourceId}.</p>`;
+                content += `<p class="text-xs text-textSecondary">(Current: ${decimalUtility.format(currentAmount, 0)})</p>`;
                 break;
             case "producerOwned":
                 const producerDef = staticModuleData.producers[condition.producerId];
@@ -183,27 +182,15 @@ export const ui = {
     _setupTooltips() {
         const tooltipTargets = parentElementCache.querySelectorAll('.tooltip-target');
         tooltipTargets.forEach(target => {
-            // Remove existing listeners to prevent duplicates
-            const oldEnterHandler = target._tooltipEnterHandler;
-            const oldLeaveHandler = target._tooltipLeaveHandler;
-            if (oldEnterHandler) target.removeEventListener('mouseenter', oldEnterHandler);
-            if (oldLeaveHandler) target.removeEventListener('mouseleave', oldLeaveHandler);
-
-            const enterHandler = (event) => {
+            target.addEventListener('mouseenter', (event) => {
                 const content = target.dataset.tooltipContent;
                 if (content) {
                     coreSystemsRef.coreUIManager.showTooltip(content, target);
                 }
-            };
-            const leaveHandler = () => {
+            });
+            target.addEventListener('mouseleave', () => {
                 coreSystemsRef.coreUIManager.hideTooltip();
-            };
-
-            target.addEventListener('mouseenter', enterHandler);
-            target.addEventListener('mouseleave', leaveHandler);
-            // Store handlers to remove them later if needed
-            target._tooltipEnterHandler = enterHandler;
-            target._tooltipLeaveHandler = leaveHandler;
+            });
         });
     },
 
@@ -214,7 +201,7 @@ export const ui = {
     updateDynamicElements() {
         if (!parentElementCache) return; // Not rendered yet or parent cleared
 
-        const { coreResourceManager, decimalUtility, coreUIManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility } = coreSystemsRef;
 
         for (const producerId in staticModuleData.producers) {
             const producerDef = staticModuleData.producers[producerId];
@@ -228,12 +215,9 @@ export const ui = {
             if (isUnlocked) {
                 producerCard.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
                 producerCard.classList.add('bg-surface-dark'); // Re-add normal background if removed
-                // Ensure tooltips are removed if it was previously locked
-                if (producerCard.classList.contains('tooltip-target')) {
-                    producerCard.classList.remove('tooltip-target');
-                    delete producerCard.dataset.tooltipContent;
-                    coreSystemsRef.coreUIManager.hideTooltip(); // Hide any active tooltip for this element
-                }
+                producerCard.removeEventListener('mouseenter', this._tooltipEnterHandler);
+                producerCard.removeEventListener('mouseleave', this._tooltipLeaveHandler);
+                coreSystemsRef.coreUIManager.hideTooltip(); // Hide any active tooltip for this element
 
                 const ownedCount = moduleLogicRef.getOwnedProducerCount(producerId);
                 const currentCost = moduleLogicRef.calculateProducerCost(producerId);
@@ -245,10 +229,10 @@ export const ui = {
 
                 if (ownedDisplay) ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
                 if (productionDisplay) {
-                    productionDisplay.textContent = `Total Production: ${coreUIManager.formatResourceAmountWithColor(totalProduction, producerDef.resourceId, 2)} ${producerDef.resourceId}/s`;
+                    productionDisplay.textContent = `Total Production: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
                 }
                 if (costDisplay) {
-                    costDisplay.innerHTML = `Cost: ${coreUIManager.formatResourceAmountWithColor(currentCost, producerDef.costResource, 2)} ${coreSystemsRef.coreResourceManager.getAllResources()[producerDef.costResource]?.name || producerDef.costResource}`;
+                    costDisplay.textContent = `Cost: ${decimalUtility.format(currentCost, 2)} ${producerDef.costResource}`;
                 }
 
                 if (buyButton) {

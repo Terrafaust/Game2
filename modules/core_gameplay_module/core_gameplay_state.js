@@ -1,4 +1,4 @@
-// modules/core_gameplay_module/core_gameplay_state.js
+// js/modules/core_gameplay_module/core_gameplay_state.js
 
 /**
  * @file core_gameplay_state.js

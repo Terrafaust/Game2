@@ -1,71 +1,72 @@
-// js/modules/studies_module/studies_logic.js (v3)
+// modules/studies_module/studies_logic.js (v3.4 - Reset Fix)
 
 /**
  * @file studies_logic.js
- * @description Contains the business logic for the Studies module,
- * primarily handling producer purchases, cost calculations, and production updates.
+ * @description Contains the business logic for the Studies module.
+ * v3.4: Ensures 'studiesTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
 import { staticModuleData } from './studies_data.js';
 import { moduleState } from './studies_state.js';
 
-let coreSystemsRef = null; // To store references to core game systems
+let coreSystemsRef = null; 
 
 export const moduleLogic = {
-    /**
-     * Initializes the logic component with core system references.
-     * @param {object} coreSystems - References to core game systems.
-     */
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.debug("StudiesLogic", "Logic initialized.");
+        if (coreSystemsRef && coreSystemsRef.loggingSystem) {
+            coreSystemsRef.loggingSystem.debug("StudiesLogic_Init", "coreSystemsRef received:", 
+                Object.keys(coreSystemsRef), 
+                "Has decimalUtility:", !!(coreSystemsRef.decimalUtility)
+            );
+            if (!coreSystemsRef.decimalUtility) {
+                 coreSystemsRef.loggingSystem.error("StudiesLogic_Init_CRITICAL", "decimalUtility is MISSING in coreSystemsRef during initialize!");
+            }
+        } else {
+            console.error("StudiesLogic_Init_CRITICAL: coreSystemsRef or loggingSystem is missing during initialize!", coreSystemsRef);
+        }
+        const log = (coreSystemsRef && coreSystemsRef.loggingSystem) ? coreSystemsRef.loggingSystem.info.bind(coreSystemsRef.loggingSystem) : console.log;
+        log("StudiesLogic", "Logic initialized (v3.4).");
     },
 
-    /**
-     * Calculates the current cost of a producer.
-     * Formula: baseCost * (costGrowthFactor ^ ownedCount)
-     * @param {string} producerId - The ID of the producer.
-     * @returns {Decimal} The current cost of the producer.
-     */
     calculateProducerCost(producerId) {
+        if (!coreSystemsRef || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) {
+            console.error(`StudiesLogic_calculateProducerCost_CRITICAL: Core systems missing for producer ${producerId}!`, coreSystemsRef);
+            if (!coreSystemsRef || !coreSystemsRef.decimalUtility) return new Decimal(Infinity); 
+            return coreSystemsRef.decimalUtility.new(Infinity);
+        }
         const { decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef) {
             loggingSystem.error("StudiesLogic", `Producer definition not found for ID: ${producerId}`);
-            return decimalUtility.new(Infinity); // Return a very high cost if not found
+            return decimalUtility.new(Infinity);
         }
 
         const baseCost = decimalUtility.new(producerDef.baseCost);
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
         const ownedCount = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
 
-        // Apply cost reduction modifiers from CoreUpgradeManager
-        const costReductionFactor = coreUpgradeManager.getAggregatedModifier('producer', 'costReduction', producerId);
-        // Cost = baseCost * (costGrowthFactor ^ ownedCount) * costReductionFactor
-        // Note: costReductionFactor is (1 - sumOfReductions), so multiplying by it reduces the cost.
         let currentCost = decimalUtility.multiply(
             baseCost,
             decimalUtility.power(costGrowthFactor, ownedCount)
         );
-        currentCost = decimalUtility.multiply(currentCost, costReductionFactor);
 
-
+        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
+        currentCost = decimalUtility.multiply(currentCost, costReductionMultiplier);
+        
+        if (decimalUtility.lt(currentCost, 1) && decimalUtility.neq(currentCost, 0)) {
+            // currentCost = decimalUtility.new(1); 
+        }
         return currentCost;
     },
 
-    /**
-     * Handles the purchase of a producer.
-     * @param {string} producerId - The ID of the producer to purchase.
-     * @returns {boolean} True if purchase was successful, false otherwise.
-     */
     purchaseProducer(producerId) {
-        if (!coreSystemsRef) {
-            console.error("StudiesLogic: Core systems not initialized.");
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
+            console.error("StudiesLogic_purchaseProducer_CRITICAL: Core systems missing!", coreSystemsRef);
             return false;
         }
-
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef) {
@@ -79,22 +80,10 @@ export const moduleLogic = {
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
 
-            // Increment owned count for this producer
             let currentOwned = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
-            moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, 1).toString(); // Store as string for saving
+            moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, 1).toString();
 
-            // If purchasing the first Professor, unlock the Knowledge resource in UI
-            if (producerId === 'professor' && decimalUtility.eq(currentOwned, 0)) {
-                coreResourceManager.unlockResource('knowledge');
-                coreResourceManager.setResourceVisibility('knowledge', true);
-                loggingSystem.info("StudiesLogic", "Knowledge resource unlocked and set to show in UI.");
-                coreUIManager.showNotification("New Resource Unlocked: Knowledge!", 'info', 3000);
-            }
-
-            // Update total production rate for the resource this producer generates
             this.updateProducerProduction(producerId);
-
-            // Persist the updated module state to the global game state
             coreGameStateManager.setModuleState('studies', { ...moduleState });
 
             loggingSystem.info("StudiesLogic", `Purchased ${producerDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. Owned: ${moduleState.ownedProducers[producerId]}`);
@@ -105,12 +94,11 @@ export const moduleLogic = {
         }
     },
 
-    /**
-     * Updates the total production rate for a specific producer type.
-     * This method should be called after purchasing a producer or when production bonuses change.
-     * @param {string} producerId - The ID of the producer (e.g., 'student').
-     */
     updateProducerProduction(producerId) {
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) {
+            console.error(`StudiesLogic_updateProducerProduction_CRITICAL: Core systems missing for producer ${producerId}!`, coreSystemsRef);
+            return;
+        }
         const { coreResourceManager, decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
@@ -121,162 +109,168 @@ export const moduleLogic = {
 
         const ownedCount = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
         const baseProductionPerUnit = decimalUtility.new(producerDef.baseProduction);
-
-        // Calculate total production from this type of producer
         let totalProduction = decimalUtility.multiply(baseProductionPerUnit, ownedCount);
 
-        // Apply production multipliers from CoreUpgradeManager
-        // Check for specific producer multipliers (e.g., skill for student)
-        const producerMultiplier = coreUpgradeManager.getAggregatedModifier('producer', 'productionMultiplier', producerId);
-        totalProduction = decimalUtility.multiply(totalProduction, producerMultiplier);
+        const productionMultiplier = coreUpgradeManager.getProductionMultiplier('studies_producers', producerId);
+        totalProduction = decimalUtility.multiply(totalProduction, productionMultiplier);
+        
+        const globalResourceMultiplier = coreUpgradeManager.getProductionMultiplier('global_resource_production', producerDef.resourceId);
+        totalProduction = decimalUtility.multiply(totalProduction, globalResourceMultiplier);
 
-        // Check for global resource multipliers (e.g., achievement for studyPoints)
-        if (producerDef.resourceId === 'studyPoints') {
-            const globalSPMultiplier = coreUpgradeManager.getAggregatedModifier('resource', 'productionMultiplier', 'studyPoints');
-            totalProduction = decimalUtility.multiply(totalProduction, globalSPMultiplier);
-        }
-        // Add other resource-specific global multipliers here if needed (e.g., for 'knowledge')
-        if (producerDef.resourceId === 'knowledge') {
-             const globalKnowledgeMultiplier = coreUpgradeManager.getAggregatedModifier('resource', 'productionMultiplier', 'knowledge');
-             totalProduction = decimalUtility.multiply(totalProduction, globalKnowledgeMultiplier);
-        }
-
-
-        // Set this producer's contribution to the resource manager
-        // The sourceKey should be unique for this module and producer type
         const sourceKey = `studies_module_${producerId}`;
         coreResourceManager.setProductionPerSecond(producerDef.resourceId, sourceKey, totalProduction);
 
-        loggingSystem.debug("StudiesLogic", `Updated production for ${producerDef.name} (${producerId}). Total: ${decimalUtility.format(totalProduction)} ${producerDef.resourceId}/s`);
+        if (producerId === 'professor' && decimalUtility.gt(totalProduction, 0)) {
+            const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge'];
+            if (knowledgeResourceState && !knowledgeResourceState.isUnlocked) {
+                coreResourceManager.unlockResource('knowledge');
+                loggingSystem.info("StudiesLogic", "Knowledge resource production started, ensuring it's unlocked.");
+            }
+            if (knowledgeResourceState && !knowledgeResourceState.showInUI) {
+                coreResourceManager.setResourceVisibility('knowledge', true);
+                loggingSystem.info("StudiesLogic", "Knowledge resource made visible in UI.");
+            }
+        }
     },
 
-    /**
-     * Calculates and updates the production for all producers in the Studies module.
-     * This should be called on game load and potentially periodically if external multipliers change.
-     */
     updateAllProducerProductions() {
-        for (const producerId in staticModuleData.producers) {
-            this.updateProducerProduction(producerId);
+        if (!coreSystemsRef || typeof coreSystemsRef.decimalUtility === 'undefined') {
+            const logger = (coreSystemsRef && coreSystemsRef.loggingSystem) ? coreSystemsRef.loggingSystem.error.bind(coreSystemsRef.loggingSystem) : console.error;
+            logger("StudiesLogic_UpdateAll_CRITICAL", "coreSystemsRef or coreSystemsRef.decimalUtility is undefined right before loop in updateAllProducerProductions!", coreSystemsRef);
+            return; 
         }
-        coreSystemsRef.loggingSystem.debug("StudiesLogic", "All producer productions updated.");
+        const { decimalUtility } = coreSystemsRef; 
+        for (const producerId in staticModuleData.producers) {
+            if (this.isProducerUnlocked(producerId) || decimalUtility.gt(moduleState.ownedProducers[producerId] || "0", 0) ) { 
+                 this.updateProducerProduction(producerId);
+            }
+        }
+        if (coreSystemsRef && coreSystemsRef.loggingSystem) {
+            coreSystemsRef.loggingSystem.debug("StudiesLogic", "All active producer productions updated.");
+        }
     },
 
-    /**
-     * Checks if a producer is unlocked based on its unlock condition.
-     * @param {string} producerId - The ID of the producer.
-     * @returns {boolean} True if unlocked, false otherwise.
-     */
     isProducerUnlocked(producerId) {
-        const { coreResourceManager, decimalUtility, loggingSystem, moduleLoader } = coreSystemsRef;
-        const producerDef = staticModuleData.producers[producerId];
-
-        if (!producerDef || !producerDef.unlockCondition) {
-            // If no unlock condition, assume it's unlocked by default
-            return true;
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem) {
+            console.error("StudiesLogic_isProducerUnlocked_CRITICAL: Core systems missing!", coreSystemsRef);
+            return false; 
         }
-
+        const { coreResourceManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        const producerDef = staticModuleData.producers[producerId];
+        if (!producerDef || !producerDef.unlockCondition) return true;
         const condition = producerDef.unlockCondition;
-
         switch (condition.type) {
             case "resource":
-                const currentResourceAmount = coreResourceManager.getAmount(condition.resourceId);
-                const requiredResourceAmount = decimalUtility.new(condition.amount);
-                return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
+                return decimalUtility.gte(coreResourceManager.getAmount(condition.resourceId), decimalUtility.new(condition.amount));
             case "producerOwned":
-                // For producerOwned conditions, check against this module's state
-                const ownedCount = decimalUtility.new(moduleState.ownedProducers[condition.producerId] || 0);
-                const requiredCount = decimalUtility.new(condition.count);
-                return decimalUtility.gte(ownedCount, requiredCount);
-            case "globalFlag":
-                return coreSystemsRef.coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
+                return decimalUtility.gte(decimalUtility.new(moduleState.ownedProducers[condition.producerId] || 0), decimalUtility.new(condition.count));
             default:
                 loggingSystem.warn("StudiesLogic", `Unknown unlock condition type for producer ${producerId}: ${condition.type}`);
                 return false;
         }
     },
 
-    /**
-     * Gets the current owned count for a specific producer.
-     * @param {string} producerId - The ID of the producer.
-     * @returns {Decimal} The owned count as a Decimal.
-     */
     getOwnedProducerCount(producerId) {
+        if (!coreSystemsRef || !coreSystemsRef.decimalUtility) {
+            console.error("StudiesLogic_getOwnedProducerCount_CRITICAL: decimalUtility missing!", coreSystemsRef);
+            return new Decimal(0); 
+        }
         const { decimalUtility } = coreSystemsRef;
         return decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
     },
 
-    /**
-     * Checks if the Studies tab itself should be unlocked.
-     * @returns {boolean}
-     */
     isStudiesTabUnlocked() {
-        const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        const condition = staticModuleData.ui.studiesTabUnlockCondition;
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreGameStateManager) {
+            console.error("StudiesLogic_isStudiesTabUnlocked_CRITICAL: Core systems missing!", coreSystemsRef);
+            return true; 
+        }
+        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
 
-        if (!condition) {
-            return true; // Always unlocked if no condition defined
+        if (coreGameStateManager.getGlobalFlag('studiesTabPermanentlyUnlocked', false)) {
+            return true;
         }
 
+        const condition = staticModuleData.ui.studiesTabUnlockCondition;
+        if (!condition) { 
+             coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', true); 
+             if(coreUIManager) coreUIManager.renderMenu(); 
+            return true;
+        }
+        
+        let conditionMet = false;
         switch (condition.type) {
             case "resource":
-                const currentResourceAmount = coreResourceManager.getAmount(condition.resourceId);
-                const requiredResourceAmount = decimalUtility.new(condition.amount);
-                return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
+                conditionMet = decimalUtility.gte(coreResourceManager.getAmount(condition.resourceId), decimalUtility.new(condition.amount));
+                break;
             default:
-                return false;
+                conditionMet = false;
+                break;
         }
+
+        if (conditionMet) {
+            coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu();
+            coreSystemsRef.loggingSystem.info("StudiesLogic", "Studies tab permanently unlocked.");
+            return true;
+        }
+        return false;
     },
 
-    /**
-     * Checks and updates global flags based on module progress.
-     * This should be called periodically (e.g., in game loop or after significant actions).
-     */
     updateGlobalFlags() {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUIManager) {
+            console.error("StudiesLogic_updateGlobalFlags_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
         const { coreGameStateManager, loggingSystem, decimalUtility, coreUIManager } = coreSystemsRef;
-
         for (const flagKey in staticModuleData.globalFlagsToSet) {
             const flagDef = staticModuleData.globalFlagsToSet[flagKey];
             const condition = flagDef.condition;
-
             let conditionMet = false;
             switch (condition.type) {
                 case "producerOwned":
-                    const ownedCount = decimalUtility.new(moduleState.ownedProducers[condition.producerId] || 0);
-                    const requiredCount = decimalUtility.new(condition.count);
-                    conditionMet = decimalUtility.gte(ownedCount, requiredCount);
+                    conditionMet = decimalUtility.gte(decimalUtility.new(moduleState.ownedProducers[condition.producerId] || 0), decimalUtility.new(condition.count));
                     break;
                 default:
                     loggingSystem.warn("StudiesLogic", `Unknown global flag condition type: ${condition.type}`);
                     break;
             }
-
             if (conditionMet && !coreGameStateManager.getGlobalFlag(flagDef.flag)) {
                 coreGameStateManager.setGlobalFlag(flagDef.flag, flagDef.value);
-                loggingSystem.info("StudiesLogic", `Global flag '${flagDef.flag}' set to ${flagDef.value} due to condition met.`);
-                coreUIManager.showNotification(`New content unlocked: ${flagDef.flag}!`, 'info', 3000);
-                coreUIManager.renderMenu(); // Trigger menu re-render to show new tabs
+                loggingSystem.info("StudiesLogic", `Global flag '${flagDef.flag}' set to ${flagDef.value}.`);
+                coreUIManager.showNotification(`New feature unlocked via Studies progress! Check the menu.`, 'info', 3000);
+                coreUIManager.renderMenu();
             }
         }
     },
 
-    /**
-     * Lifecycle method called when the game loads.
-     * Ensures all production rates are correctly set based on loaded state.
-     */
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad: Re-calculating all producer productions.");
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility) {
+             console.error("StudiesLogic_onGameLoad_CRITICAL: Core systems missing!", coreSystemsRef);
+             return;
+        }
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onGameLoad (v3.4): Re-calculating all producer productions and flags.");
         this.updateAllProducerProductions();
-        this.updateGlobalFlags(); // Check flags on load too
+        this.updateGlobalFlags();
+        this.isStudiesTabUnlocked(); 
+        const { coreResourceManager, decimalUtility } = coreSystemsRef; 
+        const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge'];
+        if (knowledgeResourceState && (decimalUtility.gt(knowledgeResourceState.amount, 0) || decimalUtility.gt(knowledgeResourceState.totalProductionRate,0))) {
+            if (!knowledgeResourceState.isUnlocked) coreResourceManager.unlockResource('knowledge');
+            if (!knowledgeResourceState.showInUI) coreResourceManager.setResourceVisibility('knowledge', true);
+        }
     },
 
-    /**
-     * Lifecycle method called when the game resets.
-     * Resets module-specific state.
-     */
     onResetState() {
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState: Resetting Studies module logic state.");
-        // When the game resets, the moduleState will be re-initialized by the manifest,
-        // so we just need to ensure production rates are reset/recalculated.
-        this.updateAllProducerProductions();
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreResourceManager || !coreSystemsRef.coreGameStateManager) {
+             console.error("StudiesLogic_onResetState_CRITICAL: Core systems missing!", coreSystemsRef);
+             return;
+        }
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3.4): Resetting Studies module logic state.");
+        this.updateAllProducerProductions(); // Recalculate production (will be 0)
+        const knowledgeDef = staticModuleData.resources.knowledge;
+        coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI); // Reset visibility
+        // Clear the permanent unlock flag for the studies tab
+        coreSystemsRef.coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', false);
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "'studiesTabPermanentlyUnlocked' flag cleared.");
     }
 };

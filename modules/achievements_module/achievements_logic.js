@@ -1,283 +1,197 @@
-// modules/achievements_module/achievements_logic.js 
+// modules/achievements_module/achievements_logic.js (v1.3 - Full Skill/SSP Achievements)
 
 /**
  * @file achievements_logic.js
- * @description Contains the business logic for the Achievements module,
- * primarily handling achievement condition checking, unlocking, and reward application.
+ * @description Business logic for the Achievements module.
+ * v1.3: Fully implements skill-based and SSP achievement conditions.
  */
 
 import { staticModuleData } from './achievements_data.js';
 import { moduleState } from './achievements_state.js';
 
-let coreSystemsRef = null; // To store references to core game systems
+let coreSystemsRef = null;
 
 export const moduleLogic = {
-    /**
-     * Initializes the logic component with core system references.
-     * @param {object} coreSystems - References to core game systems.
-     */
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.debug("AchievementsLogic", "Logic initialized.");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v1.3).");
+        this.applyAllCompletedAchievementRewards(); 
     },
 
-    /**
-     * Checks all achievement conditions and unlocks any that are met.
-     * This should be called periodically by the game loop.
-     */
-    checkAchievementConditions() {
-        const { loggingSystem } = coreSystemsRef;
-
-        for (const achievementId in staticModuleData.achievements) {
-            const achievementDef = staticModuleData.achievements[achievementId];
-
-            // Skip if already unlocked
-            if (moduleState.unlockedAchievements[achievementId]) {
-                continue;
-            }
-
-            const conditionMet = this._checkSingleAchievementCondition(achievementDef);
-
-            if (conditionMet) {
-                this.unlockAchievement(achievementId);
-            }
-        }
-    },
-
-    /**
-     * Checks the condition for a single achievement.
-     * @param {object} achievementDef - The definition of the achievement.
-     * @returns {boolean} True if the condition is met, false otherwise.
-     * @private
-     */
-    _checkSingleAchievementCondition(achievementDef) {
-        const { coreResourceManager, decimalUtility, loggingSystem, moduleLoader } = coreSystemsRef;
-        const condition = achievementDef.condition;
-
-        if (!condition) {
-            return false; // Achievements must have a condition
-        }
-
-        switch (condition.type) {
-            case "producerOwned":
-                const studiesModule = moduleLoader.getModule(condition.moduleId);
-                if (studiesModule && studiesModule.logic && typeof studiesModule.logic.getOwnedProducerCount === 'function') {
-                    const ownedCount = studiesModule.logic.getOwnedProducerCount(condition.producerId);
-                    const requiredCount = decimalUtility.new(condition.count);
-                    return decimalUtility.gte(ownedCount, requiredCount);
-                } else {
-                    loggingSystem.warn("AchievementsLogic", `Module '${condition.moduleId}' or its logic not available for producerOwned condition for achievement ${achievementDef.id}.`);
-                    return false;
-                }
-            case "resourceAmount":
-                const currentResourceAmount = coreResourceManager.getAmount(condition.resourceId);
-                const requiredResourceAmount = decimalUtility.new(condition.amount);
-                return decimalUtility.gte(currentResourceAmount, requiredResourceAmount);
-            case "totalClicks":
-                const coreGameplayModule = moduleLoader.getModule(condition.moduleId);
-                if (coreGameplayModule && coreGameplayModule.logic && typeof coreGameplayModule.logic.getTotalClicks === 'function') {
-                    const totalClicks = coreGameplayModule.logic.getTotalClicks();
-                    const requiredClicks = parseInt(condition.count);
-                    return totalClicks >= requiredClicks;
-                } else {
-                    loggingSystem.warn("AchievementsLogic", `Module '${condition.moduleId}' or its logic not available for totalClicks condition for achievement ${achievementDef.id}.`);
-                    return false;
-                }
-            case "skillLevel":
-                const skillsModule = moduleLoader.getModule(condition.moduleId);
-                if (skillsModule && skillsModule.logic && typeof skillsModule.logic.getSkillLevel === 'function') {
-                    const skillLevel = skillsModule.logic.getSkillLevel(condition.skillId);
-                    const requiredLevel = parseInt(condition.level);
-                    return skillLevel >= requiredLevel;
-                } else {
-                    loggingSystem.warn("AchievementsLogic", `Module '${condition.moduleId}' or its logic not available for skillLevel condition for achievement ${achievementDef.id}.`);
-                    return false;
-                }
-            default:
-                loggingSystem.warn("AchievementsLogic", `Unknown achievement condition type for ${achievementDef.id}: ${condition.type}`);
-                return false;
-        }
-    },
-
-    /**
-     * Unlocks an achievement, applies its reward, and updates the UI.
-     * @param {string} achievementId - The ID of the achievement to unlock.
-     */
-    unlockAchievement(achievementId) {
-        const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
-        const achievementDef = staticModuleData.achievements[achievementId];
-
-        if (!achievementDef) {
-            loggingSystem.error("AchievementsLogic", `Attempted to unlock unknown achievement: ${achievementId}`);
-            return;
-        }
-
-        if (moduleState.unlockedAchievements[achievementId]) {
-            loggingSystem.warn("AchievementsLogic", `Achievement ${achievementId} is already unlocked.`);
-            return;
-        }
-
-        moduleState.unlockedAchievements[achievementId] = true;
-        coreGameStateManager.setModuleState('achievements', { ...moduleState }); // Persist state
-
-        loggingSystem.info("AchievementsLogic", `Achievement Unlocked: ${achievementDef.name}!`);
-        coreUIManager.showNotification(`Achievement Unlocked: ${achievementDef.name}!`, 'success', 4000);
-
-        this.applyAchievementReward(achievementId);
-    },
-
-    /**
-     * Applies the reward of an unlocked achievement via CoreUpgradeManager or directly.
-     * @param {string} achievementId - The ID of the achievement whose reward to apply.
-     */
-    applyAchievementReward(achievementId) {
-        const { coreResourceManager, coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
-        const achievementDef = staticModuleData.achievements[achievementId];
-
-        if (!achievementDef || !achievementDef.reward) {
-            loggingSystem.warn("AchievementsLogic", `No reward defined for achievement: ${achievementId}`);
-            return;
-        }
-
-        const reward = achievementDef.reward;
-        const sourceId = `achievements_module_${achievementId}`;
-        const rewardValue = decimalUtility.new(reward.value);
-
-        switch (reward.type) {
-            case "productionMultiplier":
-                // Register with CoreUpgradeManager
-                coreUpgradeManager.registerEffect(
-                    reward.targetType,
-                    reward.type,
-                    reward.targetId,
-                    sourceId,
-                    rewardValue
-                );
-                loggingSystem.debug("AchievementsLogic", `Applied production multiplier reward for ${achievementId}. Target: ${reward.targetId}, Value: ${rewardValue.toString()}`);
-                break;
-            case "resourceGain":
-                // One-time resource gain
-                coreResourceManager.addAmount(reward.resourceId, rewardValue);
-                loggingSystem.debug("AchievementsLogic", `Applied resource gain reward for ${achievementId}. Gained ${rewardValue.toString()} ${reward.resourceId}.`);
-                break;
-            // Add other reward types as needed (e.g., cost reduction, global boost)
-            default:
-                loggingSystem.warn("AchievementsLogic", `Unknown achievement reward type for ${achievementId}: ${reward.type}`);
-                break;
-        }
-    },
-
-    /**
-     * Re-applies all rewards for already unlocked achievements.
-     * This is crucial on game load to ensure all active bonuses are registered.
-     */
-    applyAllUnlockedAchievementRewards() {
-        const { loggingSystem } = coreSystemsRef;
-        loggingSystem.info("AchievementsLogic", "Re-applying rewards for all unlocked achievements.");
-        for (const achievementId in moduleState.unlockedAchievements) {
-            if (moduleState.unlockedAchievements[achievementId]) {
-                this.applyAchievementReward(achievementId);
-            }
-        }
-    },
-
-    /**
-     * Gets the current progress towards an achievement.
-     * @param {string} achievementId - The ID of the achievement.
-     * @returns {{current: Decimal|number, required: Decimal|number}} Current and required values.
-     */
-    getAchievementProgress(achievementId) {
-        const { coreResourceManager, decimalUtility, moduleLoader } = coreSystemsRef;
-        const achievementDef = staticModuleData.achievements[achievementId];
-
-        if (!achievementDef || !achievementDef.condition) {
-            return { current: decimalUtility.ZERO, required: decimalUtility.ONE }; // Default for invalid
-        }
-
-        const condition = achievementDef.condition;
-        let current = decimalUtility.ZERO;
-        let required = decimalUtility.ONE; // Default to 1 to avoid division by zero
-
-        switch (condition.type) {
-            case "producerOwned":
-                const studiesModule = moduleLoader.getModule(condition.moduleId);
-                if (studiesModule && studiesModule.logic && typeof studiesModule.logic.getOwnedProducerCount === 'function') {
-                    current = studiesModule.logic.getOwnedProducerCount(condition.producerId);
-                    required = decimalUtility.new(condition.count);
-                }
-                break;
-            case "resourceAmount":
-                current = coreResourceManager.getAmount(condition.resourceId);
-                required = decimalUtility.new(condition.amount);
-                break;
-            case "totalClicks":
-                const coreGameplayModule = moduleLoader.getModule(condition.moduleId);
-                if (coreGameplayModule && coreGameplayModule.logic && typeof coreGameplayModule.logic.getTotalClicks === 'function') {
-                    current = decimalUtility.new(coreGameplayModule.logic.getTotalClicks());
-                    required = decimalUtility.new(condition.count);
-                }
-                break;
-            case "skillLevel":
-                const skillsModule = moduleLoader.getModule(condition.moduleId);
-                if (skillsModule && skillsModule.logic && typeof skillsModule.logic.getSkillLevel === 'function') {
-                    current = decimalUtility.new(skillsModule.logic.getSkillLevel(condition.skillId));
-                    required = decimalUtility.new(condition.level);
-                }
-                break;
-        }
-        return { current: current, required: required };
-    },
-
-    /**
-     * Checks if the Achievements tab itself should be unlocked.
-     * @returns {boolean}
-     */
     isAchievementsTabUnlocked() {
-        const { coreGameStateManager } = coreSystemsRef;
-        const condition = staticModuleData.ui.achievementsTabUnlockCondition;
-
-        if (!condition) {
-            return false; // Must have a condition
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) {
+            console.error("AchievementsLogic_isTabUnlocked_CRITICAL: coreGameStateManager missing!");
+            return true; 
         }
-
-        if (condition.type === "globalFlag") {
-            return coreGameStateManager.getGlobalFlag(condition.flag) === condition.value;
+        const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
+        if (coreGameStateManager.getGlobalFlag('achievementsTabPermanentlyUnlocked', false)) {
+            return true;
+        }
+        const conditionMet = coreGameStateManager.getGlobalFlag('achievementsTabUnlocked', false); 
+        if (conditionMet) {
+            coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu();
+            loggingSystem.info("AchievementsLogic", "Achievements tab permanently unlocked.");
+            return true;
         }
         return false;
     },
 
-    /**
-     * Lifecycle method called when the game loads.
-     * Ensures all achievement rewards are correctly applied based on loaded state.
-     */
-    onGameLoad() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad: Re-applying all unlocked achievement rewards.");
-        this.applyAllUnlockedAchievementRewards();
+    isAchievementCompleted(achievementId) {
+        return moduleState.completedAchievements[achievementId] === true;
     },
 
-    /**
-     * Lifecycle method called when the game resets.
-     * Resets module-specific state and removes effects.
-     */
-    onResetState() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState: Resetting Achievements module logic state and removing effects.");
-        // The moduleState will be re-initialized by the manifest, clearing unlockedAchievements.
-        // We need to explicitly remove effects from CoreUpgradeManager for all achievements.
+    checkAchievementCondition(achievementId) {
+        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.moduleLoader) {
+            console.error("AchievementsLogic_checkCondition_CRITICAL: Core systems missing!", coreSystemsRef);
+            return false;
+        }
+        const { coreResourceManager, decimalUtility, loggingSystem, moduleLoader } = coreSystemsRef;
+        const achievementDef = staticModuleData.achievements[achievementId];
+        if (!achievementDef) {
+            loggingSystem.warn("AchievementsLogic", `Unknown achievement ID: ${achievementId}`);
+            return false;
+        }
+
+        const condition = achievementDef.condition;
+        switch (condition.type) {
+            case "producerOwned":
+                const targetModule = moduleLoader.getModule(condition.moduleId); 
+                if (targetModule && targetModule.getProducerData) {
+                    const producerData = targetModule.getProducerData(condition.producerId);
+                    return decimalUtility.gte(producerData.owned, decimalUtility.new(condition.count));
+                }
+                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getProducerData not found for producer achievement ${achievementId}`);
+                return false;
+            case "resourceAmount": // Handles Study Points, Knowledge, AND Study Skill Points
+                const currentAmount = coreResourceManager.getAmount(condition.resourceId);
+                return decimalUtility.gte(currentAmount, decimalUtility.new(condition.amount));
+            case "totalClicks":
+                const coreGameplayModule = moduleLoader.getModule(condition.moduleId); 
+                if (coreGameplayModule && coreGameplayModule.logic && coreGameplayModule.logic.getTotalClicks) {
+                    const totalClicks = coreGameplayModule.logic.getTotalClicks();
+                    return totalClicks >= condition.count;
+                }
+                loggingSystem.warn("AchievementsLogic", `Module ${condition.moduleId} or getTotalClicks not found for click achievement ${achievementId}`);
+                return false;
+            case "skillTierUnlocked": 
+                const skillsModuleTier = moduleLoader.getModule(condition.moduleId); 
+                if (skillsModuleTier && skillsModuleTier.logic && typeof skillsModuleTier.logic.isTierUnlocked === 'function') { 
+                    return skillsModuleTier.logic.isTierUnlocked(condition.tier);
+                }
+                loggingSystem.warn("AchievementsLogic", `Skill tier unlock condition for ${achievementId} - skills module or logic.isTierUnlocked not ready or not a function.`);
+                return false; 
+            case "skillMaxLevel": 
+                 const skillsModuleMax = moduleLoader.getModule(condition.moduleId); 
+                 if (skillsModuleMax && skillsModuleMax.logic && 
+                     typeof skillsModuleMax.logic.getSkillLevel === 'function' && 
+                     typeof skillsModuleMax.logic.getSkillMaxLevel === 'function') { 
+                    const currentLevel = skillsModuleMax.logic.getSkillLevel(condition.skillId);
+                    const maxLevel = skillsModuleMax.logic.getSkillMaxLevel(condition.skillId); 
+                    return maxLevel > 0 && currentLevel >= maxLevel; 
+                 }
+                 loggingSystem.warn("AchievementsLogic", `Skill max level condition for ${achievementId} - skills module or relevant logic methods not ready or not functions.`);
+                return false;
+            default:
+                loggingSystem.warn("AchievementsLogic", `Unknown condition type for achievement ${achievementId}: ${condition.type}`);
+                return false;
+        }
+    },
+
+    checkAndCompleteAchievements() {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUIManager || !coreSystemsRef.coreUpgradeManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.coreResourceManager) {
+            console.error("AchievementsLogic_checkAndComplete_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        const { coreGameStateManager, loggingSystem, coreUIManager, coreUpgradeManager, decimalUtility, coreResourceManager } = coreSystemsRef;
+        let newAchievementsCompleted = false;
+
         for (const achievementId in staticModuleData.achievements) {
-            const achievementDef = staticModuleData.achievements[achievementId];
-            if (achievementDef.reward) {
-                const sourceId = `achievements_module_${achievementId}`;
-                // Only remove if it's a persistent effect (multiplier, not one-time gain)
-                if (achievementDef.reward.type === 'productionMultiplier' || achievementDef.reward.type === 'costReduction') {
-                    coreSystemsRef.coreUpgradeManager.removeEffect(
-                        achievementDef.reward.targetType,
-                        achievementDef.reward.type,
-                        achievementDef.reward.targetId,
-                        sourceId
-                    );
+            if (!this.isAchievementCompleted(achievementId)) {
+                if (this.checkAchievementCondition(achievementId)) {
+                    moduleState.completedAchievements[achievementId] = true;
+                    newAchievementsCompleted = true;
+                    const achievementDef = staticModuleData.achievements[achievementId];
+                    loggingSystem.info("AchievementsLogic", `Achievement Unlocked: ${achievementDef.name}`);
+                    coreUIManager.showNotification(`Achievement Unlocked: ${achievementDef.name}!`, 'success', 4000);
+
+                    if (achievementDef.reward) {
+                        const reward = achievementDef.reward;
+                        if (reward.type === "RESOURCE_GAIN") { 
+                            coreResourceManager.addAmount(reward.resourceId, decimalUtility.new(reward.amount));
+                            loggingSystem.info("AchievementsLogic", `Granted one-time reward for ${achievementId}: ${reward.amount} ${reward.resourceId}`);
+                        } else if (reward.type.includes("MULTIPLIER")) { 
+                            const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
+                             coreUpgradeManager.registerEffectSource(
+                                'achievements', achievementId, reward.targetSystem,
+                                reward.targetId, reward.type, valueProvider
+                            );
+                            if (reward.targetSystem === "studies_producers" || reward.targetSystem === "global_resource_production" || reward.targetSystem === "core_gameplay_click") {
+                                const studiesModule = coreSystemsRef.moduleLoader.getModule("studies");
+                                if(studiesModule && studiesModule.logic && studiesModule.logic.updateAllProducerProductions){
+                                    studiesModule.logic.updateAllProducerProductions();
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        // No need to re-apply, as state is reset and will be empty
+
+        if (newAchievementsCompleted) {
+            coreGameStateManager.setModuleState('achievements', { ...moduleState });
+            if (coreUIManager.isActiveTab('achievements')) {
+                const achievementsUI = coreSystemsRef.moduleLoader.getModule('achievements')?.ui;
+                if (achievementsUI) achievementsUI.updateDynamicElements();
+            }
+        }
+    },
+    
+    applyAllCompletedAchievementRewards() {
+        if (!coreSystemsRef || !coreSystemsRef.coreUpgradeManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem) {
+            console.error("AchievementsLogic_applyAll_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        
+        for (const achievementId in moduleState.completedAchievements) {
+            if (moduleState.completedAchievements[achievementId]) {
+                const achievementDef = staticModuleData.achievements[achievementId];
+                if (achievementDef && achievementDef.reward) {
+                    const reward = achievementDef.reward;
+                    if (reward.type.includes("MULTIPLIER")) {
+                        const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
+                        coreUpgradeManager.registerEffectSource(
+                            'achievements', achievementId, reward.targetSystem,
+                            reward.targetId, reward.type, valueProvider
+                        );
+                    }
+                }
+            }
+        }
+        loggingSystem.info("AchievementsLogic", "Applied persistent rewards for previously completed achievements.");
+    },
+
+    onGameLoad() {
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
+            console.error("AchievementsLogic_onGameLoad_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered for Achievements module (v1.3).");
+        this.applyAllCompletedAchievementRewards();
+        this.checkAndCompleteAchievements();
+        this.isAchievementsTabUnlocked(); 
+    },
+
+    onResetState() {
+        if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
+            console.error("AchievementsLogic_onResetState_CRITICAL: Core systems missing!", coreSystemsRef);
+            return;
+        }
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered for Achievements module (v1.3).");
+        if (coreSystemsRef.coreGameStateManager) {
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', false);
+            coreSystemsRef.loggingSystem.info("AchievementsLogic", "'achievementsTabPermanentlyUnlocked' flag cleared.");
+        }
     }
 };

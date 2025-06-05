@@ -1,183 +1,178 @@
-// js/core/moduleLoader.js (v2)
+// js/core/moduleLoader.js (v2.3.2 - Add saveLoadSystem)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
- * Modules are defined by a manifest file and typically include data, logic, UI, and state components.
+ * v2.3.2: Accepts and passes saveLoadSystem.
+ * v2.3.1: Fixes duplicate export error by ensuring single export statement. Accepts and passes globalSettingsManager.
+ * v2.3: Accepts and passes globalSettingsManager to modules.
+ * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
  */
 
 import { loggingSystem } from './loggingSystem.js';
-// Core systems that modules might need access to will be passed during initialization.
 
-let coreSystems = {
+// The moduleLoader itself will be added to coreSystems before passing to modules
+let coreSystemsBase = {
     staticDataAggregator: null,
     coreGameStateManager: null,
     coreResourceManager: null,
     coreUIManager: null,
     decimalUtility: null,
-    loggingSystem: null, // Already imported, but good to have in the coreSystems object for modules
-    gameLoop: null, // Ensure gameLoop is part of coreSystems
-    coreUpgradeManager: null, // NEW: Reference to the CoreUpgradeManager
+    loggingSystem: null, // This will be the imported loggingSystem instance
+    gameLoop: null,
+    coreUpgradeManager: null,
+    globalSettingsManager: null,
+    saveLoadSystem: null, // <<< Added saveLoadSystem
+    // moduleLoader: null // This will be added dynamically in loadModule
 };
 
 const loadedModules = {
     // moduleId: { manifest: object, instance: object (the module's main exported object) }
 };
 
-const moduleLoader = {
-    /**
-     * Initializes the module loader with references to core game systems.
-     * @param {object} staticDataAggregatorRef
-     * @param {object} coreGameStateManagerRef
-     * @param {object} coreResourceManagerRef
-     * @param {object} coreUIManagerRef
-     * @param {object} decimalUtilityRef
-     * @param {object} loggingSystemRef
-     * @param {object} gameLoopRef - Reference to the gameLoop system
-     * @param {object} coreUpgradeManagerRef - NEW: Reference to the CoreUpgradeManager
-     */
+const moduleLoader = { // Declared as const, not exported inline
     initialize(
         staticDataAggregatorRef,
         coreGameStateManagerRef,
         coreResourceManagerRef,
         coreUIManagerRef,
         decimalUtilityRef,
-        loggingSystemRef,
+        loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
         gameLoopRef,
-        coreUpgradeManagerRef // NEW: Added coreUpgradeManagerRef parameter
+        coreUpgradeManagerRef,
+        globalSettingsManagerRef,
+        saveLoadSystemRef // <<< Added saveLoadSystemRef parameter
     ) {
-        coreSystems.staticDataAggregator = staticDataAggregatorRef;
-        coreSystems.coreGameStateManager = coreGameStateManagerRef;
-        coreSystems.coreResourceManager = coreResourceManagerRef;
-        coreSystems.coreUIManager = coreUIManagerRef;
-        coreSystems.decimalUtility = decimalUtilityRef;
-        coreSystems.loggingSystem = loggingSystemRef;
-        coreSystems.gameLoop = gameLoopRef;
-        coreSystems.coreUpgradeManager = coreUpgradeManagerRef; // NEW: Assign coreUpgradeManagerRef
+        coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
+        coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
+        coreSystemsBase.coreResourceManager = coreResourceManagerRef;
+        coreSystemsBase.coreUIManager = coreUIManagerRef;
+        coreSystemsBase.decimalUtility = decimalUtilityRef;
+        coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
+        coreSystemsBase.gameLoop = gameLoopRef;
+        coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
+        coreSystemsBase.globalSettingsManager = globalSettingsManagerRef;
+        coreSystemsBase.saveLoadSystem = saveLoadSystemRef; // <<< Assign ref
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems.");
+        if (typeof decimalUtilityRef === 'undefined') {
+            loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
+        } else {
+            loggingSystem.info("ModuleLoader", "decimalUtilityRef received successfully in initialize.");
+        }
+        if (typeof globalSettingsManagerRef === 'undefined') {
+            loggingSystem.warn("ModuleLoader_Warning", "globalSettingsManagerRef received in initialize is undefined. Settings module may not function correctly.");
+        } else {
+            loggingSystem.info("ModuleLoader", "globalSettingsManagerRef received successfully in initialize.");
+        }
+        if (typeof saveLoadSystemRef === 'undefined') {
+            loggingSystem.warn("ModuleLoader_Warning", "saveLoadSystemRef received in initialize is undefined. Save/Load in modules might fail.");
+        } else {
+            loggingSystem.info("ModuleLoader", "saveLoadSystemRef received successfully in initialize.");
+        }
+
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3.2).");
     },
 
-    /**
-     * Loads a single module from its manifest file path.
-     * @param {string} manifestPath - The path to the module's manifest JS file.
-     * @returns {Promise<boolean>} True if module loaded and initialized successfully, false otherwise.
-     */
     async loadModule(manifestPath) {
         loggingSystem.debug("ModuleLoader", `Attempting to load module from manifest: ${manifestPath}`);
         try {
-            // Dynamically import the manifest file
-            // The manifest file should export a 'manifest' object.
             const manifestModule = await import(manifestPath);
             if (!manifestModule || !manifestModule.default) {
                 loggingSystem.error("ModuleLoader", `Failed to load manifest from ${manifestPath}. No default export or module is empty.`);
+                if(coreSystemsBase.coreUIManager) coreSystemsBase.coreUIManager.showNotification(`Failed to load structure for: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
                 return false;
             }
             const manifest = manifestModule.default;
 
             if (!manifest.id || !manifest.name || !manifest.version || !manifest.initialize) {
-                loggingSystem.error("ModuleLoader", `Manifest for ${manifestPath} is invalid. Missing required fields (id, name, version, initialize function).`, manifest);
+                loggingSystem.error("ModuleLoader", `Manifest for ${manifestPath} is invalid. Missing required fields.`, manifest);
+                 if(coreSystemsBase.coreUIManager) coreSystemsBase.coreUIManager.showNotification(`Invalid manifest: ${manifestPath.split('/').pop()}. Check console.`, "error", 10000);
                 return false;
             }
 
             if (loadedModules[manifest.id]) {
                 loggingSystem.warn("ModuleLoader", `Module '${manifest.id}' is already loaded. Skipping.`);
-                return true; // Consider it successful if already loaded
+                return true;
             }
-
-            // TODO: Dependency checking based on manifest.dependencies
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
-            // The manifest's initialize function should return the module's main instance/API
-            // or handle its own setup (e.g., registering UI, static data).
-            // It receives the coreSystems object for interaction.
-            const moduleInstance = await manifest.initialize(coreSystems);
-
-            if (!moduleInstance && typeof manifest.initialize !== 'function') {
-                 loggingSystem.error("ModuleLoader", `Module '${manifest.id}' initialize function did not run or module instance not returned properly.`);
-                // Some modules might just register things and not return an instance, which can be fine.
-                // The check should be more nuanced based on module design.
-                // For now, if initialize is a function, we assume it handles setup.
+            // Prepare the coreSystems object to pass to the module
+            const systemsForModule = {
+                ...coreSystemsBase, // This now includes globalSettingsManager and saveLoadSystem
+                moduleLoader: this
+            };
+            
+            // Diagnostic log for both critical systems for settings_ui
+            if (!systemsForModule.globalSettingsManager) {
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule for module '${manifest.id}'!`);
+            }
+            if (!systemsForModule.saveLoadSystem) {
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `saveLoadSystem is MISSING in systemsForModule for module '${manifest.id}'!`);
             }
 
 
+            const moduleInstance = await manifest.initialize(systemsForModule);
+
             loadedModules[manifest.id] = {
                 manifest: manifest,
-                instance: moduleInstance || {}, // Store empty object if no instance returned
+                instance: moduleInstance || {},
             };
 
             loggingSystem.info("ModuleLoader", `Module '${manifest.name}' loaded and initialized successfully.`);
             return true;
 
         } catch (error) {
-            loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error);
+            loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error, error.stack);
+            if(coreSystemsBase.coreUIManager && coreSystemsBase.coreUIManager.showNotification) {
+                coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}. Details in console.`, "error", 10000);
+            } else {
+                console.error("CoreUIManager not available to show notification for module load error.");
+            }
             return false;
         }
     },
 
-    /**
-     * Retrieves a loaded module's instance.
-     * @param {string} moduleId - The ID of the module.
-     * @returns {object | undefined} The module instance, or undefined if not loaded.
-     */
     getModule(moduleId) {
         return loadedModules[moduleId] ? loadedModules[moduleId].instance : undefined;
     },
 
-    /**
-     * Retrieves a loaded module's manifest.
-     * @param {string} moduleId - The ID of the module.
-     * @returns {object | undefined} The module manifest, or undefined if not loaded.
-     */
     getModuleManifest(moduleId) {
         return loadedModules[moduleId] ? loadedModules[moduleId].manifest : undefined;
     },
 
-    /**
-     * Gets a list of all loaded module IDs.
-     * @returns {string[]}
-     */
     getLoadedModuleIds() {
         return Object.keys(loadedModules);
     },
 
-    /**
-     * Calls a specific lifecycle method on all loaded modules that have it.
-     * Example lifecycle methods: onGameLoad, onGameSave, onUpdate(deltaTime), onReset
-     * @param {string} methodName - The name of the method to call on module instances.
-     * @param {any[]} [args=[]] - Arguments to pass to the method.
-     */
     broadcastLifecycleEvent(methodName, args = []) {
         loggingSystem.debug("ModuleLoader", `Broadcasting lifecycle event '${methodName}' to all modules.`);
         for (const moduleId in loadedModules) {
-            const moduleInstance = loadedModules[moduleId].instance;
-            if (moduleInstance && typeof moduleInstance[methodName] === 'function') {
+            const moduleData = loadedModules[moduleId];
+            if (moduleData && moduleData.instance && typeof moduleData.instance[methodName] === 'function') {
                 try {
-                    moduleInstance[methodName](...args);
+                    moduleData.instance[methodName](...args);
                 } catch (error) {
                     loggingSystem.error("ModuleLoader", `Error calling ${methodName} on module '${moduleId}':`, error);
+                }
+            } else if (moduleData && moduleData.manifest && typeof moduleData.manifest[methodName] === 'function') {
+                 try {
+                    moduleData.manifest[methodName](...args);
+                } catch (error) {
+                    loggingSystem.error("ModuleLoader", `Error calling ${methodName} on manifest of module '${moduleId}':`, error);
                 }
             }
         }
     },
 
-    /**
-     * Notifies all modules that a game has been loaded.
-     * Modules can use this to re-initialize their state from coreGameStateManager.
-     */
     notifyAllModulesOfLoad() {
         this.broadcastLifecycleEvent('onGameLoad');
     },
     
-    /**
-     * Notifies all modules to reset their state.
-     */
     resetAllModules() {
         this.broadcastLifecycleEvent('onResetState');
     }
-
-    // TODO: Add methods for unloading modules, checking dependencies, etc.
 };
 
+// Single export statement at the end of the file
 export { moduleLoader };

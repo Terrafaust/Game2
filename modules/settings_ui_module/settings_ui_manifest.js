@@ -1,121 +1,103 @@
-// modules/settings_ui_module/settings_ui_manifest.js 
+// modules/settings_ui_module/settings_ui_manifest.js (v1.1 - System Pass Fix)
 
 /**
  * @file settings_ui_manifest.js
  * @description Manifest file for the Settings UI Module.
- * This module provides the user interface for game settings, including themes,
- * statistics, save/load, and logs.
+ * v1.1: Ensures coreSystems is correctly passed to ui.initialize.
  */
 
-// Import module components
 import { staticModuleData } from './settings_ui_data.js';
 import { getInitialState, moduleState } from './settings_ui_state.js';
 import { moduleLogic } from './settings_ui_logic.js';
 import { ui } from './settings_ui_ui.js';
 
-const settingsUIManifest = {
+const settingsUiManifest = {
     id: "settings_ui",
-    name: "Settings",
-    version: "0.1.0",
-    description: "Configure various aspects of your game experience.",
-    dependencies: ["commerce"], // Depends on commerce for 'settingsMenuUnlocked' flag
+    name: "Settings UI",
+    version: "1.0.1", // Version bump for fix
+    description: "Provides UI for game settings, statistics, and actions.",
+    dependencies: ["market"], 
 
-    /**
-     * Initializes the Settings UI module.
-     * This function is called by the moduleLoader.
-     * @param {object} coreSystems - References to core game systems (logger, resourceManager, etc.).
-     * @returns {object} The module's public API or instance.
-     */
-    async initialize(coreSystems) {
-        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
+    async initialize(coreSystems) { // coreSystems is received here from moduleLoader
+        const { staticDataAggregator, coreGameStateManager, loggingSystem, coreUIManager, gameLoop } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
+        
+        // --- Diagnostic Log ---
+        if (!coreSystems.globalSettingsManager) {
+            loggingSystem.error("SettingsUIManifest_Init_CRITICAL", "globalSettingsManager is MISSING in coreSystems at manifest init!", Object.keys(coreSystems));
+        } else {
+            loggingSystem.debug("SettingsUIManifest_Init", "globalSettingsManager is PRESENT in coreSystems at manifest init.");
+        }
+        // --- End Diagnostic Log ---
 
-        // 1. Register Static Data
-        staticDataAggregator.registerStaticData(this.id, {
-            sections: staticModuleData.sections,
-            ui: staticModuleData.ui
-        });
 
-        // 2. Initialize Module State
+        staticDataAggregator.registerStaticData(this.id, staticModuleData);
+
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
         if (!currentModuleState) {
-            loggingSystem.info(this.name, "No saved state found for Settings UI module. Initializing with default state.");
             currentModuleState = getInitialState();
-            coreGameStateManager.setModuleState(this.id, currentModuleState);
-        } else {
-            loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Settings UI module.", currentModuleState);
-            // No Decimal conversion needed for boolean flags, but ensure consistency
-            for (const sectionId in staticModuleData.sections) {
-                if (staticModuleData.sections[sectionId].unlockCondition.type === "resource" && typeof currentModuleState.unlockedSections[sectionId] === 'undefined') {
-                    currentModuleState.unlockedSections[sectionId] = false; // Add new sections if not in save
-                }
-            }
-            Object.assign(moduleState, currentModuleState); // Update local moduleState
         }
+        Object.assign(moduleState, currentModuleState);
+        coreGameStateManager.setModuleState(this.id, { ...moduleState });
 
-        // 3. Initialize Logic (pass references to core systems)
-        moduleLogic.initialize(coreSystems);
+        // Pass the full coreSystems object to logic and ui initialize methods
+        moduleLogic.initialize(coreSystems); 
+        ui.initialize(coreSystems, moduleState, moduleLogic); // Ensure coreSystems is passed here
 
-        // 4. Initialize UI (pass references to core systems and logic)
-        ui.initialize(coreSystems, moduleLogic);
-
-        // 5. Register the module's main tab/view with the UIManager
         coreUIManager.registerMenuTab(
             this.id,
-            staticModuleData.ui.settingsTabLabel, // Tab Label from data
-            (parentElement) => ui.renderMainContent(parentElement), // Function to render content
-            () => moduleLogic.isSettingsTabUnlocked(), // isUnlocked check
-            () => ui.onShow(),   // onShow callback
-            () => ui.onHide()    // onHide callback
+            staticModuleData.ui.settingsTabLabel,
+            (parentElement) => ui.renderMainContent(parentElement),
+            () => moduleLogic.isSettingsTabUnlocked(), 
+            () => ui.onShow(),
+            () => ui.onHide()
         );
+        
+        moduleLogic.onGameLoad();
 
-        // 6. Register update callbacks with the game loop
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
-            ui.updateDynamicElements(); // Update UI elements like current theme/language, unlock button states
+            if (coreUIManager.isActiveTab(this.id)) {
+                // ui.updateDynamicElements(); // Called by onShow, which is called by setActiveTab
+            }
+            if (!coreGameStateManager.getGlobalFlag('settingsTabPermanentlyUnlocked', false)) {
+                 if(moduleLogic.isSettingsTabUnlocked()){
+                    // This sets the flag and calls coreUIManager.renderMenu()
+                 }
+            }
         });
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
-        // Return a public API for the module if needed
         return {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
-            // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name}.`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
-                if (!loadedState) {
-                    loadedState = getInitialState();
-                    coreGameStateManager.setModuleState(this.id, loadedState);
-                }
-                // Ensure consistency for new sections or missing flags
-                for (const sectionId in staticModuleData.sections) {
-                    if (staticModuleData.sections[sectionId].unlockCondition.type === "resource" && typeof loadedState.unlockedSections[sectionId] === 'undefined') {
-                        loadedState.unlockedSections[sectionId] = false;
-                    }
-                }
-                Object.assign(moduleState, loadedState); // Update local moduleState
-                moduleLogic.onGameLoad(); // Notify logic component
+                if (!loadedState) loadedState = getInitialState();
+                Object.assign(moduleState, loadedState);
+                coreGameStateManager.setModuleState(this.id, { ...moduleState });
+                moduleLogic.onGameLoad();
                 if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content')); // Re-render if active
+                    const mainContentEl = document.getElementById('main-content');
+                    if (mainContentEl) ui.renderMainContent(mainContentEl);
                 }
             },
             onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
+                loggingSystem.info(this.name, `onResetState called for ${this.name}.`);
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.onResetState(); // Notify logic component
+                moduleLogic.onResetState(); 
                  if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content'));
+                    const mainContentEl = document.getElementById('main-content');
+                    if (mainContentEl) ui.renderMainContent(mainContentEl);
                 }
-            },
-            // Public method to check if a settings section is unlocked (e.g., for other modules to query)
-            isSectionUnlocked: (sectionId) => moduleLogic.isSectionUnlocked(sectionId)
+            }
         };
     }
 };
 
-export default settingsUIManifest;
+export default settingsUiManifest;

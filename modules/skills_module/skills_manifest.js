@@ -1,133 +1,100 @@
-// modules/skills_module/skills_manifest.js 
+// modules/skills_module/skills_manifest.js (v1.1 - Persistent Unlock)
 
 /**
  * @file skills_manifest.js
  * @description Manifest file for the Skills Module.
- * This module introduces a skill tree for permanent bonuses.
+ * v1.1: Uses skills_logic_v1.1 for persistent tab unlock.
  */
 
-// Import module components
 import { staticModuleData } from './skills_data.js';
 import { getInitialState, moduleState } from './skills_state.js';
-import { moduleLogic } from './skills_logic.js';
+import { moduleLogic } from './skills_logic.js'; // v1.1
 import { ui } from './skills_ui.js';
 
 const skillsManifest = {
     id: "skills",
     name: "Skills",
-    version: "0.1.0",
-    description: "Unlock powerful permanent bonuses by investing Study Skill Points.",
-    dependencies: ["commerce"], // Depends on commerce for 'studySkillPoints' resource
+    version: "1.0.1", // Version bump for unlock logic change
+    description: "Unlock and level up skills to boost your progress.",
+    dependencies: ["market"], 
 
-    /**
-     * Initializes the Skills module.
-     * This function is called by the moduleLoader.
-     * @param {object} coreSystems - References to core game systems (logger, resourceManager, etc.).
-     * @returns {object} The module's public API or instance.
-     */
     async initialize(coreSystems) {
-        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
+        const { staticDataAggregator, coreGameStateManager, loggingSystem, coreUIManager, gameLoop, decimalUtility } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
-        // 1. Register Static Data
-        staticDataAggregator.registerStaticData(this.id, {
-            skills: staticModuleData.skills,
-            ui: staticModuleData.ui
-        });
+        staticDataAggregator.registerStaticData(this.id, staticModuleData);
 
-        // 2. Initialize Module State
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
-        if (!currentModuleState) {
-            loggingSystem.info(this.name, "No saved state found for Skills module. Initializing with default state.");
-            currentModuleState = getInitialState(staticModuleData); // Pass staticModuleData
-            coreGameStateManager.setModuleState(this.id, currentModuleState);
+        if (!currentModuleState || !currentModuleState.skillLevels) {
+            currentModuleState = getInitialState();
         } else {
-            loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Skills module.", currentModuleState);
-            // Ensure skill levels are numbers (they are small, so no Decimal conversion needed for state)
-            for (const skillId in staticModuleData.skills) { // Use staticModuleData to ensure all skills are covered
-                if (typeof currentModuleState.skillLevels[skillId] === 'undefined') {
-                    currentModuleState.skillLevels[skillId] = 0; // Add new skills if not in save
-                } else {
-                    currentModuleState.skillLevels[skillId] = parseInt(currentModuleState.skillLevels[skillId] || 0);
-                }
+            if (typeof currentModuleState.skillLevels !== 'object' || currentModuleState.skillLevels === null) {
+                currentModuleState.skillLevels = {};
             }
-            Object.assign(moduleState, currentModuleState); // Update local moduleState
         }
+        Object.assign(moduleState, currentModuleState); 
+        coreGameStateManager.setModuleState(this.id, { ...moduleState }); 
 
-        // 3. Initialize Logic (pass references to core systems)
-        moduleLogic.initialize(coreSystems);
+        moduleLogic.initialize(coreSystems); 
+        ui.initialize(coreSystems, moduleState, moduleLogic);
 
-        // 4. Initialize UI (pass references to core systems and logic)
-        ui.initialize(coreSystems, moduleLogic);
-
-        // 5. Register the module's main tab/view with the UIManager
         coreUIManager.registerMenuTab(
             this.id,
-            staticModuleData.ui.skillsTabLabel, // Tab Label from data
-            (parentElement) => ui.renderMainContent(parentElement), // Function to render content
-            () => moduleLogic.isSkillsTabUnlocked(), // isUnlocked check
-            () => ui.onShow(),   // onShow callback
-            () => ui.onHide()    // onHide callback
+            staticModuleData.ui.skillsTabLabel,
+            (parentElement) => ui.renderMainContent(parentElement),
+            () => moduleLogic.isSkillsTabUnlocked(), // This now checks the permanent flag
+            () => ui.onShow(),
+            () => ui.onHide()
         );
 
-        // 6. Register update callbacks with the game loop
-        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
-            // Skills logic doesn't have continuous updates, but its effects
-            // are applied on purchase/load, and UI updates on 'uiUpdate'
-        });
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
-            ui.updateDynamicElements(); // Update UI elements like costs, levels, effects
+            if (coreUIManager.isActiveTab(this.id)) {
+                ui.updateSkillPointsDisplay();
+            }
+            // Check skills tab unlock if not permanently unlocked yet
+            if (!coreGameStateManager.getGlobalFlag('skillsTabPermanentlyUnlocked', false)) {
+                 if(moduleLogic.isSkillsTabUnlocked()){ // This will set the flag and render menu
+                     // loggingSystem.debug("SkillsManifest", "Skills tab unlocked via uiUpdate check.");
+                 }
+            }
         });
-
-        // Initial application of all skill effects after state is loaded/initialized
-        moduleLogic.applyAllSkillEffects();
-        // Initial check for tier unlocks
-        moduleLogic.checkTierUnlocks();
-
+        
+        moduleLogic.onGameLoad(); // Call after everything is set up
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
-        // Return a public API for the module if needed
         return {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
-            staticModuleData: staticModuleData, // Expose static data for other modules (e.g., Achievements)
-            // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name} (manifest v${this.version}).`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
-                if (!loadedState) {
-                    loadedState = getInitialState(staticModuleData); // Pass staticModuleData
-                    coreGameStateManager.setModuleState(this.id, loadedState);
-                }
-                // Ensure skill levels are numbers
-                for (const skillId in staticModuleData.skills) { // Use staticModuleData to ensure all skills are covered
-                    if (typeof loadedState.skillLevels[skillId] === 'undefined') {
-                        loadedState.skillLevels[skillId] = 0;
-                    } else {
-                        loadedState.skillLevels[skillId] = parseInt(loadedState.skillLevels[skillId] || 0);
+                if (!loadedState || !loadedState.skillLevels) {
+                    loadedState = getInitialState();
+                } else {
+                     if (typeof loadedState.skillLevels !== 'object' || loadedState.skillLevels === null) {
+                        loadedState.skillLevels = {};
                     }
                 }
-                Object.assign(moduleState, loadedState); // Update local moduleState
-                moduleLogic.onGameLoad(); // Notify logic component
+                Object.assign(moduleState, loadedState);
+                coreGameStateManager.setModuleState(this.id, { ...moduleState });
+                moduleLogic.onGameLoad(); 
                 if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content')); // Re-render if active
-                }
-            },
-            onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
-                const initialState = getInitialState(staticModuleData); // Pass staticModuleData
-                Object.assign(moduleState, initialState);
-                coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.onResetState(); // Notify logic component
-                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 }
             },
-            // Public method to get skill level (e.g., for achievements or other modules)
-            getSkillLevel: (skillId) => moduleLogic.getSkillLevel(skillId)
+            onResetState: () => {
+                loggingSystem.info(this.name, `onResetState called for ${this.name} (manifest v${this.version}).`);
+                const initialState = getInitialState();
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(this.id, { ...moduleState });
+                moduleLogic.onResetState(); // This will clear 'skillsTabPermanentlyUnlocked'
+                if (coreUIManager.isActiveTab(this.id)) {
+                     ui.renderMainContent(document.getElementById('main-content'));
+                }
+            }
         };
     }
 };

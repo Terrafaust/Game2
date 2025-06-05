@@ -1,4 +1,4 @@
-// modules/studies_module/studies_data.js
+// modules/studies_module/studies_data.js (v3)
 
 /**
  * @file studies_data.js
@@ -15,9 +15,10 @@ export const staticModuleData = {
         knowledge: {
             id: 'knowledge',
             name: "Knowledge",
-            initialAmount: 0,
-            isUnlocked: false, // Initially locked, unlocked by Professor production
-            showInUI: false, // Hidden until unlocked
+            initialAmount: "0",
+            isUnlocked: false, // Initially locked
+            showInUI: false,   // Initially hidden
+            hasProductionRate: true // Explicitly set for UI to show /s
         }
     },
 
@@ -27,15 +28,15 @@ export const staticModuleData = {
             id: 'student',
             name: "Student",
             description: "A diligent student, generating basic Study Points.",
-            resourceId: "studyPoints", // What resource it produces
-            baseProduction: "0.5", // SP/s per student
-            baseCost: "10", // Initial cost in Study Points
-            costResource: "studyPoints", // What resource is used to buy it
-            costGrowthFactor: "1.07", // Multiplier for cost per purchase
+            resourceId: "studyPoints", 
+            baseProduction: "0.5", 
+            baseCost: "10", 
+            costResource: "studyPoints", 
+            costGrowthFactor: "1.03", 
             unlockCondition: {
-                type: "resource", // Unlocked by having a certain amount of a resource
+                type: "resource", 
                 resourceId: "studyPoints",
-                amount: "0", // Student is available from the start (or very low SP)
+                amount: "0", 
             },
             ui: {
                 buttonText: (cost) => `Hire Student: ${cost} SP`,
@@ -47,12 +48,12 @@ export const staticModuleData = {
             name: "Classroom",
             description: "A dedicated space for learning, boosting Study Point generation.",
             resourceId: "studyPoints",
-            baseProduction: "5", // SP/s per classroom
+            baseProduction: "5", 
             baseCost: "100",
             costResource: "studyPoints",
-            costGrowthFactor: "1.08",
+            costGrowthFactor: "1.03",
             unlockCondition: {
-                type: "producerOwned", // Unlocked by owning a certain number of another producer
+                type: "producerOwned", 
                 producerId: "student",
                 count: 10,
             },
@@ -69,7 +70,7 @@ export const staticModuleData = {
             baseProduction: "25",
             baseCost: "1000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.09",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "classroom",
@@ -88,7 +89,7 @@ export const staticModuleData = {
             baseProduction: "100",
             baseCost: "10000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.10",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "kindergarten",
@@ -107,7 +108,7 @@ export const staticModuleData = {
             baseProduction: "500",
             baseCost: "100000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.11",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "elementarySchool",
@@ -124,9 +125,9 @@ export const staticModuleData = {
             description: "Advanced studies, preparing for higher education.",
             resourceId: "studyPoints",
             baseProduction: "2500",
-            baseCost: "1000000",
+            baseCost: "1000000", // 1M
             costResource: "studyPoints",
-            costGrowthFactor: "1.12",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "middleSchool",
@@ -143,9 +144,9 @@ export const staticModuleData = {
             description: "The pinnacle of academic institutions, generating vast Study Points.",
             resourceId: "studyPoints",
             baseProduction: "12500",
-            baseCost: "10000000",
+            baseCost: "10000000", // 10M
             costResource: "studyPoints",
-            costGrowthFactor: "1.13",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "highSchool",
@@ -160,11 +161,11 @@ export const staticModuleData = {
             id: 'professor',
             name: "Professor",
             description: "A wise mentor, producing valuable Knowledge.",
-            resourceId: "knowledge", // This producer generates Knowledge
-            baseProduction: "1", // Knowledge/s per professor
-            baseCost: "1000000000", // 1 Billion SP
+            resourceId: "knowledge", 
+            baseProduction: "1", 
+            baseCost: "1000000000", 
             costResource: "studyPoints",
-            costGrowthFactor: "1.15", // Higher growth factor as it's a prestige producer
+            costGrowthFactor: "1.03", 
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "university",
@@ -177,14 +178,13 @@ export const staticModuleData = {
         }
     },
 
-    // Global flags to be set by this module to unlock other content
     globalFlagsToSet: {
-        commerceUnlocked: {
-            flag: "commerceUnlocked",
+        marketUnlocked: { 
+            flag: "marketUnlocked",
             condition: {
                 type: "producerOwned",
                 producerId: "professor",
-                count: 10,
+                count: 10, 
             },
             value: true
         },
@@ -193,7 +193,7 @@ export const staticModuleData = {
             condition: {
                 type: "producerOwned",
                 producerId: "professor",
-                count: 10,
+                count: 10, 
             },
             value: true
         }

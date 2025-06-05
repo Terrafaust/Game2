@@ -2,201 +2,158 @@
 
 /**
  * @file coreUpgradeManager.js
- * @description Centralizes the management and application of various game modifiers
- * such as production multipliers, cost reductions, and other effects from skills,
- * achievements, and ascension bonuses. Modules will register their effects here
- * and query this manager to apply aggregated bonuses.
+ * @description Manages effects from various sources (skills, achievements, etc.)
+ * and aggregates them for application by target modules.
+ * This is a foundational version and will be expanded upon.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js';
 
-// Internal storage for all registered effects.
-// Structure:
-// {
-//   targetType: { // e.g., 'producer', 'resource'
-//     effectCategory: { // e.g., 'productionMultiplier', 'costReduction'
-//       targetId: { // e.g., 'student', 'studyPoints', 'global'
-//         sourceId: Decimal // e.g., 'skill_autoStudy_level1', 'achievement_firstStudent', value
-//       }
-//     }
-//   }
-// }
-let registeredEffects = {};
+const registeredEffectSources = {
+    // Example structure:
+    // studies_production_multiplier: {
+    //     moduleId_sourceKey: {
+    //         id: 'moduleId_sourceKey',
+    //         moduleId: 'skills', // The module providing the effect
+    //         targetSystem: 'studies', // e.g., 'studies', 'global'
+    //         targetId: 'student', // e.g., 'student' producer, 'studyPoints' resource, or null for global
+    //         effectType: 'MULTIPLIER', // or 'ADDITIVE_BONUS', 'COST_REDUCTION'
+    //         valueProvider: () => decimalUtility.new(1.1) // Function returning the current effect value (Decimal)
+    //     }
+    // }
+};
 
 const coreUpgradeManager = {
     /**
-     * Initializes the Core Upgrade Manager.
+     * Initializes the CoreUpgradeManager.
      */
     initialize() {
-        registeredEffects = {}; // Clear any existing state on initialization
-        loggingSystem.info("CoreUpgradeManager", "Core Upgrade Manager initialized.");
+        loggingSystem.info("CoreUpgradeManager", "Core Upgrade Manager initialized (v1 - Basic).");
     },
 
     /**
-     * Registers an effect from a source (e.g., a skill, an achievement).
-     * Effects are typically additive or multiplicative. This system will aggregate them.
-     *
-     * @param {string} targetType - The type of game element being affected (e.g., 'producer', 'resource', 'global').
-     * @param {string} effectCategory - The category of the effect (e.g., 'productionMultiplier', 'costReduction', 'resourceGain').
-     * @param {string} targetId - The specific ID of the element being affected (e.g., 'student', 'studyPoints', 'global').
-     * @param {string} sourceId - A unique ID for the source of this effect (e.g., 'skills_autoStudy_level1', 'achievements_firstStudent').
-     * @param {Decimal|number|string} value - The numerical value of the effect. For multipliers, this is the multiplier itself (e.g., 1.1 for +10%). For additive, the amount.
+     * Registers an effect source.
+     * @param {string} moduleId - The ID of the module providing the effect.
+     * @param {string} sourceKey - A unique key for this specific effect source within the module.
+     * @param {string} targetSystem - The system the effect targets (e.g., 'studies_producers', 'global_resource_production').
+     * @param {string|null} targetId - Specific ID within the target system (e.g., 'student', 'studyPoints'), or null if global to the system.
+     * @param {'MULTIPLIER' | 'ADDITIVE_BONUS' | 'PERCENTAGE_BONUS' | 'COST_REDUCTION_MULTIPLIER'} effectType - Type of the effect.
+     * @param {function(): Decimal} valueProvider - A function that returns the current Decimal value of the effect.
      */
-    registerEffect(targetType, effectCategory, targetId, sourceId, value) {
-        if (!registeredEffects[targetType]) registeredEffects[targetType] = {};
-        if (!registeredEffects[targetType][effectCategory]) registeredEffects[targetType][effectCategory] = {};
-        if (!registeredEffects[targetType][effectCategory][targetId]) registeredEffects[targetType][effectCategory][targetId] = {};
-
-        registeredEffects[targetType][effectCategory][targetId][sourceId] = decimalUtility.new(value);
-
-        loggingSystem.debug("CoreUpgradeManager", `Registered effect: Type='${targetType}', Category='${effectCategory}', Target='${targetId}', Source='${sourceId}', Value=${value}`);
-    },
-
-    /**
-     * Removes an effect from a specific source.
-     * @param {string} targetType
-     * @param {string} effectCategory
-     * @param {string} targetId
-     * @param {string} sourceId
-     */
-    removeEffect(targetType, effectCategory, targetId, sourceId) {
-        if (registeredEffects[targetType] &&
-            registeredEffects[targetType][effectCategory] &&
-            registeredEffects[targetType][effectCategory][targetId] &&
-            registeredEffects[targetType][effectCategory][targetId][sourceId]) {
-
-            delete registeredEffects[targetType][effectCategory][targetId][sourceId];
-            loggingSystem.debug("CoreUpgradeManager", `Removed effect: Type='${targetType}', Category='${effectCategory}', Target='${targetId}', Source='${sourceId}'`);
-
-            // Clean up empty objects
-            if (Object.keys(registeredEffects[targetType][effectCategory][targetId]).length === 0) {
-                delete registeredEffects[targetType][effectCategory][targetId];
-            }
-            if (Object.keys(registeredEffects[targetType][effectCategory]).length === 0) {
-                delete registeredEffects[targetType][effectCategory];
-            }
-            if (Object.keys(registeredEffects[targetType]).length === 0) {
-                delete registeredEffects[targetType];
-            }
-        }
-    },
-
-    /**
-     * Aggregates and returns the total multiplier for a specific target and effect category.
-     * For production multipliers, this typically means (1 + sum of additive bonuses) * (product of multiplicative bonuses).
-     * For cost reductions, it might be (1 - sum of reductions).
-     *
-     * @param {string} targetType - The type of game element (e.g., 'producer', 'resource', 'global').
-     * @param {string} effectCategory - The category of the effect (e.g., 'productionMultiplier', 'costReduction').
-     * @param {string} targetId - The specific ID of the element (e.g., 'student', 'studyPoints', 'global').
-     * @returns {Decimal} The aggregated multiplier. Returns Decimal(1) for multipliers if no effects, Decimal(0) for additive if no effects.
-     */
-    getAggregatedModifier(targetType, effectCategory, targetId) {
-        const effects = registeredEffects[targetType]?.[effectCategory]?.[targetId];
-        if (!effects) {
-            // Return default based on effect category
-            if (effectCategory.includes('Multiplier')) {
-                return decimalUtility.ONE; // Default multiplier is 1 (no change)
-            }
-            if (effectCategory.includes('Reduction') || effectCategory.includes('Bonus')) {
-                return decimalUtility.ZERO; // Default additive bonus/reduction is 0
-            }
-            return decimalUtility.ONE; // Fallback
-        }
-
-        let totalAdditiveBonus = decimalUtility.ZERO;
-        let totalMultiplicativeFactor = decimalUtility.ONE;
-
-        // Separate additive and multiplicative effects if needed, or assume all are one type
-        // For simplicity, let's assume all effects in 'productionMultiplier' are multiplicative factors (e.g., 1.1 for +10%)
-        // and all in 'costReduction' are percentages (e.g., 0.1 for 10% reduction).
-        // This logic needs to be refined based on how effects are actually registered (e.g., value is 0.1 for +10% vs 1.1 for x1.1)
-
-        // For now, let's assume 'productionMultiplier' values are direct multipliers (e.g., 1.1, 1.2)
-        // and we multiply them all together.
-        if (effectCategory === 'productionMultiplier') {
-            for (const sourceId in effects) {
-                totalMultiplicativeFactor = decimalUtility.multiply(totalMultiplicativeFactor, effects[sourceId]);
-            }
-            return totalMultiplicativeFactor;
-        }
-
-        // For 'costReduction', assume values are reduction percentages (e.g., 0.1 for 10% reduction)
-        // Sum them up, then apply as (1 - sum)
-        if (effectCategory === 'costReduction') {
-            for (const sourceId in effects) {
-                totalAdditiveBonus = decimalUtility.add(totalAdditiveBonus, effects[sourceId]);
-            }
-            // Ensure reduction doesn't exceed 100%
-            if (decimalUtility.gt(totalAdditiveBonus, 1)) {
-                totalAdditiveBonus = decimalUtility.ONE;
-            }
-            return decimalUtility.subtract(decimalUtility.ONE, totalAdditiveBonus); // Returns a factor like 0.9 for 10% reduction
-        }
-        
-        // For 'resourceGain', assume values are additive bonuses
-        if (effectCategory === 'resourceGain') {
-            for (const sourceId in effects) {
-                totalAdditiveBonus = decimalUtility.add(totalAdditiveBonus, effects[sourceId]);
-            }
-            return totalAdditiveBonus;
-        }
-
-        // Default fallback if category not specifically handled
-        return decimalUtility.ONE;
-    },
-
-    /**
-     * Gets all registered effects. For debugging or save/load.
-     * @returns {object} A deep copy of all registered effects.
-     */
-    getSaveData() {
-        // Convert Decimals to strings for saving
-        return JSON.parse(JSON.stringify(registeredEffects, (key, value) => {
-            if (decimalUtility.isDecimal(value)) {
-                return value.toString();
-            }
-            return value;
-        }));
-    },
-
-    /**
-     * Loads effects from saved data.
-     * @param {object} saveData - The saved effects data.
-     */
-    loadSaveData(saveData) {
-        registeredEffects = {}; // Clear current state
-        if (!saveData) {
-            loggingSystem.warn("CoreUpgradeManager", "loadSaveData: No save data provided for effects.");
+    registerEffectSource(moduleId, sourceKey, targetSystem, targetId, effectType, valueProvider) {
+        if (!moduleId || !sourceKey || !targetSystem || !effectType || typeof valueProvider !== 'function') {
+            loggingSystem.error("CoreUpgradeManager", "Invalid parameters for registerEffectSource.", { moduleId, sourceKey, targetSystem, targetId, effectType });
             return;
         }
-        // Revive Decimals from strings
-        for (const targetType in saveData) {
-            registeredEffects[targetType] = {};
-            for (const effectCategory in saveData[targetType]) {
-                registeredEffects[targetType][effectCategory] = {};
-                for (const targetId in saveData[targetType][effectCategory]) {
-                    registeredEffects[targetType][effectCategory][targetId] = {};
-                    for (const sourceId in saveData[targetType][effectCategory][targetId]) {
-                        registeredEffects[targetType][effectCategory][targetId][sourceId] = decimalUtility.new(saveData[targetType][effectCategory][targetId][sourceId]);
-                    }
-                }
-            }
+
+        const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
+        if (!registeredEffectSources[effectKey]) {
+            registeredEffectSources[effectKey] = {};
         }
-        loggingSystem.info("CoreUpgradeManager", "Effects data loaded from save.");
+
+        const fullSourceId = `${moduleId}_${sourceKey}`;
+        registeredEffectSources[effectKey][fullSourceId] = {
+            id: fullSourceId,
+            moduleId,
+            targetSystem,
+            targetId,
+            effectType,
+            valueProvider
+        };
+        loggingSystem.debug("CoreUpgradeManager", `Registered effect source: ${fullSourceId} for key ${effectKey}`);
     },
 
     /**
-     * Resets all effects to an empty state.
+     * Unregisters an effect source.
+     * @param {string} moduleId - The ID of the module.
+     * @param {string} sourceKey - The unique key for the effect source.
+     * @param {string} targetSystem - The target system.
+     * @param {string|null} targetId - Specific target ID.
+     * @param {'MULTIPLIER' | 'ADDITIVE_BONUS' | 'PERCENTAGE_BONUS' | 'COST_REDUCTION_MULTIPLIER'} effectType - Type of the effect.
      */
-    resetState() {
-        registeredEffects = {};
-        loggingSystem.info("CoreUpgradeManager", "Core Upgrade Manager state reset.");
+    unregisterEffectSource(moduleId, sourceKey, targetSystem, targetId, effectType) {
+        const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
+        const fullSourceId = `${moduleId}_${sourceKey}`;
+
+        if (registeredEffectSources[effectKey] && registeredEffectSources[effectKey][fullSourceId]) {
+            delete registeredEffectSources[effectKey][fullSourceId];
+            loggingSystem.debug("CoreUpgradeManager", `Unregistered effect source: ${fullSourceId} for key ${effectKey}`);
+            if (Object.keys(registeredEffectSources[effectKey]).length === 0) {
+                delete registeredEffectSources[effectKey];
+            }
+        }
+    },
+
+    /**
+     * Gets aggregated modifiers for a specific target and effect type.
+     * This is a basic implementation. More sophisticated aggregation might be needed.
+     * @param {string} targetSystem - The system the effect targets.
+     * @param {string|null} targetId - Specific ID within the target system.
+     * @param {'MULTIPLIER' | 'ADDITIVE_BONUS' | 'PERCENTAGE_BONUS' | 'COST_REDUCTION_MULTIPLIER'} effectType - Type of the effect.
+     * @returns {Decimal} The aggregated modifier. For MULTIPLIER, it's the product. For ADDITIVE_BONUS, it's the sum.
+     */
+    getAggregatedModifiers(targetSystem, targetId, effectType) {
+        const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
+        const sources = registeredEffectSources[effectKey];
+
+        if (!sources || Object.keys(sources).length === 0) {
+            // Return default "no effect" value based on type
+            if (effectType.includes('MULTIPLIER')) return decimalUtility.new(1);
+            return decimalUtility.new(0);
+        }
+
+        let aggregatedValue;
+
+        if (effectType.includes('MULTIPLIER')) {
+            aggregatedValue = decimalUtility.new(1);
+            for (const sourceId in sources) {
+                try {
+                    const value = sources[sourceId].valueProvider();
+                    aggregatedValue = decimalUtility.multiply(aggregatedValue, value);
+                } catch (error) {
+                    loggingSystem.error("CoreUpgradeManager", `Error in valueProvider for ${sourceId}`, error);
+                }
+            }
+        } else if (effectType === 'ADDITIVE_BONUS' || effectType === 'PERCENTAGE_BONUS') { // Percentage treated as additive for now, or could be 0.xx
+            aggregatedValue = decimalUtility.new(0);
+            for (const sourceId in sources) {
+                 try {
+                    const value = sources[sourceId].valueProvider();
+                    aggregatedValue = decimalUtility.add(aggregatedValue, value);
+                } catch (error) {
+                    loggingSystem.error("CoreUpgradeManager", `Error in valueProvider for ${sourceId}`, error);
+                }
+            }
+        } else {
+            loggingSystem.warn("CoreUpgradeManager", `Unknown effectType for aggregation: ${effectType}. Returning default.`);
+            return effectType.includes('MULTIPLIER') ? decimalUtility.new(1) : decimalUtility.new(0);
+        }
+        return aggregatedValue;
+    },
+
+    /**
+     * Helper to get a specific modifier value, commonly used for production multipliers.
+     * @param {string} targetSystem - e.g., 'studies_producers'
+     * @param {string} targetId - e.g., 'student'
+     * @returns {Decimal} Multiplier (default 1 if no effects)
+     */
+    getProductionMultiplier(targetSystem, targetId) {
+        return this.getAggregatedModifiers(targetSystem, targetId, 'MULTIPLIER');
+    },
+
+    /**
+     * Helper to get cost reduction multiplier. (e.g., 0.9 for 10% reduction)
+     * @param {string} targetSystem
+     * @param {string} targetId
+     * @returns {Decimal} Multiplier (default 1 if no effects)
+     */
+    getCostReductionMultiplier(targetSystem, targetId) {
+         return this.getAggregatedModifiers(targetSystem, targetId, 'COST_REDUCTION_MULTIPLIER');
     }
 };
 
-// Initialize on load
-coreUpgradeManager.initialize();
+// Initialize on load (main.js will ensure it's initialized before passing to moduleLoader)
+// coreUpgradeManager.initialize(); // Initialization now handled by main.js sequence if needed
 
 export { coreUpgradeManager };

@@ -1,12 +1,10 @@
-// modules/achievements_module/achievements_manifest.js 
+// modules/achievements_module/achievements_manifest.js (v1)
 
 /**
  * @file achievements_manifest.js
  * @description Manifest file for the Achievements Module.
- * This module introduces a system for in-game achievements with rewards.
  */
 
-// Import module components
 import { staticModuleData } from './achievements_data.js';
 import { getInitialState, moduleState } from './achievements_state.js';
 import { moduleLogic } from './achievements_logic.js';
@@ -15,113 +13,83 @@ import { ui } from './achievements_ui.js';
 const achievementsManifest = {
     id: "achievements",
     name: "Achievements",
-    version: "0.1.0",
-    description: "Complete challenges to earn powerful permanent rewards.",
-    dependencies: ["commerce", "studies", "core_gameplay", "skills"], // Depends on commerce for unlock, studies for producers, core_gameplay for clicks, skills for skill levels
+    version: "1.0.0",
+    description: "Track your accomplishments and earn rewards.",
+    dependencies: ["studies", "market", "coreUpgradeManager"], // Depends on studies for data, market for unlock flag
 
-    /**
-     * Initializes the Achievements module.
-     * This function is called by the moduleLoader.
-     * @param {object} coreSystems - References to core game systems (logger, resourceManager, etc.).
-     * @returns {object} The module's public API or instance.
-     */
     async initialize(coreSystems) {
-        const { staticDataAggregator, coreGameStateManager, coreResourceManager, coreUIManager, decimalUtility, loggingSystem, gameLoop } = coreSystems;
+        const { staticDataAggregator, coreGameStateManager, loggingSystem, coreUIManager, gameLoop, decimalUtility } = coreSystems;
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
         // 1. Register Static Data
-        staticDataAggregator.registerStaticData(this.id, {
-            categories: staticModuleData.categories,
-            achievements: staticModuleData.achievements,
-            ui: staticModuleData.ui
-        });
+        staticDataAggregator.registerStaticData(this.id, staticModuleData);
 
         // 2. Initialize Module State
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
-        if (!currentModuleState) {
-            loggingSystem.info(this.name, "No saved state found for Achievements module. Initializing with default state.");
-            currentModuleState = getInitialState(staticModuleData); // Pass staticModuleData
-            coreGameStateManager.setModuleState(this.id, currentModuleState);
-        } else {
-            loggingSystem.info(this.name, "Loaded state from CoreGameStateManager for Achievements module.", currentModuleState);
-            // No Decimal conversion needed for boolean flags, but ensure consistency
-            for (const achId in staticModuleData.achievements) { // Use staticModuleData to ensure all achievements are covered
-                if (typeof currentModuleState.unlockedAchievements[achId] === 'undefined') {
-                    currentModuleState.unlockedAchievements[achId] = false; // Add new achievements if not in save
-                }
-            }
-            Object.assign(moduleState, currentModuleState); // Update local moduleState
+        if (!currentModuleState || typeof currentModuleState.completedAchievements === 'undefined') {
+            currentModuleState = getInitialState();
         }
+        Object.assign(moduleState, currentModuleState);
+        coreGameStateManager.setModuleState(this.id, { ...moduleState });
 
-        // 3. Initialize Logic (pass references to core systems)
+        // 3. Initialize Logic
         moduleLogic.initialize(coreSystems);
 
-        // 4. Initialize UI (pass references to core systems and logic)
-        ui.initialize(coreSystems, moduleLogic);
+        // 4. Initialize UI
+        ui.initialize(coreSystems, moduleState, moduleLogic);
 
-        // 5. Register the module's main tab/view with the UIManager
+        // 5. Register Menu Tab
         coreUIManager.registerMenuTab(
             this.id,
-            staticModuleData.ui.achievementsTabLabel, // Tab Label from data
-            (parentElement) => ui.renderMainContent(parentElement), // Function to render content
-            () => moduleLogic.isAchievementsTabUnlocked(), // isUnlocked check
-            () => ui.onShow(),   // onShow callback
-            () => ui.onHide()    // onHide callback
+            staticModuleData.ui.achievementsTabLabel,
+            (parentElement) => ui.renderMainContent(parentElement),
+            () => moduleLogic.isAchievementsTabUnlocked(),
+            () => ui.onShow(),
+            () => ui.onHide()
         );
 
-        // 6. Register update callbacks with the game loop
-        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
-            moduleLogic.checkAchievementConditions(); // Check conditions periodically
+        // 6. Register update callback to check for achievements
+        gameLoop.registerUpdateCallback('generalLogic', (deltaTimeSeconds) => {
+            // Check achievements periodically (e.g., every few seconds or less frequently if performance is a concern)
+            // For now, check every game tick.
+            moduleLogic.checkAndCompleteAchievements();
         });
-        gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
-            ui.updateDynamicElements(); // Update UI elements like progress, status
-        });
-
-        // Initial application of all unlocked achievement rewards after state is loaded/initialized
-        moduleLogic.applyAllUnlockedAchievementRewards();
+        
+        // Initial check on load
+        moduleLogic.onGameLoad();
 
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
-        // Return a public API for the module if needed
         return {
             id: this.id,
             logic: moduleLogic,
             ui: ui,
-            staticModuleData: staticModuleData, // Expose static data for other modules (e.g., Statistics)
-            // Expose lifecycle methods for moduleLoader to broadcast
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Reloading state.`);
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name}.`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
-                if (!loadedState) {
-                    loadedState = getInitialState(staticModuleData); // Pass staticModuleData
-                    coreGameStateManager.setModuleState(this.id, loadedState);
+                if (!loadedState || typeof loadedState.completedAchievements === 'undefined') {
+                    loadedState = getInitialState();
                 }
-                // Ensure consistency for new achievements or missing flags
-                for (const achId in staticModuleData.achievements) { // Use staticModuleData to ensure all achievements are covered
-                    if (typeof loadedState.unlockedAchievements[achId] === 'undefined') {
-                        loadedState.unlockedAchievements[achId] = false;
-                    }
-                }
-                Object.assign(moduleState, loadedState); // Update local moduleState
-                moduleLogic.onGameLoad(); // Notify logic component
+                Object.assign(moduleState, loadedState);
+                coreGameStateManager.setModuleState(this.id, { ...moduleState });
+                moduleLogic.onGameLoad(); // This will re-apply completed rewards
                 if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content')); // Re-render if active
+                    ui.updateDynamicElements();
                 }
             },
             onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting state.`);
-                const initialState = getInitialState(staticModuleData); // Pass staticModuleData
+                loggingSystem.info(this.name, `onResetState called for ${this.name}.`);
+                const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.onResetState(); // Notify logic component
+                moduleLogic.onResetState();
                  if (coreUIManager.isActiveTab(this.id)) {
-                    ui.renderMainContent(document.getElementById('main-content'));
+                    ui.updateDynamicElements();
                 }
-            },
-            // Public method to check if an achievement is unlocked
-            isAchievementUnlocked: (achievementId) => moduleLogic.isAchievementUnlocked(achievementId)
+            }
+            // No getSpecificData needed from this module for now by others.
         };
     }
 };
