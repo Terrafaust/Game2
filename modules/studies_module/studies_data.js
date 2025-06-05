@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_data.js
+// modules/studies_module/studies_data.js (v2)
 
 /**
  * @file studies_data.js
@@ -15,7 +15,7 @@ export const staticModuleData = {
         knowledge: {
             id: 'knowledge',
             name: "Knowledge",
-            initialAmount: 0,
+            initialAmount: "0", // Changed to string for consistency
             isUnlocked: false, // Initially locked, unlocked by Professor production
             showInUI: false, // Hidden until unlocked
         }
@@ -124,7 +124,7 @@ export const staticModuleData = {
             description: "Advanced studies, preparing for higher education.",
             resourceId: "studyPoints",
             baseProduction: "2500",
-            baseCost: "1000000",
+            baseCost: "1000000", // 1M
             costResource: "studyPoints",
             costGrowthFactor: "1.12",
             unlockCondition: {
@@ -143,7 +143,7 @@ export const staticModuleData = {
             description: "The pinnacle of academic institutions, generating vast Study Points.",
             resourceId: "studyPoints",
             baseProduction: "12500",
-            baseCost: "10000000",
+            baseCost: "10000000", // 10M
             costResource: "studyPoints",
             costGrowthFactor: "1.13",
             unlockCondition: {
@@ -179,12 +179,12 @@ export const staticModuleData = {
 
     // Global flags to be set by this module to unlock other content
     globalFlagsToSet: {
-        commerceUnlocked: {
-            flag: "commerceUnlocked",
+        marketUnlocked: { // Changed from commerceUnlocked to marketUnlocked
+            flag: "marketUnlocked",
             condition: {
                 type: "producerOwned",
                 producerId: "professor",
-                count: 10,
+                count: 10, // Owning 10 Professors unlocks the Market
             },
             value: true
         },
@@ -193,7 +193,7 @@ export const staticModuleData = {
             condition: {
                 type: "producerOwned",
                 producerId: "professor",
-                count: 10,
+                count: 10, // Also unlocked by 10 Professors (as per original roadmap)
             },
             value: true
         }

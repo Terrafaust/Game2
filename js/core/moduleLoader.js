@@ -1,4 +1,4 @@
-// js/core/moduleLoader.js
+// js/core/moduleLoader.js (v2)
 
 /**
  * @file moduleLoader.js
@@ -16,7 +16,8 @@ let coreSystems = {
     coreUIManager: null,
     decimalUtility: null,
     loggingSystem: null, // Already imported, but good to have in the coreSystems object for modules
-    gameLoop: null, // Ensure gameLoop is part of coreSystems
+    gameLoop: null,
+    coreUpgradeManager: null, // Added CoreUpgradeManager
 };
 
 const loadedModules = {
@@ -32,7 +33,8 @@ const moduleLoader = {
      * @param {object} coreUIManagerRef
      * @param {object} decimalUtilityRef
      * @param {object} loggingSystemRef
-     * @param {object} gameLoopRef - Reference to the gameLoop system
+     * @param {object} gameLoopRef
+     * @param {object} coreUpgradeManagerRef // Added coreUpgradeManagerRef
      */
     initialize(
         staticDataAggregatorRef,
@@ -41,7 +43,8 @@ const moduleLoader = {
         coreUIManagerRef,
         decimalUtilityRef,
         loggingSystemRef,
-        gameLoopRef // Added gameLoopRef parameter
+        gameLoopRef,
+        coreUpgradeManagerRef // Added coreUpgradeManagerRef
     ) {
         coreSystems.staticDataAggregator = staticDataAggregatorRef;
         coreSystems.coreGameStateManager = coreGameStateManagerRef;
@@ -49,9 +52,10 @@ const moduleLoader = {
         coreSystems.coreUIManager = coreUIManagerRef;
         coreSystems.decimalUtility = decimalUtilityRef;
         coreSystems.loggingSystem = loggingSystemRef;
-        coreSystems.gameLoop = gameLoopRef; // Assign gameLoopRef to coreSystems
+        coreSystems.gameLoop = gameLoopRef;
+        coreSystems.coreUpgradeManager = coreUpgradeManagerRef; // Assign coreUpgradeManagerRef
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems.");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2).");
     },
 
     /**
@@ -108,6 +112,7 @@ const moduleLoader = {
 
         } catch (error) {
             loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error);
+            coreSystems.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}. Game may not function correctly.`, "error", 10000);
             return false;
         }
     },
@@ -147,12 +152,19 @@ const moduleLoader = {
     broadcastLifecycleEvent(methodName, args = []) {
         loggingSystem.debug("ModuleLoader", `Broadcasting lifecycle event '${methodName}' to all modules.`);
         for (const moduleId in loadedModules) {
-            const moduleInstance = loadedModules[moduleId].instance;
-            if (moduleInstance && typeof moduleInstance[methodName] === 'function') {
+            const moduleData = loadedModules[moduleId]; // Access manifest and instance
+            if (moduleData && moduleData.instance && typeof moduleData.instance[methodName] === 'function') {
                 try {
-                    moduleInstance[methodName](...args);
+                    moduleData.instance[methodName](...args);
                 } catch (error) {
                     loggingSystem.error("ModuleLoader", `Error calling ${methodName} on module '${moduleId}':`, error);
+                }
+            } else if (moduleData && moduleData.manifest && typeof moduleData.manifest[methodName] === 'function') {
+                 // Fallback to calling on manifest if instance doesn't have it (less common)
+                 try {
+                    moduleData.manifest[methodName](...args);
+                } catch (error) {
+                    loggingSystem.error("ModuleLoader", `Error calling ${methodName} on manifest of module '${moduleId}':`, error);
                 }
             }
         }

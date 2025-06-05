@@ -1,4 +1,4 @@
-// js/core/coreUIManager.js
+// js/core/coreUIManager.js (v3)
 
 /**
  * @file coreUIManager.js
@@ -11,19 +11,18 @@ import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
 import { coreGameStateManager } from './coreGameStateManager.js'; // For global flags affecting UI
-// import { globalSettingsManager } from './globalSettingsManager.js'; // For themes, etc. (to be created)
+// import { globalSettingsManager } from './globalSettingsManager.js'; // For themes, etc.
 
 // --- DOM Element References ---
-// These should correspond to IDs in index.html
 const UIElements = {
     resourceBar: null,
-    resourcesDisplay: null, // The div inside resource-bar where individual resources go
+    resourcesDisplay: null,
     mainMenu: null,
-    menuList: null, // The UL element within main-menu
+    menuList: null,
     mainContent: null,
     modalContainer: null,
     tooltipContainer: null,
-    gameContainer: null, // The top-level game container for theme application
+    gameContainer: null,
 };
 
 // --- UI State ---
@@ -31,12 +30,11 @@ let registeredMenuTabs = {
     // moduleId: { id: 'moduleId', label: 'Module Label', renderCallback: function(parentElement), onShowCallback: function(), onHideCallback: function(), isUnlocked: () => boolean }
 };
 let activeTabId = null;
-let currentTooltipTarget = null; // Element the tooltip is currently for
+let currentTooltipTarget = null;
 
 const coreUIManager = {
     /**
      * Initializes the UI Manager by caching DOM elements.
-     * Must be called after the DOM is fully loaded.
      */
     initialize() {
         UIElements.resourceBar = document.getElementById('resource-bar');
@@ -48,33 +46,29 @@ const coreUIManager = {
         UIElements.tooltipContainer = document.getElementById('tooltip-container');
         UIElements.gameContainer = document.getElementById('game-container');
 
-
         if (!UIElements.resourceBar || !UIElements.resourcesDisplay || !UIElements.mainMenu || !UIElements.menuList || !UIElements.mainContent || !UIElements.modalContainer || !UIElements.tooltipContainer || !UIElements.gameContainer) {
-            loggingSystem.error("CoreUIManager", "One or more critical UI elements not found in the DOM. Initialization failed.");
+            loggingSystem.error("CoreUIManager", "One or more critical UI elements not found. Initialization failed.");
             return;
         }
 
-        this.updateResourceDisplay(); // Initial render of resource bar
-        this.renderMenu(); // Initial render of menu
+        this.updateResourceDisplay();
+        this.renderMenu();
 
-        // Add event listener for tooltip movement
         document.addEventListener('mousemove', this._handleTooltipPosition.bind(this));
-        // Add event listener for menu clicks (event delegation)
         UIElements.menuList.addEventListener('click', this._handleMenuClick.bind(this));
 
-
-        loggingSystem.info("CoreUIManager", "UI Manager initialized and DOM elements cached.");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v3).");
     },
 
     /**
      * Registers a main menu tab for a module.
      * @param {string} moduleId - Unique ID for the module/tab.
      * @param {string} label - The text label for the tab.
-     * @param {function(HTMLElement): void} renderCallback - Function to call to render the module's content into the main content area. Receives parentElement.
-     * @param {function(): boolean} [isUnlockedCheck=() => true] - Optional function that returns true if the tab should be visible/enabled.
-     * @param {function(): void} [onShowCallback] - Optional function to call when the tab becomes active.
-     * @param {function(): void} [onHideCallback] - Optional function to call when the tab becomes inactive.
-     * @param {boolean} [isDefaultTab=false] - If true and no other tab is active, this tab will be made active.
+     * @param {function(HTMLElement): void} renderCallback - Function to render content.
+     * @param {function(): boolean} [isUnlockedCheck=() => true] - Function to check if tab is unlocked.
+     * @param {function(): void} [onShowCallback] - Callback when tab is shown.
+     * @param {function(): void} [onHideCallback] - Callback when tab is hidden.
+     * @param {boolean} [isDefaultTab=false] - If true, becomes default active tab.
      */
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
         if (typeof moduleId !== 'string' || moduleId.trim() === '') {
@@ -95,17 +89,14 @@ const coreUIManager = {
             onHideCallback: onHideCallback,
         };
         loggingSystem.info("CoreUIManager", `Menu tab '${label}' (${moduleId}) registered.`);
-        this.renderMenu(); // Re-render the menu to include the new tab
+        this.renderMenu();
 
         if (isDefaultTab && !activeTabId) {
-            // Check if any other tab is already active due to previous registrations or loading state
             const anyActive = Object.values(registeredMenuTabs).some(tab => tab.id === activeTabId && tab.isUnlocked());
-            if(!anyActive){
+            if(!anyActive && registeredMenuTabs[moduleId].isUnlocked()){ // Check if the default tab itself is unlocked
                  this.setActiveTab(moduleId);
             }
         } else if (!activeTabId && Object.keys(registeredMenuTabs).length > 0) {
-            // If no tab is active yet, and this isn't explicitly default, make the first unlocked one active.
-            // This ensures a tab is always active if available.
             const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
             if (firstUnlockedTab) {
                 this.setActiveTab(firstUnlockedTab.id);
@@ -114,42 +105,44 @@ const coreUIManager = {
     },
 
     /**
-     * Renders the main navigation menu based on registered tabs.
+     * Renders the main navigation menu.
      */
     renderMenu() {
         if (!UIElements.menuList) return;
-        UIElements.menuList.innerHTML = ''; // Clear existing menu items
+        UIElements.menuList.innerHTML = '';
 
-        let hasActiveTabBeenSet = false;
+        let hasActiveTabBeenSetOrRemainsValid = false;
         Object.values(registeredMenuTabs).forEach(tab => {
             if (tab.isUnlocked()) {
                 const listItem = document.createElement('li');
-                listItem.className = 'menu-tab'; // From index.html styles
+                listItem.className = 'menu-tab';
                 listItem.textContent = tab.label;
                 listItem.dataset.tabTarget = tab.id;
                 if (tab.id === activeTabId) {
                     listItem.classList.add('active');
-                    hasActiveTabBeenSet = true;
+                    hasActiveTabBeenSetOrRemainsValid = true;
                 }
                 UIElements.menuList.appendChild(listItem);
             }
         });
         
-        // If no tab is currently active (e.g. active one became locked), try to set a default
-        if (!hasActiveTabBeenSet && Object.keys(registeredMenuTabs).length > 0) {
+        if (!hasActiveTabBeenSetOrRemainsValid && Object.keys(registeredMenuTabs).length > 0) {
+            activeTabId = null; // Current activeTabId is no longer valid (e.g. became locked)
             const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
             if (firstUnlockedTab) {
-                this.setActiveTab(firstUnlockedTab.id, true); // Force render content
+                this.setActiveTab(firstUnlockedTab.id, true); // Force render content for new default
             } else {
-                // No tabs are unlocked, clear content
                 this.clearMainContent();
                 UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features unlocked yet.</p>';
             }
+        } else if (Object.keys(registeredMenuTabs).length === 0) {
+             this.clearMainContent();
+             UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No modules loaded.</p>';
         }
     },
 
     /**
-     * Handles clicks on menu items using event delegation.
+     * Handles clicks on menu items.
      * @param {Event} event
      * @private
      */
@@ -168,118 +161,110 @@ const coreUIManager = {
     /**
      * Sets the active main menu tab and renders its content.
      * @param {string} tabId - The ID of the tab to activate.
-     * @param {boolean} [forceRender=false] - If true, re-renders content even if tabId is already active.
+     * @param {boolean} [forceRender=false] - If true, re-renders content.
      */
     setActiveTab(tabId, forceRender = false) {
         if (!registeredMenuTabs[tabId] || !registeredMenuTabs[tabId].isUnlocked()) {
-            loggingSystem.warn("CoreUIManager", `Cannot set active tab: '${tabId}' is not registered, not unlocked, or has no render callback.`);
-            // Fallback: try to set the first available unlocked tab if current one is invalid
-            if (activeTabId === tabId || !activeTabId) { // If the problematic tab was active or no tab was active
+            loggingSystem.warn("CoreUIManager", `Cannot set active tab: '${tabId}' not registered, not unlocked, or no render callback.`);
+            if (activeTabId === tabId || !activeTabId) {
                 const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
                 if (firstUnlocked && firstUnlocked.id !== tabId) {
-                    this.setActiveTab(firstUnlocked.id);
+                    this.setActiveTab(firstUnlocked.id); // Recursive call to a valid tab
                 } else if (!firstUnlocked) {
                      this.clearMainContent();
                      UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available.</p>';
-                     activeTabId = null; // Ensure no tab is marked active
-                     this.renderMenu(); // Re-render menu to remove active state
+                     activeTabId = null;
+                     this.renderMenu();
                 }
             }
             return;
         }
 
-        if (activeTabId === tabId && !forceRender) {
-            // Even if already active, if it's a forced render, proceed.
-            // Otherwise, do nothing.
-            return;
-        }
+        if (activeTabId === tabId && !forceRender) return;
 
-        // Call onHide for the old tab
         if (activeTabId && registeredMenuTabs[activeTabId] && typeof registeredMenuTabs[activeTabId].onHideCallback === 'function') {
             registeredMenuTabs[activeTabId].onHideCallback();
         }
 
         activeTabId = tabId;
         loggingSystem.debug("CoreUIManager", `Active tab set to: ${tabId}`);
+        this.renderMenu();
+        this.clearMainContent();
 
-        this.renderMenu(); // Re-render menu to update active class
-        this.clearMainContent(); // Clear previous content
-
-        // Render new tab content
         const tab = registeredMenuTabs[tabId];
         if (tab && typeof tab.renderCallback === 'function') {
             try {
                 tab.renderCallback(UIElements.mainContent);
             } catch (error) {
                 loggingSystem.error("CoreUIManager", `Error rendering content for tab '${tabId}':`, error);
-                UIElements.mainContent.innerHTML = `<p class="text-red-500">Error loading content for ${tab.label}.</p>`;
+                UIElements.mainContent.innerHTML = `<p class="text-red-500">Error loading content for ${tab.label}. Check console.</p>`;
             }
         } else {
             loggingSystem.error("CoreUIManager", `Render callback not found for tab '${tabId}'.`);
             UIElements.mainContent.innerHTML = `<p>Content for ${tabId} is not available.</p>`;
         }
         
-        // Call onShow for the new tab
         if (tab && typeof tab.onShowCallback === 'function') {
             tab.onShowCallback();
         }
     },
 
-    /**
-     * Checks if a specific tab is currently active.
-     * @param {string} tabId - The ID of the tab to check.
-     * @returns {boolean} True if the tab is active, false otherwise.
-     */
     isActiveTab(tabId) {
         return activeTabId === tabId;
     },
 
-    /**
-     * Clears the main content area.
-     */
     clearMainContent() {
-        if (UIElements.mainContent) {
-            UIElements.mainContent.innerHTML = '';
-        }
+        if (UIElements.mainContent) UIElements.mainContent.innerHTML = '';
     },
 
     /**
-     * Updates the resource bar display with current resource amounts and rates.
+     * Updates the resource bar display.
      */
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
 
         const allResources = coreResourceManager.getAllResources();
         let hasVisibleResources = false;
-
-        // Clear only dynamic resource elements, not the "Resources" title
         UIElements.resourcesDisplay.innerHTML = '';
 
         Object.values(allResources).forEach(res => {
+            // Check the custom flag from market_data.js or if it's defined in static data.
+            const staticResData = coreSystems.staticDataAggregator.getData(`market.resources.${res.id}`) || 
+                                  coreSystems.staticDataAggregator.getData(`studies.resources.${res.id}`) ||
+                                  coreSystems.staticDataAggregator.getData(`core_resource_definitions.${res.id}`);
+            
+            const showRate = staticResData ? (staticResData.hasProductionRate !== false) : true;
+
+
             if (res.isUnlocked && res.showInUI) {
                 hasVisibleResources = true;
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
                 if (!displayElement) {
                     displayElement = document.createElement('div');
                     displayElement.id = `resource-${res.id}-display`;
-                    displayElement.className = 'p-2 bg-gray-700 rounded-md shadow'; // Tailwind classes for individual resource item
+                    displayElement.className = 'p-2 bg-gray-700 rounded-md shadow';
                     UIElements.resourcesDisplay.appendChild(displayElement);
                 }
 
-                const amountFormatted = decimalUtility.format(res.amount, 2); // Format with 2 decimal places for <1000
+                const amountFormatted = decimalUtility.format(res.amount, 2);
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
+                let rateHTML = '';
+
+                // Only show rate if showRate is true AND (rate > 0 OR there are sources)
+                // This avoids "(0/s)" for resources like "Images".
+                if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || Object.keys(res.productionSources || {}).length > 0)) {
+                    rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                }
+
 
                 displayElement.innerHTML = `
                     <span class="font-semibold text-primary">${res.name}:</span>
                     <span id="resource-${res.id}-amount" class="text-textPrimary">${amountFormatted}</span>
-                    (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)
+                    ${rateHTML}
                 `;
             } else {
-                // If a resource was visible and now isn't, remove its element
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
-                if (displayElement) {
-                    displayElement.remove();
-                }
+                if (displayElement) displayElement.remove();
             }
         });
 
@@ -293,48 +278,38 @@ const coreUIManager = {
      * @param {string} title - The title of the modal.
      * @param {string | HTMLElement} content - The HTML content or an HTMLElement for the modal body.
      * @param {Array<{label: string, callback: function, className?: string}>} [buttons] - Optional array of button objects.
-     * Each button: { label: "OK", callback: () => { closeModal(); }, className: "bg-blue-500" }
      */
     showModal(title, content, buttons) {
         if (!UIElements.modalContainer) return;
-        this.closeModal(); // Close any existing modal first
+        this.closeModal();
 
         const modalElement = document.createElement('div');
         modalElement.id = 'active-modal';
-        modalElement.className = 'modal active'; // Uses .modal and .active from index.html styles
+        modalElement.className = 'modal active';
 
         const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'modal-content'; // Uses .modal-content from index.html styles
+        modalContentDiv.className = 'modal-content';
 
         modalContentDiv.innerHTML = `
             <div class="flex justify-between items-center mb-4">
                 <h3 class="text-xl font-semibold text-primary">${title}</h3>
-                <button id="modal-close-button" class="text-textSecondary hover:text-textPrimary">&times;</button>
+                <button id="modal-close-button" class="text-textSecondary hover:text-textPrimary text-2xl leading-none">&times;</button>
             </div>
         `;
 
+        const bodyDiv = document.createElement('div');
         if (typeof content === 'string') {
-            const bodyDiv = document.createElement('div');
             bodyDiv.innerHTML = content;
-            modalContentDiv.appendChild(bodyDiv);
         } else if (content instanceof HTMLElement) {
-            modalContentDiv.appendChild(content);
+            bodyDiv.appendChild(content);
         }
+        modalContentDiv.appendChild(bodyDiv);
 
         if (buttons && buttons.length > 0) {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end space-x-3';
             buttons.forEach(btnInfo => {
-                const button = document.createElement('button');
-                button.textContent = btnInfo.label;
-                button.className = `game-button ${btnInfo.className || 'bg-primary'}`; // Default to primary if no class
-                button.addEventListener('click', () => {
-                    if (typeof btnInfo.callback === 'function') {
-                        btnInfo.callback();
-                    }
-                    // By default, modals with buttons might not auto-close unless callback does it
-                    // this.closeModal(); // Optional: auto-close on any button click
-                });
+                const button = this.createButton(btnInfo.label, btnInfo.callback, [btnInfo.className || 'bg-primary']);
                 buttonsDiv.appendChild(button);
             });
             modalContentDiv.appendChild(buttonsDiv);
@@ -343,244 +318,148 @@ const coreUIManager = {
         modalElement.appendChild(modalContentDiv);
         UIElements.modalContainer.appendChild(modalElement);
 
-        // Event listener for the close button
         document.getElementById('modal-close-button').addEventListener('click', () => this.closeModal());
-        // Optional: Close on clicking outside the modal content (on the backdrop)
         modalElement.addEventListener('click', (event) => {
-            if (event.target === modalElement) { // Check if the click is on the backdrop itself
-                this.closeModal();
-            }
+            if (event.target === modalElement) this.closeModal();
         });
     },
 
-    /**
-     * Closes the currently active modal.
-     */
     closeModal() {
         const activeModal = document.getElementById('active-modal');
-        if (activeModal) {
-            activeModal.remove();
-        }
+        if (activeModal) activeModal.remove();
     },
 
-    /**
-     * Shows a tooltip.
-     * @param {string | HTMLElement} content - The HTML content or an HTMLElement for the tooltip.
-     * @param {HTMLElement} targetElement - The DOM element the tooltip is associated with.
-     */
     showTooltip(content, targetElement) {
         if (!UIElements.tooltipContainer || !targetElement) return;
-
         currentTooltipTarget = targetElement;
         if (typeof content === 'string') {
             UIElements.tooltipContainer.innerHTML = content;
         } else if (content instanceof HTMLElement) {
-            UIElements.tooltipContainer.innerHTML = ''; // Clear first
+            UIElements.tooltipContainer.innerHTML = '';
             UIElements.tooltipContainer.appendChild(content);
         }
         UIElements.tooltipContainer.style.display = 'block';
-        this._positionTooltip(targetElement); // Initial position
+        this._positionTooltip(targetElement);
     },
 
-    /**
-     * Hides the tooltip.
-     */
     hideTooltip() {
         if (UIElements.tooltipContainer) {
             UIElements.tooltipContainer.style.display = 'none';
-            UIElements.tooltipContainer.innerHTML = ''; // Clear content
+            UIElements.tooltipContainer.innerHTML = '';
         }
         currentTooltipTarget = null;
     },
 
-    /**
-     * Positions the tooltip relative to the mouse or target element.
-     * @param {HTMLElement} targetEl - The element the tooltip is anchored to.
-     * @param {MouseEvent} [event] - The mouse event, if positioning by mouse (optional, for dynamic follow).
-     * @private
-     */
-    _positionTooltip(targetEl, event) {
-        if (!UIElements.tooltipContainer || UIElements.tooltipContainer.style.display === 'none') return;
+    _positionTooltip(targetEl) {
+        if (!UIElements.tooltipContainer || UIElements.tooltipContainer.style.display === 'none' || !targetEl ) return;
 
         const tooltipRect = UIElements.tooltipContainer.getBoundingClientRect();
+        const targetRect = targetEl.getBoundingClientRect();
         let x, y;
 
-        // Prefer positioning relative to the target element
-        const targetRect = targetEl.getBoundingClientRect();
-        x = targetRect.right + window.scrollX + 5; // 5px to the right of the target
-        y = targetRect.top + window.scrollY;
+        // Position below the target element by default
+        x = targetRect.left + window.scrollX;
+        y = targetRect.bottom + window.scrollY + 5; // 5px below the target
 
         // Adjust if tooltip goes off-screen right
-        if (x + tooltipRect.width > window.innerWidth) {
-            x = targetRect.left + window.scrollX - tooltipRect.width - 5; // Place to the left
-            if (x < 0) { // If still off-screen left, reset to right and try to fit
-                x = window.innerWidth - tooltipRect.width - 10;
-            }
+        if (x + tooltipRect.width > window.innerWidth -10 ) { // 10px buffer
+            x = window.innerWidth - tooltipRect.width - 10;
+        }
+         // Adjust if tooltip goes off-screen left
+        if (x < 10) {
+            x = 10;
         }
         // Adjust if tooltip goes off-screen bottom
-        if (y + tooltipRect.height > window.innerHeight) {
-            y = window.innerHeight - tooltipRect.height - 10; // Place higher up
+        if (y + tooltipRect.height > window.innerHeight - 10) { // 10px buffer
+            y = targetRect.top + window.scrollY - tooltipRect.height - 5; // Place above
         }
         // Adjust if tooltip goes off-screen top
-        if (y < 0) {
+        if (y < 10) { // 10px buffer from top
             y = 10;
         }
-
 
         UIElements.tooltipContainer.style.left = `${x}px`;
         UIElements.tooltipContainer.style.top = `${y}px`;
     },
     
-    /**
-    * Handles global mouse move to reposition tooltip if visible and tied to mouse.
-    * For element-bound tooltips, this might only be needed if the page scrolls or resizes.
-    * @param {MouseEvent} event
-    * @private
-    */
     _handleTooltipPosition(event) {
-        // If there's a current tooltip target, re-position the tooltip based on its current location
-        // and the mouse position (if relevant for dynamic follow).
         if (currentTooltipTarget && UIElements.tooltipContainer.style.display === 'block') {
-            // Re-position relative to the target element, not strictly mouse.
-            // The tooltip's position should be based on the element it's describing,
-            // not directly follow the mouse, unless that's a specific design choice.
-            // For now, we'll re-position based on the target element's current location.
             this._positionTooltip(currentTooltipTarget);
         }
     },
 
-
-    /**
-     * Displays a temporary notification message (toast).
-     * @param {string} message - The message to display.
-     * @param {'info' | 'success' | 'warning' | 'error'} [type='info'] - The type of notification.
-     * @param {number} [duration=3000] - How long to display the notification in ms.
-     */
     showNotification(message, type = 'info', duration = 3000) {
         let notificationArea = document.getElementById('notification-area');
         if (!notificationArea) {
             notificationArea = document.createElement('div');
             notificationArea.id = 'notification-area';
-            // Tailwind classes for notification area: fixed, bottom, right, z-index, etc.
-            notificationArea.className = 'fixed bottom-5 right-5 z-[1000] space-y-3';
+            notificationArea.className = 'fixed bottom-5 right-5 z-[1000] space-y-3 max-w-xs w-full';
             document.body.appendChild(notificationArea);
         }
 
         const notificationElement = document.createElement('div');
-        // Base Tailwind classes for notification
-        notificationElement.className = 'p-4 rounded-lg shadow-xl text-sm transition-all duration-300 ease-in-out transform translate-x-full opacity-0';
+        notificationElement.className = 'p-4 rounded-lg shadow-xl text-sm transition-all duration-500 ease-in-out transform opacity-0 translate-x-full';
         
-        let bgColor, textColor, borderColor, icon;
-
+        let bgColor, textColor, iconHTML;
+        // Using simple emoji icons for now
         switch (type) {
-            case 'success':
-                bgColor = 'bg-green-500'; textColor = 'text-white'; borderColor = 'border-green-700'; icon = '✅';
-                break;
-            case 'warning':
-                bgColor = 'bg-yellow-500'; textColor = 'text-black'; borderColor = 'border-yellow-700'; icon = '⚠️';
-                break;
-            case 'error':
-                bgColor = 'bg-red-600'; textColor = 'text-white'; borderColor = 'border-red-800'; icon = '❌';
-                break;
-            case 'info':
-            default:
-                bgColor = 'bg-blue-500'; textColor = 'text-white'; borderColor = 'border-blue-700'; icon = 'ℹ️';
-                break;
+            case 'success': bgColor = 'bg-green-500'; textColor = 'text-white'; iconHTML = '<span>✅</span>'; break;
+            case 'warning': bgColor = 'bg-yellow-500'; textColor = 'text-black'; iconHTML = '<span>⚠️</span>'; break;
+            case 'error': bgColor = 'bg-red-600'; textColor = 'text-white'; iconHTML = '<span>❌</span>'; break;
+            default: case 'info': bgColor = 'bg-blue-500'; textColor = 'text-white'; iconHTML = '<span>ℹ️</span>'; break;
         }
         notificationElement.classList.add(bgColor, textColor);
-        // notificationElement.style.borderLeft = `5px solid ${borderColor}`; // Using Tailwind border classes is also an option
-
-        notificationElement.innerHTML = `<span class="mr-2">${icon}</span> ${message}`;
+        notificationElement.innerHTML = `<div class="flex items-center"><div class="mr-3">${iconHTML}</div><div>${message}</div></div>`;
         
-        notificationArea.appendChild(notificationElement);
+        notificationArea.insertBefore(notificationElement, notificationArea.firstChild); // Add to top of list
 
-        // Animate in
         requestAnimationFrame(() => {
-            notificationElement.classList.remove('translate-x-full', 'opacity-0');
-            notificationElement.classList.add('translate-x-0', 'opacity-100');
+            notificationElement.classList.remove('opacity-0', 'translate-x-full');
+            notificationElement.classList.add('opacity-100', 'translate-x-0');
         });
 
         setTimeout(() => {
-            // Animate out
-            notificationElement.classList.remove('translate-x-0', 'opacity-100');
-            notificationElement.classList.add('translate-x-full', 'opacity-0');
-            setTimeout(() => {
-                notificationElement.remove();
-                if (notificationArea.children.length === 0) {
-                    // notificationArea.remove(); // Optional: remove area if empty
-                }
-            }, 300); // Match animation duration
+            notificationElement.classList.remove('opacity-100', 'translate-x-0');
+            notificationElement.classList.add('opacity-0', 'translate-x-full');
+            setTimeout(() => notificationElement.remove(), 500);
         }, duration);
     },
 
-    /**
-     * Applies a theme to the game.
-     * Assumes themes are defined in CSS using data attributes on the body or a main container.
-     * Example: <body data-theme="neon" data-mode="dark">
-     * @param {string} themeName - e.g., "neon-light", "steampunk".
-     * @param {'day' | 'night'} mode - e.g., "day", "night".
-     */
     applyTheme(themeName, mode) {
-        if (!UIElements.gameContainer) return; // Or document.body
-        
-        // This needs to be coordinated with globalSettingsManager
-        // For now, directly set attributes
+        if (!UIElements.gameContainer) return;
         UIElements.gameContainer.dataset.theme = themeName;
         UIElements.gameContainer.dataset.mode = mode;
-        // document.body.dataset.theme = themeName;
-        // document.body.dataset.mode = mode;
-
         loggingSystem.info("CoreUIManager", `Theme applied: ${themeName}, Mode: ${mode}`);
-        // Potentially save this to globalSettingsManager
     },
 
-    /**
-     * A utility function to create a standard game button.
-     * @param {string} text - The button text.
-     * @param {function} onClickCallback - Callback for when the button is clicked.
-     * @param {string[]} [additionalClasses=[]] - Array of additional Tailwind classes.
-     * @param {string} [id] - Optional ID for the button.
-     * @returns {HTMLButtonElement} The created button element.
-     */
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
         button.textContent = text;
-        button.className = 'game-button'; // Base class from index.html styles
-        if (additionalClasses && additionalClasses.length > 0) {
-            button.classList.add(...additionalClasses);
-        }
-        if (id) {
-            button.id = id;
-        }
+        button.className = 'game-button'; // Base class from index.html styles (or Tailwind)
+        additionalClasses.forEach(cls => button.classList.add(cls)); // Add Tailwind classes
+        if (id) button.id = id;
         if (typeof onClickCallback === 'function') {
             button.addEventListener('click', onClickCallback);
         }
         return button;
     },
     
-    /**
-     * Forces a full UI refresh. Useful after loading a game or significant state changes.
-     * This is a placeholder; specific update methods are preferred.
-     */
     fullUIRefresh() {
         loggingSystem.debug("CoreUIManager", "Performing full UI refresh...");
         this.updateResourceDisplay();
-        this.renderMenu(); // This will also trigger setActiveTab if needed, which renders content
-        // If activeTabId is set and valid, re-render its content
+        this.renderMenu(); 
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
-            this.setActiveTab(activeTabId, true); // Force re-render
+            this.setActiveTab(activeTabId, true);
         } else if (Object.keys(registeredMenuTabs).length > 0) {
-            // If current active tab is no longer valid, try to set a default one
             const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
             if (firstUnlocked) {
                 this.setActiveTab(firstUnlocked.id, true);
             } else {
                  this.clearMainContent();
-                 UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';
+                 if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';
             }
         }
     },
-
 };
 
 export { coreUIManager };
