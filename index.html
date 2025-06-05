@@ -216,19 +216,17 @@
             font-family: var(--font-main);
             background-color: var(--color-background); /* Applied directly to body */
             color: var(--color-text-primary);
-            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100%; /* Changed to 100% from 100vh for html */
+            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100%;
             transition: background-color 0.4s ease, color 0.4s ease;
             animation: var(--animation-hue-rotate) forwards;
         }
         #game-container {
-            /* This container div will now inherit its background from the body via the theme attributes set on it.
-               No explicit background-color needed here if body is correctly themed.
-               If theme attributes are only on #game-container, uncomment the next line. */
-            /* background-color: var(--color-background); */
-            color: var(--color-text-primary); /* Ensures text within game-container is also themed */
-            width: 100%; flex-grow: 1; /* Ensure it fills space if body is flex */
+            background-color: var(--color-background); /* Ensure #game-container explicitly uses the themed background */
+            color: var(--color-text-primary);
+            width: 100%; flex-grow: 1;
             display: flex; flex-direction: column;
             animation: var(--animation-hue-rotate) forwards; /* Also apply hue rotation here */
+            transition: background-color 0.4s ease, color 0.4s ease; /* Added transition */
         }
 
         #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
@@ -253,21 +251,20 @@
             color: var(--color-button-text);
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
             font-weight: 500; cursor: pointer; border: 1px solid transparent;
-            animation: var(--animation-rgb-filter) forwards; /* Applies to text for RGB theme */
+            animation: var(--animation-rgb-filter) forwards;
         }
         .game-button:disabled {
             background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important;
             filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important;
         }
         #save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
-        #load-button { background-color: var(--color-primary); color: var(--color-button-text); } /* Inherits RGB anim if applicable */
+        #load-button { background-color: var(--color-primary); color: var(--color-button-text); }
         #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
         #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
         .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); }
         .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); }
 
-        /* Menu Styling - No overall border, tabs are bordered buttons */
         #main-menu {
             background-color: transparent !important; border: none !important;
             padding: 0; box-shadow: none !important;
@@ -301,38 +298,29 @@
             color: var(--color-text-primary);
         }
         #resource-bar h2 { color: var(--color-primary); animation: var(--animation-rgb-text) forwards; }
-        /* Menu h3 title is removed via HTML change */
 
-        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; /* Or specific neon animation */ }
+        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
 
-        #resources-display > div { /* Resource items */
+        #resources-display > div {
             background-color: var(--color-surface-dark) !important;
             color: var(--color-text-primary) !important;
             border: 1px solid var(--color-border) !important;
             padding: 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #resources-display .font-semibold { /* Resource name (e.g., Study Points:) */
+        #resources-display .font-semibold {
              color: var(--color-secondary) !important;
              animation: var(--animation-rgb-text) forwards;
         }
          [data-theme="neon"][data-mode="night"] #resources-display > div {
             border-color: var(--color-primary);
             box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary);
-            /* For a more intense border glow: */
-            /* animation: var(--animation-rgb-border) forwards; */
         }
         [data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
         [data-theme="rgb"] #resources-display .font-semibold { animation: var(--animation-rgb-text) forwards; }
 
-        /* For studies buy buttons, ensure they use .game-button class in studies_ui.js */
-        /* and do not have hardcoded Tailwind bg- or text- classes. */
-        /* Example: coreUIManager.createButton("Buy Student", ..., ['game-button', 'studies-buy-button']); */
         .studies-buy-button {
-            /* Inherits .game-button styles. Add specific overrides here if .game-button is too generic. */
-            /* For example, to ensure they always use accent color: */
-            /* background-color: var(--color-accent-two); */
-            /* color: var(--color-text-primary); */
+            /* Inherits .game-button styles by default */
         }
 
         [data-theme="neon"][data-mode="night"] .achievement-item {
@@ -343,7 +331,7 @@
         }
         [data-theme="neon"][data-mode="night"] .achievement-item h4 {
              color: var(--color-secondary);
-             text-shadow: 0 0 3px var(--color-secondary), 0 0 5px var(--color-primary); /* Example neon title */
+             text-shadow: 0 0 3px var(--color-secondary), 0 0 5px var(--color-primary);
         }
 
         select, input[type="text"], input[type="number"], textarea {
@@ -353,7 +341,7 @@
         }
         select:focus, input:focus, textarea:focus {
             border-color: var(--color-primary); outline: none;
-            box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4); /* Generic focus, picks up RGB hue */
+            box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4);
         }
         [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
         [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
@@ -361,8 +349,7 @@
 
     </style>
 </head>
-<body class="font-inter"> <!-- data-theme and data-mode will be set by JS on #game-container -->
-                            <!-- Body background is now directly themed -->
+<body class="font-inter">
     <div id="game-container" data-theme="modern" data-mode="day" class="mx-auto p-4 flex flex-col max-w-6xl">
         <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
             <h2 class="text-xl font-semibold mb-2">Resources</h2>
@@ -373,8 +360,8 @@
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
             <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
-                <!-- Menu H3 Title Removed -->
-                <ul id="menu-list"> <!-- Removed space-y-1, gap is now on #menu-list flex */ -->
+                <!-- Menu H3 Title Removed as requested by user -->
+                <ul id="menu-list">
                     <!-- Menu items styled as bordered buttons -->
                 </ul>
             </nav>
