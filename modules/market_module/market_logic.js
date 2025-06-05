@@ -1,8 +1,10 @@
-// modules/market_module/market_logic.js (v1.4 - Reset Fix)
+// modules/market_module/market_logic.js (v1.5 - Unlock Skills Tab Fix & Resource Display)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v1.5: Ensures 'skillsTabUnlocked' global flag is set on SSP purchase and
+ * that 'images' resource is properly marked as unlocked.
  * v1.4: Ensures 'marketTabPermanentlyUnlocked' flag is cleared on reset and checks it correctly.
  */
 
@@ -14,7 +16,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.4).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.5).");
     },
 
     isMarketTabUnlocked() {
@@ -79,14 +81,38 @@ export const moduleLogic = {
             loggingSystem.info("MarketLogic", `Purchased ${itemDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}.`);
             coreUIManager.showNotification(`Acquired 1 ${itemDef.benefitResource === 'images' ? 'Image' : 'Study Skill Point'}!`, 'success', 2000);
 
+            // --- BEGIN Skills Tab Unlock Fix ---
             if (itemDef.benefitResource === 'studySkillPoints') {
-                const skillsModule = moduleLoader.getModule('skills');
-                if (skillsModule && skillsModule.logic && typeof skillsModule.logic.isSkillsTabUnlocked === 'function') {
-                    skillsModule.logic.isSkillsTabUnlocked(); 
-                } else {
-                    coreUIManager.renderMenu(); 
+                // Check if the skills tab is not already permanently unlocked
+                if (!coreGameStateManager.getGlobalFlag('skillsTabPermanentlyUnlocked', false)) {
+                    // Set the trigger flag for the skills module
+                    coreGameStateManager.setGlobalFlag('skillsTabUnlocked', true);
+                    loggingSystem.info("MarketLogic", "Global flag 'skillsTabUnlocked' set to true.");
+
+                    const skillsModule = moduleLoader.getModule('skills');
+                    if (skillsModule && skillsModule.logic && typeof skillsModule.logic.isSkillsTabUnlocked === 'function') {
+                        // Calling this will make skills_logic.js set 'skillsTabPermanentlyUnlocked'
+                        // and render the menu if it's not already visible.
+                        skillsModule.logic.isSkillsTabUnlocked(); 
+                    } else {
+                        // Fallback: If skills module logic isn't ready for some reason, just try to re-render menu
+                        coreUIManager.renderMenu(); 
+                    }
                 }
             }
+            // --- END Skills Tab Unlock Fix ---
+
+            // --- BEGIN Images Resource Unlock Fix ---
+            // Ensure the 'images' resource is marked as unlocked in coreResourceManager
+            // even if market_data.js says isUnlocked: true.
+            // This is crucial for it to appear in the general resource display.
+            if (itemDef.benefitResource === 'images') {
+                coreResourceManager.unlockResource('images');
+                coreUIManager.updateResourceDisplay(); // Force refresh resource display
+            }
+            // --- END Images Resource Unlock Fix ---
+
+            coreUIManager.updateActiveTabContent(); // Ensure current tab content is updated
             return true;
         } else {
             loggingSystem.debug("MarketLogic", `Cannot afford ${itemDef.name}. Need ${decimalUtility.format(cost)} ${costResource}.`);
@@ -116,7 +142,8 @@ export const moduleLogic = {
         // Fallback if no permanent flag defined for this type of unlock yet
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return true;
-        return coreGameStateManager.getGlobalFlag(unlockDef.flagToSet, false);
+        // This is the flag that the market purchase sets to indicate it's been bought.
+        return coreGameStateManager.getGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);
     },
 
     purchaseUnlock(unlockId) { // unlockId is 'settingsTab', 'achievementsTab'
@@ -165,6 +192,7 @@ export const moduleLogic = {
             } else {
                  coreUIManager.renderMenu(); // Generic refresh if specific module not handled
             }
+            coreUIManager.updateActiveTabContent(); // Ensure current tab content is updated
             return true;
         } else {
             loggingSystem.debug("MarketLogic", `Cannot afford ${unlockDef.name}. Need ${decimalUtility.format(costAmount)} ${unlockDef.costResource}.`);
@@ -175,7 +203,7 @@ export const moduleLogic = {
 
     onGameLoad() {
         const { coreGameStateManager, loggingSystem } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module (v1.4).");
+        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module (v1.5)."); // Version update
         let loadedState = coreGameStateManager.getModuleState('market');
         if (loadedState && loadedState.purchaseCounts) {
              for (const key in loadedState.purchaseCounts) {
@@ -190,7 +218,7 @@ export const moduleLogic = {
 
     onResetState() {
         const { loggingSystem, coreGameStateManager } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onResetState triggered for Market module (v1.4).");
+        loggingSystem.info("MarketLogic", "onResetState triggered for Market module (v1.5)."); // Version update
         const initialState = getInitialState();
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
@@ -203,3 +231,4 @@ export const moduleLogic = {
         loggingSystem.info("MarketLogic", "'marketTabPermanentlyUnlocked' and related market purchase flags cleared.");
     }
 };
+
