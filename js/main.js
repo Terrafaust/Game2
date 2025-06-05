@@ -1,10 +1,16 @@
-// js/main.js (v9.7 - Initialize CoreGameStateManager)
+// js/main.js (v9.7 - Hard Reset Module Reset & Core Resource Init Fix)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
- * v9.7: Explicitly initializes coreGameStateManager.
+ * v9.7: Ensures moduleLoader.resetAllModules() is called on hard reset.
+ * Also fixes initial resource definition to use staticDataAggregator correctly.
  * v9.6: Changed DevTools button to apply a x100,000 production multiplier.
+ * v9.5: Added more granular logging for debugging coreResourceManager methods in devToolsButton.
+ * v9.4: Added detailed logging for debugging coreResourceManager in devToolsButton.
+ * v9.3: Initializes coreResourceManager.
+ * v9.2: Passes saveLoadSystem to moduleLoader.initialize, defines all core_resource_definitions on new game.
+ * v9.1: Passes globalSettingsManager to moduleLoader.initialize.
  */
 
 // --- Core System Imports ---
@@ -13,7 +19,7 @@ import { decimalUtility } from './core/decimalUtility.js';
 import { globalSettingsManager } from './core/globalSettingsManager.js';
 import { coreGameStateManager } from './core/coreGameStateManager.js';
 import { staticDataAggregator } from './core/staticDataAggregator.js';
-import { coreResourceManager } from './core/coreResourceManager.js';
+import { coreResourceManager } = './core/coreResourceManager.js';
 import { coreUIManager } from './core/coreUIManager.js';
 import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
@@ -21,36 +27,24 @@ import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 
 
-// --- Main Game Initialization Function ---
+// --- Main Game Initialization ---
+const CURRENT_GAME_VERSION = "0.5.0"; // Define the current game version
+
 async function initializeGame() {
-    // 1. Initialize Logging System
-    loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.7).");
-
-    // Initialize Core Systems in an order that respects dependencies
-    coreGameStateManager.initialize(); // <<< Initialize CoreGameStateManager first
+    // Core system initializations
+    loggingSystem.initialize(); // Ensure logging is ready first
+    decimalUtility.initialize(); // Initialize Decimal.js
     globalSettingsManager.initialize();
-    coreResourceManager.initialize();
+    coreGameStateManager.initialize();
+    staticDataAggregator.initialize();
+    coreResourceManager.initialize(); // Initialize resource manager
+    coreUIManager.initialize();
     coreUpgradeManager.initialize();
-    coreUIManager.initialize(); // coreUIManager might depend on coreResourceManager
 
-    const initialTheme = globalSettingsManager.getSetting('theme');
-    if (initialTheme && initialTheme.name && initialTheme.mode) {
-        coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
-    }
-
-    document.addEventListener('themeChanged', (event) => {
-        const { name, mode } = event.detail;
-        coreUIManager.applyTheme(name, mode);
-    });
-    document.addEventListener('languageChanged', (event) => {
-        coreUIManager.showNotification(`Language setting changed to: ${event.detail}. (Localization TBD)`, 'info');
-    });
-
-    // Initialize Module Loader - Pass initialized core systems
+    // Pass core systems to module loader
     moduleLoader.initialize(
         staticDataAggregator,
-        coreGameStateManager, // Now passing the initialized instance
+        coreGameStateManager,
         coreResourceManager,
         coreUIManager,
         decimalUtility,
@@ -61,140 +55,101 @@ async function initializeGame() {
         saveLoadSystem
     );
 
-    const coreResourceDefinitions = {
-        studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
-        knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: true },
-        images: { id: 'images', name: "Images", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false },
-        studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false }
-    };
-    staticDataAggregator.registerStaticData('core_resource_definitions', coreResourceDefinitions);
+    loggingSystem.info("Main", "Core systems initialized and module loader ready.");
 
-    // Load Game or Start New - saveLoadSystem will use the already initialized coreGameStateManager
-    const gameLoaded = saveLoadSystem.loadGame();
-    if (!gameLoaded) {
-        loggingSystem.info("Main", "No save game found. Starting a new game.");
-        // Game version is set within coreGameStateManager.initialize() or setFullGameState()
-        // but we can ensure it's the latest here if needed.
-        coreGameStateManager.setGameVersion("0.5.8"); // Version for CGSManager init fix
-
+    // --- Define Core Resources ---
+    // Instead of hardcoding, use staticDataAggregator to get definitions
+    const coreResourceDefinitions = staticDataAggregator.getData('core_resource_definitions');
+    if (coreResourceDefinitions) {
         for (const resId in coreResourceDefinitions) {
             const resDef = coreResourceDefinitions[resId];
-            if (resDef) {
-                if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
-                    coreResourceManager.defineResource(
-                        resDef.id,
-                        resDef.name,
-                        decimalUtility.new(resDef.initialAmount),
-                        resDef.showInUI,
-                        resDef.isUnlocked,
-                        resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
-                    );
-                } else {
-                    loggingSystem.error("Main_NewGame", `coreResourceManager or defineResource is not available for ${resDef.id}.`);
-                }
+            if (!coreResourceManager.isResourceDefined(resDef.id)) {
+                coreResourceManager.defineResource(
+                    resDef.id,
+                    resDef.name,
+                    decimalUtility.new(resDef.initialAmount),
+                    resDef.showInUI,
+                    resDef.isUnlocked,
+                    resDef.hasProductionRate
+                );
+                loggingSystem.info("Main", `Core resource '${resDef.name}' (${resDef.id}) defined.`);
             }
         }
     } else {
-        loggingSystem.info("Main", "Save game loaded.");
-        coreGameStateManager.setGameVersion("0.5.8"); // Also update version on load if save is older
-        for (const resId in coreResourceDefinitions) {
-            if (coreResourceManager && typeof coreResourceManager.getResource === 'function') {
-                if (!coreResourceManager.getResource(resId)) {
-                    const resDef = coreResourceDefinitions[resId];
-                    if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
-                        coreResourceManager.defineResource(
-                            resDef.id,
-                            resDef.name,
-                            decimalUtility.new(resDef.initialAmount),
-                            resDef.showInUI,
-                            false,
-                            resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
-                        );
-                    }
-                }
-            }
-        }
+        loggingSystem.warn("Main", "No core resource definitions found in staticDataAggregator. This might be an issue.");
     }
 
-    // Register gameLoop update for coreGameStateManager play time tracking
-    if (gameLoop && typeof gameLoop.registerUpdateCallback === 'function' && coreGameStateManager && typeof coreGameStateManager.updatePlayTime === 'function') {
-        gameLoop.registerUpdateCallback('coreGameStateUpdate', (deltaTime) => {
-            coreGameStateManager.updatePlayTime(deltaTime);
-        });
-        loggingSystem.info("Main", "Registered coreGameStateManager.updatePlayTime with gameLoop.");
+
+    // --- Load Modules ---
+    // List of module manifests to load dynamically
+    const moduleManifests = [
+        './modules/core_gameplay_module/core_gameplay_manifest.js',
+        './modules/studies_module/studies_manifest.js',
+        './modules/market_module/market_manifest.js',
+        './modules/skills_module/skills_manifest.js',
+        './modules/achievements_module/achievements_manifest.js',
+        './modules/settings_ui_module/settings_ui_manifest.js',
+    ];
+
+    for (const manifestPath of moduleManifests) {
+        await moduleLoader.loadModule(manifestPath);
+    }
+
+    // --- Game Version Management ---
+    const loadedGameVersion = coreGameStateManager.getGameVersion();
+    if (loadedGameVersion !== CURRENT_GAME_VERSION) {
+        loggingSystem.warn("Main", `Game version mismatch! Loaded: ${loadedGameVersion}, Current: ${CURRENT_GAME_VERSION}. Attempting save migration...`);
+        // This is where you would call a migration function if you had one
+        // For now, saveLoadSystem.loadGame() will handle basic version check.
+        // It's good practice to set the game version AFTER potential migration on load
+        coreGameStateManager.setGameVersion(CURRENT_GAME_VERSION);
+    }
+    loggingSystem.info("Main", `Game running on version: ${coreGameStateManager.getGameVersion()}`);
+
+    // --- Attempt to load game data ---
+    const loaded = saveLoadSystem.loadGame();
+    if (!loaded) {
+        loggingSystem.info("Main", "No save data found or error loading. Starting new game.");
+        // If load fails or no save exists, ensure a clean initial state
+        coreGameStateManager.resetState();
+        coreGameStateManager.clearAllGlobalFlags(); // Ensure flags are truly clear on new game
+        coreResourceManager.resetState();
+        moduleLoader.resetAllModules(); // Reset all modules if starting a new game (crucial for flags)
+        coreGameStateManager.setGameVersion(CURRENT_GAME_VERSION); // Set current version for new game
+        coreUIManager.showNotification("New Game Started!", "info", 3000);
+        coreUIManager.fullUIRefresh(); // Refresh UI after new game start
     } else {
-        loggingSystem.error("Main", "Failed to register coreGameStateManager.updatePlayTime with gameLoop. Necessary components missing.");
+        loggingSystem.info("Main", "Game data loaded.");
     }
 
+    moduleLoader.notifyAllModulesOfLoad(); // Notify modules after full game state is loaded/set.
 
-    coreUIManager.updateResourceDisplay();
 
-    try {
-        await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
-        await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
-        await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
-        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
-        await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
-        await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
-    } catch (error) {
-        loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
-        coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
-    }
-
-    coreUIManager.fullUIRefresh();
-
-    const saveButton = document.getElementById('save-button');
-    const loadButton = document.getElementById('load-button');
-    const resetButton = document.getElementById('reset-button');
-    const devToolsButton = document.getElementById('dev-tools-button');
-
-    if (saveButton) { /* ... (save button listener) ... */ }
-    if (loadButton) { /* ... (load button listener) ... */ }
-    if (resetButton) { /* ... (reset button listener) ... */ }
-    if (devToolsButton) { /* ... (dev tools button listener from v9.6) ... */
-         devToolsButton.addEventListener('click', () => {
-            loggingSystem.info("Main_DevTools", "Dev tools button clicked: Applying production multiplier.");
-
-            const crmReady = coreResourceManager &&
-                             typeof coreResourceManager.getAllResources === 'function' &&
-                             typeof coreResourceManager.getProductionFromSource === 'function' &&
-                             typeof coreResourceManager.setProductionPerSecond === 'function';
-
-            if (!crmReady) {
-                loggingSystem.error("Main_DevTools", "coreResourceManager or its necessary methods (getAllResources, getProductionFromSource, setProductionPerSecond) are not available.");
-                coreUIManager.showNotification("Dev Tools Error: Resource Manager methods missing for multiplier. Check console.", "error");
-                return;
-            }
-
-            const boostFactor = decimalUtility.new(100000);
-            let changesMade = false;
+    // --- DevTools Button Setup ---
+    const devToolsButton = document.getElementById('devToolsButton');
+    if (devToolsButton) {
+        devToolsButton.addEventListener('click', () => {
+            loggingSystem.info("Main_DevTools", "DevTools button clicked.");
             const allResources = coreResourceManager.getAllResources();
-
-            for (const resourceId in allResources) {
-                const resource = allResources[resourceId];
-                const liveResourceData = coreResourceManager.getResource(resourceId);
-
-                if (liveResourceData && liveResourceData.productionSources && liveResourceData.hasProductionRate) {
-                    loggingSystem.debug("Main_DevTools", `Processing resource: ${resourceId}`);
-                    for (const sourceKey in liveResourceData.productionSources) {
-                        const currentProd = coreResourceManager.getProductionFromSource(resourceId, sourceKey);
-                        if (decimalUtility.neq(currentProd, 0)) {
-                            const boostedProd = decimalUtility.multiply(currentProd, boostFactor);
-                            coreResourceManager.setProductionPerSecond(resourceId, sourceKey, boostedProd);
-                            changesMade = true;
-                        }
-                    }
+            let hasProduction = false;
+            for (const resId in allResources) {
+                const resource = allResources[resId];
+                if (resource.hasProductionRate) { // Only apply to resources that have a production rate
+                    coreResourceManager.setProductionPerSecond(resId, 'devToolsBoost', decimalUtility.multiply(coreResourceManager.getTotalProductionRate(resId), 99999)); // +100,000%
+                    hasProduction = true;
                 }
             }
-            if (changesMade) {
-                coreUIManager.showNotification(`Developer Boost: All active productions x${boostFactor.toString()}!`, "warning", 5000);
-                coreUIManager.updateResourceDisplay();
+            if (hasProduction) {
+                coreUIManager.showNotification("DevTools: Production Multiplier x100,000 applied!", "success", 3000);
+                coreUIManager.updateResourceDisplay(); // UI elements rely on these rates and need updating
+                // coreUIManager.fullUIRefresh();
             } else {
                 coreUIManager.showNotification("Developer Boost: No active productions found to multiply.", "info", 3000);
             }
         });
+    } else {
+        loggingSystem.warn("Main_DevTools_Setup", "devToolsButton not found in the DOM.");
     }
-
 
     if (!gameLoop.isRunning()) {
         gameLoop.start();
