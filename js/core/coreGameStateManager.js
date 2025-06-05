@@ -1,8 +1,9 @@
-// js/core/coreGameStateManager.js (v2.2 - Play Time Tracking)
+// js/core/coreGameStateManager.js (v2.3 - Play Time Fix)
 
 /**
  * @file coreGameStateManager.js
  * @description Manages the global game state.
+ * v2.3: Corrected deltaTime unit in updatePlayTime to expect milliseconds.
  * v2.2: Added total play time tracking and formatting.
  * v2.1: Removed erroneous coreSystemsRef check from setGlobalFlag.
  */
@@ -13,7 +14,7 @@ import { decimalUtility } from './decimalUtility.js';
 let gameState = {
     gameVersion: "0.1.0", 
     lastSaveTime: null,
-    totalPlayTimeSeconds: 0, // Added to track total play time
+    totalPlayTimeSeconds: 0, 
     globalFlags: {},
     moduleStates: {},
 };
@@ -27,7 +28,7 @@ const coreGameStateManager = {
             // Ensure default structure if no initial state provided
             gameState.gameVersion = gameState.gameVersion || "0.1.0";
             gameState.lastSaveTime = gameState.lastSaveTime || null;
-            gameState.totalPlayTimeSeconds = gameState.totalPlayTimeSeconds || 0; // Initialize if missing
+            gameState.totalPlayTimeSeconds = gameState.totalPlayTimeSeconds || 0; 
             gameState.globalFlags = gameState.globalFlags || {};
             gameState.moduleStates = gameState.moduleStates || {};
             loggingSystem.info("CoreGameStateManager", "Initialized with default state.", JSON.parse(JSON.stringify(gameState)));
@@ -35,10 +36,6 @@ const coreGameStateManager = {
     },
 
     getGameState() {
-        // Ensure a deep copy is returned, especially if gameState might contain nested objects.
-        // JSON parse/stringify is okay for POJOs but will lose Decimal instances.
-        // The saveLoadSystem handles Decimal serialization separately.
-        // For internal use, this might be fine, but be cautious.
         return JSON.parse(JSON.stringify(gameState));
     },
 
@@ -47,29 +44,22 @@ const coreGameStateManager = {
             loggingSystem.error("CoreGameStateManager", "setFullGameState called with null or undefined state.");
             return;
         }
-        // Directly assign. Consider a deep merge if partial updates are possible.
         gameState = newState;
-        // Ensure essential properties exist after assignment from potentially older save data
         gameState.globalFlags = newState.globalFlags || {};
         gameState.moduleStates = newState.moduleStates || {};
-        gameState.gameVersion = newState.gameVersion || "0.0.0"; // Default if missing from save
+        gameState.gameVersion = newState.gameVersion || "0.0.0"; 
         gameState.lastSaveTime = newState.lastSaveTime || null;
-        gameState.totalPlayTimeSeconds = newState.totalPlayTimeSeconds || 0; // Initialize if missing from save
+        gameState.totalPlayTimeSeconds = newState.totalPlayTimeSeconds || 0; 
 
-        // Revive Decimals in module states if they were stringified
-        // This is a generic example; specific modules should handle their own state revival more robustly if needed.
         for (const moduleId in gameState.moduleStates) {
             const moduleStateData = gameState.moduleStates[moduleId];
             if (moduleId === 'studies' && moduleStateData && moduleStateData.ownedProducers) {
                 for (const producerId in moduleStateData.ownedProducers) {
                     if (typeof moduleStateData.ownedProducers[producerId] !== 'string') {
-                        // This implies it might be a number or an actual Decimal from an older save style
-                        // Convert to string to match current practice where logic converts string to Decimal.
                         moduleStateData.ownedProducers[producerId] = decimalUtility.new(moduleStateData.ownedProducers[producerId]).toString();
                     }
                 }
             }
-            // Add similar logic for other modules if their states contain Decimals
         }
         loggingSystem.info("CoreGameStateManager", "Full game state has been set.");
     },
@@ -81,10 +71,6 @@ const coreGameStateManager = {
         }
         gameState.globalFlags[flagName] = value;
         loggingSystem.debug("CoreGameStateManager", `Global flag '${flagName}' set to:`, value);
-        
-        // Responsibility for calling coreUIManager.renderMenu() is now fully on the
-        // module logic that sets a flag which should trigger a menu update.
-        // Example: market_logic.js, skills_logic.js, etc. already do this.
     },
 
     getGlobalFlag(flagName, defaultValue = undefined) {
@@ -95,7 +81,7 @@ const coreGameStateManager = {
     },
 
     getAllGlobalFlags() {
-        return { ...gameState.globalFlags }; // Return a shallow copy
+        return { ...gameState.globalFlags }; 
     },
 
     clearAllGlobalFlags() {
@@ -108,8 +94,6 @@ const coreGameStateManager = {
             loggingSystem.warn("CoreGameStateManager", "setModuleState: moduleId must be a non-empty string.");
             return;
         }
-        // Store a shallow copy. If moduleStateData contains nested objects that modules might mutate,
-        // a deep copy or more careful state management within modules would be needed.
         gameState.moduleStates[moduleId] = { ...moduleStateData }; 
         loggingSystem.debug("CoreGameStateManager", `State for module '${moduleId}' updated.`);
     },
@@ -117,7 +101,6 @@ const coreGameStateManager = {
     getModuleState(moduleId) {
         if (Object.prototype.hasOwnProperty.call(gameState.moduleStates, moduleId)) {
             try {
-                // Return a deep copy to prevent direct modification of internal state.
                 return JSON.parse(JSON.stringify(gameState.moduleStates[moduleId]));
             } catch (e) {
                 loggingSystem.error("CoreGameStateManager", `Error deep copying state for module ${moduleId}`, e);
@@ -156,32 +139,26 @@ const coreGameStateManager = {
     /**
      * Increments the total play time by the given delta time.
      * This method should be called from the main game loop.
-     * @param {number} deltaTime The time elapsed since the last frame in milliseconds.
+     * @param {number} deltaTimeInMilliseconds The time elapsed since the last frame in milliseconds.
      */
-    updatePlayTime(deltaTime) {
-        if (typeof deltaTime !== 'number' || isNaN(deltaTime) || deltaTime < 0) {
-            loggingSystem.warn("CoreGameStateManager", "updatePlayTime: deltaTime must be a non-negative number.");
+    updatePlayTime(deltaTimeInMilliseconds) { // Renamed parameter for clarity
+        if (typeof deltaTimeInMilliseconds !== 'number' || isNaN(deltaTimeInMilliseconds) || deltaTimeInMilliseconds < 0) {
+            loggingSystem.warn("CoreGameStateManager_UpdatePlayTime", "deltaTimeInMilliseconds must be a non-negative number.", deltaTimeInMilliseconds);
             return;
         }
         // Convert deltaTime from milliseconds to seconds for totalPlayTimeSeconds
-        gameState.totalPlayTimeSeconds += (deltaTime / 1000);
+        gameState.totalPlayTimeSeconds += (deltaTimeInMilliseconds / 1000);
         // loggingSystem.debug("CoreGameStateManager", `Total play time updated to: ${gameState.totalPlayTimeSeconds.toFixed(2)} seconds.`);
     },
 
-    /**
-     * Returns the total play time in seconds.
-     * @returns {number}
-     */
     getTotalPlayTimeSeconds() {
         return gameState.totalPlayTimeSeconds;
     },
 
-    /**
-     * Formats the total play time into a human-readable string (e.g., "DD days, HH hours, MM minutes, SS seconds").
-     * @returns {string}
-     */
     getTotalPlayTimeString() {
         let totalSeconds = Math.floor(gameState.totalPlayTimeSeconds);
+        if (totalSeconds < 0) totalSeconds = 0; // Ensure non-negative
+
         let days = Math.floor(totalSeconds / (3600 * 24));
         totalSeconds %= (3600 * 24);
         let hours = Math.floor(totalSeconds / 3600);
@@ -193,43 +170,36 @@ const coreGameStateManager = {
         if (days > 0) {
             parts.push(`${days} day${days !== 1 ? 's' : ''}`);
         }
-        if (hours > 0 || parts.length > 0) { // Include hours if non-zero or if days are present
+        if (hours > 0 || parts.length > 0) { 
             parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
         }
-        if (minutes > 0 || parts.length > 0) { // Include minutes if non-zero or if hours/days are present
+        if (minutes > 0 || parts.length > 0) { 
             parts.push(`${minutes} minute${minutes !== 1 ? 's' : ''}`);
         }
-        // Always include seconds if nothing else is present, or if it's the last part.
-        // If everything else is zero, just show seconds.
-        if (seconds > 0 || parts.length === 0) { 
-            parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
+        // Always include seconds if other parts are zero or it's the only part.
+        if (parts.length === 0 || seconds > 0 || (days === 0 && hours === 0 && minutes === 0)) {
+             parts.push(`${seconds} second${seconds !== 1 ? 's' : ''}`);
         }
 
-        return parts.join(', ');
+
+        return parts.length > 0 ? parts.join(', ') : "0 seconds";
     },
 
     update(deltaTime) {
-        // This 'update' method is generally for core-level time-dependent logic.
-        // For tracking play time, 'updatePlayTime' is called directly from the game loop,
-        // but if there were other core game state elements needing per-frame updates,
-        // they would go here.
+        // No specific update logic here for now, play time is handled by updatePlayTime
     },
 
     resetState() {
-        const defaultVersion = "0.1.0"; // Base version, main.js will set the correct running version.
+        const defaultVersion = "0.1.0"; 
         gameState = {
             gameVersion: defaultVersion,
             lastSaveTime: null,
-            totalPlayTimeSeconds: 0, // Reset play time on full state reset
-            globalFlags: {}, // All flags are cleared by re-assigning this. clearAllGlobalFlags() is an explicit call too.
+            totalPlayTimeSeconds: 0, 
+            globalFlags: {}, 
             moduleStates: {},
         };
-        loggingSystem.info("CoreGameStateManager", "Game state (excluding flags explicitly) has been reset to default structure.");
-        // Note: clearAllGlobalFlags() should be called by saveLoadSystem.resetGameData() to ensure flags are truly empty.
+        loggingSystem.info("CoreGameStateManager", "Game state has been reset to default structure.");
     }
 };
 
-// Initialize on load - ensure this doesn't conflict with main.js initialization sequence
-// If main.js loads a save, it will overwrite this. If not, these defaults are used.
-// coreGameStateManager.initialize(); // Typically called by main.js to ensure proper sequence with save/load.
 export { coreGameStateManager };
