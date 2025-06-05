@@ -32,7 +32,7 @@ export const staticModuleData = {
             baseProduction: "0.5", 
             baseCost: "10", 
             costResource: "studyPoints", 
-            costGrowthFactor: "1.07", 
+            costGrowthFactor: "1.03", 
             unlockCondition: {
                 type: "resource", 
                 resourceId: "studyPoints",
@@ -51,7 +51,7 @@ export const staticModuleData = {
             baseProduction: "5", 
             baseCost: "100",
             costResource: "studyPoints",
-            costGrowthFactor: "1.08",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned", 
                 producerId: "student",
@@ -70,7 +70,7 @@ export const staticModuleData = {
             baseProduction: "25",
             baseCost: "1000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.09",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "classroom",
@@ -89,7 +89,7 @@ export const staticModuleData = {
             baseProduction: "100",
             baseCost: "10000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.10",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "kindergarten",
@@ -108,7 +108,7 @@ export const staticModuleData = {
             baseProduction: "500",
             baseCost: "100000",
             costResource: "studyPoints",
-            costGrowthFactor: "1.11",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "elementarySchool",
@@ -127,7 +127,7 @@ export const staticModuleData = {
             baseProduction: "2500",
             baseCost: "1000000", // 1M
             costResource: "studyPoints",
-            costGrowthFactor: "1.12",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "middleSchool",
@@ -146,7 +146,7 @@ export const staticModuleData = {
             baseProduction: "12500",
             baseCost: "10000000", // 10M
             costResource: "studyPoints",
-            costGrowthFactor: "1.13",
+            costGrowthFactor: "1.03",
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "highSchool",
@@ -165,7 +165,7 @@ export const staticModuleData = {
             baseProduction: "1", 
             baseCost: "1000000000", 
             costResource: "studyPoints",
-            costGrowthFactor: "1.15", 
+            costGrowthFactor: "1.03", 
             unlockCondition: {
                 type: "producerOwned",
                 producerId: "university",
