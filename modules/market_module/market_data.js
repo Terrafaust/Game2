@@ -1,8 +1,9 @@
-// modules/market_module/market_data.js (v1.2 - SSP no-showInUI, Achievements Unlock)
+// modules/market_module/market_data.js (v1.3 - Initial Visibility Fix)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v1.3: Set 'images' to initially not showInUI and not isUnlocked.
  * v1.2: Set studySkillPoints.showInUI to false.
  * v1.1: Includes definition for unlocking achievementsTab.
  */
@@ -13,16 +14,16 @@ export const staticModuleData = {
             id: 'images',
             name: "Images",
             initialAmount: "0",
-            isUnlocked: true, 
-            showInUI: true, // Images should be visible in the resource bar
+            isUnlocked: false, // Initially locked
+            showInUI: false,   // Initially hidden
             hasProductionRate: false 
         },
         studySkillPoints: {
             id: 'studySkillPoints',
             name: "Study Skill Points",
             initialAmount: "0",
-            isUnlocked: true, 
-            showInUI: false, // Study Skill Points should NOT be visible in the main resource bar
+            isUnlocked: true,  // Should be unlocked by market module so it can be purchased
+            showInUI: false,   // Study Skill Points should NOT be visible in the main resource bar
             hasProductionRate: false 
         }
     },
@@ -53,7 +54,7 @@ export const staticModuleData = {
     marketUnlocks: {
         settingsTab: {
             id: 'unlockSettingsTab',
-            name: 'Unlock Settings Menu', // Name still descriptive
+            name: 'Unlock Settings Menu', 
             description: 'Gain access to game settings and customization options.',
             costResource: 'images',
             costAmount: '100', 
@@ -61,7 +62,7 @@ export const staticModuleData = {
         },
         achievementsTab: { 
             id: 'unlockAchievementsTab',
-            name: 'Unlock Achievements Menu', // Name still descriptive
+            name: 'Unlock Achievements Menu', 
             description: 'Track your accomplishments and earn rewards.',
             costResource: 'images',
             costAmount: '100', 

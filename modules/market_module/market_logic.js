@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v1.6 - Enhanced Logging & Skill Tab Trigger)
+// modules/market_module/market_logic.js (v1.7 - Unlock/Show Images & Logging)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v1.7: Explicitly unlock and show 'images' resource on first purchase.
  * v1.6: Added more detailed logging for unlock conditions and ensuring UI updates.
- * v1.5: Explicitly trigger UI update after image purchase and skill tab unlock check after SSP purchase.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,7 +15,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.6).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.7).");
     },
 
     isMarketTabUnlocked() {
@@ -51,7 +51,6 @@ export const moduleLogic = {
         const costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const purchaseCountKey = itemDef.benefitResource; 
         const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
-        // loggingSystem.debug("MarketLogic_CalcCost", `Calculating cost for ${itemId}: base=${baseCost}, growth=${costGrowthFactor}, owned=${ownedCount}`);
         return decimalUtility.multiply(baseCost, decimalUtility.power(costGrowthFactor, ownedCount));
     },
 
@@ -70,9 +69,22 @@ export const moduleLogic = {
 
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
+            
+            // Special handling for 'images' on first purchase
+            if (itemDef.benefitResource === 'images') {
+                const imagesRes = coreResourceManager.getResource('images');
+                if (imagesRes && !imagesRes.isUnlocked) {
+                    coreResourceManager.unlockResource('images', true);
+                    loggingSystem.info("MarketLogic_PurchaseScalable", "'images' resource explicitly unlocked.");
+                }
+                if (imagesRes && !imagesRes.showInUI) {
+                    coreResourceManager.setResourceVisibility('images', true);
+                     loggingSystem.info("MarketLogic_PurchaseScalable", "'images' resource visibility set to true.");
+                }
+            }
+
             coreResourceManager.addAmount(itemDef.benefitResource, decimalUtility.new(itemDef.benefitAmountPerPurchase));
             loggingSystem.info("MarketLogic_PurchaseScalable", `${itemDef.benefitResource} amount after purchase: ${coreResourceManager.getAmount(itemDef.benefitResource).toString()}`);
-
 
             const purchaseCountKey = itemDef.benefitResource;
             let currentPurchaseCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
@@ -85,7 +97,7 @@ export const moduleLogic = {
             
             if (itemDef.benefitResource === 'images') {
                 loggingSystem.debug("MarketLogic_PurchaseScalable", "Image purchased, calling updateResourceDisplay.");
-                coreUIManager.updateResourceDisplay(); // Explicitly update resource display
+                coreUIManager.updateResourceDisplay(); 
             }
 
             if (itemDef.benefitResource === 'studySkillPoints') {
@@ -98,8 +110,6 @@ export const moduleLogic = {
                     coreUIManager.renderMenu(); 
                 }
             }
-            // This will be picked up by the game loop's UI update for the market tab itself
-            // if (coreUIManager.isActiveTab('market')) { ui.updateDynamicElements(); } 
             return true;
         } else {
             loggingSystem.warn("MarketLogic_PurchaseScalable", `Cannot afford ${itemDef.name}. Need ${decimalUtility.format(cost)} ${costResource}.`);
@@ -154,7 +164,7 @@ export const moduleLogic = {
         }
 
         const costAmount = decimalUtility.new(unlockDef.costAmount);
-        if (this.canAffordUnlock(unlockId)) { // Use the internal canAffordUnlock for consistent logging
+        if (this.canAffordUnlock(unlockId)) { 
             coreResourceManager.spendAmount(unlockDef.costResource, costAmount);
             
             coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true);
@@ -176,7 +186,6 @@ export const moduleLogic = {
             } else {
                  coreUIManager.renderMenu(); 
             }
-            // if (coreUIManager.isActiveTab('market')) { ui.updateDynamicElements(); } // Game loop will handle this
             return true;
         } else {
             loggingSystem.warn("MarketLogic_PurchaseUnlock", `Cannot afford ${unlockDef.name}. Need ${decimalUtility.format(costAmount)} ${unlockDef.costResource}.`);
@@ -187,7 +196,7 @@ export const moduleLogic = {
 
     onGameLoad() {
         const { coreGameStateManager, loggingSystem } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module (v1.6).");
+        loggingSystem.info("MarketLogic", "onGameLoad triggered for Market module (v1.7).");
         let loadedState = coreGameStateManager.getModuleState('market');
         
         const initialCounts = getInitialState().purchaseCounts;
@@ -201,11 +210,18 @@ export const moduleLogic = {
             }
         }
         this.isMarketTabUnlocked(); 
+        // Check if images resource should be visible on load
+        const imagesRes = coreSystemsRef.coreResourceManager.getResource('images');
+        if (imagesRes && imagesRes.isUnlocked && coreSystemsRef.decimalUtility.gt(imagesRes.amount, 0) && !imagesRes.showInUI) {
+            coreSystemsRef.coreResourceManager.setResourceVisibility('images', true);
+            loggingSystem.info("MarketLogic_onGameLoad", "'images' visibility set to true based on loaded amount.");
+        }
+
     },
 
     onResetState() {
-        const { loggingSystem, coreGameStateManager } = coreSystemsRef;
-        loggingSystem.info("MarketLogic", "onResetState triggered for Market module (v1.6).");
+        const { loggingSystem, coreGameStateManager, coreResourceManager } = coreSystemsRef;
+        loggingSystem.info("MarketLogic", "onResetState triggered for Market module (v1.7).");
         const initialState = getInitialState();
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
@@ -213,6 +229,19 @@ export const moduleLogic = {
         coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
         coreGameStateManager.setGlobalFlag(`marketUnlock_settingsTabUnlocked_purchased`, false);
         coreGameStateManager.setGlobalFlag(`marketUnlock_achievementsTabUnlocked_purchased`, false);
+
+        // Reset 'images' resource properties defined by this module
+        const imagesDef = staticModuleData.resources.images;
+        if (imagesDef) {
+            coreResourceManager.defineResource(
+                imagesDef.id, imagesDef.name, decimalUtility.new(imagesDef.initialAmount),
+                false, // showInUI: false on reset
+                false, // isUnlocked: false on reset
+                imagesDef.hasProductionRate
+            );
+             loggingSystem.info("MarketLogic_onResetState", "'images' resource properties reset to initial (hidden, locked).");
+        }
+
 
         loggingSystem.info("MarketLogic", "'marketTabPermanentlyUnlocked' and related market purchase flags cleared.");
     }
