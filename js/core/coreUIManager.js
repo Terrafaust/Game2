@@ -1,10 +1,10 @@
-// js/core/coreUIManager.js (v4.4 - Theme Apply Refinement)
+// js/core/coreUIManager.js (v4.5 - Force Reflow for Theme & Logging)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v4.5: Attempt to force style recalculation on theme apply.
  * v4.4: Added minor style "flicker" attempt to help theme apply, refined resource display logging.
- * v4.3: Added detailed logging to updateResourceDisplay.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -22,7 +22,8 @@ const UIElements = {
     modalContainer: null,
     tooltipContainer: null,
     gameContainer: null,
-    body: null, // Added body element
+    body: null, 
+    htmlElement: null, // Added HTML element
 };
 
 let registeredMenuTabs = {};
@@ -39,9 +40,10 @@ const coreUIManager = {
         UIElements.modalContainer = document.getElementById('modal-container');
         UIElements.tooltipContainer = document.getElementById('tooltip-container');
         UIElements.gameContainer = document.getElementById('game-container');
-        UIElements.body = document.body; // Cache body element
+        UIElements.body = document.body; 
+        UIElements.htmlElement = document.documentElement; // Cache HTML element
 
-        if (!UIElements.resourceBar || !UIElements.resourcesDisplay || !UIElements.mainMenu || !UIElements.menuList || !UIElements.mainContent || !UIElements.modalContainer || !UIElements.tooltipContainer || !UIElements.gameContainer || !UIElements.body) {
+        if (!UIElements.resourceBar || !UIElements.resourcesDisplay || !UIElements.mainMenu || !UIElements.menuList || !UIElements.mainContent || !UIElements.modalContainer || !UIElements.tooltipContainer || !UIElements.gameContainer || !UIElements.body || !UIElements.htmlElement) {
             loggingSystem.error("CoreUIManager", "One or more critical UI elements not found. Initialization failed.");
             return;
         }
@@ -56,11 +58,10 @@ const coreUIManager = {
             loggingSystem.error("CoreUIManager_Init", "menuList element not found, click handler not attached.");
         }
         
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.4).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.5).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
-        // ... (no changes from previous version needed here)
         if (typeof moduleId !== 'string' || moduleId.trim() === '') {
             loggingSystem.warn("CoreUIManager_RegisterTab", "moduleId must be a non-empty string.");
             return;
@@ -95,7 +96,6 @@ const coreUIManager = {
     },
 
     renderMenu() {
-        // ... (no changes from previous version needed here)
         if (!UIElements.menuList) {
             loggingSystem.warn("CoreUIManager_RenderMenu", "menuList element not found. Cannot render menu.");
             return;
@@ -141,7 +141,6 @@ const coreUIManager = {
     },
 
     _handleMenuClick(event) {
-        // ... (no changes from previous version needed here)
         const target = event.target;
         if (target.matches('.menu-tab') && target.dataset.tabTarget) {
             const tabId = target.dataset.tabTarget;
@@ -154,7 +153,6 @@ const coreUIManager = {
     },
 
     setActiveTab(tabId, forceRender = false) {
-        // ... (no changes from previous version needed here)
         if (!registeredMenuTabs[tabId] || !registeredMenuTabs[tabId].isUnlocked()) {
             loggingSystem.warn("CoreUIManager_SetActiveTab", `Cannot set active tab: '${tabId}' not registered, not unlocked, or no render callback.`);
             if (activeTabId === tabId || !activeTabId) { 
@@ -226,14 +224,10 @@ const coreUIManager = {
         }
 
         const allResources = coreResourceManager.getAllResources();
-        // loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", "Starting update. All defined resources from CRM:", allResources);
-
         let hasVisibleResources = false;
         UIElements.resourcesDisplay.innerHTML = ''; 
 
         Object.values(allResources).forEach(res => {
-            // loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Processing resource: ${res.id}, Name: ${res.name}, Amount: ${res.amount?.toString()}, Unlocked: ${res.isUnlocked}, ShowInUI: ${res.showInUI}, HasRate: ${res.hasProductionRate}`);
-            
             const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
 
             if (res.isUnlocked && res.showInUI) {
@@ -242,8 +236,8 @@ const coreUIManager = {
                 if (!displayElement) {
                     displayElement = document.createElement('div');
                     displayElement.id = `resource-${res.id}-display`;
-                    // Ensure Tailwind classes for no border are applied here, matching index.html
-                    displayElement.className = 'p-3 bg-surface rounded-lg shadow-sm text-sm'; // Example: using 'bg-surface' from variables
+                    // Class from index.html for no border, transparent background for individual items
+                    displayElement.className = 'resource-item-display'; 
                     UIElements.resourcesDisplay.appendChild(displayElement);
                 }
 
@@ -260,7 +254,6 @@ const coreUIManager = {
                     <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>
                     ${rateHTML}
                 `;
-                // loggingSystem.debug("CoreUIManager_UpdateResourceDisplay", `Displayed resource: ${res.id}`);
             } else {
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
                 if (displayElement) {
@@ -275,7 +268,6 @@ const coreUIManager = {
     },
 
     showModal(title, content, buttons) {
-        // ... (no changes from previous version needed here)
         if (!UIElements.modalContainer) return;
         this.closeModal(); 
 
@@ -322,13 +314,11 @@ const coreUIManager = {
     },
 
     closeModal() {
-        // ... (no changes from previous version needed here)
         const activeModal = document.getElementById('active-modal');
         if (activeModal) activeModal.remove();
     },
 
     showTooltip(content, targetElement) {
-        // ... (no changes from previous version needed here)
         if (!UIElements.tooltipContainer || !targetElement) return;
         currentTooltipTarget = targetElement;
         if (typeof content === 'string') {
@@ -342,7 +332,6 @@ const coreUIManager = {
     },
 
     hideTooltip() {
-        // ... (no changes from previous version needed here)
          if (UIElements.tooltipContainer) {
             UIElements.tooltipContainer.style.display = 'none';
             UIElements.tooltipContainer.innerHTML = '';
@@ -351,29 +340,16 @@ const coreUIManager = {
     },
 
     _positionTooltip(targetEl) {
-        // ... (no changes from previous version needed here)
         if (!UIElements.tooltipContainer || UIElements.tooltipContainer.style.display === 'none' || !targetEl ) return;
-
         const tooltipRect = UIElements.tooltipContainer.getBoundingClientRect();
         const targetRect = targetEl.getBoundingClientRect();
         let x, y;
-
         x = targetRect.left + window.scrollX;
         y = targetRect.bottom + window.scrollY + 5; 
-
-        if (x + tooltipRect.width > window.innerWidth -10 ) {
-            x = window.innerWidth - tooltipRect.width - 10;
-        }
-        if (x < 10) {
-            x = 10;
-        }
-        if (y + tooltipRect.height > window.innerHeight - 10) {
-            y = targetRect.top + window.scrollY - tooltipRect.height - 5;
-        }
-        if (y < 10) {
-            y = 10;
-        }
-
+        if (x + tooltipRect.width > window.innerWidth -10 ) { x = window.innerWidth - tooltipRect.width - 10; }
+        if (x < 10) { x = 10; }
+        if (y + tooltipRect.height > window.innerHeight - 10) { y = targetRect.top + window.scrollY - tooltipRect.height - 5; }
+        if (y < 10) { y = 10; }
         UIElements.tooltipContainer.style.left = `${x}px`;
         UIElements.tooltipContainer.style.top = `${y}px`;
     },
@@ -381,7 +357,6 @@ const coreUIManager = {
     _handleTooltipPosition(event) { /* ... */ },
 
     showNotification(message, type = 'info', duration = 3000) {
-        // ... (no changes from previous version needed here)
         let notificationArea = document.getElementById('notification-area');
         if (!notificationArea) {
             notificationArea = document.createElement('div');
@@ -389,10 +364,8 @@ const coreUIManager = {
             notificationArea.className = 'fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full';
             document.body.appendChild(notificationArea);
         }
-
         const notificationElement = document.createElement('div');
         notificationElement.className = 'p-4 rounded-lg shadow-xl text-sm transition-all duration-500 ease-in-out transform opacity-0 translate-x-full';
-        
         let bgColor, textColor, iconHTML;
         switch (type) {
             case 'success': bgColor = 'bg-green-500'; textColor = 'text-white'; iconHTML = '<span>✅</span>'; break;
@@ -402,14 +375,11 @@ const coreUIManager = {
         }
         notificationElement.classList.add(bgColor, textColor);
         notificationElement.innerHTML = `<div class="flex items-center"><div class="mr-3">${iconHTML}</div><div>${message}</div></div>`;
-        
         notificationArea.insertBefore(notificationElement, notificationArea.firstChild);
-
         requestAnimationFrame(() => { 
             notificationElement.classList.remove('opacity-0', 'translate-x-full');
             notificationElement.classList.add('opacity-100', 'translate-x-0');
         });
-
         if (duration > 0) { 
             setTimeout(() => {
                 notificationElement.classList.remove('opacity-100', 'translate-x-0');
@@ -420,30 +390,33 @@ const coreUIManager = {
     },
 
     applyTheme(themeName, mode) {
-        if (!UIElements.gameContainer || !UIElements.body) {
-            loggingSystem.error("CoreUIManager_ApplyTheme", "Game container or body element not cached.");
+        if (!UIElements.gameContainer || !UIElements.body || !UIElements.htmlElement) {
+            loggingSystem.error("CoreUIManager_ApplyTheme", "Game container, body, or html element not cached.");
             return;
         }
-        UIElements.gameContainer.dataset.theme = themeName;
-        UIElements.gameContainer.dataset.mode = mode; 
-        
-        // Force a style recalculation - this is a common technique.
-        // Reading a property like offsetHeight can sometimes trigger a reflow/repaint.
-        // UIElements.body.style.opacity = '0.999'; // Briefly change a property
-        // void UIElements.body.offsetHeight; // Force reflow
-        // UIElements.body.style.opacity = '1';    // Reset it
-        
-        // A simpler way that often works is to force a class change if transitions are CSS-based
-        // Forcing a re-render of the #game-container might be too much,
-        // but if CSS transitions are set up on #game-container and its children for theme properties,
-        // changing data attributes should be enough.
-        // The transitions in index.html now cover many elements.
+        const html = UIElements.htmlElement;
+        html.dataset.theme = themeName; // Apply to HTML tag for global variable scope
+        html.dataset.mode = mode;     // Apply to HTML tag
 
-        loggingSystem.info("CoreUIManager_ApplyTheme", `Theme applied: ${themeName}, Mode: ${mode}. Attributes set on game-container.`);
+        // Attempt to force style recalculation
+        // This is a bit of a hack, but can sometimes work.
+        // We make a non-visual change, force the browser to acknowledge it, then revert.
+        const originalOpacity = html.style.opacity;
+        html.style.opacity = '0.9999'; 
+        // Reading a property like offsetHeight can trigger a reflow
+        void html.offsetHeight; 
+        // Revert to original or remove if it wasn't set
+        html.style.opacity = originalOpacity || ''; 
+        
+        // Also update gameContainer if it's specifically targeted by some theme rules, though html should be primary
+        UIElements.gameContainer.dataset.theme = themeName;
+        UIElements.gameContainer.dataset.mode = mode;
+
+
+        loggingSystem.info("CoreUIManager_ApplyTheme", `Theme applied: ${themeName}, Mode: ${mode}. Attributes set on <html> and #game-container.`);
     },
 
     createButton(text, onClickCallback, additionalClasses = [], id) {
-        // ... (no changes from previous version needed here)
         const button = document.createElement('button');
         button.textContent = text;
         button.className = 'game-button'; 
@@ -469,7 +442,6 @@ const coreUIManager = {
     },
     
     fullUIRefresh() {
-        // ... (no changes from previous version needed here)
         loggingSystem.debug("CoreUIManager_FullRefresh", "Performing full UI refresh...");
         this.updateResourceDisplay();
         this.renderMenu(); 
@@ -488,4 +460,3 @@ const coreUIManager = {
 };
 
 export { coreUIManager };
- 
