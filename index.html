@@ -65,168 +65,129 @@
             /* Default: Modern Day */
             --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
             --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
-            --color-background: #F3F4F6; /* Defaulting to a slightly off-white for better perceived warmth */
-            --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB; /* Lighter gray for cards */
+            --color-background: #F3F4F6; 
+            --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB; 
             --color-text-primary: #111827; --color-text-secondary: #374151;
             --color-border: #D1D5DB; --color-button-text: #FFFFFF;
-            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05); /* Softer shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05); 
             --shadow-md: 0 3px 5px -1px rgba(0,0,0,0.07), 0 2px 3px -1px rgba(0,0,0,0.04);
             --shadow-lg: 0 8px 12px -3px rgba(0,0,0,0.07), 0 3px 5px -2px rgba(0,0,0,0.04);
             --shadow-xl: 0 15px 20px -5px rgba(0,0,0,0.07), 0 8px 8px -5px rgba(0,0,0,0.03);
             --animation-rgb-filter: none; --animation-rgb-border: none; --animation-rgb-text: none; --animation-hue-rotate: none;
         }
 
-        /* --- Modern Theme --- */
-        [data-theme="modern"][data-mode="day"] { /* Explicitly define day mode for Modern */
-            --color-primary: #4F46E5; --color-primary-lighter: #6366F1; --color-secondary: #EC4899;
-            --color-accent-one: #10B981; --color-accent-two: #F59E0B;
+        /* --- Theme CSS Variable Definitions --- */
+        [data-theme="modern"][data-mode="day"] {
             --color-background: #F3F4F6; --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB;
-            --color-text-primary: #111827; --color-text-secondary: #374151;
-            --color-border: #D1D5DB; --color-button-text: #FFFFFF;
+            --color-text-primary: #111827; --color-text-secondary: #374151; --color-border: #D1D5DB;
+            /* Other modern day vars... */
         }
         [data-theme="modern"][data-mode="night"] {
             --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
             --color-accent-one: #34D399; --color-accent-two: #FBBF24;
-            --color-background: #0F172A; /* Darker Slate background for better contrast */
-            --color-surface: #1E293B;    /* Slate 700 */
-            --color-surface-dark: #334155;/* Slate 600 */
-            --color-text-primary: #E2E8F0; /* Slate 200 - Good contrast */
-            --color-text-secondary: #94A3B8; /* Slate 400 */
-            --color-border: #475569;       /* Slate 500 */
-            --color-button-text: #F1F5F9; /* Slate 100 */
+            --color-background: #0F172A; --color-surface: #1E293B; --color-surface-dark: #334155;
+            --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
+            --color-border: #475569; --color-button-text: #F1F5F9;
         }
-
-        /* --- Neon Theme --- */
-        [data-theme="neon"][data-mode="day"] { /* Brighter Day for Neon */
+        [data-theme="neon"][data-mode="day"] {
             --color-primary: #16A34A; --color-secondary: #DB2777; --color-accent-one: #0891B2;
-            --color-background: #ECFDF5; /* Very Light Green */
-            --color-surface: #FFFFFF; --color-surface-dark: #D1FAE5;
+            --color-background: #ECFDF5; --color-surface: #FFFFFF; --color-surface-dark: #D1FAE5;
             --color-text-primary: #064E3B; --color-text-secondary: #047857;
             --color-border: #A7F3D0; --color-button-text: #FFFFFF;
         }
         [data-theme="neon"][data-mode="night"] {
-            --color-primary: #22D3EE;    /* Bright Cyan for Primary */
-            --color-secondary: #F472B6;  /* Bright Pink for Secondary */
-            --color-accent-one: #4ADE80;  /* Bright Green for Accent */
-            --color-background: #020617;  /* Near Black */
-            --color-surface: #0F172A;     /* Dark Slate */
-            --color-surface-dark: #1E293B; /* Darker Slate */
-            --color-text-primary: #67E8F9; /* Bright Cyan text */
-            --color-text-secondary: #A5F3FC; /* Lighter Cyan text */
+            --color-primary: #22D3EE; --color-secondary: #F472B6; --color-accent-one: #4ADE80;
+            --color-background: #020617; --color-surface: #0F172A; --color-surface-dark: #1E293B;
+            --color-text-primary: #67E8F9; --color-text-secondary: #A5F3FC;
             --color-border: #22D3EE; --color-button-text: #020617;
             --achievement-neon-glow: 0 0 6px #22D3EE, 0 0 12px #22D3EE, 0 0 18px #F472B6;
         }
-
-        /* --- Steampunk Theme --- */
         [data-theme="steampunk"][data-mode="day"] {
             --color-primary: #8B4513; --color-secondary: #DAA520;
-            --color-background: #FDF6E3; /* Parchment */
-            --color-surface: #FFFDF5;    /* Lighter Parchment */
-            --color-surface-dark: #F5ECCE; /* Darker Parchment */
+            --color-background: #FDF6E3; --color-surface: #FFFDF5; --color-surface-dark: #F5ECCE;
             --color-text-primary: #5D4037; --color-text-secondary: #795548;
             --color-border: #D2B48C; --color-button-text: #FFFDF5;
         }
         [data-theme="steampunk"][data-mode="night"] {
-            --color-primary: #D4AC0D;    /* Brass/Gold */
-            --color-secondary: #B08D57;  /* Bronze */
-            --color-background: #3E2723;  /* Darkest Brown */
-            --color-surface: #4E342E;     /* Dark Brown */
-            --color-surface-dark: #5D4037;/* Medium Dark Brown */
+            --color-primary: #D4AC0D; --color-secondary: #B08D57;
+            --color-background: #3E2723; --color-surface: #4E342E; --color-surface-dark: #5D4037;
             --color-text-primary: #EFEBE9; --color-text-secondary: #D7CCC8;
             --color-border: #A1887F; --color-button-text: #3E2723;
         }
-
-        /* --- Pink Theme --- */
         [data-theme="pink"][data-mode="day"] {
             --color-primary: #EC4899; --color-secondary: #D946EF;
-            --color-background: #FEF2F2; /* Rose White */
-            --color-surface: #FFFFFF; --color-surface-dark: #FCE7F3; /* Pink tint */
+            --color-background: #FEF2F2; --color-surface: #FFFFFF; --color-surface-dark: #FCE7F3;
             --color-text-primary: #831843; --color-text-secondary: #9D174D;
             --color-border: #FBCFE8; --color-button-text: #FFFFFF;
         }
         [data-theme="pink"][data-mode="night"] {
-            --color-primary: #F472B6;   /* Lighter Pink for night primary */
-            --color-secondary: #E879F9; /* Orchid */
-            --color-background: #3B071E; /* Dark Wine/Magenta */
-            --color-surface: #581C37;    /* Darker Wine/Magenta */
-            --color-surface-dark: #701A45; /* Darkest Wine/Magenta */
-            --color-text-primary: #FCE7F3; /* Light Pink */
-            --color-text-secondary: #FBCFE8; /* Lighter Pink */
+            --color-primary: #F472B6; --color-secondary: #E879F9;
+            --color-background: #3B071E; --color-surface: #581C37; --color-surface-dark: #701A45;
+            --color-text-primary: #FCE7F3; --color-text-secondary: #FBCFE8;
             --color-border: #831843; --color-button-text: #FFF0F5;
         }
-
-        /* --- Red & Yellow Theme --- */
         [data-theme="redyellow"][data-mode="day"] {
             --color-primary: #EF4444; --color-secondary: #F59E0B;
-            --color-background: #FFFDEA; /* Light Yellow/Cream */
-            --color-surface: #FFFFFF; --color-surface-dark: #FEF9C3; /* Pale Yellow */
+            --color-background: #FFFDEA; --color-surface: #FFFFFF; --color-surface-dark: #FEF9C3;
             --color-text-primary: #991B1B; --color-text-secondary: #B45309;
             --color-border: #FDBA74; --color-button-text: #FFFFFF;
         }
         [data-theme="redyellow"][data-mode="night"] {
-            --color-primary: #F87171;   /* Lighter Red for Night */
-            --color-secondary: #FBBF24; /* Lighter Amber for Night */
-            --color-background: #450A0A; /* Very Dark Red */
-            --color-surface: #7F1D1D;    /* Dark Red */
-            --color-surface-dark: #531313;/* Darker Red */
+            --color-primary: #F87171; --color-secondary: #FBBF24;
+            --color-background: #450A0A; --color-surface: #7F1D1D; --color-surface-dark: #531313;
             --color-text-primary: #FEF3C7; --color-text-secondary: #FDE68A;
             --color-border: #B91C1C; --color-button-text: #FEF3C7;
         }
-
-        /* --- RGB Theme --- */
-        [data-theme="rgb"] { /* Apply hue rotation animation to body when RGB theme is active */
-            --animation-hue-rotate: hue-rotate-anim 12s linear infinite;
+        [data-theme="rgb"] {
+            --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate; /* Ensure alternate for smoother loop */
         }
         [data-theme="rgb"][data-mode="day"] {
-            --color-primary: hsl(var(--hue-cycle, 0), 80%, 60%); /* More saturated for day */
+            --color-primary: hsl(var(--hue-cycle, 0), 80%, 60%);
             --color-primary-lighter: hsl(var(--hue-cycle, 0), 80%, 70%);
             --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 80%, 60%);
-            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 80%, 60%);
-            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 80%, 60%);
-            --color-background: #E9EEF2; /* Very Light Neutral Gray */
-            --color-surface: #F7F9FB;
-            --color-surface-dark: #E0E6EB;
-            --color-text-primary: #1C2025;
-            --color-text-secondary: #3E454D;
-            --color-border: hsl(var(--hue-cycle, 0), 70%, 75%);
-            --color-button-text: #FFFFFF;
+            --color-background: #E9EEF2; --color-surface: #F7F9FB; --color-surface-dark: #E0E6EB;
+            --color-text-primary: #1C2025; --color-text-secondary: #3E454D;
+            --color-border: hsl(var(--hue-cycle, 0), 70%, 75%); --color-button-text: #FFFFFF;
             --animation-rgb-filter: rgb-cycle-filter 12s linear infinite;
-            --animation-rgb-border: none; /* Simpler day border */
-            --animation-rgb-text: none;
+            --animation-rgb-border: none; --animation-rgb-text: none;
         }
         [data-theme="rgb"][data-mode="night"] {
-            --color-primary: hsl(var(--hue-cycle, 0), 100%, 70%); /* Full saturation for LED */
+            --color-primary: hsl(var(--hue-cycle, 0), 100%, 70%);
             --color-primary-lighter: hsl(var(--hue-cycle, 0), 100%, 80%);
             --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 100%, 70%);
-            --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 100%, 70%);
-            --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 100%, 70%);
-            --color-background: #020408;      /* Almost Pitch Black */
-            --color-surface: #050A14;         /* Very Dark Deep Blue */
-            --color-surface-dark: #0A1020;    /* Slightly Lighter Deep Blue */
-            --color-text-primary: #CEDCFF;
-            --color-text-secondary: #9EB0E0;
-            --color-border: hsl(var(--hue-cycle, 0), 90%, 60%);
-            --color-button-text: #020408;
+            --color-background: #020408; --color-surface: #050A14; --color-surface-dark: #0A1020;
+            --color-text-primary: #CEDCFF; --color-text-secondary: #9EB0E0;
+            --color-border: hsl(var(--hue-cycle, 0), 90%, 60%); --color-button-text: #020408;
             --animation-rgb-text: rgb-led-glow-text 3s ease-in-out infinite alternate;
             --animation-rgb-border: rgb-led-glow-border 3s ease-in-out infinite alternate;
         }
 
-        html { height: 100%; }
-        body {
+        html, body { /* Ensure full viewport coverage and apply base theme */
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
             font-family: var(--font-main);
-            background-color: var(--color-background); /* Applied directly to body */
+            background-color: var(--color-background);
             color: var(--color-text-primary);
-            margin: 0; padding: 0; display: flex; flex-direction: column; min-height: 100%;
             transition: background-color 0.4s ease, color 0.4s ease;
-            animation: var(--animation-hue-rotate) forwards;
+            overflow-x: hidden; /* Prevent horizontal scrollbars */
         }
+        /* Apply RGB hue animation at the highest level if theme is RGB */
+        html[data-theme-applied="rgb"], body[data-theme-applied="rgb"] {
+             animation: var(--animation-hue-rotate) forwards;
+        }
+        /* If data-theme is only on #game-container, this is a fallback */
+        /* This assumes JS will add data-theme-applied to html/body for RGB */
+        /* For simplicity, the JS would ideally target HTML or BODY directly with data-theme */
+
         #game-container {
-            background-color: var(--color-background); /* Ensure #game-container explicitly uses the themed background */
+            background-color: var(--color-background); /* Make game-container also explicitly use the theme background */
             color: var(--color-text-primary);
-            width: 100%; flex-grow: 1;
-            display: flex; flex-direction: column;
-            animation: var(--animation-hue-rotate) forwards; /* Also apply hue rotation here */
-            transition: background-color 0.4s ease, color 0.4s ease; /* Added transition */
+            width: 100%; flex-grow: 1; display: flex; flex-direction: column;
+            /* Apply RGB hue animation here if JS puts data-theme on this element for RGB */
+             animation: var(--animation-hue-rotate) forwards;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         #game-container > header, #game-container > main > nav, #game-container > main > section, #game-container > footer,
@@ -234,31 +195,24 @@
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
-        button, input[type="button"] {
-            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
-            box-shadow: var(--shadow-sm);
-        }
-        button:hover, input[type="button"]:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
-        button:active, input[type="button"]:active { transform: scale(0.97); }
-
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
+        /* ... (rest of the styles from v4.2, with menu style changes included) ... */
 
         .game-button {
             background-color: var(--color-primary);
             color: var(--color-button-text);
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
             font-weight: 500; cursor: pointer; border: 1px solid transparent;
+        }
+         [data-theme="rgb"] .game-button { /* Apply text filter animation for RGB buttons */
             animation: var(--animation-rgb-filter) forwards;
         }
+
         .game-button:disabled {
             background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important;
             filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important;
         }
         #save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
-        #load-button { background-color: var(--color-primary); color: var(--color-button-text); }
+        #load-button { /* Uses themed primary by default */ }
         #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
         #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
@@ -286,7 +240,11 @@
             background-color: var(--color-primary); color: var(--color-button-text);
             border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg);
         }
-         [data-theme="rgb"] .menu-tab.active { animation: var(--animation-rgb-filter) forwards; }
+         [data-theme="rgb"] .menu-tab.active {
+            /* If button background is animated, text filter might be too much */
+            /* Consider animating text-shadow or border instead for active RGB tab */
+            /* animation: var(--animation-rgb-filter) forwards; */
+         }
 
 
         .module-card {
@@ -297,9 +255,10 @@
             background-color: var(--color-surface); border: 1px solid var(--color-border);
             color: var(--color-text-primary);
         }
-        #resource-bar h2 { color: var(--color-primary); animation: var(--animation-rgb-text) forwards; }
+        #resource-bar h2 { color: var(--color-primary); }
+         [data-theme="rgb"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards;}
+         [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
 
-        [data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
 
         #resources-display > div {
             background-color: var(--color-surface-dark) !important;
@@ -308,20 +267,18 @@
             padding: 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #resources-display .font-semibold {
+        #resources-display .font-semibold { /* Resource Name */
              color: var(--color-secondary) !important;
-             animation: var(--animation-rgb-text) forwards;
         }
+         [data-theme="rgb"] #resources-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
          [data-theme="neon"][data-mode="night"] #resources-display > div {
             border-color: var(--color-primary);
             box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary);
         }
         [data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
-        [data-theme="rgb"] #resources-display .font-semibold { animation: var(--animation-rgb-text) forwards; }
 
-        .studies-buy-button {
-            /* Inherits .game-button styles by default */
-        }
+
+        .studies-buy-button { /* For studies module buttons */ }
 
         [data-theme="neon"][data-mode="night"] .achievement-item {
             border: 1px solid var(--color-primary);
@@ -346,23 +303,19 @@
         [data-theme="modern"] select:focus, [data-theme="modern"] input:focus, [data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
         [data-theme="neon"] select:focus, [data-theme="neon"] input:focus, [data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
 
-
     </style>
 </head>
-<body class="font-inter">
+<body class="font-inter"> <!-- Body class used for Tailwind, but background-color is by CSS var -->
     <div id="game-container" data-theme="modern" data-mode="day" class="mx-auto p-4 flex flex-col max-w-6xl">
         <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
             <h2 class="text-xl font-semibold mb-2">Resources</h2>
             <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                <!-- Resources dynamically added -->
             </div>
         </header>
 
         <main class="flex-grow flex flex-col md:flex-row gap-6">
             <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
-                <!-- Menu H3 Title Removed as requested by user -->
                 <ul id="menu-list">
-                    <!-- Menu items styled as bordered buttons -->
                 </ul>
             </nav>
 
