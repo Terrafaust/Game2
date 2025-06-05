@@ -1,8 +1,9 @@
-// modules/settings_ui_module/settings_ui_data.js (v1)
+// modules/settings_ui_module/settings_ui_data.js (v2 - New Themes)
 
 /**
  * @file settings_ui_data.js
  * @description Static data definitions for the Settings UI module.
+ * v2: Added Pink, RGB (animated), and Red&Yellow themes.
  */
 
 export const staticModuleData = {
@@ -10,7 +11,9 @@ export const staticModuleData = {
         { name: "Modern", id: "modern", modes: ["Day", "Night"], defaultMode: "day" },
         { name: "Neon", id: "neon", modes: ["Day", "Night"], defaultMode: "night" },
         { name: "Steampunk", id: "steampunk", modes: ["Day", "Night"], defaultMode: "day" },
-        // Add more themes as desired
+        { name: "Pink", id: "pink", modes: ["Day", "Night"], defaultMode: "day" },
+        { name: "RGB", id: "rgb", modes: ["Day", "Night"], defaultMode: "day" }, // RGB will have day/night variants for base non-animated colors
+        { name: "Red & Yellow", id: "redyellow", modes: ["Day", "Night"], defaultMode: "day" },
     ],
     languages: [ // Placeholder for language selection
         { id: "en", name: "English" },
@@ -18,13 +21,11 @@ export const staticModuleData = {
     ],
     ui: {
         settingsTabLabel: "Settings",
-        // Unlock condition for the Settings tab is a global flag `settingsTabUnlocked`
-        // which is set by the Market module.
         sections: {
             display: "Display & Theme",
             language: "Language (Placeholder)",
             gameActions: "Game Actions",
-            statistics: "Game Statistics (Basic)",
+            statistics: "Game Statistics", // Updated label slightly
             automation: "Automation (Coming Soon)",
             debug: "Debugging"
         }
