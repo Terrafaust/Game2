@@ -1,8 +1,9 @@
-// js/main.js (v9.10 - Diagnostic Log for coreUIManager)
+// js/main.js (v9.11 - Diagnostic Log for coreUpgradeManager)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.11: Added diagnostic log for coreUpgradeManager before initialization.
  * v9.10: Added diagnostic log for coreUIManager before initialization.
  * v9.9: Added diagnostic log for coreResourceManager before initialization.
  * v9.8: Fixed TypeError by correcting coreResourceManager import.
@@ -41,16 +42,15 @@ async function initializeGame() {
     coreGameStateManager.initialize();
     staticDataAggregator.initialize();
 
-    // --- DIAGNOSTIC LOG: Check coreResourceManager before calling initialize() ---
+    // --- DIAGNOSTIC LOGS for core systems ---
     console.log('[DEBUG Main] coreResourceManager before initialize:', coreResourceManager);
-    // --- END DIAGNOSTIC LOG ---
     coreResourceManager.initialize(); // Initialize resource manager
 
-    // --- DIAGNOSTIC LOG: Check coreUIManager before calling initialize() ---
     console.log('[DEBUG Main] coreUIManager before initialize:', coreUIManager);
-    // --- END DIAGNOSTIC LOG ---
-    coreUIManager.initialize(); // Initialize UI manager (This is line 37, assuming previous line was 36)
-    coreUpgradeManager.initialize();
+    coreUIManager.initialize(); // Initialize UI manager
+
+    console.log('[DEBUG Main] coreUpgradeManager before initialize:', coreUpgradeManager); // Line 38 (or near it)
+    coreUpgradeManager.initialize(); // Initialize upgrade manager (This is the potential error line)
 
 
     const initialTheme = globalSettingsManager.getSetting('theme');
@@ -97,7 +97,7 @@ async function initializeGame() {
                     resDef.isUnlocked,
                     resDef.hasProductionRate
                 );
-                loggingSystem.info("Main", `Core resource '${resDef.name}' (${resId}) defined.`); // Changed to use resId for logging consistency
+                loggingSystem.info("Main", `Core resource '${resDef.name}' (${resId}) defined.`);
             }
         }
     } else {
