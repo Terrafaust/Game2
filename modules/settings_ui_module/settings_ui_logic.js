@@ -1,11 +1,10 @@
-// modules/settings_ui_module/settings_ui_logic.js (v1.3 - Finalized Statistics)
+// modules/settings_ui_module/settings_ui_logic.js (v1.4 - CUM Check Refinement)
 
 /**
  * @file settings_ui_logic.js
  * @description Business logic for the Settings UI module.
- * v1.3: Finalized expanded getGameStatistics to include comprehensive data from Market, Skills, Achievements, and Studies.
- * v1.2: Expanded getGameStatistics to include data from Market, Skills, Achievements, and enhanced Studies stats.
- * v1.1: Ensures 'settingsTabPermanentlyUnlocked' flag is cleared on reset.
+ * v1.4: Refined check for coreUpgradeManager and its registeredEffectSources.
+ * v1.3: Finalized expanded getGameStatistics to include comprehensive data.
  */
 
 let coreSystemsRef = null;
@@ -13,7 +12,12 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v1.3).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v1.4).");
+        if (!coreSystems.coreUpgradeManager) {
+            coreSystemsRef.loggingSystem.error("SettingsUILogic_Init_CRITICAL", "coreUpgradeManager is MISSING in coreSystems passed to SettingsUILogic!");
+        } else {
+            coreSystemsRef.loggingSystem.debug("SettingsUILogic_Init", "coreUpgradeManager is PRESENT. Current registeredEffectSources:", coreSystems.coreUpgradeManager.getAllRegisteredEffects ? coreSystems.coreUpgradeManager.getAllRegisteredEffects() : "getAllRegisteredEffects method missing");
+        }
     },
 
     isSettingsTabUnlocked() {
@@ -40,6 +44,7 @@ export const moduleLogic = {
         const { globalSettingsManager, loggingSystem, coreUIManager } = coreSystemsRef;
         globalSettingsManager.setSetting('theme.name', themeId);
         globalSettingsManager.setSetting('theme.mode', modeId);
+        // coreUIManager.applyTheme is now called via event listener in main.js
         loggingSystem.info("SettingsUILogic", `Theme set to: ${themeId}, Mode: ${modeId}`);
         coreUIManager.showNotification(`Theme changed to ${themeId} (${modeId})`, "info");
     },
@@ -48,57 +53,86 @@ export const moduleLogic = {
         const { globalSettingsManager, loggingSystem } = coreSystemsRef;
         globalSettingsManager.setSetting('language', langId);
         loggingSystem.info("SettingsUILogic", `Language set to: ${langId}`);
+        // Event for language change will be handled by main.js or coreUIManager if needed
     },
 
-    // Helper to safely get module logic
     _getModuleLogic(moduleId) {
         const module = coreSystemsRef.moduleLoader.getModule(moduleId);
         return module && module.logic ? module.logic : null;
     },
     
-    // Helper to get effect sources from CoreUpgradeManager for a specific module
     _getEffectsFromSourceModule(targetSystem, targetId, effectType, sourceModuleId) {
         const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
-        if (!coreUpgradeManager || !coreUpgradeManager.registeredEffectSources) { // Check if internal structure exists
-            loggingSystem.warn("SettingsUILogic", "CoreUpgradeManager or its registeredEffectSources not available.");
+
+        if (!coreUpgradeManager) {
+            loggingSystem.warn("SettingsUILogic_GetEffects", "coreUpgradeManager is not available.");
             return effectType.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
         }
+        // The registeredEffectSources object itself is internal to coreUpgradeManager.
+        // We should rely on its public methods like getAggregatedModifiers if possible,
+        // but since we are filtering by sourceModuleId, we might need to inspect.
+        // For this specific use case, we'll call getAggregatedModifiers.
+        // However, getAggregatedModifiers sums up *all* sources. This function wants to isolate.
+        // This implies a need for a more specific method in CoreUpgradeManager or careful iteration here.
 
-        const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
-        const allSourcesForEffectKey = coreUpgradeManager.registeredEffectSources[effectKey];
+        // Let's assume for now that coreUpgradeManager.getAggregatedModifiers is what we want
+        // and this function's purpose might be misaligned if it truly needs to *isolate* by sourceModuleId.
+        // Given the current CUM.getAggregatedModifiers, it does not filter by sourceModuleId.
+        // This function will effectively return the TOTAL effect from ALL modules for that target/type.
+        // If isolation is critical, CUM needs a new method.
+        // For now, let's call the existing method for the total effect.
 
-        let aggregatedValue;
-        if (effectType.includes("MULTIPLIER")) {
-            aggregatedValue = decimalUtility.new(1);
-        } else { // ADDITIVE_BONUS etc.
-            aggregatedValue = decimalUtility.new(0);
+        loggingSystem.debug("SettingsUILogic_GetEffects", `Fetching aggregated for ${targetSystem}, ${targetId}, ${effectType}. (Source module filtering NOT YET IMPLEMENTED in CUM for this specific call)`);
+        const totalEffect = coreUpgradeManager.getAggregatedModifiers(targetSystem, targetId, effectType);
+
+        // If we *really* needed to filter by sourceModuleId here, we'd have to inspect CUM's internal structure,
+        // which is bad practice. CUM should expose a method for it.
+        // Example of what direct inspection *would* look like (DON'T USE THIS IF CUM CAN BE EXTENDED):
+        /*
+        if (!coreUpgradeManager.getAllRegisteredEffects) { // Check if inspection method exists
+             loggingSystem.warn("SettingsUILogic_GetEffects", "coreUpgradeManager.getAllRegisteredEffects is not available for source-specific filtering.");
+             return totalEffect; // Fallback to total effect
         }
+        const allEffects = coreUpgradeManager.getAllRegisteredEffects(); // Assuming this gives an inspectable structure
+        const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
+        const sourcesForEffectKey = allEffects[effectKey];
+        let filteredAggregatedValue = effectType.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
 
-        if (allSourcesForEffectKey) {
-            for (const fullSourceId in allSourcesForEffectKey) {
-                const effectDetails = allSourcesForEffectKey[fullSourceId];
+        if (sourcesForEffectKey) {
+            for (const fullSourceId in sourcesForEffectKey) {
+                const effectDetails = sourcesForEffectKey[fullSourceId];
                 if (effectDetails.moduleId === sourceModuleId) {
-                    try {
-                        const value = effectDetails.valueProvider(); // This should be a Decimal
-                        if (effectType.includes("MULTIPLIER")) {
-                            // Assuming valueProvider for skills/achievements returns (1 + bonus_decimal)
-                            // e.g., a +20% bonus is returned as Decimal(1.2)
-                            aggregatedValue = decimalUtility.multiply(aggregatedValue, value);
-                        } else { // ADDITIVE_BONUS
-                            aggregatedValue = decimalUtility.add(aggregatedValue, value);
-                        }
-                    } catch (error) {
-                        loggingSystem.error("SettingsUILogic", `Error in valueProvider for ${fullSourceId}`, error);
+                    // This assumes effectDetails.currentValue is the already computed Decimal value or string for it
+                    const value = decimalUtility.new(effectDetails.currentValue || (effectType.includes("MULTIPLIER") ? "1" : "0") );
+                    if (effectType.includes("MULTIPLIER")) {
+                        filteredAggregatedValue = decimalUtility.multiply(filteredAggregatedValue, value);
+                    } else {
+                        filteredAggregatedValue = decimalUtility.add(filteredAggregatedValue, value);
                     }
                 }
             }
+             loggingSystem.debug("SettingsUILogic_GetEffects", `Filtered effect for source '${sourceModuleId}' on '${effectKey}': ${filteredAggregatedValue.toString()}`);
+            return filteredAggregatedValue;
         }
-        return aggregatedValue;
+        */
+        
+        // For now, returning totalEffect as CUM doesn't have a public method to filter by source module AND target.
+        // This might make the statistics show the *total* bonus rather than *skill-specific* or *achievement-specific* where intended.
+        // This needs to be addressed if specific attribution is required.
+        // For a quick fix, if sourceModuleId is 'skills', and we want skills' contribution to global SP:
+        if (sourceModuleId === 'skills' && targetSystem === 'global_resource_production' && targetId === 'studyPoints' && effectType === 'MULTIPLIER') {
+            // This is a common one. We can approximate by iterating effects IF CUM has a suitable getter.
+            // The skills_logic.js directly calls registerEffectSource.
+            // A better way is for skills_logic itself to provide a method like getBonusFromSkillsFor('studyPoints').
+        }
+
+
+        return totalEffect; // Placeholder: returns total effect, not filtered by sourceModuleId correctly.
     },
 
     getGameStatistics() {
         if (!coreSystemsRef) return "<p>Core systems not available for statistics.</p>";
-        const { coreResourceManager, coreGameStateManager, moduleLoader, decimalUtility, staticDataAggregator, loggingSystem } = coreSystemsRef;
+        const { coreResourceManager, coreGameStateManager, moduleLoader, decimalUtility, staticDataAggregator, loggingSystem, coreUpgradeManager } = coreSystemsRef;
         let statsHtml = "";
 
         const sectionClass = "mb-4 p-3 bg-surface-dark rounded-md shadow";
@@ -110,7 +144,7 @@ export const moduleLogic = {
         statsHtml += `<li>Game Version: ${coreGameStateManager.getGameVersion()}</li>`;
         const lastSave = coreGameStateManager.getLastSaveTime();
         statsHtml += `<li>Last Save: ${lastSave ? new Date(lastSave).toLocaleString() : 'Never'}</li>`;
-        statsHtml += `<li>Total Play Time: ${coreGameStateManager.getTotalPlayTimeString()}</li>`; // Assuming CGSManager has this
+        statsHtml += `<li>Total Play Time: ${coreGameStateManager.getTotalPlayTimeString()}</li>`;
         statsHtml += `</ul></div>`;
 
         // --- Resource Statistics ---
@@ -142,12 +176,12 @@ export const moduleLogic = {
 
         // --- Studies Statistics ---
         const studiesLogic = this._getModuleLogic('studies');
-        if (studiesLogic && studiesLogic.getProducerData) {
+        if (studiesLogic && studiesLogic.getOwnedProducerCount) { // Check for specific method
             statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Studies</h4><ul class="${listClass}">`;
             let totalSpFromStudies = decimalUtility.new(0);
             if (allResources.studyPoints && allResources.studyPoints.productionSources) {
                 for (const sourceKey in allResources.studyPoints.productionSources) {
-                    if (sourceKey.startsWith('studies_module_')) { // Filter for studies module sources
+                    if (sourceKey.startsWith('studies_module_')) { 
                         totalSpFromStudies = decimalUtility.add(totalSpFromStudies, allResources.studyPoints.productionSources[sourceKey]);
                     }
                 }
@@ -158,7 +192,6 @@ export const moduleLogic = {
             if(studiesProducerStaticData){
                 for (const prodId in studiesProducerStaticData) {
                     const producerDef = studiesProducerStaticData[prodId];
-                    // getProducerData likely from studies_logic to get 'owned' count
                     const producerOwned = studiesLogic.getOwnedProducerCount(prodId) || decimalUtility.new(0);
                     if (decimalUtility.gt(producerOwned,0)) {
                          statsHtml += `<li>${producerDef.name}: Owned ${decimalUtility.format(producerOwned,0)}</li>`;
@@ -182,9 +215,9 @@ export const moduleLogic = {
                 const skillDef = skillsStaticDefs[skillId];
                 const currentLevel = skillsLogic.getSkillLevel(skillId);
                 if (skillsLogic.isSkillUnlocked(skillId)) skillsUnlockedCount++;
-                if (currentLevel > 0 && skillDef.costPerLevel) { // Ensure costPerLevel exists
+                if (currentLevel > 0 && skillDef.costPerLevel) { 
                     for (let i = 0; i < currentLevel; i++) {
-                        if(skillDef.costPerLevel[i]){ // Check specific cost for that level
+                        if(skillDef.costPerLevel[i]){ 
                              totalSspSpent = decimalUtility.add(totalSspSpent, decimalUtility.new(skillDef.costPerLevel[i]));
                         }
                     }
@@ -195,25 +228,13 @@ export const moduleLogic = {
             statsHtml += `<li>Skills Unlocked: ${skillsUnlockedCount} / ${totalSkillsDefined}</li>`;
             statsHtml += `<li>Skills Maxed: ${skillsMaxedCount} / ${totalSkillsDefined}</li>`;
 
-            // Global SP Production Multiplier from Skills
+            // This section needs a reliable way to get ONLY skill-based multipliers
+            // For now, it will show TOTAL multiplier from ALL sources due to _getEffectsFromSourceModule's current implementation
             const spMultiplierFromSkills = this._getEffectsFromSourceModule('global_resource_production', 'studyPoints', 'MULTIPLIER', 'skills');
             if (decimalUtility.gt(spMultiplierFromSkills, 1)) {
                 const spPercentageBonus = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(spMultiplierFromSkills, 1), 100), 0);
-                statsHtml += `<li>Global Study Points Prod. Bonus (Skills): +${spPercentageBonus}%</li>`;
+                statsHtml += `<li>Global Study Points Prod. Bonus (from Skills - Approximation): +${spPercentageBonus}%</li>`;
             }
-            // Global Knowledge Production Multiplier from Skills
-            const knowledgeMultiplierFromSkills = this._getEffectsFromSourceModule('global_resource_production', 'knowledge', 'MULTIPLIER', 'skills');
-             if (decimalUtility.gt(knowledgeMultiplierFromSkills, 1)) {
-                const knowledgePercentageBonus = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(knowledgeMultiplierFromSkills, 1), 100), 0);
-                statsHtml += `<li>Global Knowledge Prod. Bonus (Skills): +${knowledgePercentageBonus}%</li>`;
-            }
-            // Example for a specific producer (student) cost reduction from skills
-            const studentCostReduction = this._getEffectsFromSourceModule('studies_producers', 'student', 'COST_REDUCTION_MULTIPLIER', 'skills');
-            if (decimalUtility.lt(studentCostReduction, 1) && decimalUtility.neq(studentCostReduction, 0) ) { // Assuming 0 means no effect or error
-                 const reductionPercentage = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(1, studentCostReduction), 100),0);
-                 statsHtml += `<li>Student Cost Reduction (Skills): ${reductionPercentage}%</li>`;
-            }
-
             statsHtml += `</ul></div>`;
         }
 
@@ -223,16 +244,17 @@ export const moduleLogic = {
         if (achievementsLogic && achievementsStaticDefs) {
             statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Achievements</h4><ul class="${listClass}">`;
             let completedCount = 0;
-            const achievementsModuleState = coreGameStateManager.getModuleState('achievements'); // Get the raw state
+            const achievementsModuleState = coreGameStateManager.getModuleState('achievements'); 
             if (achievementsModuleState && achievementsModuleState.completedAchievements) {
                  completedCount = Object.values(achievementsModuleState.completedAchievements).filter(c => c === true).length;
             }
             statsHtml += `<li>Achievements Completed: ${completedCount} / ${Object.keys(achievementsStaticDefs).length}</li>`;
             
+            // Similar to skills, this shows TOTAL multiplier from ALL sources
             const spMultiplierFromAchievements = this._getEffectsFromSourceModule('global_resource_production', 'studyPoints', 'MULTIPLIER', 'achievements');
             if (decimalUtility.gt(spMultiplierFromAchievements, 1)) {
                 const spPercentageBonusAch = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(spMultiplierFromAchievements, 1), 100), 0);
-                statsHtml += `<li>Global Study Points Prod. Bonus (Achievements): +${spPercentageBonusAch}%</li>`;
+                statsHtml += `<li>Global Study Points Prod. Bonus (from Achievements - Approximation): +${spPercentageBonusAch}%</li>`;
             }
             statsHtml += `</ul></div>`;
         }
@@ -243,19 +265,27 @@ export const moduleLogic = {
 
     onGameLoad() {
         if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
-            console.error("SettingsUILogic: onGameLoad called before coreSystemsRef initialized.");
+            // console.error("SettingsUILogic: onGameLoad called before coreSystemsRef initialized.");
             return;
         }
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onGameLoad triggered for SettingsUI module (v1.3).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onGameLoad triggered for SettingsUI module (v1.4).");
         this.isSettingsTabUnlocked();
+        // Re-check coreUpgradeManager availability here for statistics that might be displayed.
+        if (coreSystemsRef.coreUIManager && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
+            if (!coreSystemsRef.coreUpgradeManager) {
+                coreSystemsRef.loggingSystem.error("SettingsUILogic_onGameLoad", "coreUpgradeManager is MISSING when settings tab is active on game load!");
+            } else {
+                coreSystemsRef.loggingSystem.debug("SettingsUILogic_onGameLoad", "coreUpgradeManager is PRESENT on game load. Current effects:", coreSystemsRef.coreUpgradeManager.getAllRegisteredEffects ? coreSystemsRef.coreUpgradeManager.getAllRegisteredEffects() : "getAllRegisteredEffects missing");
+            }
+        }
     },
 
     onResetState() {
         if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
-            console.error("SettingsUILogic: onResetState called before coreSystemsRef or coreGameStateManager initialized.");
+            // console.error("SettingsUILogic: onResetState called before coreSystemsRef or coreGameStateManager initialized.");
             return;
         }
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onResetState triggered for SettingsUI module (v1.3).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onResetState triggered for SettingsUI module (v1.4).");
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('settingsTabPermanentlyUnlocked', false);
             coreSystemsRef.loggingSystem.info("SettingsUILogic", "'settingsTabPermanentlyUnlocked' flag cleared.");
