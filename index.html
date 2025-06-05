@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Incremental Game</title>
-    <link rel="stylesheet" href="main.css"> <!-- main.css is mostly a placeholder -->
+    <link rel="stylesheet" href="main.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -14,7 +14,7 @@
                     fontFamily: {
                         inter: ['Inter', 'sans-serif'],
                     },
-                    colors: { // These are base Tailwind definitions, CSS vars are primary for theming
+                    colors: { 
                         tw_primary_base: '#4F46E5', tw_secondary_base: '#EC4899',
                         tw_accentOne_base: '#10B981', tw_accentTwo_base: '#F59E0B',
                         tw_background_base: '#111827', tw_surface_base: '#1F2937',
@@ -27,7 +27,7 @@
         };
     </script>
     <style>
-        @keyframes rgb-cycle-filter { /* For text, borders via filter */
+        @keyframes rgb-cycle-filter { 
             0% { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); }
             100% { filter: hue-rotate(360deg) saturate(1.5) brightness(1.1); }
         }
@@ -55,7 +55,7 @@
                 animation-timing-function: ease-in-out;
             }
         }
-         @keyframes hue-rotate-anim { /* Drives the --hue-cycle variable */
+         @keyframes hue-rotate-anim { 
             0% { --hue-cycle: 0; }
             100% { --hue-cycle: 360; }
         }
@@ -77,7 +77,6 @@
         }
 
         /* --- Theme CSS Variable Definitions --- */
-        /* Modern Day is effectively the :root default */
         [data-theme="modern"][data-mode="night"] {
             --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
             --color-accent-one: #34D399; --color-accent-two: #FBBF24;
@@ -135,7 +134,6 @@
             --color-border: #B91C1C; --color-button-text: #FEF3C7;
         }
         [data-theme="rgb"] {
-            /* --animation-hue-rotate is applied to #game-container directly by this rule */
              --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate;
         }
         [data-theme="rgb"][data-mode="day"] {
@@ -162,21 +160,20 @@
         html {
             width: 100%; height: 100%; margin: 0; padding: 0;
             font-family: var(--font-main);
-            background-color: var(--color-background); /* Base background for the entire page */
+            background-color: var(--color-background); 
             color: var(--color-text-primary);
             transition: background-color 0.4s ease, color 0.4s ease;
             overflow-x: hidden;
         }
         body {
-            width: 100%; min-height: 100%; /* Use min-height to allow content to grow */
+            width: 100%; min-height: 100%; 
             margin: 0; padding: 0;
-            display: flex; /* Make body a flex container to help #game-container fill it */
+            display: flex; 
             flex-direction: column;
-            background-color: var(--color-background); /* Ensure body also gets themed background */
+            background-color: var(--color-background); 
             color: var(--color-text-primary);
             transition: background-color 0.4s ease, color 0.4s ease;
         }
-         /* If #game-container has the data-theme attributes, it drives the animation of --hue-cycle */
         #game-container[data-theme="rgb"] {
              animation: var(--animation-hue-rotate) forwards;
         }
@@ -186,11 +183,9 @@
             background-color: var(--color-background);
             color: var(--color-text-primary);
             width: 100%; flex-grow: 1; display: flex; flex-direction: column;
-            /* animation: var(--animation-hue-rotate) forwards; */ /* Animation is now on #game-container[data-theme="rgb"] */
             transition: background-color 0.4s ease, color 0.4s ease;
         }
 
-        /* Content wrapper for centered layout */
         .content-wrapper {
             width: 100%;
             max-width: 72rem; /* max-w-6xl */
@@ -202,16 +197,16 @@
             flex-grow: 1;
         }
 
-
+        /* Transitions for theme changes */
         #game-container > .content-wrapper > header,
         #game-container > .content-wrapper > main > nav,
         #game-container > .content-wrapper > main > section,
         #game-container > .content-wrapper > footer,
-        .modal-content, .tooltip, .module-card {
+        .modal-content, .tooltip, .module-card, 
+        #resources-display > div, select, input, textarea { /* Added more elements for smooth theme transition */
             transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
         }
 
-        /* ... (rest of the styles for buttons, scrollbar, menu, etc. from v4.3) ... */
         button, input[type="button"] {
             transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
             box-shadow: var(--shadow-sm);
@@ -230,7 +225,7 @@
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
             font-weight: 500; cursor: pointer; border: 1px solid transparent;
         }
-         #game-container[data-theme="rgb"] .game-button { /* Apply text filter animation for RGB buttons */
+         #game-container[data-theme="rgb"] .game-button { 
             animation: var(--animation-rgb-filter) forwards;
         }
 
@@ -243,8 +238,48 @@
         #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
         #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
-        .tooltip { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); }
-        .modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); }
+        .tooltip { 
+            position: fixed; /* Changed from absolute for better viewport relation */
+            background-color: var(--color-surface-dark); 
+            color: var(--color-text-primary); 
+            border: 1px solid var(--color-border); 
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            z-index: 10001; /* Ensure tooltip is above modal backdrop but below modal content */
+            display: none; /* Initially hidden */
+            pointer-events: none; /* So it doesn't interfere with mouse events on underlying elements */
+        }
+        
+        /* Modal Styling */
+        #modal-container {
+            position: fixed; /* Cover the whole screen */
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; /* For centering .modal-content */
+            align-items: center;
+            justify-content: center;
+            z-index: 10000; /* High z-index to be on top */
+            pointer-events: none; /* Allow clicks through container if no modal is active */
+        }
+        #modal-container > .modal.active { /* When modal is active */
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent backdrop */
+            width: 100%;
+            height: 100%;
+            pointer-events: auto; /* Capture clicks when modal is active */
+        }
+        .modal-content { 
+            background-color: var(--color-surface); 
+            color: var(--color-text-primary); 
+            border: 1px solid var(--color-border); 
+            padding: 1.5rem; /* 24px */
+            border-radius: var(--border-radius-xl); /* 0.75rem */
+            box-shadow: var(--shadow-xl);
+            width: 90%; /* Responsive width */
+            max-width: 32rem; /* max-w-md, e.g., 512px */
+            z-index: 10001; /* Above backdrop */
+            /* Removed position:relative, top, left, transform as #modal-container handles centering */
+        }
+
 
         #main-menu {
             background-color: transparent !important; border: none !important;
@@ -268,14 +303,13 @@
             border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg);
         }
          #game-container[data-theme="rgb"] .menu-tab.active {
-            /* Consider specific RGB animation for active tab */
          }
 
         .module-card {
             background-color: var(--color-surface-dark); border: 1px solid var(--color-border);
         }
 
-        #resource-bar, #main-content, footer { /* These are inside .content-wrapper */
+        #resource-bar, #main-content, footer { 
             background-color: var(--color-surface); border: 1px solid var(--color-border);
             color: var(--color-text-primary);
         }
@@ -289,9 +323,8 @@
             color: var(--color-text-primary) !important;
             border: 1px solid var(--color-border) !important;
             padding: 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
-            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease;
         }
-        #resources-display .font-semibold { /* Resource Name */
+        #resources-display .font-semibold { 
              color: var(--color-secondary) !important;
         }
          #game-container[data-theme="rgb"] #resources-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
@@ -301,8 +334,6 @@
         }
         #game-container[data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
 
-
-        .studies-buy-button { /* For studies module buttons */ }
 
         #game-container[data-theme="neon"][data-mode="night"] .achievement-item {
             border: 1px solid var(--color-primary);
@@ -335,8 +366,8 @@
     </style>
 </head>
 <body class="font-inter">
-    <div id="game-container" data-theme="modern" data-mode="day"> <!-- Removed mx-auto, p-4, max-w-6xl, flex properties -->
-        <div class="content-wrapper mx-auto max-w-6xl w-full flex flex-col flex-grow p-4"> <!-- New wrapper for centered content -->
+    <div id="game-container" data-theme="modern" data-mode="day"> 
+        <div class="content-wrapper mx-auto max-w-6xl w-full flex flex-col flex-grow p-4"> 
             <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
                 <h2 class="text-xl font-semibold mb-2">Resources</h2>
                 <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -360,10 +391,20 @@
                 <button id="reset-button" class="game-button">Hard Reset</button>
                 <button id="dev-tools-button" class="game-button">Developer Tools</button>
             </footer>
-        </div> <!-- End of .content-wrapper -->
+        </div> 
     </div>
 
-    <div id="modal-container"></div>
+    <!-- Modal container is now a direct child of body for proper fixed positioning -->
+    <div id="modal-container">
+        <!-- Example Modal Structure (coreUIManager will generate this) -->
+        <!-- 
+        <div id="active-modal" class="modal active">
+            <div class="modal-content">
+                ... modal header, body, footer ...
+            </div>
+        </div> 
+        -->
+    </div>
     <div id="tooltip-container" class="tooltip"></div>
     <div id="notification-area" class="fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full"></div>
 
