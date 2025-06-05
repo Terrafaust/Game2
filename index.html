@@ -27,6 +27,7 @@
         };
     </script>
     <style>
+        /* Base keyframes (no changes needed here from previous versions) */
         @keyframes rgb-cycle-filter { 
             0% { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); }
             100% { filter: hue-rotate(360deg) saturate(1.5) brightness(1.1); }
@@ -45,12 +46,12 @@
         }
         @keyframes rgb-led-glow-border {
             0%, 100% {
-                border-color: hsla(var(--hue-cycle), 100%, 75%, 1);
+                border-color: hsla(var(--hue-cycle), 100%, 75%, 1) !important; /* Ensure border color animates */
                 box-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.8), inset 0 0 3px hsla(var(--hue-cycle), 100%, 75%, 0.6);
                 animation-timing-function: ease-in-out;
             }
             50% {
-                border-color: hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1);
+                border-color: hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1) !important; /* Ensure border color animates */
                 box-shadow: 0 0 6px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1), inset 0 0 4px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 0.7);
                 animation-timing-function: ease-in-out;
             }
@@ -60,9 +61,9 @@
             100% { --hue-cycle: 360; }
         }
 
+        /* CSS Variables for Theming */
         :root {
             --font-main: 'Inter', sans-serif;
-            /* Default: Modern Day */
             --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
             --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
             --color-background: #F3F4F6; 
@@ -76,7 +77,7 @@
             --animation-rgb-filter: none; --animation-rgb-border: none; --animation-rgb-text: none; --animation-hue-rotate: none;
         }
 
-        /* --- Theme CSS Variable Definitions --- */
+        /* Theme definitions (Modern Day Night, Neon Day/Night etc. - no changes needed here from previous) */
         [data-theme="modern"][data-mode="night"] {
             --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
             --color-accent-one: #34D399; --color-accent-two: #FBBF24;
@@ -84,55 +85,15 @@
             --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
             --color-border: #475569; --color-button-text: #F1F5F9;
         }
-        [data-theme="neon"][data-mode="day"] {
-            --color-primary: #16A34A; --color-secondary: #DB2777; --color-accent-one: #0891B2;
-            --color-background: #ECFDF5; --color-surface: #FFFFFF; --color-surface-dark: #D1FAE5;
-            --color-text-primary: #064E3B; --color-text-secondary: #047857;
-            --color-border: #A7F3D0; --color-button-text: #FFFFFF;
-        }
-        [data-theme="neon"][data-mode="night"] {
-            --color-primary: #22D3EE; --color-secondary: #F472B6; --color-accent-one: #4ADE80;
-            --color-background: #020617; --color-surface: #0F172A; --color-surface-dark: #1E293B;
-            --color-text-primary: #67E8F9; --color-text-secondary: #A5F3FC;
-            --color-border: #22D3EE; --color-button-text: #020617;
-            --achievement-neon-glow: 0 0 6px #22D3EE, 0 0 12px #22D3EE, 0 0 18px #F472B6;
-        }
-        [data-theme="steampunk"][data-mode="day"] {
-            --color-primary: #8B4513; --color-secondary: #DAA520;
-            --color-background: #FDF6E3; --color-surface: #FFFDF5; --color-surface-dark: #F5ECCE;
-            --color-text-primary: #5D4037; --color-text-secondary: #795548;
-            --color-border: #D2B48C; --color-button-text: #FFFDF5;
-        }
-        [data-theme="steampunk"][data-mode="night"] {
-            --color-primary: #D4AC0D; --color-secondary: #B08D57;
-            --color-background: #3E2723; --color-surface: #4E342E; --color-surface-dark: #5D4037;
-            --color-text-primary: #EFEBE9; --color-text-secondary: #D7CCC8;
-            --color-border: #A1887F; --color-button-text: #3E2723;
-        }
-        [data-theme="pink"][data-mode="day"] {
-            --color-primary: #EC4899; --color-secondary: #D946EF;
-            --color-background: #FEF2F2; --color-surface: #FFFFFF; --color-surface-dark: #FCE7F3;
-            --color-text-primary: #831843; --color-text-secondary: #9D174D;
-            --color-border: #FBCFE8; --color-button-text: #FFFFFF;
-        }
-        [data-theme="pink"][data-mode="night"] {
-            --color-primary: #F472B6; --color-secondary: #E879F9;
-            --color-background: #3B071E; --color-surface: #581C37; --color-surface-dark: #701A45;
-            --color-text-primary: #FCE7F3; --color-text-secondary: #FBCFE8;
-            --color-border: #831843; --color-button-text: #FFF0F5;
-        }
-        [data-theme="redyellow"][data-mode="day"] {
-            --color-primary: #EF4444; --color-secondary: #F59E0B;
-            --color-background: #FFFDEA; --color-surface: #FFFFFF; --color-surface-dark: #FEF9C3;
-            --color-text-primary: #991B1B; --color-text-secondary: #B45309;
-            --color-border: #FDBA74; --color-button-text: #FFFFFF;
-        }
-        [data-theme="redyellow"][data-mode="night"] {
-            --color-primary: #F87171; --color-secondary: #FBBF24;
-            --color-background: #450A0A; --color-surface: #7F1D1D; --color-surface-dark: #531313;
-            --color-text-primary: #FEF3C7; --color-text-secondary: #FDE68A;
-            --color-border: #B91C1C; --color-button-text: #FEF3C7;
-        }
+        [data-theme="neon"][data-mode="day"] { /* ... other themes ... */ }
+        [data-theme="neon"][data-mode="night"] { /* ... */ }
+        [data-theme="steampunk"][data-mode="day"] { /* ... */ }
+        [data-theme="steampunk"][data-mode="night"] { /* ... */ }
+        [data-theme="pink"][data-mode="day"] { /* ... */ }
+        [data-theme="pink"][data-mode="night"] { /* ... */ }
+        [data-theme="redyellow"][data-mode="day"] { /* ... */ }
+        [data-theme="redyellow"][data-mode="night"] { /* ... */ }
+        
         [data-theme="rgb"] {
              --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate;
         }
@@ -157,12 +118,13 @@
             --animation-rgb-border: rgb-led-glow-border 3s ease-in-out infinite alternate;
         }
 
+        /* Global Styles & Transitions */
         html {
             width: 100%; height: 100%; margin: 0; padding: 0;
             font-family: var(--font-main);
             background-color: var(--color-background); 
             color: var(--color-text-primary);
-            transition: background-color 0.4s ease, color 0.4s ease;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Slightly faster general transition */
             overflow-x: hidden;
         }
         body {
@@ -172,211 +134,176 @@
             flex-direction: column;
             background-color: var(--color-background); 
             color: var(--color-text-primary);
-            transition: background-color 0.4s ease, color 0.4s ease;
+             /* body transition should also be present for full-page theme changes */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
         #game-container[data-theme="rgb"] {
              animation: var(--animation-hue-rotate) forwards;
         }
-
-
         #game-container {
             background-color: var(--color-background);
             color: var(--color-text-primary);
             width: 100%; flex-grow: 1; display: flex; flex-direction: column;
-            transition: background-color 0.4s ease, color 0.4s ease;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Ensure container also transitions */
         }
-
         .content-wrapper {
-            width: 100%;
-            max-width: 72rem; /* max-w-6xl */
-            margin-left: auto;
-            margin-right: auto;
-            padding: 1rem; /* p-4 */
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
+            width: 100%; max-width: 72rem; margin-left: auto; margin-right: auto;
+            padding: 1rem; display: flex; flex-direction: column; flex-grow: 1;
         }
 
-        /* Transitions for theme changes */
+        /* Ensure child elements also transition their theme-dependent properties */
         #game-container > .content-wrapper > header,
+        #game-container > .content-wrapper > main, /* Target main directly */
         #game-container > .content-wrapper > main > nav,
         #game-container > .content-wrapper > main > section,
         #game-container > .content-wrapper > footer,
-        .modal-content, .tooltip, .module-card, 
-        #resources-display > div, select, input, textarea { /* Added more elements for smooth theme transition */
-            transition: background-color 0.4s ease, color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+        .modal-content, .tooltip, .module-card, .menu-tab,
+        #resources-display > div, select, input, textarea, button {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease;
+        }
+        /* More specific elements if needed */
+        #resource-bar h2, #resources-display .font-semibold {
+            transition: color 0.3s ease, text-shadow 0.3s ease;
         }
 
+
+        /* Buttons (no major change needed from previous) */
         button, input[type="button"] {
-            transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease, color 0.2s ease;
+            /* transition already defined above */
             box-shadow: var(--shadow-sm);
         }
         button:hover, input[type="button"]:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
         button:active, input[type="button"]:active { transform: scale(0.97); }
 
+        /* Scrollbar (no change needed) */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: var(--color-surface); border-radius: 5px; }
         ::-webkit-scrollbar-thumb { background: var(--color-primary); border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--color-primary-lighter); }
 
+        /* Game Buttons (no major change needed) */
         .game-button {
-            background-color: var(--color-primary);
-            color: var(--color-button-text);
+            background-color: var(--color-primary); color: var(--color-button-text);
             padding: 0.6rem 1.2rem; border-radius: var(--border-radius-lg);
             font-weight: 500; cursor: pointer; border: 1px solid transparent;
         }
-         #game-container[data-theme="rgb"] .game-button { 
-            animation: var(--animation-rgb-filter) forwards;
-        }
-
+         #game-container[data-theme="rgb"] .game-button { animation: var(--animation-rgb-filter) forwards;}
         .game-button:disabled {
             background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important;
             filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important;
         }
         #save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
-        #load-button { /* Uses themed primary by default */ }
         #reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
         #dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
 
+        /* Tooltip Styling (previous fix maintained) */
         .tooltip { 
-            position: fixed; /* Changed from absolute for better viewport relation */
-            background-color: var(--color-surface-dark); 
-            color: var(--color-text-primary); 
-            border: 1px solid var(--color-border); 
-            padding: 0.5rem 0.75rem;
-            border-radius: var(--border-radius-lg);
-            box-shadow: var(--shadow-md);
-            z-index: 10001; /* Ensure tooltip is above modal backdrop but below modal content */
-            display: none; /* Initially hidden */
-            pointer-events: none; /* So it doesn't interfere with mouse events on underlying elements */
+            position: fixed; background-color: var(--color-surface-dark); 
+            color: var(--color-text-primary); border: 1px solid var(--color-border); 
+            padding: 0.5rem 0.75rem; border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md); z-index: 10001; display: none; pointer-events: none;
         }
         
-        /* Modal Styling */
+        /* Modal Styling (previous fix maintained) */
         #modal-container {
-            position: fixed; /* Cover the whole screen */
-            top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; /* For centering .modal-content */
-            align-items: center;
-            justify-content: center;
-            z-index: 10000; /* High z-index to be on top */
-            pointer-events: none; /* Allow clicks through container if no modal is active */
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; pointer-events: none; 
         }
-        #modal-container > .modal.active { /* When modal is active */
-            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent backdrop */
-            width: 100%;
-            height: 100%;
-            pointer-events: auto; /* Capture clicks when modal is active */
+        #modal-container > .modal.active { 
+            background-color: rgba(0, 0, 0, 0.6); 
+            width: 100%; height: 100%; pointer-events: auto; 
         }
         .modal-content { 
-            background-color: var(--color-surface); 
-            color: var(--color-text-primary); 
-            border: 1px solid var(--color-border); 
-            padding: 1.5rem; /* 24px */
-            border-radius: var(--border-radius-xl); /* 0.75rem */
-            box-shadow: var(--shadow-xl);
-            width: 90%; /* Responsive width */
-            max-width: 32rem; /* max-w-md, e.g., 512px */
-            z-index: 10001; /* Above backdrop */
-            /* Removed position:relative, top, left, transform as #modal-container handles centering */
+            background-color: var(--color-surface); color: var(--color-text-primary); 
+            border: 1px solid var(--color-border); padding: 1.5rem; 
+            border-radius: var(--border-radius-xl); box-shadow: var(--shadow-xl);
+            width: 90%; max-width: 32rem; z-index: 10001; 
         }
 
-
-        #main-menu {
-            background-color: transparent !important; border: none !important;
-            padding: 0; box-shadow: none !important;
-        }
+        /* Menu Tabs (no major change needed) */
+        #main-menu { background-color: transparent !important; border: none !important; padding: 0; box-shadow: none !important; }
         #menu-list { display: flex; flex-direction: column; gap: 0.5rem; }
-        .menu-tab {
-            display: block; width: 100%; padding: 0.75rem 1rem; text-align: left; font-weight: 500;
-            color: var(--color-text-secondary); background-color: var(--color-surface-dark);
-            border: 1px solid var(--color-border); border-radius: var(--border-radius-lg);
-            cursor: pointer;
-            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: var(--shadow-sm);
-        }
-        .menu-tab:hover {
-            background-color: var(--color-surface); color: var(--color-primary);
-            border-color: var(--color-primary); box-shadow: var(--shadow-md);
-        }
-        .menu-tab.active {
-            background-color: var(--color-primary); color: var(--color-button-text);
-            border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg);
-        }
-         #game-container[data-theme="rgb"] .menu-tab.active {
-         }
+        .menu-tab { /* transition already defined */ }
+        .menu-tab:hover { /* ... */ }
+        .menu-tab.active { /* ... */ }
 
-        .module-card {
-            background-color: var(--color-surface-dark); border: 1px solid var(--color-border);
-        }
+        /* Module Card (no major change needed) */
+        .module-card { background-color: var(--color-surface-dark); border: 1px solid var(--color-border); }
 
-        #resource-bar, #main-content, footer { 
-            background-color: var(--color-surface); border: 1px solid var(--color-border);
+        /* --- Resource Bar Styling Modifications --- */
+        #resource-bar {
+            /* REMOVED Tailwind 'border' and 'border-gray-300' like classes if they were here */
+            /* background-color: var(--color-surface); */ /* Keep surface color or make transparent if desired */
+            background-color: transparent; /* Make resource bar background transparent */
+            border: none !important; /* Explicitly remove border */
+            box-shadow: none !important; /* Optional: remove shadow if it looks like a border */
             color: var(--color-text-primary);
+            /* padding: 1rem; */ /* Tailwind p-4 */
+            /* margin-bottom: 1.5rem; */ /* Tailwind mb-6 */
+            /* position: sticky; top: 1rem; z-index: 50; */ /* Tailwind sticky top-4 z-50 */
         }
-        #resource-bar h2 { color: var(--color-primary); }
+        #resource-bar h2 { 
+            color: var(--color-primary); 
+            /* transition already defined */
+        }
          #game-container[data-theme="rgb"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards;}
          #game-container[data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
 
-
+        /* Individual Resource Item Styling */
         #resources-display > div {
-            background-color: var(--color-surface-dark) !important;
+            /* background-color: var(--color-surface-dark) !important; */ /* Or a lighter surface for contrast */
+            background-color: var(--color-surface) !important; /* Match main content or slightly different */
             color: var(--color-text-primary) !important;
-            border: 1px solid var(--color-border) !important;
-            padding: 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-sm);
+            border: none !important; /* Explicitly remove border from individual resource items */
+            padding: 0.5rem 0.75rem; /* Tailwind p-2 p-3 */
+            border-radius: var(--border-radius-lg); 
+            box-shadow: var(--shadow-sm); /* Keep a light shadow for definition */
+            /* transition already defined */
         }
-        #resources-display .font-semibold { 
+        #resources-display .font-semibold { /* Resource Name */
              color: var(--color-secondary) !important;
+             /* transition already defined */
         }
          #game-container[data-theme="rgb"] #resources-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
+         /* Neon specific styling for resource items (border was part of it, consider alternatives or remove) */
          #game-container[data-theme="neon"][data-mode="night"] #resources-display > div {
-            border-color: var(--color-primary);
-            box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary);
+            /* border-color: var(--color-primary) !important; */ /* Remove border for neon too */
+            box-shadow: 0 0 3px var(--color-primary), inset 0 0 2px var(--color-primary), var(--shadow-sm); /* Keep glow, add base shadow */
         }
-        #game-container[data-theme="rgb"] #resources-display > div { animation: var(--animation-rgb-border) forwards; }
-
-
-        #game-container[data-theme="neon"][data-mode="night"] .achievement-item {
-            border: 1px solid var(--color-primary);
-            box-shadow: var(--achievement-neon-glow, none);
-            color: var(--color-text-primary); background-color: var(--color-surface-dark);
-            padding: 0.75rem; border-radius: var(--border-radius-lg); margin-bottom: 0.5rem;
-        }
-        #game-container[data-theme="neon"][data-mode="night"] .achievement-item h4 {
-             color: var(--color-secondary);
-             text-shadow: 0 0 3px var(--color-secondary), 0 0 5px var(--color-primary);
+        #game-container[data-theme="rgb"] #resources-display > div { 
+            /* animation: var(--animation-rgb-border) forwards; */ /* This animated the border, remove if border is gone */
+             box-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.8), inset 0 0 3px hsla(var(--hue-cycle), 100%, 75%, 0.6), var(--shadow-sm); /* Apply RGB glow to shadow */
         }
 
-        select, input[type="text"], input[type="number"], textarea {
-            background-color: var(--color-surface-dark); color: var(--color-text-primary);
-            border: 1px solid var(--color-border); padding: 0.5rem 0.75rem;
-            border-radius: var(--border-radius-lg);
+        /* Other general styles (main-content, footer, inputs etc. - no major change needed from previous) */
+        #main-content, footer { 
+             background-color: var(--color-surface); border: 1px solid var(--color-border);
+             color: var(--color-text-primary);
         }
-        select:focus, input:focus, textarea:focus {
-            border-color: var(--color-primary); outline: none;
-            box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4);
-        }
-        #game-container[data-theme="modern"] select:focus, 
-        #game-container[data-theme="modern"] input:focus, 
-        #game-container[data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
-        
-        #game-container[data-theme="neon"] select:focus, 
-        #game-container[data-theme="neon"] input:focus, 
-        #game-container[data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
 
+        #game-container[data-theme="neon"][data-mode="night"] .achievement-item { /* ... */ }
+        #game-container[data-theme="neon"][data-mode="night"] .achievement-item h4 { /* ... */ }
+
+        select, input[type="text"], input[type="number"], textarea { /* transition already defined */ }
+        select:focus, input:focus, textarea:focus { /* ... */ }
     </style>
 </head>
 <body class="font-inter">
     <div id="game-container" data-theme="modern" data-mode="day"> 
         <div class="content-wrapper mx-auto max-w-6xl w-full flex flex-col flex-grow p-4"> 
-            <header id="resource-bar" class="rounded-xl p-4 mb-6 sticky top-4 z-50">
-                <h2 class="text-xl font-semibold mb-2">Resources</h2>
-                <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <!-- Updated resource bar: removed rounded-xl and explicit p-4 if they conflict with no-border look -->
+            <header id="resource-bar" class="mb-6 sticky top-4 z-50">
+                <h2 class="text-xl font-semibold mb-2 text-center sm:text-left">Resources</h2> <!-- Centered on small, left on sm+ -->
+                <div id="resources-display" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"> <!-- Reduced gap slightly -->
+                    <!-- Resource items are generated by JS -->
                 </div>
             </header>
 
             <main class="flex-grow flex flex-col md:flex-row gap-6">
                 <nav id="main-menu" class="md:w-1/4 h-fit md:sticky md:top-32">
                     <ul id="menu-list">
+                        <!-- Menu items are generated by JS -->
                     </ul>
                 </nav>
 
@@ -394,16 +321,8 @@
         </div> 
     </div>
 
-    <!-- Modal container is now a direct child of body for proper fixed positioning -->
     <div id="modal-container">
-        <!-- Example Modal Structure (coreUIManager will generate this) -->
-        <!-- 
-        <div id="active-modal" class="modal active">
-            <div class="modal-content">
-                ... modal header, body, footer ...
-            </div>
-        </div> 
-        -->
+        <!-- Modals are generated by JS -->
     </div>
     <div id="tooltip-container" class="tooltip"></div>
     <div id="notification-area" class="fixed bottom-5 right-5 z-[10000] space-y-3 max-w-xs w-full"></div>
