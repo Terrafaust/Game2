@@ -1,8 +1,9 @@
-// js/main.js (v9.2 - Pass saveLoadSystem & Define All Core Resources)
+// js/main.js (v9.3 - Initialize coreResourceManager)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.3: Initializes coreResourceManager.
  * v9.2: Passes saveLoadSystem to moduleLoader.initialize, defines all core_resource_definitions on new game.
  * v9.1: Passes globalSettingsManager to moduleLoader.initialize.
  */
@@ -25,12 +26,13 @@ import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.2).");
+    loggingSystem.info("Main", "Game initialization sequence started (v9.3).");
 
-    // Initialize Core Systems
+    // Initialize Core Systems in an order that respects dependencies
     globalSettingsManager.initialize();
+    coreResourceManager.initialize(); // <<< Initialize coreResourceManager
     coreUpgradeManager.initialize();
-    coreUIManager.initialize();
+    coreUIManager.initialize(); // coreUIManager might depend on coreResourceManager
 
     const initialTheme = globalSettingsManager.getSetting('theme');
     if (initialTheme && initialTheme.name && initialTheme.mode) {
@@ -57,17 +59,15 @@ async function initializeGame() {
         gameLoop,
         coreUpgradeManager,
         globalSettingsManager,
-        saveLoadSystem // <<< Added saveLoadSystem here
+        saveLoadSystem
     );
 
     // Define ALL core resources that should exist from the start.
-    // Modules can define their own later.
     const coreResourceDefinitions = {
         studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
         knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: true },
-        images: { id: 'images', name: "Images", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false }, // Typically no direct production rate
-        studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false } // Typically no direct production rate
-        // Add other truly core resources here if any
+        images: { id: 'images', name: "Images", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false },
+        studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: false, showInUI: true, hasProductionRate: false }
     };
     staticDataAggregator.registerStaticData('core_resource_definitions', coreResourceDefinitions);
 
@@ -76,39 +76,52 @@ async function initializeGame() {
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.3"); // Version for Stream 3 (SettingsUI fix + saveLoadSystem + all core resources defined)
+        coreGameStateManager.setGameVersion("0.5.4"); // Version for Stream 3 (Initialize coreResourceManager fix)
 
         // Define all core resources for a new game
         for (const resId in coreResourceDefinitions) {
             const resDef = coreResourceDefinitions[resId];
             if (resDef) {
-                coreResourceManager.defineResource(
-                    resDef.id,
-                    resDef.name,
-                    decimalUtility.new(resDef.initialAmount),
-                    resDef.showInUI,
-                    resDef.isUnlocked,
-                    resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true // Default to true if not specified
-                );
-                loggingSystem.debug("Main_NewGame", `Defined core resource: ${resDef.id}`);
+                // Ensure coreResourceManager is ready before calling defineResource
+                if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                    coreResourceManager.defineResource(
+                        resDef.id,
+                        resDef.name,
+                        decimalUtility.new(resDef.initialAmount),
+                        resDef.showInUI,
+                        resDef.isUnlocked,
+                        resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
+                    );
+                    loggingSystem.debug("Main_NewGame", `Defined core resource: ${resDef.id}`);
+                } else {
+                    loggingSystem.error("Main_NewGame", `coreResourceManager or defineResource is not available for ${resDef.id}.`);
+                }
             }
         }
     } else {
         loggingSystem.info("Main", "Save game loaded.");
         // Ensure resources defined in core_resource_definitions are known to coreResourceManager even on load
-        // This handles cases where a save game might be from an older version before all core resources were defined in main.js
         for (const resId in coreResourceDefinitions) {
-            if (!coreResourceManager.getResource(resId)) {
-                const resDef = coreResourceDefinitions[resId];
-                 coreResourceManager.defineResource(
-                    resDef.id,
-                    resDef.name,
-                    decimalUtility.new(resDef.initialAmount), // Will be overwritten by loaded value if present
-                    resDef.showInUI,
-                    false, // Start as locked, loaded state will unlock if applicable
-                    resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
-                );
-                loggingSystem.debug("Main_GameLoad", `Ensured core resource definition for: ${resDef.id}`);
+            // Ensure coreResourceManager and getResource are valid before calling
+            if (coreResourceManager && typeof coreResourceManager.getResource === 'function') {
+                if (!coreResourceManager.getResource(resId)) {
+                    const resDef = coreResourceDefinitions[resId];
+                    if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                        coreResourceManager.defineResource(
+                            resDef.id,
+                            resDef.name,
+                            decimalUtility.new(resDef.initialAmount), 
+                            resDef.showInUI,
+                            false, 
+                            resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
+                        );
+                        loggingSystem.debug("Main_GameLoad", `Ensured core resource definition for: ${resDef.id}`);
+                    } else {
+                         loggingSystem.error("Main_GameLoad", `coreResourceManager or defineResource not available for ensuring ${resDef.id}.`);
+                    }
+                }
+            } else {
+                 loggingSystem.error("Main_GameLoad", `coreResourceManager or getResource is not available for checking ${resId}.`);
             }
         }
     }
@@ -149,11 +162,12 @@ async function initializeGame() {
                         const wasRunning = gameLoop.isRunning();
                         if (wasRunning) gameLoop.stop();
                         if (saveLoadSystem.loadGame()) {
-                            // Re-ensure core resource definitions after load, in case save is old
                             for (const resId in coreResourceDefinitions) {
-                                if (!coreResourceManager.getResource(resId)) {
+                                if (coreResourceManager && typeof coreResourceManager.getResource === 'function' && !coreResourceManager.getResource(resId)) {
                                     const resDef = coreResourceDefinitions[resId];
-                                    coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
+                                     if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                                        coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
+                                     }
                                 }
                             }
                             moduleLoader.notifyAllModulesOfLoad();
@@ -178,15 +192,16 @@ async function initializeGame() {
                     { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
                         const wasRunning = gameLoop.isRunning();
                         if (wasRunning) gameLoop.stop();
-                        saveLoadSystem.resetGameData(); // This should clear state from managers
-                        coreGameStateManager.setGameVersion("0.5.3");
-                        // Re-define all core resources for the fresh state
+                        saveLoadSystem.resetGameData(); 
+                        coreGameStateManager.setGameVersion("0.5.4");
                         for (const resId in coreResourceDefinitions) {
                             const resDef = coreResourceDefinitions[resId];
-                            coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
+                            if (coreResourceManager && typeof coreResourceManager.defineResource === 'function') {
+                                coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
+                            }
                         }
                         moduleLoader.resetAllModules();
-                        moduleLoader.notifyAllModulesOfLoad(); // Modules should pick up fresh state
+                        moduleLoader.notifyAllModulesOfLoad(); 
                         coreUIManager.fullUIRefresh();
                         coreUIManager.showNotification("Game Reset to Defaults.", "warning", 3000);
                         if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
@@ -200,18 +215,24 @@ async function initializeGame() {
 
     if (devToolsButton) {
         devToolsButton.addEventListener('click', () => {
+            if (!(coreResourceManager && typeof coreResourceManager.addAmount === 'function' && typeof coreResourceManager.getResource === 'function' && typeof coreResourceManager.defineResource === 'function' && typeof coreResourceManager.unlockResource === 'function')) {
+                loggingSystem.error("Main_DevTools", "coreResourceManager or its methods are not available.");
+                coreUIManager.showNotification("Dev Tools Error: Resource Manager not ready.", "error");
+                return;
+            }
+
             coreResourceManager.addAmount('studyPoints', decimalUtility.new(100000));
-            // Ensure 'knowledge' is defined before trying to add to it or unlock it
+            
             if (!coreResourceManager.getResource('knowledge')) {
-                 const resDef = staticDataAggregator.getData('core_resource_definitions.knowledge');
-                 if(resDef) {
+                const resDef = staticDataAggregator.getData('core_resource_definitions.knowledge');
+                if(resDef) {
                     coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new("0"), resDef.showInUI, false, resDef.hasProductionRate);
                     loggingSystem.info("Main_DevTools", "Defined 'knowledge' resource before dev interaction.");
-                 } else {
+                } else {
                     loggingSystem.error("Main_DevTools", "'knowledge' definition not found in staticDataAggregator.");
                     coreUIManager.showNotification("Dev Tools Error: Knowledge resource definition missing.", "error");
                     return;
-                 }
+                }
             }
             coreResourceManager.addAmount('knowledge', decimalUtility.new(1000));
             coreResourceManager.unlockResource('knowledge');
