@@ -1,11 +1,12 @@
-// js/core/coreResourceManager.js (v1.1 - Add getResource, remove self-init)
+// js/core/coreResourceManager.js (v1.3 - Targeted Logging & Unlock Fix)
 
 /**
  * @file coreResourceManager.js
  * @description Manages all game resources (e.g., Study Points, Knowledge),
  * their current amounts, and their generation rates per second.
  * Uses decimalUtility.js for all numerical values.
- * v1.1: Added getResource method and removed self-initialization.
+ * v1.3: Added more specific logging for isUnlocked state during definition and access.
+ * v1.2: Enhanced logging for resource redefinition to track 'isUnlocked' status changes.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -16,47 +17,49 @@ let resources = {};
 
 const coreResourceManager = {
     initialize() {
-        resources = {}; // Clear any existing state
-        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v1.1).");
+        resources = {}; 
+        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v1.3).");
     },
 
-    defineResource(resourceId, name, initialAmount = 0, showInUI = true, isUnlocked = true, hasProductionRate = true) {
+    defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true) {
         if (typeof resourceId !== 'string' || resourceId.trim() === '') {
-            loggingSystem.warn("CoreResourceManager", "defineResource: resourceId must be a non-empty string.");
+            loggingSystem.warn("CoreResourceManager_Define", "resourceId must be a non-empty string.");
             return;
         }
-        if (resources[resourceId] && resources[resourceId].isInitialized) {
-            loggingSystem.debug("CoreResourceManager", `Redefining resource '${resourceId}'.`);
-        }
+        const newAmountDec = decimalUtility.isDecimal(initialAmount) ? initialAmount : decimalUtility.new(initialAmount);
 
-        resources[resourceId] = {
-            id: resourceId,
-            name: name || "Unnamed Resource",
-            amount: decimalUtility.new(initialAmount),
-            productionSources: {},
-            totalProductionRate: decimalUtility.new(0),
-            isUnlocked: isUnlocked,
-            showInUI: showInUI,
-            hasProductionRate: hasProductionRate, // Store this info
-            isInitialized: true,
-        };
-        loggingSystem.info("CoreResourceManager", `Resource '${name}' (${resourceId}) defined. Initial: ${initialAmount}, Unlocked: ${isUnlocked}, ShowInUI: ${showInUI}, HasRate: ${hasProductionRate}`);
+        loggingSystem.debug("CoreResourceManager_Define", `Attempting to define/redefine '${resourceId}'. Incoming isUnlocked: ${isUnlocked}, showInUI: ${showInUI}`);
+
+        if (resources[resourceId] && resources[resourceId].isInitialized) {
+            loggingSystem.debug("CoreResourceManager_Define", `Redefining resource '${resourceId}'. Current isUnlocked: ${resources[resourceId].isUnlocked}. Incoming isUnlocked: ${isUnlocked}.`);
+            resources[resourceId].name = name || resources[resourceId].name;
+            resources[resourceId].isUnlocked = isUnlocked; // Directly apply incoming unlock status
+            resources[resourceId].showInUI = showInUI;    
+            resources[resourceId].hasProductionRate = hasProductionRate; 
+            loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) redefined. New isUnlocked: ${resources[resourceId].isUnlocked}, ShowInUI: ${resources[resourceId].showInUI}. Amount preserved: ${resources[resourceId].amount.toString()}`);
+        } else {
+            resources[resourceId] = {
+                id: resourceId,
+                name: name || "Unnamed Resource",
+                amount: newAmountDec,
+                productionSources: {},
+                totalProductionRate: decimalUtility.new(0),
+                isUnlocked: isUnlocked, // Apply incoming unlock status
+                showInUI: showInUI,
+                hasProductionRate: hasProductionRate, 
+                isInitialized: true,
+            };
+            loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) newly defined. Amount: ${newAmountDec.toString()}, isUnlocked: ${resources[resourceId].isUnlocked}, ShowInUI: ${resources[resourceId].showInUI}`);
+        }
     },
 
     isResourceDefined(resourceId) {
         return resources[resourceId] && resources[resourceId].isInitialized;
     },
 
-    /**
-     * Gets the full resource object for a specified resource ID.
-     * Returns a deep copy if found, otherwise null.
-     * @param {string} resourceId - The ID of the resource.
-     * @returns {object|null} A copy of the resource object or null.
-     */
     getResource(resourceId) {
         const resource = resources[resourceId];
         if (resource && resource.isInitialized) {
-            // Return a deep copy to prevent external modification of internal state
             const resourceCopy = {
                 ...resource,
                 amount: decimalUtility.new(resource.amount),
@@ -68,7 +71,7 @@ const coreResourceManager = {
             }
             return resourceCopy;
         }
-        loggingSystem.debug("CoreResourceManager", `getResource: Resource '${resourceId}' not found.`);
+        loggingSystem.debug("CoreResourceManager_Get", `Resource '${resourceId}' not found or not initialized.`);
         return null;
     },
 
@@ -77,17 +80,23 @@ const coreResourceManager = {
         if (resource && resource.isUnlocked) {
             return decimalUtility.new(resource.amount);
         }
+        if (!resource) {
+            loggingSystem.warn("CoreResourceManager_GetAmount", `Resource '${resourceId}' not defined when getting amount.`);
+        } else if (!resource.isUnlocked) {
+            loggingSystem.warn("CoreResourceManager_GetAmount", `Resource '${resourceId}' is defined but LOCKED when getting amount. Current amount (hidden): ${resource.amount.toString()}. Returning 0.`);
+        }
         return decimalUtility.new(0);
     },
 
     setAmount(resourceId, newAmount) {
         const resource = resources[resourceId];
-        if (resource && resource.isUnlocked) {
+        if (resource && resource.isInitialized) { 
             const amountToSet = decimalUtility.new(newAmount);
             resource.amount = decimalUtility.lt(amountToSet, 0) ? decimalUtility.new(0) : amountToSet;
+            loggingSystem.debug("CoreResourceManager_SetAmount", `Set amount for '${resourceId}' to ${resource.amount.toString()}. isUnlocked: ${resource.isUnlocked}`);
             return true;
         }
-        loggingSystem.warn("CoreResourceManager", `setAmount: Resource '${resourceId}' not found or not unlocked.`);
+        loggingSystem.warn("CoreResourceManager_SetAmount", `Resource '${resourceId}' not found for setAmount.`);
         return false;
     },
 
@@ -95,25 +104,38 @@ const coreResourceManager = {
         const resource = resources[resourceId];
         const decAmountToAdd = decimalUtility.new(amountToAdd);
 
-        if (decimalUtility.lt(decAmountToAdd, 0)) {
-            loggingSystem.warn("CoreResourceManager", `addAmount: Cannot add negative value to '${resourceId}'. Use spendAmount instead.`);
+        if (!resource || !resource.isInitialized) {
+            loggingSystem.error("CoreResourceManager_AddAmount", `CRITICAL_ERROR: Resource '${resourceId}' is not defined AT ALL. Cannot add amount. Please check module manifests and load order.`);
             return false;
         }
-        if (resource && resource.isUnlocked) {
-            resource.amount = decimalUtility.add(resource.amount, decAmountToAdd);
-            return true;
+        
+        // Log the state of the resource right before the unlock check
+        loggingSystem.debug("CoreResourceManager_AddAmount", `Attempting to add to '${resourceId}'. Current state: isUnlocked=${resource.isUnlocked}, showInUI=${resource.showInUI}, amount=${resource.amount.toString()}`);
+
+        if (!resource.isUnlocked) {
+            loggingSystem.warn("CoreResourceManager_AddAmount", `Resource '${resourceId}' is defined but LOCKED. Amount ${decAmountToAdd.toString()} not added. Current amount: ${resource.amount.toString()}`);
+            return false; 
         }
-        loggingSystem.warn("CoreResourceManager", `addAmount: Resource '${resourceId}' not found or not unlocked.`);
-        return false;
+
+        if (decimalUtility.lt(decAmountToAdd, 0)) {
+            loggingSystem.warn("CoreResourceManager_AddAmount", `Cannot add negative value to '${resourceId}'. Use spendAmount instead.`);
+            return false;
+        }
+        
+        resource.amount = decimalUtility.add(resource.amount, decAmountToAdd);
+        loggingSystem.info("CoreResourceManager_AddAmount", `Successfully added ${decAmountToAdd.toString()} to '${resourceId}'. New amount: ${resource.amount.toString()}`);
+        return true;
     },
 
     canAfford(resourceId, amountToSpend) {
         const resource = resources[resourceId];
         const decAmountToSpend = decimalUtility.new(amountToSpend);
-        if (decimalUtility.lt(decAmountToSpend, 0)) return true;
+        if (decimalUtility.lt(decAmountToSpend, 0)) return true; 
         if (resource && resource.isUnlocked) {
             return decimalUtility.gte(resource.amount, decAmountToSpend);
         }
+        if (!resource) loggingSystem.warn("CoreResourceManager_CanAfford", `Resource '${resourceId}' not defined for canAfford check.`);
+        else if (!resource.isUnlocked) loggingSystem.warn("CoreResourceManager_CanAfford", `Resource '${resourceId}' is locked for canAfford check. Amount (hidden): ${resource.amount.toString()}`);
         return false;
     },
 
@@ -121,33 +143,41 @@ const coreResourceManager = {
         const resource = resources[resourceId];
         const decAmountToSpend = decimalUtility.new(amountToSpend);
 
-        if (decimalUtility.lt(decAmountToSpend, 0)) {
-            loggingSystem.warn("CoreResourceManager", `spendAmount: Cannot spend negative value for '${resourceId}'. Use addAmount instead.`);
+        if (!resource || !resource.isInitialized) {
+            loggingSystem.error("CoreResourceManager_SpendAmount", `CRITICAL_ERROR: Resource '${resourceId}' is not defined AT ALL. Cannot spend.`);
+            return false;
+        }
+        if (!resource.isUnlocked) {
+            loggingSystem.warn("CoreResourceManager_SpendAmount", `Resource '${resourceId}' is defined but LOCKED. Amount not spent.`);
             return false;
         }
 
-        if (resource && resource.isUnlocked) {
-            if (decimalUtility.gte(resource.amount, decAmountToSpend) || allowNegative) {
-                resource.amount = decimalUtility.subtract(resource.amount, decAmountToSpend);
-                if (!allowNegative && decimalUtility.lt(resource.amount, 0)) {
-                    resource.amount = decimalUtility.new(0);
-                }
-                return true;
-            }
+        if (decimalUtility.lt(decAmountToSpend, 0)) {
+            loggingSystem.warn("CoreResourceManager_SpendAmount", `Cannot spend negative value for '${resourceId}'. Use addAmount instead.`);
             return false;
         }
-        loggingSystem.warn("CoreResourceManager", `spendAmount: Resource '${resourceId}' not found or not unlocked.`);
+
+        if (decimalUtility.gte(resource.amount, decAmountToSpend) || allowNegative) {
+            resource.amount = decimalUtility.subtract(resource.amount, decAmountToSpend);
+            if (!allowNegative && decimalUtility.lt(resource.amount, 0)) {
+                resource.amount = decimalUtility.new(0);
+            }
+            loggingSystem.info("CoreResourceManager_SpendAmount", `Successfully spent ${decAmountToSpend.toString()} from '${resourceId}'. New amount: ${resource.amount.toString()}`);
+            return true;
+        }
+        loggingSystem.warn("CoreResourceManager_SpendAmount", `Cannot afford to spend ${decAmountToSpend.toString()} from '${resourceId}'. Have: ${resource.amount.toString()}`);
         return false;
     },
 
     setProductionPerSecond(resourceId, sourceKey, productionPerSecond) {
         const resource = resources[resourceId];
-        if (!resource || !resource.isUnlocked) {
-            loggingSystem.warn("CoreResourceManager", `setProductionPerSecond: Resource '${resourceId}' not found or not unlocked.`);
+        if (!resource) { 
+            loggingSystem.warn("CoreResourceManager_SetProd", `Resource '${resourceId}' not defined. Cannot set production.`);
             return;
         }
+        // Allow setting production sources even if locked, they just won't apply until unlocked.
         if (typeof sourceKey !== 'string' || sourceKey.trim() === '') {
-            loggingSystem.warn("CoreResourceManager", `setProductionPerSecond: sourceKey for '${resourceId}' must be a non-empty string.`);
+            loggingSystem.warn("CoreResourceManager_SetProd", `sourceKey for '${resourceId}' must be a non-empty string.`);
             return;
         }
         resource.productionSources[sourceKey] = decimalUtility.new(productionPerSecond);
@@ -175,7 +205,7 @@ const coreResourceManager = {
 
     getTotalProductionRate(resourceId) {
         const resource = resources[resourceId];
-        if (resource && resource.isUnlocked) {
+        if (resource && resource.isUnlocked) { 
             return decimalUtility.new(resource.totalProductionRate);
         }
         return decimalUtility.new(0);
@@ -192,22 +222,27 @@ const coreResourceManager = {
         }
     },
 
-    unlockResource(resourceId) {
+    unlockResource(resourceId, unlockStatus = true) { 
         const resource = resources[resourceId];
         if (resource) {
-            if (!resource.isUnlocked) {
-                resource.isUnlocked = true;
-                loggingSystem.info("CoreResourceManager", `Resource '${resource.name}' (${resourceId}) unlocked.`);
+            if (resource.isUnlocked !== unlockStatus) {
+                resource.isUnlocked = unlockStatus;
+                loggingSystem.info("CoreResourceManager_Unlock", `Resource '${resource.name}' (${resourceId}) explicitely ${unlockStatus ? 'UNLOCKED' : 'LOCKED'}.`);
             }
         } else {
-            loggingSystem.warn("CoreResourceManager", `unlockResource: Cannot unlock '${resourceId}', not defined.`);
+            loggingSystem.warn("CoreResourceManager_Unlock", `Cannot ${unlockStatus ? 'unlock' : 'lock'} resource '${resourceId}', not defined.`);
         }
     },
 
     setResourceVisibility(resourceId, show) {
         const resource = resources[resourceId];
         if (resource) {
-            resource.showInUI = !!show;
+            if (resource.showInUI !== !!show) {
+                resource.showInUI = !!show;
+                loggingSystem.info("CoreResourceManager_SetVisibility", `Resource '${resource.name}' (${resourceId}) visibility set to ${resource.showInUI}.`);
+            }
+        } else {
+             loggingSystem.warn("CoreResourceManager_SetVisibility", `Cannot set visibility for resource '${resourceId}', not defined.`);
         }
     },
 
@@ -215,52 +250,65 @@ const coreResourceManager = {
         const resourcesCopy = {};
         for (const resId in resources) {
             const original = resources[resId];
-            resourcesCopy[resId] = {
-                ...original,
-                amount: decimalUtility.new(original.amount),
-                totalProductionRate: decimalUtility.new(original.totalProductionRate),
-                productionSources: { ...original.productionSources },
-            };
-            for (const srcKey in resourcesCopy[resId].productionSources) {
-                resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]);
+            if (original.isInitialized) { 
+                resourcesCopy[resId] = {
+                    ...original,
+                    amount: decimalUtility.new(original.amount),
+                    totalProductionRate: decimalUtility.new(original.totalProductionRate),
+                    productionSources: { ...original.productionSources },
+                };
+                for (const srcKey in resourcesCopy[resId].productionSources) {
+                    resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]);
+                }
             }
         }
         return resourcesCopy;
     },
 
     resetState() {
-        loggingSystem.info("CoreResourceManager", "Resetting all resource states...");
-        const currentResourceIds = Object.keys(resources);
-        for (const resourceId of currentResourceIds) {
-            const staticDef = staticDataAggregator.getData(`core_resource_definitions.${resourceId}`) || 
-                              staticDataAggregator.getDataByMatch(def => def.id === resourceId); // Fallback for module-defined
+        loggingSystem.info("CoreResourceManager_Reset", "Resetting all resource states...");
+        const coreResourceDefinitions = staticDataAggregator.getData('core_resource_definitions') || {};
+        
+        // Create a new resources object for full reset
+        const newResourcesState = {};
 
-            if (resources[resourceId]) { // Ensure it still exists if reset is complex
-                resources[resourceId].amount = decimalUtility.new(staticDef ? staticDef.initialAmount : "0");
-                resources[resourceId].productionSources = {};
-                resources[resourceId].totalProductionRate = decimalUtility.new(0);
-                 // Reset unlock status based on its original definition
-                resources[resourceId].isUnlocked = staticDef ? (staticDef.isUnlocked || false) : false;
-            }
+        for (const resId in coreResourceDefinitions) {
+            const resDef = coreResourceDefinitions[resId];
+            newResourcesState[resId] = {
+                id: resDef.id,
+                name: resDef.name,
+                amount: decimalUtility.new(resDef.initialAmount),
+                productionSources: {},
+                totalProductionRate: decimalUtility.new(0),
+                isUnlocked: resDef.isUnlocked,
+                showInUI: resDef.showInUI,
+                hasProductionRate: resDef.hasProductionRate,
+                isInitialized: true,
+            };
+            loggingSystem.debug("CoreResourceManager_Reset", `Reset core resource: ${resId} to initial state.`);
         }
-        loggingSystem.info("CoreResourceManager", "All resource states reset.");
+        resources = newResourcesState; // Replace the old resources object
+        // Module-defined resources will be added back by their respective manifests during game re-initialization (e.g., after a reset in main.js)
+        loggingSystem.info("CoreResourceManager_Reset", "Core resource states reset. Module resources will be redefined by their manifests.");
     },
 
     getSaveData() {
         const saveData = {};
         for (const resourceId in resources) {
             const res = resources[resourceId];
-            saveData[resourceId] = {
-                id: res.id,
-                name: res.name,
-                amount: res.amount.toString(),
-                isUnlocked: res.isUnlocked,
-                showInUI: res.showInUI,
-                hasProductionRate: res.hasProductionRate,
-                productionSources: {},
-            };
-            for (const srcKey in res.productionSources) {
-                saveData[resourceId].productionSources[srcKey] = res.productionSources[srcKey].toString();
+            if (res.isInitialized) {
+                saveData[resourceId] = {
+                    id: res.id,
+                    name: res.name,
+                    amount: res.amount.toString(),
+                    isUnlocked: res.isUnlocked,
+                    showInUI: res.showInUI,
+                    hasProductionRate: res.hasProductionRate,
+                    productionSources: {},
+                };
+                for (const srcKey in res.productionSources) {
+                    saveData[resourceId].productionSources[srcKey] = res.productionSources[srcKey].toString();
+                }
             }
         }
         return saveData;
@@ -268,46 +316,36 @@ const coreResourceManager = {
 
     loadSaveData(saveData) {
         if (!saveData) {
-            loggingSystem.warn("CoreResourceManager", "loadSaveData: No save data provided.");
-            this.resetState();
+            loggingSystem.warn("CoreResourceManager_LoadSave", "No save data provided.");
             return;
         }
+        loggingSystem.info("CoreResourceManager_LoadSave", "Loading resource data from save.", Object.keys(saveData));
 
         for (const resourceId in saveData) {
             const savedRes = saveData[resourceId];
-            if (!this.isResourceDefined(resourceId)) {
-                loggingSystem.warn("CoreResourceManager", `Loading undefined resource '${resourceId}' from save. Defining now.`);
-                this.defineResource(
-                    resourceId,
-                    savedRes.name || resourceId,
-                    savedRes.amount || "0",
-                    savedRes.showInUI !== undefined ? savedRes.showInUI : true,
-                    savedRes.isUnlocked !== undefined ? savedRes.isUnlocked : false,
-                    savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : true
-                );
-            }
+            // Define the resource based on saved data. This ensures that its properties (like isUnlocked)
+            // are set from the save file correctly, overwriting any defaults from initial module definitions.
+            this.defineResource(
+                resourceId,
+                savedRes.name || resourceId,
+                decimalUtility.new(savedRes.amount),
+                savedRes.showInUI,
+                savedRes.isUnlocked, // This is critical: use the saved isUnlocked state
+                savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : true
+            );
             
-            const liveResource = resources[resourceId];
-            if (liveResource) {
-                liveResource.amount = decimalUtility.new(savedRes.amount);
-                liveResource.isUnlocked = savedRes.isUnlocked !== undefined ? savedRes.isUnlocked : liveResource.isUnlocked;
-                liveResource.showInUI = savedRes.showInUI !== undefined ? savedRes.showInUI : liveResource.showInUI;
-                liveResource.hasProductionRate = savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : liveResource.hasProductionRate;
-                
-                liveResource.productionSources = {};
-                if (savedRes.productionSources) {
-                    for (const srcKey in savedRes.productionSources) {
-                        liveResource.productionSources[srcKey] = decimalUtility.new(savedRes.productionSources[srcKey]);
-                    }
+            // After defining (which sets amount, isUnlocked etc.), set production sources
+            if (resources[resourceId] && savedRes.productionSources) {
+                 resources[resourceId].productionSources = {}; // Clear any default before loading
+                 for (const srcKey in savedRes.productionSources) {
+                    resources[resourceId].productionSources[srcKey] = decimalUtility.new(savedRes.productionSources[srcKey]);
                 }
                 this._recalculateTotalProductionRate(resourceId);
             }
+            loggingSystem.debug("CoreResourceManager_LoadSave", `Loaded resource '${resourceId}' from save. isUnlocked: ${resources[resourceId]?.isUnlocked}, showInUI: ${resources[resourceId]?.showInUI}`);
         }
-        loggingSystem.info("CoreResourceManager", "Resource data loaded from save.");
+        loggingSystem.info("CoreResourceManager_LoadSave", "Resource data loading complete.");
     }
 };
-
-// Removed self-initialization: coreResourceManager.initialize();
-// Initialization will be handled by main.js
 
 export { coreResourceManager };
