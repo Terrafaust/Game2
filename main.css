@@ -28,7 +28,9 @@
 }
 @keyframes hue-rotate-anim { 0% { --hue-cycle: 0; } 100% { --hue-cycle: 360; } }
 
-/* CSS Variables for Theming */
+/* --- THEME DEFINITIONS --- */
+
+/* 1. Default Theme (Modern Day) */
 :root { 
     --font-main: 'Inter', sans-serif;
     --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
@@ -45,7 +47,7 @@
     --main-nav-width: 240px;
 }
 
-/* Theme definitions */
+/* 2. Modern Night Theme */
 html[data-theme="modern"][data-mode="night"] {
     --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
     --color-accent-one: #34D399; --color-accent-two: #FBBF24;
@@ -53,24 +55,40 @@ html[data-theme="modern"][data-mode="night"] {
     --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
     --color-border: #475569; --color-button-text: #F1F5F9;
 }
-/* Other themes omitted for brevity */
 
-/* --- CORRECTED: Layout, Scroll Behavior & Global Styles --- */
+/* 3. Classic Day Theme (Placeholder - Add your colors) */
+html[data-theme="classic"][data-mode="day"] {
+    --color-primary: #D97706; --color-secondary: #059669;
+    --color-background: #FEF3C7; --color-surface: #FFFBEB; --color-surface-dark: #FDE68A;
+    --color-text-primary: #78350F; --color-text-secondary: #92400E;
+    --color-border: #FBBF24; --color-button-text: #FFFFFF;
+}
+
+/* 4. Classic Night Theme (Placeholder - Add your colors) */
+html[data-theme="classic"][data-mode="night"] {
+    --color-primary: #F59E0B; --color-secondary: #34D399;
+    --color-background: #27272A; --color-surface: #3F3F46; --color-surface-dark: #52525B;
+    --color-text-primary: #FDE68A; --color-text-secondary: #D97706;
+    --color-border: #71717A; --color-button-text: #18181B;
+}
+
+
+/* --- Base Layout, Scroll Behavior & Global Styles --- */
 html {
-    width: 100%; height: 100vh; /* Use vh to ensure it's viewport height */
+    width: 100%; height: 100vh;
     margin: 0; padding: 0;
     font-family: var(--font-main);
     background-color: var(--color-background); 
     color: var(--color-text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
-    overflow: hidden; /* Prevent the entire page from scrolling */
+    overflow: hidden; 
 }
 
 body { 
     width: 100%; height: 100%; 
     margin: 0; padding: 0;
     display: flex; flex-direction: column;
-    overflow: hidden; /* Redundant but safe */
+    overflow: hidden;
 }
 
 #game-container {
@@ -82,8 +100,8 @@ body {
     flex-grow: 1;
     margin-left: var(--main-nav-width);
     transition: margin-left 0.3s ease;
-    height: 100vh; /* Take full viewport height */
-    display: flex; /* This is key for the child .content-wrapper */
+    height: 100vh; 
+    display: flex; 
 }
 
 body.menu-hidden #content-pusher {
@@ -99,36 +117,33 @@ body.menu-hidden #content-pusher {
     display: flex; 
     flex-direction: column; 
     flex-grow: 1;
-    /* Height is now controlled by the parent flex container */
 }
 
 header#resource-bar {
-    flex-shrink: 0; /* Prevent header from shrinking */
+    flex-shrink: 0;
     z-index: 10;
 }
 
-/* THIS is the main change for the scroll fix */
 main {
-    flex-grow: 1; /* Make main area take up all available vertical space */
-    min-height: 0; /* Crucial for flexbox to allow its child to scroll */
+    flex-grow: 1; 
+    min-height: 0;
 }
 
 #main-content {
     background-color: var(--color-surface); 
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
-    height: 100%; /* Fill the parent <main> */
-    overflow-y: auto; /* Make THIS element scroll, not its parent */
-    border-radius: 0.75rem; /* Copied from your HTML */
-    padding: 1.5rem; /* Copied from your HTML */
+    height: 100%; 
+    overflow-y: auto; 
+    border-radius: 0.75rem; 
+    padding: 1.5rem;
 }
 
 footer {
-    flex-shrink: 0; /* Prevent footer from shrinking */
+    flex-shrink: 0;
     z-index: 10;
     border-top: 1px solid var(--color-border);
 }
-
 
 /* Broad transitions for themed elements */
 #game-container *, 
@@ -187,14 +202,16 @@ body.menu-hidden #main-menu {
 .menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg); }
 
 
-/* Resource Bar & Other Unchanged Styles */
+/* Other Component Styles */
 #resource-bar h2 { color: var(--color-primary); }
 #resources-display { display: flex; flex-wrap: wrap; align-items: center; gap: 1.5rem; }
 .resource-item-display .font-semibold { color: var(--color-secondary) !important; }
 .module-card { background-color: var(--color-surface-dark); border: 1px solid var(--color-border); }
-.tooltip { position: fixed; background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); z-index: 10001; display: none; pointer-events: none; }
+.tooltip { position: fixed; background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: 0.75rem; box-shadow: var(--shadow-md); z-index: 10001; display: none; pointer-events: none; }
 #modal-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 10000; pointer-events: none; }
 #modal-container > .modal.active { background-color: rgba(0, 0, 0, 0.6); width: 100%; height: 100%; pointer-events: auto; }
-.modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 1.5rem; border-radius: var(--border-radius-xl); box-shadow: var(--shadow-xl); width: 90%; max-width: 32rem; z-index: 10001; }
-select, input[type="text"], input[type="number"], textarea { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-lg); }
+.modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 1.5rem; border-radius: 1rem; box-shadow: var(--shadow-xl); width: 90%; max-width: 32rem; z-index: 10001; }
+select, input[type="text"], input[type="number"], textarea { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: 0.5rem; }
 select:focus, input:focus, textarea:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4); }
+
+/* NOTE: The extra closing brace '}' that was here has been removed. */
