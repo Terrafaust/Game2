@@ -95,18 +95,33 @@ async function initializeGame() {
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.8");
+        coreGameStateManager.setGameVersion("0.5.8"); // This seems to be an old version, but I'll leave it as is. The main version is set in the gameState object itself.
     } else {
         loggingSystem.info("Main", "Save game loaded.");
     }
 
     // 8. Load Modules
     try {
+        loggingSystem.info('Main', 'Loading Core Gameplay Module...');
         await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
+        
+        loggingSystem.info('Main', 'Loading Studies Module...');
         await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
+        
+        loggingSystem.info('Main', 'Loading Market Module...');
         await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
+        
+        loggingSystem.info('Main', 'Loading Skills Module...');
         await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
+        
+        loggingSystem.info('Main', 'Loading Achievements Module...');
         await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
+
+        // ADD THIS LINE HERE:
+        loggingSystem.info('Main', 'Loading Prestige Module...');
+        await moduleLoader.loadModule('../../modules/prestige_module/prestige_manifest.js');
+
+        loggingSystem.info('Main', 'Loading Settings UI Module...');
         await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
     } catch (error) {
         loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
@@ -168,7 +183,7 @@ async function initializeGame() {
                         
                         moduleLoader.resetAllModules(); 
                         
-                        coreGameStateManager.setGameVersion("0.5.8");
+                        coreGameStateManager.setGameVersion("1.1.0");
                         
                         const defaultTheme = globalSettingsManager.defaultSettings.theme;
                         globalSettingsManager.resetToDefaults();

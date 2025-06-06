@@ -1,10 +1,11 @@
-// js/core/coreResourceManager.js (v1.3 - Targeted Logging & Unlock Fix)
+// js/core/coreResourceManager.js (v1.4 - Prestige Ready)
 
 /**
  * @file coreResourceManager.js
  * @description Manages all game resources (e.g., Study Points, Knowledge),
  * their current amounts, and their generation rates per second.
  * Uses decimalUtility.js for all numerical values.
+ * v1.4: Added resetsOnPrestige flag and performPrestigeReset function for Ascension System.
  * v1.3: Added more specific logging for isUnlocked state during definition and access.
  * v1.2: Enhanced logging for resource redefinition to track 'isUnlocked' status changes.
  */
@@ -18,10 +19,11 @@ let resources = {};
 const coreResourceManager = {
     initialize() {
         resources = {}; 
-        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v1.3).");
+        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v1.4).");
     },
 
-    defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true) {
+    // Action 1: Modify defineResource to include resetsOnPrestige
+    defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true, resetsOnPrestige = true) {
         if (typeof resourceId !== 'string' || resourceId.trim() === '') {
             loggingSystem.warn("CoreResourceManager_Define", "resourceId must be a non-empty string.");
             return;
@@ -33,9 +35,10 @@ const coreResourceManager = {
         if (resources[resourceId] && resources[resourceId].isInitialized) {
             loggingSystem.debug("CoreResourceManager_Define", `Redefining resource '${resourceId}'. Current isUnlocked: ${resources[resourceId].isUnlocked}. Incoming isUnlocked: ${isUnlocked}.`);
             resources[resourceId].name = name || resources[resourceId].name;
-            resources[resourceId].isUnlocked = isUnlocked; // Directly apply incoming unlock status
+            resources[resourceId].isUnlocked = isUnlocked;
             resources[resourceId].showInUI = showInUI;    
-            resources[resourceId].hasProductionRate = hasProductionRate; 
+            resources[resourceId].hasProductionRate = hasProductionRate;
+            resources[resourceId].resetsOnPrestige = resetsOnPrestige; // Update property
             loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) redefined. New isUnlocked: ${resources[resourceId].isUnlocked}, ShowInUI: ${resources[resourceId].showInUI}. Amount preserved: ${resources[resourceId].amount.toString()}`);
         } else {
             resources[resourceId] = {
@@ -44,9 +47,10 @@ const coreResourceManager = {
                 amount: newAmountDec,
                 productionSources: {},
                 totalProductionRate: decimalUtility.new(0),
-                isUnlocked: isUnlocked, // Apply incoming unlock status
+                isUnlocked: isUnlocked,
                 showInUI: showInUI,
-                hasProductionRate: hasProductionRate, 
+                hasProductionRate: hasProductionRate,
+                resetsOnPrestige: resetsOnPrestige, // Store the property
                 isInitialized: true,
             };
             loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) newly defined. Amount: ${newAmountDec.toString()}, isUnlocked: ${resources[resourceId].isUnlocked}, ShowInUI: ${resources[resourceId].showInUI}`);
@@ -109,7 +113,6 @@ const coreResourceManager = {
             return false;
         }
         
-        // Log the state of the resource right before the unlock check
         loggingSystem.debug("CoreResourceManager_AddAmount", `Attempting to add to '${resourceId}'. Current state: isUnlocked=${resource.isUnlocked}, showInUI=${resource.showInUI}, amount=${resource.amount.toString()}`);
 
         if (!resource.isUnlocked) {
@@ -175,7 +178,6 @@ const coreResourceManager = {
             loggingSystem.warn("CoreResourceManager_SetProd", `Resource '${resourceId}' not defined. Cannot set production.`);
             return;
         }
-        // Allow setting production sources even if locked, they just won't apply until unlocked.
         if (typeof sourceKey !== 'string' || sourceKey.trim() === '') {
             loggingSystem.warn("CoreResourceManager_SetProd", `sourceKey for '${resourceId}' must be a non-empty string.`);
             return;
@@ -269,7 +271,6 @@ const coreResourceManager = {
         loggingSystem.info("CoreResourceManager_Reset", "Resetting all resource states...");
         const coreResourceDefinitions = staticDataAggregator.getData('core_resource_definitions') || {};
         
-        // Create a new resources object for full reset
         const newResourcesState = {};
 
         for (const resId in coreResourceDefinitions) {
@@ -283,12 +284,12 @@ const coreResourceManager = {
                 isUnlocked: resDef.isUnlocked,
                 showInUI: resDef.showInUI,
                 hasProductionRate: resDef.hasProductionRate,
+                resetsOnPrestige: true, // Core resources reset by default
                 isInitialized: true,
             };
             loggingSystem.debug("CoreResourceManager_Reset", `Reset core resource: ${resId} to initial state.`);
         }
-        resources = newResourcesState; // Replace the old resources object
-        // Module-defined resources will be added back by their respective manifests during game re-initialization (e.g., after a reset in main.js)
+        resources = newResourcesState;
         loggingSystem.info("CoreResourceManager_Reset", "Core resource states reset. Module resources will be redefined by their manifests.");
     },
 
@@ -304,6 +305,7 @@ const coreResourceManager = {
                     isUnlocked: res.isUnlocked,
                     showInUI: res.showInUI,
                     hasProductionRate: res.hasProductionRate,
+                    resetsOnPrestige: res.resetsOnPrestige, // Save the flag
                     productionSources: {},
                 };
                 for (const srcKey in res.productionSources) {
@@ -323,20 +325,18 @@ const coreResourceManager = {
 
         for (const resourceId in saveData) {
             const savedRes = saveData[resourceId];
-            // Define the resource based on saved data. This ensures that its properties (like isUnlocked)
-            // are set from the save file correctly, overwriting any defaults from initial module definitions.
             this.defineResource(
                 resourceId,
                 savedRes.name || resourceId,
                 decimalUtility.new(savedRes.amount),
                 savedRes.showInUI,
-                savedRes.isUnlocked, // This is critical: use the saved isUnlocked state
-                savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : true
+                savedRes.isUnlocked,
+                savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : true,
+                savedRes.resetsOnPrestige !== undefined ? savedRes.resetsOnPrestige : true // Load the flag
             );
             
-            // After defining (which sets amount, isUnlocked etc.), set production sources
             if (resources[resourceId] && savedRes.productionSources) {
-                 resources[resourceId].productionSources = {}; // Clear any default before loading
+                 resources[resourceId].productionSources = {};
                  for (const srcKey in savedRes.productionSources) {
                     resources[resourceId].productionSources[srcKey] = decimalUtility.new(savedRes.productionSources[srcKey]);
                 }
@@ -345,8 +345,18 @@ const coreResourceManager = {
             loggingSystem.debug("CoreResourceManager_LoadSave", `Loaded resource '${resourceId}' from save. isUnlocked: ${resources[resourceId]?.isUnlocked}, showInUI: ${resources[resourceId]?.showInUI}`);
         }
         loggingSystem.info("CoreResourceManager_LoadSave", "Resource data loading complete.");
+    },
+
+    // Action 2: Add the new performPrestigeReset function
+    performPrestigeReset() {
+        loggingSystem.info('ResourceManager', 'Performing prestige reset on resources...');
+        for (const resId in resources) {
+            if (resources[resId].resetsOnPrestige === true) {
+                resources[resId].amount = decimalUtility.new(0);
+                loggingSystem.debug('ResourceManager', `Reset resource: ${resId}`);
+            }
+        }
     }
 };
 
 export { coreResourceManager };
- 

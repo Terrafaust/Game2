@@ -1,0 +1,139 @@
+// /game/modules/prestige_module/prestige_ui.js (v1.0)
+import * as logic from './prestige_logic.js';
+import { prestigeData } from './prestige_data.js';
+
+let coreSystemsRef = null;
+let parentElementCache = null;
+
+export const ui = {
+    initialize(coreSystems) {
+        coreSystemsRef = coreSystems;
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized.");
+    },
+
+    renderMainContent(parentElement) {
+        parentElementCache = parentElement;
+        parentElement.innerHTML = ''; // Clear previous content
+
+        const container = document.createElement('div');
+        container.className = 'p-4 space-y-6';
+        
+        // --- Header Section ---
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
+        
+        const apDisplay = document.createElement('div');
+        apDisplay.id = 'ap-display';
+        apDisplay.className = 'text-lg text-yellow-300';
+        header.appendChild(apDisplay);
+
+        const ascendButtonContainer = document.createElement('div');
+        const ascendButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
+        ascendButton.id = 'ascend-button';
+        ascendButtonContainer.appendChild(ascendButton);
+        header.appendChild(ascendButtonContainer);
+        
+        container.appendChild(header);
+
+        // --- Producers Section ---
+        const producersTitle = document.createElement('h3');
+        producersTitle.className = 'text-xl font-semibold text-primary mt-6';
+        producersTitle.textContent = 'Ascension Upgrades';
+        container.appendChild(producersTitle);
+
+        const producersGrid = document.createElement('div');
+        producersGrid.id = 'prestige-producers-grid';
+        producersGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
+        
+        for (const producerId in prestigeData.producers) {
+            const producerDef = prestigeData.producers[producerId];
+            producersGrid.appendChild(this._createProducerCard(producerDef));
+        }
+
+        container.appendChild(producersGrid);
+        parentElement.appendChild(container);
+        
+        this.updateDynamicElements();
+    },
+
+    _createProducerCard(producerDef) {
+        const { coreUIManager } = coreSystemsRef;
+        const card = document.createElement('div');
+        card.id = `prestige-card-${producerDef.id}`;
+        card.className = 'bg-surface p-4 rounded-lg shadow-md flex flex-col';
+
+        const name = document.createElement('h4');
+        name.className = 'text-md font-semibold text-textPrimary mb-1';
+        name.textContent = producerDef.name;
+        card.appendChild(name);
+
+        const description = document.createElement('p');
+        description.className = 'text-textSecondary text-xs mb-2 flex-grow';
+        description.textContent = producerDef.description;
+        card.appendChild(description);
+
+        const ownedDisplay = document.createElement('p');
+        ownedDisplay.id = `prestige-owned-${producerDef.id}`;
+        ownedDisplay.className = 'text-sm text-blue-400 mb-2';
+        card.appendChild(ownedDisplay);
+
+        const costDisplay = document.createElement('p');
+        costDisplay.id = `prestige-cost-${producerDef.id}`;
+        costDisplay.className = 'text-xs text-yellow-400 mb-3';
+        card.appendChild(costDisplay);
+        
+        const purchaseButton = coreUIManager.createButton(
+            'Buy', 
+            () => logic.purchasePrestigeProducer(producerDef.id), 
+            ['w-full', 'text-sm', 'py-1.5', 'mt-auto'], 
+            `prestige-purchase-${producerDef.id}`
+        );
+        card.appendChild(purchaseButton);
+
+        return card;
+    },
+
+    updateDynamicElements() {
+        if (!parentElementCache) return;
+        const { decimalUtility, coreResourceManager } = coreSystemsRef;
+
+        // Update AP display
+        const apDisplay = parentElementCache.querySelector('#ap-display');
+        if (apDisplay) {
+            const ap = coreResourceManager.getAmount('ascensionPoints');
+            apDisplay.textContent = `Ascension Points: ${decimalUtility.format(ap, 2, 0)}`;
+        }
+
+        // Update Ascend button
+        const ascendButton = parentElementCache.querySelector('#ascend-button');
+        if (ascendButton) {
+            const gain = logic.calculateAscensionGain();
+            const canAscend = logic.canPrestige();
+            ascendButton.disabled = !canAscend || decimalUtility.isZero(gain);
+            if (canAscend) {
+                ascendButton.textContent = `Ascend for ${decimalUtility.format(gain, 2, 0)} AP`;
+            } else {
+                ascendButton.textContent = 'Need 10 Professors';
+            }
+        }
+        
+        // Update producer cards
+        for (const producerId in prestigeData.producers) {
+            const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
+            if (card) {
+                const owned = logic.getOwnedPrestigeProducerCount(producerId);
+                const cost = logic.calculatePrestigeProducerCost(producerId);
+
+                card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
+                card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} AP`;
+                
+                const button = card.querySelector(`#prestige-purchase-${producerId}`);
+                button.disabled = !coreResourceManager.canAfford('ascensionPoints', cost);
+            }
+        }
+    },
+    
+    onShow() {
+        if(parentElementCache) this.updateDynamicElements();
+    }
+};
