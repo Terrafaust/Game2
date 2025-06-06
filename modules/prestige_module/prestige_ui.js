@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v1.0)
+// /game/modules/prestige_module/prestige_ui.js (v1.1 - Function Call Fix)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -109,11 +109,13 @@ export const ui = {
         if (prestigeButton) {
             const gain = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
-            prestigeButton.disabled = !canPrestige || decimalUtility.isZero(gain);
+            // FIX: Replaced decimalUtility.isZero(gain) with decimalUtility.eq(gain, 0)
+            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
                 prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} AP`;
             } else {
-                prestigeButton.textContent = 'Need 10 Professors';
+                // This text might need to be updated based on the new unlock condition (1k images)
+                prestigeButton.textContent = 'Prestige is not unlocked';
             }
         }
         
