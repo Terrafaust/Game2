@@ -90,6 +90,7 @@ export const updateAllPrestigeProducerProductions = (deltaTime) => {
  * @returns {boolean}
  */
 export const canPrestige = () => {
+    // This check is simple and robust. It relies on the achievement system to manage the unlock state.
     return coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
 };
 

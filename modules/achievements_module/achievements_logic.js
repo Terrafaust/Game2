@@ -122,6 +122,10 @@ export const moduleLogic = {
                 loggingSystem.warn("AchievementsLogic", `Unknown condition type for achievement ${achievementId}: ${condition.type}`);
                 return false;
         }
+        // **FIX**: If a feature was unlocked, explicitly re-render the menu
+        if (menuNeedsUpdate) {
+            coreUIManager.renderMenu();
+        }
     },
 
     checkAndCompleteAchievements() {
@@ -189,6 +193,9 @@ export const moduleLogic = {
                     const reward = achievementDef.reward;
                     const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
                     coreUpgradeManager.registerEffectSource('achievements', achievementId, reward.targetSystem, reward.targetId, reward.type, valueProvider);
+                } else if (reward.type === "UNLOCK_FEATURE") {
+                        // Also apply feature unlocks on game load to ensure consistency
+                        coreGameStateManager.setGlobalFlag(reward.flag, true);
                 }
             }
         }

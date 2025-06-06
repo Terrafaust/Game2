@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.4 - Achievement-Based Unlock)
+// /game/modules/prestige_module/prestige_manifest.js (v1.5 - Unlock Debugging)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,7 +7,7 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.4.0',
+    version: '1.5.0',
     description: 'The Prestige system.',
     dependencies: [],
 
@@ -55,8 +55,12 @@ export const manifest = {
             manifest.id,
             prestigeData.ui.tabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
-            // **NEW VISIBILITY LOGIC**: Show if the achievement system has unlocked the feature.
-            () => coreGameStateManager.getGlobalFlag('prestigeUnlocked', false),
+            () => {
+                // **DEBUG LOGGING ADDED**
+                const isUnlocked = coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
+                // loggingSystem.debug('PrestigeManifest_VisibilityCheck', `is prestigeUnlocked? ${isUnlocked}`);
+                return isUnlocked;
+            },
             () => ui.onShow(),
             () => {}
         );
