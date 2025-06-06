@@ -45,7 +45,7 @@ export const staticModuleData = {
             description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.',
             costResource: 'studyPoints',
             baseCost: '10000000', 
-            costGrowthFactor: '1.5', 
+            costGrowthFactor: '1.2', 
             benefitResource: 'studySkillPoints',
             benefitAmountPerPurchase: '1', 
         }
