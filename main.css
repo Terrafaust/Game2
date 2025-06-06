@@ -20,6 +20,11 @@
     0%, 100% { filter: brightness(1); }
     50% { filter: brightness(1.15) saturate(1.2); }
 }
+@keyframes background-pan-rgb {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
 
 /* --- THEME DEFINITIONS --- */
 
@@ -58,7 +63,6 @@ html[data-theme="classic"][data-mode="day"] {
     --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
     --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
     --color-border: #808080; --color-button-text: #000000;
-    /* UPDATED: Changed to a local path. Place your image in an 'assets' folder. */
     --background-image: url('assets/bliss.jpg');
 }
 html[data-theme="classic"][data-mode="night"] {
@@ -138,15 +142,33 @@ html[data-theme="red_yellow"][data-mode="night"] {
     --animation-special-text: glow-gold 2s infinite alternate;
 }
 
-/* 8. RGB THEME */
+/* 8. RGB THEME (UPDATED) */
 html[data-theme="rgb"] {
-    --color-primary: #ff33ff; --color-primary-lighter: #ff66ff;
-    --color-secondary: #33ffff;
-    --color-background: #111; --color-surface: #1a1a1a; --color-surface-dark: #2a2a2a;
-    --color-text-primary: #eee; --color-text-secondary: #bbb;
-    --color-border: #444; --color-button-text: #fff;
     --animation-special-text: text-glow-rgb 3s infinite linear;
+    --button-background-gradient: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    --animation-button-background: background-pan-rgb 10s linear infinite;
 }
+html[data-theme="rgb"][data-mode="day"] {
+    --color-secondary: #33ffff;
+    --color-background: #e0e0e0;
+    --color-surface: #f5f5f5;
+    --color-surface-dark: #dcdcdc;
+    --color-text-primary: #111;
+    --color-text-secondary: #444;
+    --color-border: #c0c0c0;
+    --color-button-text: #000;
+}
+html[data-theme="rgb"][data-mode="night"] {
+    --color-secondary: #33ffff;
+    --color-background: #111;
+    --color-surface: #1a1a1a;
+    --color-surface-dark: #2a2a2a;
+    --color-text-primary: #eee;
+    --color-text-secondary: #bbb;
+    --color-border: #444;
+    --color-button-text: #fff;
+}
+
 
 /* --- Base Layout & SCROLLING FIX --- */
 html {
@@ -252,13 +274,21 @@ footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top:
 
 /* Modern Button style (default) */
 .game-button { 
-    background-color: var(--color-primary); color: var(--color-button-text); 
+    background-color: var(--color-primary); 
+    color: var(--color-button-text); 
     padding: 0.6rem 1.2rem; border-radius: 9999px;
     font-weight: 500; cursor: pointer; border: 1px solid transparent; 
     animation: var(--animation-button-border, none);
 }
 .game-button:hover { filter: brightness(1.15); }
 .game-button:active { transform: scale(0.97); }
+
+/* RGB Theme Button Override */
+html[data-theme="rgb"] .game-button {
+    background-image: var(--button-background-gradient);
+    background-size: 200% 200%;
+    animation: var(--animation-button-background);
+}
 
 /* Classic Theme Overrides */
 html[data-theme="classic"] #main-content {
