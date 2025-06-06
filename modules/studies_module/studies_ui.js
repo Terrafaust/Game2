@@ -1,8 +1,9 @@
-// js/modules/studies_module/studies_ui.js (v2.0 - Buy Multiplier UI)
+// js/modules/studies_module/studies_ui.js (v2.1 - Buy Max UI)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
+ * v2.1: Adds 'Buy Max' button and logic to multiplier controls.
  * v2.0: Adds buy multiplier controls.
  */
 
@@ -16,9 +17,8 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.0).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.1).");
 
-        // Listen for multiplier changes to re-render this tab if it's active
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
                 this.updateDynamicElements();
@@ -27,27 +27,18 @@ export const ui = {
     },
 
     renderMainContent(parentElement) {
-        if (!coreSystemsRef || !moduleLogicRef) {
-            parentElement.innerHTML = '<p class="text-red-500">Studies UI not properly initialized.</p>';
-            return;
-        }
+        if (!coreSystemsRef || !moduleLogicRef) { /* ... */ return; }
         parentElementCache = parentElement;
         parentElement.innerHTML = '';
 
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
+        
+        container.innerHTML = `
+            <h2 class="text-2xl font-semibold text-primary mb-4">Studies Department</h2>
+            <p class="text-textSecondary mb-6">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
+        `;
 
-        const title = document.createElement('h2');
-        title.className = 'text-2xl font-semibold text-primary mb-4';
-        title.textContent = 'Studies Department';
-        container.appendChild(title);
-
-        const description = document.createElement('p');
-        description.className = 'text-textSecondary mb-6';
-        description.textContent = 'Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.';
-        container.appendChild(description);
-
-        // --- NEW: Buy Multiplier Controls ---
         container.appendChild(this._createBuyMultiplierControls());
 
         const producersContainer = document.createElement('div');
@@ -55,7 +46,6 @@ export const ui = {
         producersContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
         container.appendChild(producersContainer);
 
-        // Create the card structure for each producer
         for (const producerId in staticModuleData.producers) {
             producersContainer.appendChild(this._createProducerCard(producerId));
         }
@@ -68,30 +58,23 @@ export const ui = {
     _createProducerCard(producerId) {
         const producerDef = staticModuleData.producers[producerId];
         const { coreUIManager } = coreSystemsRef;
-
-        const producerCard = document.createElement('div');
-        producerCard.id = `producer-card-${producerId}`;
-        producerCard.className = `bg-surface-dark p-4 rounded-lg shadow-md flex flex-col transition-all duration-200`;
-
-        producerCard.innerHTML = `
+        const card = document.createElement('div');
+        card.id = `producer-card-${producerId}`;
+        card.className = 'bg-surface-dark p-4 rounded-lg shadow-md flex flex-col';
+        card.innerHTML = `
             <h3 class="text-xl font-semibold text-textPrimary mb-2">${producerDef.name}</h3>
             <p class="text-textSecondary text-sm mb-3">${producerDef.description}</p>
             <p id="producer-${producerId}-owned" class="text-textPrimary text-lg font-bold mb-1"></p>
             <p id="producer-${producerId}-production" class="text-green-400 text-sm mb-3"></p>
-            <p id="producer-${producerId}-cost" class="text-textSecondary text-sm mb-4"></p>
-        `;
-
+            <p id="producer-${producerId}-cost" class="text-textSecondary text-sm mb-4"></p>`;
         const buyButton = coreUIManager.createButton('', () => {
-            const purchased = moduleLogicRef.purchaseProducer(producerId);
-            if (purchased) {
+            if (moduleLogicRef.purchaseProducer(producerId)) {
                 this.updateDynamicElements();
                 moduleLogicRef.updateGlobalFlags();
-                coreUIManager.showNotification(`Purchased ${producerDef.name}!`, 'success', 1500);
             }
-        }, ['bg-blue-600', 'hover:bg-blue-700', 'text-white', 'py-2', 'px-4', 'text-md', 'w-full', 'mt-auto'], `buy-${producerId}-button`);
-        
-        producerCard.appendChild(buyButton);
-        return producerCard;
+        }, ['w-full', 'mt-auto'], `buy-${producerId}-button`);
+        card.appendChild(buyButton);
+        return card;
     },
 
     _createBuyMultiplierControls() {
@@ -101,7 +84,7 @@ export const ui = {
         
         buyMultiplierManager.getAvailableMultipliers().forEach(multiplier => {
             const button = coreUIManager.createButton(
-                `x${multiplier}`,
+                buyMultiplierManager.getMultiplierLabel(multiplier),
                 () => buyMultiplierManager.setMultiplier(multiplier),
                 ['px-4', 'py-1', 'text-sm'],
                 `buy-multiplier-${multiplier}`
@@ -110,9 +93,7 @@ export const ui = {
         });
         
         this._updateMultiplierButtonStyles(controlWrapper);
-        
         document.addEventListener('buyMultiplierChanged', () => this._updateMultiplierButtonStyles(controlWrapper));
-
         return controlWrapper;
     },
 
@@ -123,13 +104,13 @@ export const ui = {
         const buttons = wrapper.querySelectorAll('button');
         
         buttons.forEach(button => {
-            const multiplierValue = parseInt(button.textContent.replace('x', ''), 10);
-            if (multiplierValue === currentMultiplier) {
-                button.classList.remove('bg-primary', 'opacity-60');
-                button.classList.add('bg-accentOne', 'text-white');
+            const buttonMultiplier = parseInt(button.id.replace('buy-multiplier-', ''), 10);
+            if (buttonMultiplier === currentMultiplier) {
+                button.classList.add('bg-accentOne', 'text-white', 'opacity-100');
+                button.classList.remove('opacity-60');
             } else {
                 button.classList.remove('bg-accentOne', 'text-white');
-                button.classList.add('bg-primary', 'opacity-60');
+                button.classList.add('opacity-60');
             }
         });
     },
@@ -137,67 +118,77 @@ export const ui = {
     updateDynamicElements() {
         if (!parentElementCache) return;
         const { coreResourceManager, decimalUtility, buyMultiplierManager } = coreSystemsRef;
-        const currentMultiplier = buyMultiplierManager.getMultiplier();
 
         for (const producerId in staticModuleData.producers) {
             const producerDef = staticModuleData.producers[producerId];
-            const producerCard = parentElementCache.querySelector(`#producer-card-${producerId}`);
-            if (!producerCard) continue;
+            const card = parentElementCache.querySelector(`#producer-card-${producerId}`);
+            if (!card) continue;
 
-            const buyButton = producerCard.querySelector(`#buy-${producerId}-button`);
-            const ownedDisplay = producerCard.querySelector(`#producer-${producerId}-owned`);
-            const productionDisplay = producerCard.querySelector(`#producer-${producerId}-production`);
-            const costDisplay = producerCard.querySelector(`#producer-${producerId}-cost`);
+            const ownedDisplay = card.querySelector(`#producer-${producerId}-owned`);
+            const prodDisplay = card.querySelector(`#producer-${producerId}-production`);
+            const costDisplay = card.querySelector(`#producer-${producerId}-cost`);
+            const buyButton = card.querySelector(`#buy-${producerId}-button`);
             
-            const isUnlocked = moduleLogicRef.isProducerUnlocked(producerId);
-
-            if (isUnlocked) {
-                producerCard.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
-                producerCard.classList.add('bg-surface-dark');
-
+            if (moduleLogicRef.isProducerUnlocked(producerId)) {
+                card.classList.remove('opacity-50', 'grayscale', 'cursor-not-allowed');
+                
                 const ownedCount = moduleLogicRef.getOwnedProducerCount(producerId);
-                const costForBatch = moduleLogicRef.calculateProducerCost(producerId, currentMultiplier);
                 const totalProduction = coreResourceManager.getProductionFromSource(producerDef.resourceId, `studies_module_${producerId}`);
                 
-                ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
-                productionDisplay.textContent = `Total Production: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
-                costDisplay.textContent = `Cost for ${currentMultiplier}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
-                buyButton.textContent = `Buy ${currentMultiplier} ${producerDef.name}${currentMultiplier > 1 ? 's' : ''}`;
+                ownedDisplay.textContent = `Possédés : ${decimalUtility.format(ownedCount, 0)}`;
+                prodDisplay.textContent = `Production : ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
+
+                let quantity = buyMultiplierManager.getMultiplier();
+                let quantityToBuy = quantity;
+                if (quantity === -1) { // If Max is selected
+                    quantityToBuy = moduleLogicRef.calculateMaxBuyable(producerId);
+                }
+                
+                const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy.toNumber());
+                
+                if (decimalUtility.gt(quantityToBuy, 0)) {
+                    costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToBuy,0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
+                    buyButton.textContent = `Acheter ${decimalUtility.format(quantityToBuy,0)} ${producerDef.name}${decimalUtility.gt(quantityToBuy,1) ? 's' : ''}`;
+                } else {
+                    costDisplay.textContent = `Coût : ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
+                    buyButton.textContent = `Acheter 1 ${producerDef.name}`;
+                }
                 
                 const canAfford = coreResourceManager.canAfford(producerDef.costResource, costForBatch);
-                buyButton.disabled = !canAfford;
-                if (canAfford) {
-                    buyButton.classList.remove('bg-gray-500', 'cursor-not-allowed');
-                    buyButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
-                } else {
-                    buyButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                    buyButton.classList.add('bg-gray-500', 'cursor-not-allowed');
-                }
+                buyButton.disabled = !canAfford || decimalUtility.eq(quantityToBuy, 0);
+
             } else {
-                producerCard.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
+                card.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
                 buyButton.disabled = true;
-                buyButton.textContent = "Locked";
+                buyButton.textContent = "Verrouillé";
             }
         }
     },
-
+    
+    // ... onShow, onHide, and tooltip functions remain unchanged
     _getUnlockTooltipContent(condition) {
-        // ... (This function remains unchanged)
-        return "Unlock condition...";
+        const { coreResourceManager, decimalUtility } = coreSystemsRef;
+        let content = '<p class="font-semibold text-primary mb-1">Condition de déverrouillage:</p>';
+        switch (condition.type) {
+            case "resource":
+                content += `<p>Atteindre ${decimalUtility.format(condition.amount, 0)} ${coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId}.</p>`;
+                break;
+            case "producerOwned":
+                content += `<p>Posséder ${condition.count} ${staticModuleData.producers[condition.producerId].name}.</p>`;
+                break;
+        }
+        return content;
     },
-
     _setupTooltips() {
-        // ... (This function remains unchanged)
+        parentElementCache.querySelectorAll('.tooltip-target').forEach(target => {
+            target.addEventListener('mouseenter', () => coreSystemsRef.coreUIManager.showTooltip(target.dataset.tooltipContent, target));
+            target.addEventListener('mouseleave', () => coreSystemsRef.coreUIManager.hideTooltip());
+        });
     },
-
     onShow() {
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "Studies tab shown.");
-        this.updateDynamicElements();
-        this._setupTooltips();
+        if(parentElementCache) this.renderMainContent(parentElementCache);
     },
-
     onHide() {
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "Studies tab hidden.");
         coreSystemsRef.coreUIManager.hideTooltip();
     }
 };
