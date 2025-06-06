@@ -58,7 +58,8 @@ html[data-theme="classic"][data-mode="day"] {
     --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
     --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
     --color-border: #808080; --color-button-text: #000000;
-    --background-image: url(https://c4.wallpaperflare.com/wallpaper/39/346/426/windows-xp-bliss-desktop-wallpaper-preview.jpg);
+    /* UPDATED: Changed to a local path. Place your image in an 'assets' folder. */
+    --background-image: url('assets/bliss.jpg');
 }
 html[data-theme="classic"][data-mode="night"] {
     --color-primary: #3a8cff; --color-primary-lighter: #79bbff;
