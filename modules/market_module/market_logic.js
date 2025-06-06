@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v1.9.1 - Critical Bug Fix)
+// modules/market_module/market_logic.js (v1.9.2 - Corrected Max Logic)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v1.9.2: Corrects crash by using decimalUtility.max which is now defined.
  * v1.9.1: Fixes a crash in purchaseScalableItem caused by incorrect .toNumber() call.
- * v1.9: Implements 'Buy Max' functionality for scalable items.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,7 +15,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9.1).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9.2).");
     },
     
     calculateMaxBuyable(itemId) {
@@ -53,6 +53,7 @@ export const moduleLogic = {
 
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         
+        // This line now works because decimalUtility.max is defined
         return decimalUtility.max(max_n, 0);
     },
 
@@ -102,7 +103,6 @@ export const moduleLogic = {
             }
         }
 
-        // *** THIS IS THE FIX: Removed .toNumber() from quantity ***
         const cost = this.calculateScalableItemCost(itemId, quantity);
         const costResource = itemDef.costResource;
 

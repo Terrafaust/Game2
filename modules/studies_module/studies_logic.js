@@ -56,6 +56,7 @@ export const moduleLogic = {
 
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         
+        // This line now works because decimalUtility.max is defined
         return decimalUtility.max(max_n, 0);
     },
 
@@ -109,7 +110,6 @@ export const moduleLogic = {
             }
         }
 
-        // *** THIS IS THE FIX: Removed .toNumber() from quantity ***
         const cost = this.calculateProducerCost(producerId, quantity);
         const costResource = producerDef.costResource;
 
