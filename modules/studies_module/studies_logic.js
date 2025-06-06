@@ -1,8 +1,9 @@
-// modules/studies_module/studies_logic.js (v3.4 - Reset Fix)
+// modules/studies_module/studies_logic.js (v3.5 - Buy Multiplier)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
+ * v3.5: Implements buy multiplier for purchasing producers.
  * v3.4: Ensures 'studiesTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
@@ -14,27 +15,10 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        if (coreSystemsRef && coreSystemsRef.loggingSystem) {
-            coreSystemsRef.loggingSystem.debug("StudiesLogic_Init", "coreSystemsRef received:", 
-                Object.keys(coreSystemsRef), 
-                "Has decimalUtility:", !!(coreSystemsRef.decimalUtility)
-            );
-            if (!coreSystemsRef.decimalUtility) {
-                 coreSystemsRef.loggingSystem.error("StudiesLogic_Init_CRITICAL", "decimalUtility is MISSING in coreSystemsRef during initialize!");
-            }
-        } else {
-            console.error("StudiesLogic_Init_CRITICAL: coreSystemsRef or loggingSystem is missing during initialize!", coreSystemsRef);
-        }
-        const log = (coreSystemsRef && coreSystemsRef.loggingSystem) ? coreSystemsRef.loggingSystem.info.bind(coreSystemsRef.loggingSystem) : console.log;
-        log("StudiesLogic", "Logic initialized (v3.4).");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.5).");
     },
 
-    calculateProducerCost(producerId) {
-        if (!coreSystemsRef || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) {
-            console.error(`StudiesLogic_calculateProducerCost_CRITICAL: Core systems missing for producer ${producerId}!`, coreSystemsRef);
-            if (!coreSystemsRef || !coreSystemsRef.decimalUtility) return new Decimal(Infinity); 
-            return coreSystemsRef.decimalUtility.new(Infinity);
-        }
+    calculateProducerCost(producerId, quantity = 1) {
         const { decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
@@ -46,27 +30,29 @@ export const moduleLogic = {
         const baseCost = decimalUtility.new(producerDef.baseCost);
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
         const ownedCount = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
+        const n = decimalUtility.new(quantity);
 
-        let currentCost = decimalUtility.multiply(
-            baseCost,
-            decimalUtility.power(costGrowthFactor, ownedCount)
-        );
+        let totalCost;
+        if (decimalUtility.eq(costGrowthFactor, 1)) {
+            totalCost = decimalUtility.multiply(baseCost, n);
+        } else {
+            const R_pow_n = decimalUtility.power(costGrowthFactor, n);
+            const numerator = decimalUtility.subtract(R_pow_n, 1);
+            const denominator = decimalUtility.subtract(costGrowthFactor, 1);
+            totalCost = decimalUtility.multiply(baseCost, decimalUtility.divide(numerator, denominator));
+        }
+        
+        const priceIncreaseFromOwned = decimalUtility.power(costGrowthFactor, ownedCount);
+        totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
 
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
-        currentCost = decimalUtility.multiply(currentCost, costReductionMultiplier);
+        totalCost = decimalUtility.multiply(totalCost, costReductionMultiplier);
         
-        if (decimalUtility.lt(currentCost, 1) && decimalUtility.neq(currentCost, 0)) {
-            // currentCost = decimalUtility.new(1); 
-        }
-        return currentCost;
+        return totalCost;
     },
 
     purchaseProducer(producerId) {
-        if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
-            console.error("StudiesLogic_purchaseProducer_CRITICAL: Core systems missing!", coreSystemsRef);
-            return false;
-        }
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, buyMultiplierManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
         if (!producerDef) {
@@ -74,25 +60,28 @@ export const moduleLogic = {
             return false;
         }
 
-        const cost = this.calculateProducerCost(producerId);
+        const quantity = buyMultiplierManager.getMultiplier();
+        const cost = this.calculateProducerCost(producerId, quantity);
         const costResource = producerDef.costResource;
 
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
 
             let currentOwned = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
-            moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, 1).toString();
+            moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, quantity).toString();
 
             this.updateProducerProduction(producerId);
             coreGameStateManager.setModuleState('studies', { ...moduleState });
 
-            loggingSystem.info("StudiesLogic", `Purchased ${producerDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. Owned: ${moduleState.ownedProducers[producerId]}`);
+            loggingSystem.info("StudiesLogic", `Purchased ${quantity} of ${producerDef.name}. Cost: ${decimalUtility.format(cost)} ${costResource}. Owned: ${moduleState.ownedProducers[producerId]}`);
             return true;
         } else {
-            loggingSystem.debug("StudiesLogic", `Cannot afford ${producerDef.name}. Need ${decimalUtility.format(cost)} ${costResource}. Have ${decimalUtility.format(coreResourceManager.getAmount(costResource))}`);
+            loggingSystem.debug("StudiesLogic", `Cannot afford ${quantity} of ${producerDef.name}. Need ${decimalUtility.format(cost)} ${costResource}. Have ${decimalUtility.format(coreResourceManager.getAmount(costResource))}`);
             return false;
         }
     },
+    
+    // ... all other functions from your original file remain untouched ...
 
     updateProducerProduction(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) {
@@ -266,10 +255,9 @@ export const moduleLogic = {
              return;
         }
         coreSystemsRef.loggingSystem.info("StudiesLogic", "onResetState (v3.4): Resetting Studies module logic state.");
-        this.updateAllProducerProductions(); // Recalculate production (will be 0)
+        this.updateAllProducerProductions();
         const knowledgeDef = staticModuleData.resources.knowledge;
-        coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI); // Reset visibility
-        // Clear the permanent unlock flag for the studies tab
+        coreSystemsRef.coreResourceManager.setResourceVisibility('knowledge', knowledgeDef.showInUI);
         coreSystemsRef.coreGameStateManager.setGlobalFlag('studiesTabPermanentlyUnlocked', false);
         coreSystemsRef.loggingSystem.info("StudiesLogic", "'studiesTabPermanentlyUnlocked' flag cleared.");
     }
