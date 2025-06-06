@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.6 - Initialization Fix)
+// /game/modules/prestige_module/prestige_manifest.js (v1.5 - Unlock Debugging)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,15 +7,13 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.6.0',
+    version: '1.5.0',
     description: 'The Prestige system.',
     dependencies: [],
 
     initialize: (coreSystems) => {
-        // FIX #2: Added coreUIManager to the destructuring.
         const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop, coreUIManager } = coreSystems;
 
-        // FIX #1: Changed `this.version` to `manifest.version`.
         loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${manifest.version}...`);
         
         prestigeLogic.initialize(coreSystems);
@@ -45,14 +43,12 @@ export const manifest = {
             () => prestigeLogic.getPrestigeBonusMultiplier()
         );
         
-        // Production logic is still handled by the game loop.
         gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
             if (Object.values(moduleState.ownedProducers).some(val => val !== '0')) {
                  prestigeLogic.updateAllPrestigeProducerProductions(deltaTime);
             }
         });
 
-        // Register the UI Tab with the new, simpler visibility logic
         coreUIManager.registerMenuTab(
             manifest.id,
             prestigeData.ui.tabLabel,
@@ -64,6 +60,17 @@ export const manifest = {
             () => ui.onShow(),
             () => {}
         );
+        
+        // ADDED: Register the Prestige Skills Tab
+        coreUIManager.registerMenuTab(
+            'prestige_skills',
+            "Prestige Skills",
+            (parentElement) => { 
+                parentElement.innerHTML = `<div class="p-4"><h2 class="text-xl font-semibold">Prestige Skills</h2><p class="text-textSecondary mt-2">This feature is not yet implemented. Spend your Prestige Points here for powerful, permanent upgrades that persist through Prestiges.</p></div>`;
+            },
+            () => coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false), // Only show after first prestige
+            () => {}
+        );
 
         ui.initialize(coreSystems, prestigeLogic);
 
@@ -72,7 +79,10 @@ export const manifest = {
         return {
             id: manifest.id,
             logic: prestigeLogic,
-            ui: ui
+            ui: ui,
+            onPrestigeReset: () => {
+                loggingSystem.info(manifest.name, `onPrestigeReset called for ${manifest.name}. My state is safe.`);
+            }
         };
     }
 };

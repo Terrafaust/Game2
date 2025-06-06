@@ -133,7 +133,6 @@ const marketManifest = {
                     const resDef = staticModuleData.resources[resourceKey];
                      loggingSystem.debug(this.name, `onResetState: Re-asserting Market's definition for '${resDef.id}'. IsUnlocked: ${resDef.isUnlocked}, ShowInUI: ${resDef.showInUI}`);
                     
-                    // On HARD reset, explicitly set images to be hidden and locked as per its updated static data.
                     let resetShowInUI = resDef.id === 'images' ? false : resDef.showInUI;
                     let resetIsUnlocked = resDef.id === 'images' ? false : resDef.isUnlocked;
 
@@ -148,10 +147,19 @@ const marketManifest = {
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState });
-                moduleLogic.onResetState(); // This also calls defineResource for images with false/false
+                moduleLogic.onResetState();
                 if (coreUIManager.isActiveTab(this.id)) {
                     const mainContentEl = document.getElementById('main-content');
                     if (mainContentEl) ui.renderMainContent(mainContentEl);
+                }
+            },
+            onPrestigeReset: () => {
+                loggingSystem.info(this.name, `onPrestigeReset called for ${this.name}.`);
+                const initialState = getInitialState();
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(this.id, initialState);
+                if (coreUIManager.isActiveTab(this.id)) {
+                    ui.renderMainContent(document.getElementById('main-content'));
                 }
             }
         };

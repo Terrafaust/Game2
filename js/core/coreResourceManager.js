@@ -347,12 +347,14 @@ const coreResourceManager = {
         loggingSystem.info("CoreResourceManager_LoadSave", "Resource data loading complete.");
     },
 
-    // Action 2: Add the new performPrestigeReset function
     performPrestigeReset() {
         loggingSystem.info('ResourceManager', 'Performing prestige reset on resources...');
         for (const resId in resources) {
             if (resources[resId].resetsOnPrestige === true) {
                 resources[resId].amount = decimalUtility.new(0);
+                // FIX: Also reset production sources and total rate
+                resources[resId].productionSources = {};
+                resources[resId].totalProductionRate = decimalUtility.new(0);
                 loggingSystem.debug('ResourceManager', `Reset resource: ${resId}`);
             }
         }
