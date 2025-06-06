@@ -373,6 +373,37 @@ html[data-theme="classic"] .menu-tab.active {
 ================================================================================
 */
 
+/* --- Mobile Menu Toggle Button --- */
+.menu-toggle-button {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 120; /* Must be on top of everything */
+    width: 50px;
+    height: 50px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    /* Flex center content */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.menu-toggle-button .hamburger-line {
+    width: 24px;
+    height: 3px;
+    background-color: var(--color-text-primary);
+    border-radius: 3px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+
 /* --- Menu Overlay for mobile --- */
 .menu-overlay {
     display: none;
@@ -394,6 +425,11 @@ body.menu-visible .menu-overlay {
 
 /* Styles for screens 768px wide or less (tablets and phones) */
 @media (max-width: 768px) {
+    /* Show the toggle button */
+    .menu-toggle-button {
+        display: flex;
+    }
+
     /* Make main content take full width by removing the margin */
     #content-pusher {
         margin-left: 0;
@@ -413,6 +449,9 @@ body.menu-visible .menu-overlay {
     /* Adjust padding for smaller screens */
     .content-wrapper {
         padding: 1rem;
+    }
+    header#resource-bar {
+        padding-top: 60px; /* Add padding to top of resource bar to not be overlapped by the hamburger button */
     }
 
     /* Make primary resources stack instead of taking half the width */

@@ -4,11 +4,95 @@
  * @file coreUIManager.js
  * @description Manages the main UI structure.
  * v4.7: Implemented conditional menu visibility based on unlocked tab count and modernizes UI elements.
+ * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
+
+/**
+ * Sets up event listeners for a fully featured swipe-to-toggle mobile menu.
+ * - Swipe right from the left edge to open.
+ * - Swipe left anywhere to close.
+ * - Tap the overlay to close.
+ */
+function initializeSwipeMenu() {
+    const body = document.body;
+    const menu = document.getElementById('main-menu');
+    const menuOverlay = document.querySelector('.menu-overlay');
+
+    // --- State variables for swipe detection ---
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    // --- Configuration ---
+    const swipeThreshold = 50;  // Min horizontal distance to count as a swipe.
+    const edgeThreshold = 40;   // How close to the left edge a swipe must start to OPEN the menu.
+    const verticalThreshold = 75; // Max vertical distance to prevent conflict with scrolling.
+
+    // --- Event Listeners ---
+
+    body.addEventListener('touchstart', (e) => {
+        // Record the starting coordinates of the touch
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    body.addEventListener('touchend', (e) => {
+        // Record the ending coordinates of the touch
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        
+        handleSwipeGesture();
+    });
+
+    function handleSwipeGesture() {
+        const swipeX = touchEndX - touchStartX;
+        const swipeY = touchEndY - touchStartY;
+        const isMenuVisible = body.classList.contains('menu-visible');
+
+        // Check if the swipe was mostly horizontal and not a vertical scroll
+        if (Math.abs(swipeX) < swipeThreshold || Math.abs(swipeY) > verticalThreshold) {
+            return; // Not a valid horizontal swipe
+        }
+
+        // --- Logic to OPEN the menu ---
+        if (!isMenuVisible && swipeX > 0 && touchStartX < edgeThreshold) {
+            // If the menu is hidden, a swipe to the right (positive swipeX)
+            // that starts near the left edge should open it.
+            body.classList.add('menu-visible');
+        }
+        
+        // --- Logic to CLOSE the menu ---
+        if (isMenuVisible && swipeX < 0) {
+            // If the menu is visible, a swipe to the left (negative swipeX)
+            // from anywhere on the screen should close it.
+            body.classList.remove('menu-visible');
+        }
+    }
+    
+    // --- Click listeners for closing ---
+
+    if (menuOverlay) {
+        // Close the menu if the dark overlay is clicked
+        menuOverlay.addEventListener('click', () => {
+            body.classList.remove('menu-visible');
+        });
+    }
+
+    // Close the menu if a menu item is clicked on mobile
+    if (menu) {
+        menu.addEventListener('click', (e) => {
+            // Check if a menu-tab was clicked and we're on a mobile-sized screen
+            if (e.target.classList.contains('menu-tab') && window.innerWidth <= 768) {
+               body.classList.remove('menu-visible');
+            }
+        });
+    }
+}
 
 const UIElements = {
     resourceBar: null,
@@ -55,7 +139,10 @@ export const coreUIManager = {
             loggingSystem.error("CoreUIManager_Init", "menuList element not found, click handler not attached.");
         }
         
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.7).");
+        // ADDED: Initialize the swipe functionality for mobile menus.
+        initializeSwipeMenu();
+
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.8).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
