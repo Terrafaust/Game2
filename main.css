@@ -25,15 +25,6 @@
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
-@keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-@keyframes scale-in {
-    from { transform: scale(0.9); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
 
 /* --- THEME DEFINITIONS --- */
 
@@ -51,21 +42,132 @@
     --background-image: none;
 }
 
-/* ... (All other theme definitions remain the same) ... */
-html[data-theme="modern"][data-mode="night"]{--color-primary:#818CF8;--color-primary-lighter:#A78BFA;--color-secondary:#F472B6;--color-accent-one:#34D399;--color-accent-two:#FBBF24;--color-background:#0F172A;--color-surface:#1E293B;--color-surface-dark:#334155;--color-text-primary:#E2E8F0;--color-text-secondary:#94A3B8;--color-border:#475569;--color-button-text:#F1F5F9}
-html[data-theme="classic"]{--font-main:'Tahoma', sans-serif;--background-image:none}html[data-theme="classic"][data-mode="day"]{--color-primary:#0058e1;--color-primary-lighter:#3a8cff;--color-secondary:#008000;--color-background:#3A6EA5;--color-surface:#ece9d8;--color-surface-dark:#d4d0c8;--color-text-primary:#000;--color-text-secondary:#4f4f4f;--color-border:#808080;--color-button-text:#000;--background-image:url('assets/bliss.jpg')}
-html[data-theme="classic"][data-mode="night"]{--color-primary:#3a8cff;--color-primary-lighter:#79bbff;--color-secondary:#00a300;--color-background:#000;--color-surface:#2b2b2b;--color-surface-dark:#1e1e1e;--color-text-primary:#fff;--color-text-secondary:#c0c0c0;--color-border:#5a5a5a;--color-button-text:#fff}
-html[data-theme="neon"][data-mode="day"]{--color-primary:#39FF14;--color-primary-lighter:#98FB98;--color-secondary:#00F0F0;--color-background:#F0FFF0;--color-surface:#fff;--color-surface-dark:#E0EEE0;--color-text-primary:#004d00;--color-text-secondary:#006400;--color-border:#98FB98;--color-button-text:#003300;--animation-button-border:border-glow-neon 1.5s infinite alternate}
-html[data-theme="neon"][data-mode="night"]{--color-primary:#39FF14;--color-primary-lighter:#7FFF00;--color-secondary:#00FFFF;--color-background:#0D1C02;--color-surface:#1A3504;--color-surface-dark:#2A4711;--color-text-primary:#C1FFC1;--color-text-secondary:#90EE90;--color-border:#2E8B57;--color-button-text:#fff;--animation-button-border:border-glow-neon 1.5s infinite alternate}
-html[data-theme="steampunk"][data-mode="day"]{--color-primary:#8B4513;--color-primary-lighter:#A0522D;--color-secondary:#CD853F;--color-background:#FDF5E6;--color-surface:#FAF0E6;--color-surface-dark:#F5DEB3;--color-text-primary:#5A2D0C;--color-text-secondary:#6B4423;--color-border:#D2B48C;--color-button-text:#fff;--animation-special-text:steampunk-flicker 3s infinite}
-html[data-theme="steampunk"][data-mode="night"]{--color-primary:#CD7F32;--color-primary-lighter:#D99058;--color-secondary:#B8860B;--color-background:#3D2B1F;--color-surface:#4A3728;--color-surface-dark:#5C4033;--color-text-primary:#F5DEB3;--color-text-secondary:#D2B48C;--color-border:#805533;--color-button-text:#2C1E12;--animation-special-text:steampunk-flicker 2s infinite}
-html[data-theme="pink"][data-mode="day"]{--color-primary:#FF69B4;--color-primary-lighter:#FF85C1;--color-secondary:#C71585;--color-background:#FFF0F5;--color-surface:#fff;--color-surface-dark:#FFE4E1;--color-text-primary:#8B008B;--color-text-secondary:#9932CC;--color-border:#FFC0CB;--color-button-text:#fff}
-html[data-theme="pink"][data-mode="night"]{--color-primary:#FF1493;--color-primary-lighter:#FF69B4;--color-secondary:#DB7093;--color-background:#2E081B;--color-surface:#4C0F2E;--color-surface-dark:#6B1741;--color-text-primary:#FFE4E1;--color-text-secondary:#FFB6C1;--color-border:#8B008B;--color-button-text:#fff}
-html[data-theme="red_yellow"][data-mode="day"]{--color-primary:#DC2626;--color-primary-lighter:#EF4444;--color-secondary:#F59E0B;--color-background:#FFFBEB;--color-surface:#FEF2F2;--color-surface-dark:#FEE2E2;--color-text-primary:#991B1B;--color-text-secondary:#B91C1C;--color-border:#FCA5A5;--color-button-text:#fff}
-html[data-theme="red_yellow"][data-mode="night"]{--color-primary:#F87171;--color-primary-lighter:#FB923C;--color-secondary:#FBBF24;--color-background:#450A0A;--color-surface:#7F1D1D;--color-surface-dark:#991B1B;--color-text-primary:#FEE2E2;--color-text-secondary:#FCD34D;--color-border:#B91C1C;--color-button-text:#450A0A;--animation-special-text:glow-gold 2s infinite alternate}
-html[data-theme="rgb"]{--animation-special-text:text-glow-rgb 3s infinite linear;--button-background-gradient:linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);--animation-button-background:background-pan-rgb 10s linear infinite}
-html[data-theme="rgb"][data-mode="day"]{--color-secondary:#33ffff;--color-background:#e0e0e0;--color-surface:#f5f5f5;--color-surface-dark:#dcdcdc;--color-text-primary:#111;--color-text-secondary:#444;--color-border:#c0c0c0;--color-button-text:#000}
-html[data-theme="rgb"][data-mode="night"]{--color-secondary:#33ffff;--color-background:#111;--color-surface:#1a1a1a;--color-surface-dark:#2a2a2a;--color-text-primary:#eee;--color-text-secondary:#bbb;--color-border:#444;--color-button-text:#fff}
+/* 2. Modern Night Theme */
+html[data-theme="modern"][data-mode="night"] {
+    --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
+    --color-accent-one: #34D399; --color-accent-two: #FBBF24;
+    --color-background: #0F172A; --color-surface: #1E293B; --color-surface-dark: #334155;
+    --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
+    --color-border: #475569; --color-button-text: #F1F5F9;
+}
+
+/* 3. CLASSIC THEME (WINDOWS XP/VISTA STYLE) */
+html[data-theme="classic"] { 
+    --font-main: 'Tahoma', sans-serif; 
+    --background-image: none; /* Default to none */
+}
+html[data-theme="classic"][data-mode="day"] {
+    --color-primary: #0058e1; --color-primary-lighter: #3a8cff;
+    --color-secondary: #008000;
+    --color-background: #3A6EA5; /* Fallback color */
+    --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
+    --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
+    --color-border: #808080; --color-button-text: #000000;
+    --background-image: url('assets/bliss.jpg');
+}
+html[data-theme="classic"][data-mode="night"] {
+    --color-primary: #3a8cff; --color-primary-lighter: #79bbff;
+    --color-secondary: #00a300;
+    --color-background: #000000; --color-surface: #2b2b2b; --color-surface-dark: #1e1e1e;
+    --color-text-primary: #ffffff; --color-text-secondary: #c0c0c0;
+    --color-border: #5a5a5a; --color-button-text: #ffffff;
+}
+
+/* 4. NEON THEME (Updated to Green) */
+html[data-theme="neon"][data-mode="day"] {
+    --color-primary: #39FF14; --color-primary-lighter: #98FB98;
+    --color-secondary: #00F0F0;
+    --color-background: #F0FFF0; --color-surface: #FFFFFF; --color-surface-dark: #E0EEE0;
+    --color-text-primary: #004d00; --color-text-secondary: #006400;
+    --color-border: #98FB98; --color-button-text: #003300;
+    --animation-button-border: border-glow-neon 1.5s infinite alternate;
+}
+html[data-theme="neon"][data-mode="night"] {
+    --color-primary: #39FF14; --color-primary-lighter: #7FFF00;
+    --color-secondary: #00FFFF;
+    --color-background: #0D1C02; --color-surface: #1A3504; --color-surface-dark: #2A4711;
+    --color-text-primary: #C1FFC1; --color-text-secondary: #90EE90;
+    --color-border: #2E8B57; --color-button-text: #FFFFFF;
+    --animation-button-border: border-glow-neon 1.5s infinite alternate;
+}
+
+/* 5. STEAMPUNK THEMES */
+html[data-theme="steampunk"][data-mode="day"] {
+    --color-primary: #8B4513; --color-primary-lighter: #A0522D;
+    --color-secondary: #CD853F;
+    --color-background: #FDF5E6; --color-surface: #FAF0E6; --color-surface-dark: #F5DEB3;
+    --color-text-primary: #5A2D0C; --color-text-secondary: #6B4423;
+    --color-border: #D2B48C; --color-button-text: #FFFFFF;
+    --animation-special-text: steampunk-flicker 3s infinite;
+}
+html[data-theme="steampunk"][data-mode="night"] {
+    --color-primary: #CD7F32; --color-primary-lighter: #D99058;
+    --color-secondary: #B8860B;
+    --color-background: #3D2B1F; --color-surface: #4A3728; --color-surface-dark: #5C4033;
+    --color-text-primary: #F5DEB3; --color-text-secondary: #D2B48C;
+    --color-border: #805533; --color-button-text: #2C1E12;
+    --animation-special-text: steampunk-flicker 2s infinite;
+}
+
+/* 6. PINK THEMES */
+html[data-theme="pink"][data-mode="day"] {
+    --color-primary: #FF69B4; --color-primary-lighter: #FF85C1;
+    --color-secondary: #C71585;
+    --color-background: #FFF0F5; --color-surface: #FFFFFF; --color-surface-dark: #FFE4E1;
+    --color-text-primary: #8B008B; --color-text-secondary: #9932CC;
+    --color-border: #FFC0CB; --color-button-text: #FFFFFF;
+}
+html[data-theme="pink"][data-mode="night"] {
+    --color-primary: #FF1493; --color-primary-lighter: #FF69B4;
+    --color-secondary: #DB7093;
+    --color-background: #2E081B; --color-surface: #4C0F2E; --color-surface-dark: #6B1741;
+    --color-text-primary: #FFE4E1; --color-text-secondary: #FFB6C1;
+    --color-border: #8B008B; --color-button-text: #FFFFFF;
+}
+
+/* 7. RED & YELLOW THEMES */
+html[data-theme="red_yellow"][data-mode="day"] {
+    --color-primary: #DC2626; --color-primary-lighter: #EF4444;
+    --color-secondary: #F59E0B;
+    --color-background: #FFFBEB; --color-surface: #FEF2F2; --color-surface-dark: #FEE2E2;
+    --color-text-primary: #991B1B; --color-text-secondary: #B91C1C;
+    --color-border: #FCA5A5; --color-button-text: #FFFFFF;
+}
+html[data-theme="red_yellow"][data-mode="night"] {
+    --color-primary: #F87171; --color-primary-lighter: #FB923C;
+    --color-secondary: #FBBF24; /* Golden Color */
+    --color-background: #450A0A; --color-surface: #7F1D1D; --color-surface-dark: #991B1B;
+    --color-text-primary: #FEE2E2; --color-text-secondary: #FCD34D;
+    --color-border: #B91C1C; --color-button-text: #450A0A;
+    --animation-special-text: glow-gold 2s infinite alternate;
+}
+
+/* 8. RGB THEME (UPDATED) */
+html[data-theme="rgb"] {
+    --animation-special-text: text-glow-rgb 3s infinite linear;
+    --button-background-gradient: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    --animation-button-background: background-pan-rgb 10s linear infinite;
+}
+html[data-theme="rgb"][data-mode="day"] {
+    --color-secondary: #33ffff;
+    --color-background: #e0e0e0;
+    --color-surface: #f5f5f5;
+    --color-surface-dark: #dcdcdc;
+    --color-text-primary: #111;
+    --color-text-secondary: #444;
+    --color-border: #c0c0c0;
+    --color-button-text: #000;
+}
+html[data-theme="rgb"][data-mode="night"] {
+    --color-secondary: #33ffff;
+    --color-background: #111;
+    --color-surface: #1a1a1a;
+    --color-surface-dark: #2a2a2a;
+    --color-text-primary: #eee;
+    --color-text-secondary: #bbb;
+    --color-border: #444;
+    --color-button-text: #fff;
+}
 
 
 /* --- Base Layout & SCROLLING FIX --- */
@@ -132,12 +234,9 @@ body.menu-hidden #content-pusher { margin-left: 0; }
 }
 header#resource-bar { flex-shrink: 0; padding-bottom: 1rem; }
 main { flex-grow: 1; min-height: 0; position: relative; } /* Added position relative */
-footer { 
-    flex-shrink: 0; 
-    padding-top: 1rem; 
-    z-index: 10;
-}
+footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 
+/* FIX: This ensures the scrolling content is clipped by its container */
 #main-content {
     background-color: var(--color-surface); 
     border: 1px solid var(--color-border);
@@ -148,48 +247,6 @@ footer {
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0; /* Fill the parent <main> */
 }
-
-/* --- CORRECTED MODAL POPUP STYLES --- */
-#modal-container {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 10000;
-    pointer-events: none; /* Click through the container by default */
-    opacity: 0;
-    background-color: rgba(0,0,0,0.5);
-    transition: opacity 0.3s ease;
-}
-
-#modal-container.active {
-    pointer-events: auto; /* Clickable when active */
-    opacity: 1;
-    animation: fade-in 0.3s ease forwards;
-}
-
-.modal-content {
-    background-color: var(--color-surface);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    padding: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    width: 90%;
-    max-width: 32rem; /* 512px */
-    z-index: 10001;
-    animation: scale-in 0.3s ease-out forwards;
-}
-
-html[data-theme="classic"] .modal-content {
-    border-radius: 0;
-    border-top: 2px solid #ffffff;
-    border-left: 2px solid #ffffff;
-    border-right: 2px solid #4f4f4f;
-    border-bottom: 2px solid #4f4f4f;
-}
-
 
 /* --- Component Styling & Animations --- */
 #resources-display {
@@ -230,7 +287,7 @@ html[data-theme="classic"] .modal-content {
 html[data-theme="rgb"] .game-button {
     background-image: var(--button-background-gradient);
     background-size: 200% 200%;
-    animation: var(--animation-button-background), var(--animation-button-border, none);
+    animation: var(--animation-button-background);
 }
 
 /* Classic Theme Overrides */
