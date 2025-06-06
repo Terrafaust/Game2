@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.5 - Unlock Debugging)
+// /game/modules/prestige_module/prestige_manifest.js (v1.6 - Initialization Fix)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,14 +7,16 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.5.0',
+    version: '1.6.0',
     description: 'The Prestige system.',
     dependencies: [],
 
     initialize: (coreSystems) => {
-        const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop } = coreSystems;
+        // FIX #2: Added coreUIManager to the destructuring.
+        const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop, coreUIManager } = coreSystems;
 
-        loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${this.version}...`);
+        // FIX #1: Changed `this.version` to `manifest.version`.
+        loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${manifest.version}...`);
         
         prestigeLogic.initialize(coreSystems);
 
@@ -56,9 +58,7 @@ export const manifest = {
             prestigeData.ui.tabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
             () => {
-                // **DEBUG LOGGING ADDED**
                 const isUnlocked = coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
-                // loggingSystem.debug('PrestigeManifest_VisibilityCheck', `is prestigeUnlocked? ${isUnlocked}`);
                 return isUnlocked;
             },
             () => ui.onShow(),
