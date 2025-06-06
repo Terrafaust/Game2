@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.2 - Unlock Condition Changed)
+// /game/modules/prestige_module/prestige_logic.js (v2.3 - Removed direct unit generation)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -37,6 +37,10 @@ export const purchasePrestigeProducer = (producerId) => {
         currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
         coreGameStateManager.setModuleState('prestige', currentState);
 
+        // After purchasing a producer, update its effect registration with coreUpgradeManager
+        // This ensures the multiplier is recalculated and applied immediately.
+        updatePrestigeProducerEffects();
+
         coreUIManager.showNotification(`Purchased 1 ${prestigeData.producers[producerId].name}!`, 'success');
         
         const prestigeUI = moduleLoader.getModule('prestige').ui;
@@ -50,38 +54,51 @@ export const purchasePrestigeProducer = (producerId) => {
     }
 };
 
-export const updateAllPrestigeProducerProductions = (deltaTime) => {
-    const { coreUpgradeManager } = coreSystemsRef;
-    const studiesModule = moduleLoader.getModule('studies');
-    if (!studiesModule || !studiesModule.logic) return;
+/**
+ * Recalculates and registers/updates all prestige producer effects with the coreUpgradeManager.
+ * This should be called when prestige producers are purchased or game state loads.
+ */
+export const updatePrestigeProducerEffects = () => {
+    if (!coreSystemsRef) return;
+    const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
 
+    // Example: Handle the 'postDoc' producer's effect
     const postDocDef = prestigeData.producers.postDoc;
-    const postDocCount = getOwnedPrestigeProducerCount('postDoc');
-    let postDocMultiplier = decimalUtility.add(1, decimalUtility.multiply(postDocCount, postDocDef.effect.valuePer));
-    const postDocSkillBonus = coreUpgradeManager.getProductionMultiplier('prestige_producers', 'postDoc');
-    postDocMultiplier = decimalUtility.multiply(postDocMultiplier, postDocSkillBonus);
+    if (postDocDef) {
+        const postDocCount = getOwnedPrestigeProducerCount('postDoc');
+        
+        // Define the value provider function for the effect
+        // This function will be called by coreUpgradeManager when it needs the current multiplier.
+        const postDocEffectValueProvider = () => {
+            let multiplier = decimalUtility.add(1, decimalUtility.multiply(postDocCount, postDocDef.effect.valuePer));
+            // Apply skill bonuses to postDoc effect if applicable (example: prestige_producers_postDoc_MULTIPLIER)
+            const postDocSkillBonus = coreUpgradeManager.getProductionMultiplier('prestige_producers', 'postDoc');
+            multiplier = decimalUtility.multiply(multiplier, postDocSkillBonus);
+            return multiplier;
+        };
 
-
-    for (const producerId in prestigeData.producers) {
-        if (!prestigeData.producers[producerId].production) continue;
-
-        const producerDef = prestigeData.producers[producerId];
-        let owned = getOwnedPrestigeProducerCount(producerId);
-        if (decimalUtility.eq(owned, 0)) continue;
-
-        const skillMultiplier = coreUpgradeManager.getProductionMultiplier('prestige_producers', producerId);
-        const achMultiplier = coreUpgradeManager.getProductionMultiplier('prestige_producers', producerId);
-
-        let effectiveProducers = decimalUtility.multiply(owned, postDocMultiplier);
-        effectiveProducers = decimalUtility.multiply(effectiveProducers, skillMultiplier);
-        effectiveProducers = decimalUtility.multiply(effectiveProducers, achMultiplier);
-
-        producerDef.production.forEach(prod => {
-            const productionPerTick = decimalUtility.multiply(decimalUtility.multiply(prod.base, effectiveProducers), deltaTime);
-            studiesModule.logic.addGeneratedUnits(prod.producerId, productionPerTick);
-        });
+        // Register or update the effect. This effect targets 'studies_producers' globally.
+        // You might need to adjust 'targetSystem' and 'targetId' based on your actual data structure
+        // and how 'postDoc' is intended to affect 'studies'.
+        // For example, if it affects all studies producers, 'targetId' could be 'global'.
+        coreUpgradeManager.registerEffectSource(
+            'prestige', // Module ID
+            'postDoc_studies_multiplier', // Unique source key for this effect
+            postDocDef.effect.targetSystem, // e.g., 'studies_producers'
+            postDocDef.effect.targetId,   // e.g., 'global' or a specific studies producer ID
+            postDocDef.effect.type,       // e.g., 'MULTIPLIER'
+            postDocEffectValueProvider
+        );
+        loggingSystem.debug("PrestigeLogic", "Registered/Updated postDoc effect with CoreUpgradeManager.");
     }
+    // Add logic for other prestige producers here if they have effects to register.
 };
+
+
+// REMOVED: The updateAllPrestigeProducerProductions function is removed.
+// Its functionality (applying production) should be handled by coreResourceManager
+// after effects are registered via coreUpgradeManager.
+
 
 export const canPrestige = () => {
     return coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
@@ -180,8 +197,11 @@ export const performPrestige = () => {
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     coreResourceManager.setResourceVisibility('prestigeCount', true);
                     
+                    // Re-register all prestige producer effects after prestige reset
+                    updatePrestigeProducerEffects();
+
                     coreUIManager.fullUIRefresh();
-                    coreUIManager.showNotification("You have Prestiged!", "success", 5000);
+                    coreUIManager.showNotification("You have Prestiged! This might affect your production rates.", "success", 5000);
                     coreUIManager.closeModal();
                 }
             },

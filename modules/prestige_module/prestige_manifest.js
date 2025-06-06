@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.5 - Unlock Debugging)
+// /game/modules/prestige_module/prestige_manifest.js (v1.6 - Proper Effect Registration)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,7 +7,7 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.5.0',
+    version: '1.6.0', // Version bump for effect registration change
     description: 'The Prestige system.',
     dependencies: [],
 
@@ -38,16 +38,18 @@ export const manifest = {
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(manifest.id, { ...moduleState });
 
+        // Register the global prestige bonus multiplier
         coreUpgradeManager.registerEffectSource(
             manifest.id, 'global_bonus_from_prestige', 'global_production', 'all', 'MULTIPLIER',
             () => prestigeLogic.getPrestigeBonusMultiplier()
         );
         
-        gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
-            if (Object.values(moduleState.ownedProducers).some(val => val !== '0')) {
-                 prestigeLogic.updateAllPrestigeProducerProductions(deltaTime);
-            }
-        });
+        // IMPORTANT: Removed the gameLoop callback that was calling the problematic function.
+        // Production effects are now handled via coreUpgradeManager registration.
+
+        // Initial registration of prestige producer effects when the module loads
+        prestigeLogic.updatePrestigeProducerEffects();
+
 
         coreUIManager.registerMenuTab(
             manifest.id,
@@ -82,6 +84,13 @@ export const manifest = {
             ui: ui,
             onPrestigeReset: () => {
                 loggingSystem.info(manifest.name, `onPrestigeReset called for ${manifest.name}. My state is safe.`);
+                // Re-register effects after prestige reset to ensure they reflect the new state
+                prestigeLogic.updatePrestigeProducerEffects();
+            },
+            onGameLoad: () => {
+                loggingSystem.info(manifest.name, `onGameLoad called for ${manifest.name}. Re-evaluating effects.`);
+                // Re-register effects on game load to ensure they reflect the loaded state
+                prestigeLogic.updatePrestigeProducerEffects();
             }
         };
     }
