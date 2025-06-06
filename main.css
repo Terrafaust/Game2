@@ -16,6 +16,10 @@
     from { text-shadow: 0 0 4px var(--color-secondary), 0 0 8px var(--color-secondary); filter: brightness(1.2); }
     to { text-shadow: 0 0 8px var(--color-secondary), 0 0 16px var(--color-secondary); filter: brightness(1.4); }
 }
+@keyframes steampunk-flicker {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15) saturate(1.2); }
+}
 
 /* --- THEME DEFINITIONS --- */
 
@@ -83,6 +87,7 @@ html[data-theme="steampunk"][data-mode="day"] {
     --color-background: #FDF5E6; --color-surface: #FAF0E6; --color-surface-dark: #F5DEB3;
     --color-text-primary: #5A2D0C; --color-text-secondary: #6B4423;
     --color-border: #D2B48C; --color-button-text: #FFFFFF;
+    --animation-special-text: steampunk-flicker 3s infinite;
 }
 html[data-theme="steampunk"][data-mode="night"] {
     --color-primary: #CD7F32; --color-primary-lighter: #D99058;
@@ -90,6 +95,7 @@ html[data-theme="steampunk"][data-mode="night"] {
     --color-background: #3D2B1F; --color-surface: #4A3728; --color-surface-dark: #5C4033;
     --color-text-primary: #F5DEB3; --color-text-secondary: #D2B48C;
     --color-border: #805533; --color-button-text: #2C1E12;
+    --animation-special-text: steampunk-flicker 2s infinite;
 }
 
 /* 6. PINK THEMES */
@@ -143,7 +149,6 @@ html {
     background-color: var(--color-background); 
     color: var(--color-text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
-    /* REMOVED overflow:hidden to fix scrolling */
 }
 
 body { 
@@ -151,56 +156,77 @@ body {
     margin: 0; padding: 0;
     display: flex;
     position: relative;
+    overflow: hidden; /* Hide body overflow to contain everything */
 }
 
-/* --- STEAMPUNK GEAR ANIMATION FIX --- */
-#game-container::before,
-#game-container::after {
+/* --- STEAMPUNK GEAR ANIMATION --- */
+#game-container::before, #game-container::after,
+.content-wrapper::before, .content-wrapper::after {
     content: '';
     position: fixed;
-    width: 200px;
-    height: 200px;
-    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%238B4513" fill-opacity="0.15"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
     background-size: contain;
-    z-index: 0; /* Keep it behind main content but in front of body background */
+    z-index: 0;
     pointer-events: none;
     display: none; /* Hidden by default */
+    opacity: 0.15;
 }
 html[data-theme="steampunk"] #game-container::before,
-html[data-theme="steampunk"] #game-container::after {
+html[data-theme="steampunk"] #game-container::after,
+html[data-theme="steampunk"] .content-wrapper::before,
+html[data-theme="steampunk"] .content-wrapper::after {
     display: block; /* Only show for steampunk theme */
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%238B4513"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
     animation: gear-rotate 20s linear infinite;
 }
 html[data-theme="steampunk"][data-mode="night"] #game-container::before,
-html[data-theme="steampunk"][data-mode="night"] #game-container::after {
-     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%23CD7F32" fill-opacity="0.1"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
+html[data-theme="steampunk"][data-mode="night"] #game-container::after,
+html[data-theme="steampunk"][data-mode="night"] .content-wrapper::before,
+html[data-theme="steampunk"][data-mode="night"] .content-wrapper::after {
+     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%23CD7F32"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
 }
-#game-container::after {
-    width: 120px; height: 120px; bottom: -40px; right: -30px;
-    animation-duration: 15s; animation-direction: reverse;
-}
-#game-container::before { top: -50px; left: -60px; }
+#game-container::before { top: -50px; left: -60px; width: 200px; height: 200px; }
+#game-container::after { bottom: -40px; right: -30px; width: 120px; height: 120px; animation-duration: 15s; animation-direction: reverse; }
+.content-wrapper::before { top: 50%; left: 50%; width: 300px; height: 300px; margin-left: -150px; margin-top: -150px; animation-duration: 45s; opacity: 0.05; }
+.content-wrapper::after { bottom: 80px; left: -20px; width: 150px; height: 150px; animation-duration: 25s; }
 
-#game-container { width: 100%; flex-grow: 1; display: flex; }
+
+#game-container { width: 100%; display: flex; }
 #content-pusher { flex-grow: 1; margin-left: 240px; transition: margin-left 0.3s ease; display: flex; }
 body.menu-hidden #content-pusher { margin-left: 0; }
 .content-wrapper { 
-    width: 100%; max-width: 72rem; margin: auto; padding: 1rem; 
-    display: flex; flex-direction: column; flex-grow: 1;
-    z-index: 1; /* Ensure content is above the gear animations */
+    width: 100%; max-width: 72rem; margin: auto; padding: 1.5rem; 
+    display: flex; flex-direction: column; 
+    z-index: 1; 
+    height: 100%; /* Make wrapper take full height */
 }
-header#resource-bar { flex-shrink: 0; z-index: 10; }
-main { flex-grow: 1; min-height: 0; }
-footer { flex-shrink: 0; z-index: 10; border-top: 1px solid var(--color-border); }
+header#resource-bar { flex-shrink: 0; padding-bottom: 1rem; }
+main { flex-grow: 1; min-height: 0; position: relative; } /* Added position relative */
+footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 
+/* FIX: This ensures the scrolling content is clipped by its container */
 #main-content {
     background-color: var(--color-surface); 
     border: 1px solid var(--color-border);
     color: var(--color-text-primary);
-    height: 100%; overflow-y: auto; border-radius: 0.75rem; padding: 1.5rem;
+    overflow-y: auto; 
+    border-radius: 0.75rem; 
+    padding: 1.5rem;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0; /* Fill the parent <main> */
 }
 
-/* --- Global & Theme-Specific Component Styling --- */
+/* --- Component Styling & Animations --- */
+#resources-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
+    grid-auto-rows: min-content;
+    gap: 1rem;
+}
+@media (min-width: 1024px) {
+    #resources-display {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
+    }
+}
 
 /* Broad transitions for most elements */
 #game-container *, .modal-content, .tooltip {
@@ -231,9 +257,7 @@ html[data-theme="classic"] .game-button {
     padding: 0.5rem 1rem;
     box-shadow: none; filter: none;
 }
-html[data-theme="classic"] .game-button:hover {
-    filter: brightness(1.05);
-}
+html[data-theme="classic"] .game-button:hover { filter: brightness(1.05); }
 html[data-theme="classic"] .game-button:active {
     border-top: 1px solid #4f4f4f; border-left: 1px solid #4f4f4f;
     border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
@@ -243,6 +267,9 @@ html[data-theme="classic"] .game-button:active {
 .game-button:disabled { background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important; filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important; }
 
 /* Special Text Animations Application */
+html[data-theme="steampunk"] .resource-item-display {
+    animation: var(--animation-special-text);
+}
 html[data-theme="red_yellow"][data-mode="night"] .resource-item-display .font-semibold,
 html[data-theme="red_yellow"][data-mode="night"] #resources-display [id$="-amount"] {
     animation: var(--animation-special-text);
