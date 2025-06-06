@@ -1,10 +1,10 @@
-// modules/studies_module/studies_logic.js (v3.6 - Buy Max)
+// modules/studies_module/studies_logic.js (v3.7 - Critical Bug Fix)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
+ * v3.7: Fixes a crash in purchaseProducer caused by incorrect .toNumber() call.
  * v3.6: Implements 'Buy Max' functionality.
- * v3.5: Implements buy multiplier for purchasing producers.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -15,7 +15,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.6).");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.7).");
     },
     
     calculateMaxBuyable(producerId) {
@@ -32,18 +32,12 @@ export const moduleLogic = {
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
         
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
-        if (decimalUtility.lte(effectiveBaseCost, 0)) return decimalUtility.new(Infinity); // Avoid division by zero
+        if (decimalUtility.lte(effectiveBaseCost, 0)) return decimalUtility.new(Infinity);
 
-        // Simplified check for first purchase
         if (decimalUtility.lt(currentResources, effectiveBaseCost)) {
             return decimalUtility.ZERO;
         }
 
-        // Reverse the geometric series formula to solve for n (quantity)
-        // C_total = C_base * R_owned * (R^n - 1) / (R - 1)
-        // ((C_total * (R-1)) / (C_base * R_owned)) + 1 = R^n
-        // n = log_R (LHS) = log(LHS) / log(R)
-        
         const R = costGrowthFactor;
         const R_minus_1 = decimalUtility.subtract(R, 1);
         const C_base_eff_pow_owned = decimalUtility.multiply(effectiveBaseCost, decimalUtility.power(R, ownedCount));
@@ -58,11 +52,11 @@ export const moduleLogic = {
         const log_LHS = decimalUtility.ln(LHS);
         const log_R = decimalUtility.ln(R);
 
-        if (decimalUtility.lte(log_R, 0)) return decimalUtility.ZERO; // Growth factor must be > 1
+        if (decimalUtility.lte(log_R, 0)) return decimalUtility.ZERO;
 
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         
-        return decimalUtility.max(max_n, 0); // Ensure it's not negative
+        return decimalUtility.max(max_n, 0);
     },
 
     calculateProducerCost(producerId, quantity = 1) {
@@ -72,12 +66,10 @@ export const moduleLogic = {
         if (!producerDef) return decimalUtility.new(Infinity);
         
         let n = decimalUtility.new(quantity);
-        // Handle "Max" case
         if (quantity === -1) {
              n = this.calculateMaxBuyable(producerId);
-             if (decimalUtility.eq(n, 0)) return decimalUtility.new(Infinity); // Can't buy any, cost is effectively infinite
+             if (decimalUtility.eq(n, 0)) return decimalUtility.new(Infinity);
         }
-
 
         const baseCost = decimalUtility.new(producerDef.baseCost);
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
@@ -109,7 +101,7 @@ export const moduleLogic = {
         if (!producerDef) return false;
 
         let quantity = buyMultiplierManager.getMultiplier();
-        if (quantity === -1) { // -1 represents Max
+        if (quantity === -1) {
             quantity = this.calculateMaxBuyable(producerId);
             if (decimalUtility.lte(quantity, 0)) {
                  loggingSystem.debug("StudiesLogic", `Buy Max for ${producerDef.name} calculated 0, purchase aborted.`);
@@ -117,7 +109,8 @@ export const moduleLogic = {
             }
         }
 
-        const cost = this.calculateProducerCost(producerId, quantity.toNumber());
+        // *** THIS IS THE FIX: Removed .toNumber() from quantity ***
+        const cost = this.calculateProducerCost(producerId, quantity);
         const costResource = producerDef.costResource;
 
         if (coreResourceManager.canAfford(costResource, cost)) {
@@ -136,7 +129,6 @@ export const moduleLogic = {
         }
     },
 
-    // ... The rest of your 'studies_logic.js' file remains exactly the same.
     updateProducerProduction(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) { return; }
         const { coreResourceManager, decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
@@ -161,6 +153,7 @@ export const moduleLogic = {
             }
         }
     },
+
     updateAllProducerProductions() {
         if (!coreSystemsRef || typeof coreSystemsRef.decimalUtility === 'undefined') { return; }
         const { decimalUtility } = coreSystemsRef; 
@@ -170,6 +163,7 @@ export const moduleLogic = {
             }
         }
     },
+
     isProducerUnlocked(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager) { return false; }
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
@@ -185,11 +179,13 @@ export const moduleLogic = {
                 return false;
         }
     },
+
     getOwnedProducerCount(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.decimalUtility) { return new Decimal(0); }
         const { decimalUtility } = coreSystemsRef;
         return decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
     },
+
     isStudiesTabUnlocked() {
         if (!coreSystemsRef) { return true; }
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
@@ -211,6 +207,7 @@ export const moduleLogic = {
         }
         return false;
     },
+
     updateGlobalFlags() {
         if (!coreSystemsRef) { return; }
         const { coreGameStateManager, loggingSystem, decimalUtility, coreUIManager } = coreSystemsRef;
@@ -228,6 +225,7 @@ export const moduleLogic = {
             }
         }
     },
+
     onGameLoad() {
         if (!coreSystemsRef) { return; }
         this.updateAllProducerProductions();
@@ -240,6 +238,7 @@ export const moduleLogic = {
             if (!knowledgeResourceState.showInUI) coreResourceManager.setResourceVisibility('knowledge', true);
         }
     },
+    
     onResetState() {
         if (!coreSystemsRef) { return; }
         this.updateAllProducerProductions();

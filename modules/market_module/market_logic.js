@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v1.9 - Buy Max)
+// modules/market_module/market_logic.js (v1.9.1 - Critical Bug Fix)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v1.9.1: Fixes a crash in purchaseScalableItem caused by incorrect .toNumber() call.
  * v1.9: Implements 'Buy Max' functionality for scalable items.
- * v1.8: Implements buy multiplier.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,7 +15,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9.1).");
     },
     
     calculateMaxBuyable(itemId) {
@@ -102,7 +102,8 @@ export const moduleLogic = {
             }
         }
 
-        const cost = this.calculateScalableItemCost(itemId, quantity.toNumber());
+        // *** THIS IS THE FIX: Removed .toNumber() from quantity ***
+        const cost = this.calculateScalableItemCost(itemId, quantity);
         const costResource = itemDef.costResource;
 
         if (coreResourceManager.canAfford(costResource, cost)) {
@@ -137,34 +138,23 @@ export const moduleLogic = {
             return false;
         }
     },
-
-    // ... The rest of your 'market_logic.js' file remains exactly the same.
-    isMarketTabUnlocked() {
-        if (!coreSystemsRef) { return true; }
-        const { coreGameStateManager, coreUIManager } = coreSystemsRef;
-        if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) { return true; }
-        const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); 
-        if (conditionMet) {
-            coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
-            if(coreUIManager) coreUIManager.renderMenu();
-            return true;
-        }
-        return false;
-    },
+    
     canAffordUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return false;
         return coreResourceManager.canAfford(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
     },
+
     isUnlockPurchased(unlockId) { 
         const { coreGameStateManager } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return true;
         return coreGameStateManager.getGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);
     },
+
     purchaseUnlock(unlockId) { 
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return false;
         if (this.isUnlockPurchased(unlockId)) return false;
@@ -189,6 +179,20 @@ export const moduleLogic = {
             return false;
         }
     },
+
+    isMarketTabUnlocked() {
+        if (!coreSystemsRef) { return true; }
+        const { coreGameStateManager, coreUIManager } = coreSystemsRef;
+        if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) { return true; }
+        const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); 
+        if (conditionMet) {
+            coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
+            if(coreUIManager) coreUIManager.renderMenu();
+            return true;
+        }
+        return false;
+    },
+
     onGameLoad() {
         const { coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
         let loadedState = coreGameStateManager.getModuleState('market');
@@ -207,8 +211,9 @@ export const moduleLogic = {
             coreResourceManager.setResourceVisibility('images', true);
         }
     },
+
     onResetState() {
-        const { loggingSystem, coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+        const { coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
         const initialState = getInitialState();
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
