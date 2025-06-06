@@ -228,6 +228,12 @@ footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top:
     }
 }
 
+/* Give more space to the primary resources to prevent numbers from wrapping */
+#resource-studyPoints-display,
+#resource-knowledge-display {
+    grid-column: span 2;
+}
+
 /* Broad transitions for most elements */
 #game-container *, .modal-content, .tooltip {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease, font-family 0.3s ease;
