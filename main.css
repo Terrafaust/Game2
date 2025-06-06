@@ -34,6 +34,7 @@
     --color-border: #D1D5DB; --color-button-text: #FFFFFF;
     --animation-button-border: none;
     --animation-special-text: none;
+    --background-image: none;
 }
 
 /* 2. Modern Night Theme */
@@ -46,13 +47,18 @@ html[data-theme="modern"][data-mode="night"] {
 }
 
 /* 3. CLASSIC THEME (WINDOWS XP/VISTA STYLE) */
-html[data-theme="classic"] { --font-main: 'Tahoma', sans-serif; }
+html[data-theme="classic"] { 
+    --font-main: 'Tahoma', sans-serif; 
+    --background-image: none; /* Default to none */
+}
 html[data-theme="classic"][data-mode="day"] {
     --color-primary: #0058e1; --color-primary-lighter: #3a8cff;
     --color-secondary: #008000;
-    --color-background: #004e8c; --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
+    --color-background: #3A6EA5; /* Fallback color */
+    --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
     --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
     --color-border: #808080; --color-button-text: #000000;
+    --background-image: url(https://c4.wallpaperflare.com/wallpaper/39/346/426/windows-xp-bliss-desktop-wallpaper-preview.jpg);
 }
 html[data-theme="classic"][data-mode="night"] {
     --color-primary: #3a8cff; --color-primary-lighter: #79bbff;
@@ -147,6 +153,10 @@ html {
     margin: 0; padding: 0;
     font-family: var(--font-main);
     background-color: var(--color-background); 
+    background-image: var(--background-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     color: var(--color-text-primary);
     transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -292,7 +302,6 @@ html[data-theme="rgb"] h2, html[data-theme="rgb"] h3, html[data-theme="rgb"] .me
     transition: transform 0.3s ease, opacity 0.3s ease;
     transform: translateX(0); opacity: 1;
 }
-html[data-theme="classic"] #main-menu { border-right: 2px solid #4f4f4f; }
 body.menu-hidden #main-menu { transform: translateX(-100%); opacity: 0; pointer-events: none; }
 .menu-tab {
     display: block; width: 100%; padding: 0.75rem 1.25rem; text-align: left; font-weight: 500;
@@ -301,7 +310,24 @@ body.menu-hidden #main-menu { transform: translateX(-100%); opacity: 0; pointer-
 }
 .menu-tab:hover { background-color: var(--color-surface-dark); color: var(--color-primary); }
 .menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; }
-html[data-theme="classic"] .menu-tab { border-radius: 0; border: 1px solid var(--color-border); }
+
+/* --- CLASSIC THEME SIDE MENU OVERRIDES --- */
+html[data-theme="classic"] #main-menu { 
+    background: #004e8c; /* Classic windows blue */
+    border-right: 2px solid #4f4f4f;
+}
+html[data-theme="classic"] .menu-tab { 
+    border-radius: 0; 
+    border: 1px solid transparent; 
+    color: #FFFFFF; /* White text for contrast */
+}
+html[data-theme="classic"] .menu-tab:hover {
+    background-color: #3a8cff;
+    color: #FFFFFF;
+}
 html[data-theme="classic"] .menu-tab.active {
-    background: var(--color-primary); color: #fff; font-weight: bold; border-color: var(--color-primary);
+    background: #0058e1; 
+    color: #fff; 
+    font-weight: bold; 
+    border-color: #3a8cff;
 }
