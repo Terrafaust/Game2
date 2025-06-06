@@ -1,8 +1,9 @@
-// modules/skills_module/skills_logic.js (v1.4 - Prestige Skills Integration)
+// modules/skills_module/skills_logic.js (v1.5 - Fix registerEffectSource parameters)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v1.5: Adds validation for effectDef.targetSystem and effectDef.type before registering effects.
  * v1.4: Integrates logic for Prestige Skills, handling two distinct skill trees and currencies.
  * v1.3: Ensures 'skillsTabPermanentlyUnlocked' flag is cleared on reset.
  */
@@ -15,7 +16,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.4).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.5).");
         this.registerAllSkillEffects(); 
     },
 
@@ -228,7 +229,16 @@ export const moduleLogic = {
             for (const skillId in skillsCollection) {
                 const skillDef = skillsCollection[skillId];
                 const processEffect = (effectDef) => {
-                    if (!effectDef) return;
+                    // Check if effectDef is valid before proceeding
+                    if (!effectDef) {
+                        loggingSystem.warn("SkillsLogic", `Skipping effect registration for skill ${skillId}: effectDef is null or undefined.`);
+                        return;
+                    }
+                    if (!effectDef.targetSystem || !effectDef.type || typeof effectDef.targetSystem !== 'string' || typeof effectDef.type !== 'string') {
+                         loggingSystem.error("SkillsLogic", `Invalid targetSystem or type for skill ${skillId} effect. targetSystem: ${effectDef.targetSystem}, type: ${effectDef.type}`);
+                         return;
+                    }
+
                     const valueProvider = () => {
                         const level = this.getSkillLevel(skillId, isPrestigeFlag);
                         if (level === 0) { 

@@ -1,7 +1,8 @@
-// modules/skills_module/skills_manifest.js (v1.1 - Persistent Unlock)
+// modules/skills_module/skills_manifest.js (v1.2 - Prestige Skill Levels Init Fix)
 /**
  * @file skills_manifest.js
  * @description Manifest file for the Skills Module.
+ * v1.2: Ensures moduleState.prestigeSkillLevels is properly initialized.
  * v1.1: Uses skills_logic_v1.1 for persistent tab unlock.
  */
 
@@ -13,7 +14,7 @@ import { ui } from './skills_ui.js';
 const skillsManifest = {
     id: "skills",
     name: "Skills",
-    version: "1.0.1", // Version bump for unlock logic change
+    version: "1.2.0", // Version bump for prestige skill levels init fix
     description: "Unlock and level up skills to boost your progress.",
     dependencies: ["market"], 
 
@@ -28,12 +29,16 @@ const skillsManifest = {
 
         // Load current module state, or initialize if not found
         let currentModuleState = coreGameStateManager.getModuleState(this.id);
-        if (!currentModuleState || !currentModuleState.skillLevels) {
+        if (!currentModuleState) {
             currentModuleState = getInitialState();
         } else {
             // Ensure skillLevels is an object if it exists but is not an object, to prevent errors
             if (typeof currentModuleState.skillLevels !== 'object' || currentModuleState.skillLevels === null) {
                 currentModuleState.skillLevels = {};
+            }
+            // NEW: Ensure prestigeSkillLevels is an object
+            if (typeof currentModuleState.prestigeSkillLevels !== 'object' || currentModuleState.prestigeSkillLevels === null) {
+                currentModuleState.prestigeSkillLevels = {};
             }
         }
         // Apply loaded/initial state to the module's internal state
@@ -59,7 +64,8 @@ const skillsManifest = {
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
             // Only update skill points display if the skills tab is currently active
             if (coreUIManager.isActiveTab(this.id)) {
-                ui.updateSkillPointsDisplay();
+                ui.updateSkillPointsDisplay(false); // Update regular skill points
+                ui.updateSkillPointsDisplay(true);  // Update prestige skill points
             }
             // Check skills tab unlock condition if it's not already permanently unlocked
             if (!coreGameStateManager.getGlobalFlag('skillsTabPermanentlyUnlocked', false)) {
@@ -83,12 +89,16 @@ const skillsManifest = {
             onGameLoad: () => {
                 loggingSystem.info(this.name, `onGameLoad called for ${this.name} (manifest v${this.version}).`);
                 let loadedState = coreGameStateManager.getModuleState(this.id);
-                if (!loadedState || !loadedState.skillLevels) {
+                if (!loadedState) {
                     loadedState = getInitialState();
                 } else {
                      // Ensure skillLevels is an object after loading, similar to initialization
                      if (typeof loadedState.skillLevels !== 'object' || loadedState.skillLevels === null) {
                         loadedState.skillLevels = {};
+                    }
+                    // NEW: Ensure prestigeSkillLevels is an object after loading
+                    if (typeof loadedState.prestigeSkillLevels !== 'object' || loadedState.prestigeSkillLevels === null) {
+                        loadedState.prestigeSkillLevels = {};
                     }
                 }
                 Object.assign(moduleState, loadedState);
@@ -102,6 +112,10 @@ const skillsManifest = {
             onResetState: () => { // Renamed from onPrestigeReset for more general use
                 loggingSystem.info(this.name, `onResetState called for ${this.name} (manifest v${this.version}).`);
                 const initialState = getInitialState();
+                // NEW: Ensure prestigeSkillLevels is initialized as an object in the initial state
+                if (typeof initialState.prestigeSkillLevels !== 'object' || initialState.prestigeSkillLevels === null) {
+                    initialState.prestigeSkillLevels = {};
+                }
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState }); // Use spread to ensure shallow copy for state update
                 moduleLogic.onResetState(); // This will clear 'skillsTabPermanentlyUnlocked' and reset logic state
