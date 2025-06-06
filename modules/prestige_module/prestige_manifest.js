@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.6 - Proper Effect Registration)
+// /game/modules/prestige_module/prestige_manifest.js (v1.7 - Removed separate Prestige Skills tab)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,7 +7,7 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.6.0', // Version bump for effect registration change
+    version: '1.7.0', // Version bump for menu tab change
     description: 'The Prestige system.',
     dependencies: [],
 
@@ -44,9 +44,6 @@ export const manifest = {
             () => prestigeLogic.getPrestigeBonusMultiplier()
         );
         
-        // IMPORTANT: Removed the gameLoop callback that was calling the problematic function.
-        // Production effects are now handled via coreUpgradeManager registration.
-
         // Initial registration of prestige producer effects when the module loads
         prestigeLogic.updatePrestigeProducerEffects();
 
@@ -63,7 +60,8 @@ export const manifest = {
             () => {}
         );
         
-        // ADDED: Register the Prestige Skills Tab
+        // REMOVED: The separate registration for 'prestige_skills' tab
+        /*
         coreUIManager.registerMenuTab(
             'prestige_skills',
             "Prestige Skills",
@@ -73,6 +71,7 @@ export const manifest = {
             () => coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false), // Only show after first prestige
             () => {}
         );
+        */
 
         ui.initialize(coreSystems, prestigeLogic);
 
