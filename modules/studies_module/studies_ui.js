@@ -1,10 +1,10 @@
-// js/modules/studies_module/studies_ui.js (v2.1 - Buy Max UI)
+// js/modules/studies_module/studies_ui.js (v2.2 - Bug Fix for toNumber)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
+ * v2.2: Fixes a crash related to an incorrect .toNumber() call.
  * v2.1: Adds 'Buy Max' button and logic to multiplier controls.
- * v2.0: Adds buy multiplier controls.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -17,7 +17,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.1).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.2).");
 
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
@@ -27,7 +27,10 @@ export const ui = {
     },
 
     renderMainContent(parentElement) {
-        if (!coreSystemsRef || !moduleLogicRef) { /* ... */ return; }
+        if (!coreSystemsRef || !moduleLogicRef) {
+            parentElement.innerHTML = '<p class="text-red-500">Studies UI not properly initialized.</p>';
+            return;
+        }
         parentElementCache = parentElement;
         parentElement.innerHTML = '';
 
@@ -104,13 +107,15 @@ export const ui = {
         const buttons = wrapper.querySelectorAll('button');
         
         buttons.forEach(button => {
-            const buttonMultiplier = parseInt(button.id.replace('buy-multiplier-', ''), 10);
-            if (buttonMultiplier === currentMultiplier) {
+            const buttonId = button.id;
+            const multiplierValue = parseInt(buttonId.substring(buttonId.lastIndexOf('-') + 1), 10);
+
+            if (multiplierValue === currentMultiplier) {
                 button.classList.add('bg-accentOne', 'text-white', 'opacity-100');
-                button.classList.remove('opacity-60');
+                button.classList.remove('opacity-60', 'bg-primary');
             } else {
                 button.classList.remove('bg-accentOne', 'text-white');
-                button.classList.add('opacity-60');
+                button.classList.add('opacity-60', 'bg-primary');
             }
         });
     },
@@ -139,16 +144,16 @@ export const ui = {
                 prodDisplay.textContent = `Production : ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
 
                 let quantity = buyMultiplierManager.getMultiplier();
-                let quantityToBuy = quantity;
-                if (quantity === -1) { // If Max is selected
-                    quantityToBuy = moduleLogicRef.calculateMaxBuyable(producerId);
-                }
+                let quantityToBuy = (quantity === -1) ? moduleLogicRef.calculateMaxBuyable(producerId) : quantity;
                 
-                const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy.toNumber());
+                // *** THIS IS THE FIX: Pass quantityToBuy directly, without .toNumber() ***
+                const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy);
                 
-                if (decimalUtility.gt(quantityToBuy, 0)) {
-                    costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToBuy,0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
-                    buyButton.textContent = `Acheter ${decimalUtility.format(quantityToBuy,0)} ${producerDef.name}${decimalUtility.gt(quantityToBuy,1) ? 's' : ''}`;
+                const quantityToDisplay = (quantity === -1) ? quantityToBuy : quantity;
+
+                if (decimalUtility.gt(quantityToDisplay, 0)) {
+                    costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToDisplay, 0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
+                    buyButton.textContent = `Acheter ${decimalUtility.format(quantityToDisplay, 0)} ${producerDef.name}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
                 } else {
                     costDisplay.textContent = `Coût : ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
                     buyButton.textContent = `Acheter 1 ${producerDef.name}`;
@@ -161,11 +166,13 @@ export const ui = {
                 card.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
                 buyButton.disabled = true;
                 buyButton.textContent = "Verrouillé";
+                ownedDisplay.textContent = "Possédés : 0";
+                prodDisplay.textContent = `Production : 0/s`;
+                costDisplay.textContent = `Coût : ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
             }
         }
     },
     
-    // ... onShow, onHide, and tooltip functions remain unchanged
     _getUnlockTooltipContent(condition) {
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         let content = '<p class="font-semibold text-primary mb-1">Condition de déverrouillage:</p>';

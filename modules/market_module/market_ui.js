@@ -1,10 +1,10 @@
-// modules/market_module/market_ui.js (v1.8 - Buy Max UI)
+// modules/market_module/market_ui.js (v1.9 - Bug Fix for toNumber)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v1.9: Fixes a crash related to an incorrect .toNumber() call.
  * v1.8: Adds 'Buy Max' functionality and reuses multiplier controls.
- * v1.7: Adds buy multiplier controls.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -27,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.8).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.9).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -116,18 +116,17 @@ export const ui = {
         const button = cardElement.querySelector(`#market-item-${itemDef.id}-button`);
 
         let quantity = buyMultiplierManager.getMultiplier();
-        let quantityToBuy = quantity;
-        if (quantity === -1) {
-            quantityToBuy = moduleLogicRef.calculateMaxBuyable(itemDef.id);
-        }
+        let quantityToBuy = (quantity === -1) ? moduleLogicRef.calculateMaxBuyable(itemDef.id) : quantity;
         
-        const currentCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, quantityToBuy.toNumber());
+        // *** THIS IS THE FIX: Pass quantityToBuy directly, without .toNumber() ***
+        const currentCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, quantityToBuy);
+        
+        const quantityToDisplay = (quantity === -1) ? quantityToBuy : quantity;
 
-        if (decimalUtility.gt(quantityToBuy, 0)) {
-            costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToBuy,0)}: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
-            button.textContent = `Acheter ${decimalUtility.format(quantityToBuy,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantityToBuy, 1) ? 's' : ''}`;
+        if (decimalUtility.gt(quantityToDisplay, 0)) {
+            costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToDisplay,0)}: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
+            button.textContent = `Acheter ${decimalUtility.format(quantityToDisplay,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
         } else {
-            // Fallback for when max is 0
             const singleCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, 1);
             costDisplay.textContent = `Coût : ${decimalUtility.format(singleCost, 0)} ${itemDef.costResource}`;
             button.textContent = `Acheter 1 ${itemDef.name.replace('Acquire ', '')}`;
