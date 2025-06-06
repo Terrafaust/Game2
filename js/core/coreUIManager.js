@@ -1,18 +1,14 @@
-// js/core/coreUIManager.js (v4.6 - Theme Apply Refinement & Logging)
+// js/core/coreUIManager.js
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
- * v4.6: Modified theme apply to add/remove a body class to help trigger reflow.
- * v4.5: Attempt to force style recalculation on theme apply.
+ * v4.7: Implemented conditional menu visibility based on unlocked tab count and modernizes UI elements.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
-// coreGameStateManager and staticDataAggregator are not directly used in this version of the file but often are in UIManagers.
-// import { coreGameStateManager } from './coreGameStateManager.js';
-// import { staticDataAggregator } from './staticDataAggregator.js';
 
 const UIElements = {
     resourceBar: null,
@@ -31,7 +27,7 @@ let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
 
-const coreUIManager = {
+export const coreUIManager = {
     initialize() {
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
@@ -59,7 +55,7 @@ const coreUIManager = {
             loggingSystem.error("CoreUIManager_Init", "menuList element not found, click handler not attached.");
         }
         
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.6).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.7).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -97,49 +93,53 @@ const coreUIManager = {
     },
 
     renderMenu() {
-        if (!UIElements.menuList) {
-            loggingSystem.warn("CoreUIManager_RenderMenu", "menuList element not found. Cannot render menu.");
+        if (!UIElements.menuList || !UIElements.body) {
+            loggingSystem.warn("CoreUIManager_RenderMenu", "menuList or body element not found. Cannot render menu.");
             return;
         }
         UIElements.menuList.innerHTML = '';
 
+        const unlockedTabs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
+
+        // NEW LOGIC: Conditionally hide the menu
+        if (unlockedTabs.length <= 1) {
+            UIElements.body.classList.add('menu-hidden');
+            loggingSystem.debug("CoreUIManager_RenderMenu", "Only one or zero tabs unlocked. Hiding main menu.");
+        } else {
+            UIElements.body.classList.remove('menu-hidden');
+            loggingSystem.debug("CoreUIManager_RenderMenu", "More than one tab unlocked. Showing main menu.");
+        }
+
         let hasActiveTabBeenSetOrRemainsValid = false;
-        Object.values(registeredMenuTabs).forEach(tab => {
-            if (tab.isUnlocked()) {
-                const listItem = document.createElement('li');
-                listItem.className = 'menu-tab';
-                listItem.textContent = tab.label;
-                listItem.dataset.tabTarget = tab.id;
-                if (tab.id === activeTabId) {
-                    listItem.classList.add('active');
-                    hasActiveTabBeenSetOrRemainsValid = true;
-                }
-                UIElements.menuList.appendChild(listItem);
+        unlockedTabs.forEach(tab => {
+            const listItem = document.createElement('li');
+            listItem.className = 'menu-tab'; // CSS will handle spacing via margin
+            listItem.textContent = tab.label;
+            listItem.dataset.tabTarget = tab.id;
+            if (tab.id === activeTabId) {
+                listItem.classList.add('active');
+                hasActiveTabBeenSetOrRemainsValid = true;
             }
+            UIElements.menuList.appendChild(listItem);
         });
         
-        if (!hasActiveTabBeenSetOrRemainsValid && Object.keys(registeredMenuTabs).length > 0) {
+        if (!hasActiveTabBeenSetOrRemainsValid && unlockedTabs.length > 0) {
             activeTabId = null; 
-            const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
-            if (firstUnlockedTab) {
-                this.setActiveTab(firstUnlockedTab.id, true); 
-            } else {
-                this.clearMainContent();
-                if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features unlocked yet.</p>';
-            }
+            const firstUnlockedTab = unlockedTabs[0]; // Already filtered, so this is safe
+            this.setActiveTab(firstUnlockedTab.id, true); 
         } else if (activeTabId && registeredMenuTabs[activeTabId] && !registeredMenuTabs[activeTabId].isUnlocked()){
             activeTabId = null;
-            const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
+            const firstUnlockedTab = unlockedTabs[0];
             if (firstUnlockedTab) this.setActiveTab(firstUnlockedTab.id, true);
-        } else if (Object.keys(registeredMenuTabs).length === 0) {
+        } else if (unlockedTabs.length === 0) {
              this.clearMainContent();
              if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No modules loaded.</p>';
         }
     },
 
     _handleMenuClick(event) {
-        const target = event.target;
-        if (target.matches('.menu-tab') && target.dataset.tabTarget) {
+        const target = event.target.closest('.menu-tab'); // Handle clicks inside the tab
+        if (target && target.dataset.tabTarget) {
             const tabId = target.dataset.tabTarget;
             if (registeredMenuTabs[tabId] && registeredMenuTabs[tabId].isUnlocked()) {
                 this.setActiveTab(tabId);
@@ -234,8 +234,9 @@ const coreUIManager = {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end space-x-3';
             buttons.forEach(btnInfo => {
-                const classList = Array.isArray(btnInfo.className) ? btnInfo.className : (btnInfo.className ? [btnInfo.className] : ['bg-primary']);
-                buttonsDiv.appendChild(this.createButton(btnInfo.label, btnInfo.callback, classList));
+                const classList = Array.isArray(btnInfo.className) ? btnInfo.className : (btnInfo.className ? [btnInfo.className] : []);
+                // Ensure modal buttons are also rounded
+                buttonsDiv.appendChild(this.createButton(btnInfo.label, btnInfo.callback, ['bg-primary', ...classList]));
             });
             modalContentDiv.appendChild(buttonsDiv);
         }
@@ -246,11 +247,11 @@ const coreUIManager = {
     },
 
     closeModal() { const activeModal = document.getElementById('active-modal'); if (activeModal) activeModal.remove(); },
-    showTooltip(content, targetElement) { /* ... (no changes) ... */ },
-    hideTooltip() { /* ... (no changes) ... */ },
-    _positionTooltip(targetEl) { /* ... (no changes) ... */ },
-    _handleTooltipPosition(event) { /* ... (no changes) ... */ },
-    showNotification(message, type = 'info', duration = 3000) { /* ... (no changes) ... */ },
+    showTooltip(content, targetElement) { /* Logic remains the same */ },
+    hideTooltip() { /* Logic remains the same */ },
+    _positionTooltip(targetEl) { /* Logic remains the same */ },
+    _handleTooltipPosition(event) { /* Logic remains the same */ },
+    showNotification(message, type = 'info', duration = 3000) { /* Logic remains the same */ },
 
     applyTheme(themeName, mode) {
         if (!UIElements.htmlElement || !UIElements.body) {
@@ -263,9 +264,7 @@ const coreUIManager = {
         html.dataset.theme = themeName; 
         html.dataset.mode = mode;     
         
-        // Attempt to force style recalculation by toggling a class on the body
         body.classList.add('theme-refresh-temp');
-        // Reading offsetHeight can trigger reflow
         void body.offsetHeight; 
         body.classList.remove('theme-refresh-temp');
         
@@ -275,7 +274,7 @@ const coreUIManager = {
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
         button.textContent = text;
-        button.className = 'game-button'; 
+        button.className = 'game-button'; // Base class for modern, rounded buttons
         if (Array.isArray(additionalClasses)) {
             additionalClasses.forEach(cls => { if (typeof cls === 'string') { cls.split(' ').forEach(c => { if(c) button.classList.add(c);});}});
         } else if (typeof additionalClasses === 'string') {
@@ -291,12 +290,13 @@ const coreUIManager = {
         this.renderMenu(); 
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
             this.setActiveTab(activeTabId, true); 
-        } else if (Object.keys(registeredMenuTabs).length > 0) {
+        } else {
             const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
-            if (firstUnlocked) this.setActiveTab(firstUnlocked.id, true); 
-            else { if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';}
+            if (firstUnlocked) {
+                this.setActiveTab(firstUnlocked.id, true);
+            } else {
+                if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';
+            }
         }
     },
 };
-
-export { coreUIManager };

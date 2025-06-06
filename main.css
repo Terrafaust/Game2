@@ -1,16 +1,283 @@
 /* main.css */
-/* Styles defined within the <style> tag in index.html are preferred for Tailwind integration */
-/* This file can be used for more complex global styles or overrides if necessary. */
 
-/* Example of a global style if not using Tailwind for everything, or for very specific overrides:
-body {
-    font-family: 'Arial', sans-serif; /* This would be overridden by Tailwind's font-inter if Inter is loaded */
-    background-color: #f0f0f0;
-    color: #333;
-    margin: 0;
-    padding: 0;
-    line-height: 1.6;
+/* Base keyframes */
+@keyframes rgb-cycle-filter { 0% { filter: hue-rotate(0deg) saturate(1.5) brightness(1.1); } 100% { filter: hue-rotate(360deg) saturate(1.5) brightness(1.1); } }
+@keyframes rgb-led-glow-text {
+    0%, 100% {
+        text-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.9), 0 0 8px hsla(var(--hue-cycle), 100%, 70%, 0.7), 0 0 12px hsla(var(--hue-cycle), 100%, 65%, 0.5);
+        color: hsla(var(--hue-cycle), 100%, 90%,1);
+        animation-timing-function: ease-in-out;
+    }
+    50% {
+        text-shadow: 0 0 6px hsla(calc(var(--hue-cycle) + 30), 100%, 75%, 1), 0 0 12px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 0.8), 0 0 18px hsla(calc(var(--hue-cycle) + 30), 100%, 65%, 0.6);
+        color: hsla(calc(var(--hue-cycle) + 30), 100%, 92%,1);
+        animation-timing-function: ease-in-out;
+    }
 }
-*/
+@keyframes rgb-led-glow-border {
+    0%, 100% {
+        border-color: hsla(var(--hue-cycle), 100%, 75%, 1) !important;
+        box-shadow: 0 0 4px hsla(var(--hue-cycle), 100%, 75%, 0.8), inset 0 0 3px hsla(var(--hue-cycle), 100%, 75%, 0.6);
+        animation-timing-function: ease-in-out;
+    }
+    50% {
+        border-color: hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1) !important;
+        box-shadow: 0 0 6px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 1), inset 0 0 4px hsla(calc(var(--hue-cycle) + 30), 100%, 70%, 0.7);
+        animation-timing-function: ease-in-out;
+    }
+}
+@keyframes hue-rotate-anim { 0% { --hue-cycle: 0; } 100% { --hue-cycle: 360; } }
 
-/* Placeholder for any future global CSS needs */
+/* CSS Variables for Theming */
+:root {
+    --font-main: 'Inter', sans-serif;
+    --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
+    --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
+    --color-background: #F3F4F6;
+    --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB;
+    --color-text-primary: #111827; --color-text-secondary: #374151;
+    --color-border: #D1D5DB; --color-button-text: #FFFFFF;
+    --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+    --shadow-md: 0 3px 5px -1px rgba(0,0,0,0.07), 0 2px 3px -1px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 12px -3px rgba(0,0,0,0.07), 0 3px 5px -2px rgba(0,0,0,0.04);
+    --shadow-xl: 0 15px 20px -5px rgba(0,0,0,0.07), 0 8px 8px -5px rgba(0,0,0,0.03);
+    --animation-rgb-filter: none; --animation-rgb-border: none; --animation-rgb-text: none; --animation-hue-rotate: none;
+    --main-nav-width: 240px; /* NEW: Width of the side navigation */
+}
+
+/* Theme definitions */
+html[data-theme="modern"][data-mode="night"] {
+    --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
+    --color-accent-one: #34D399; --color-accent-two: #FBBF24;
+    --color-background: #0F172A; --color-surface: #1E293B; --color-surface-dark: #334155;
+    --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
+    --color-border: #475569; --color-button-text: #F1F5F9;
+}
+html[data-theme="neon"][data-mode="day"] {
+    --color-primary: #16A34A; --color-secondary: #DB2777; --color-accent-one: #0891B2;  --color-accent-two: #22D3EE;
+    --color-background: #ECFDF5; --color-surface: #FFFFFF; --color-surface-dark: #D1FAE5;
+    --color-text-primary: #064E3B; --color-text-secondary: #047857;
+    --color-border: #A7F3D0; --color-button-text: #FFFFFF;
+}
+html[data-theme="neon"][data-mode="night"] {
+    --color-primary: #22D3EE; --color-secondary: #F472B6; --color-accent-one: #4ADE80; --color-accent-two: #A5F3FC;
+    --color-background: #020617; --color-surface: #0F172A; --color-surface-dark: #1E293B;
+    --color-text-primary: #67E8F9; --color-text-secondary: #A5F3FC;
+    --color-border: #22D3EE; --color-button-text: #020617;
+    --achievement-neon-glow: 0 0 6px #22D3EE, 0 0 12px #22D3EE, 0 0 18px #F472B6;
+}
+html[data-theme="steampunk"][data-mode="day"] {
+    --color-primary: #8B4513; --color-secondary: #DAA520; --color-accent-one: #B87333; --color-accent-two: #CD7F32;
+    --color-background: #FDF6E3; --color-surface: #FFFDF5; --color-surface-dark: #F5ECCE;
+    --color-text-primary: #5D4037; --color-text-secondary: #795548;
+    --color-border: #D2B48C; --color-button-text: #FFFDF5;
+}
+html[data-theme="steampunk"][data-mode="night"] {
+    --color-primary: #D4AC0D; --color-secondary: #B08D57; --color-accent-one: #8C7853; --color-accent-two: #A47D4F;
+    --color-background: #3E2723; --color-surface: #4E342E; --color-surface-dark: #5D4037;
+    --color-text-primary: #EFEBE9; --color-text-secondary: #D7CCC8;
+    --color-border: #A1887F; --color-button-text: #3E2723;
+}
+html[data-theme="pink"][data-mode="day"] {
+    --color-primary: #EC4899; --color-secondary: #D946EF; --color-accent-one: #F472B6; --color-accent-two: #F9A8D4;
+    --color-background: #FEF2F2; --color-surface: #FFFFFF; --color-surface-dark: #FCE7F3;
+    --color-text-primary: #831843; --color-text-secondary: #9D174D;
+    --color-border: #FBCFE8; --color-button-text: #FFFFFF;
+}
+html[data-theme="pink"][data-mode="night"] {
+    --color-primary: #F472B6; --color-secondary: #E879F9; --color-accent-one: #DB2777; --color-accent-two: #BE185D;
+    --color-background: #3B071E; --color-surface: #581C37; --color-surface-dark: #701A45;
+    --color-text-primary: #FCE7F3; --color-text-secondary: #FBCFE8;
+    --color-border: #831843; --color-button-text: #FFF0F5;
+}
+html[data-theme="redyellow"][data-mode="day"] {
+    --color-primary: #EF4444; --color-secondary: #F59E0B; --color-accent-one: #FCA5A5; --color-accent-two: #FDE047;
+    --color-background: #FFFDEA; --color-surface: #FFFFFF; --color-surface-dark: #FEF9C3;
+    --color-text-primary: #991B1B; --color-text-secondary: #B45309;
+    --color-border: #FDBA74; --color-button-text: #FFFFFF;
+}
+html[data-theme="redyellow"][data-mode="night"] {
+    --color-primary: #F87171; --color-secondary: #FBBF24; --color-accent-one: #DC2626; --color-accent-two: #D97706;
+    --color-background: #450A0A; --color-surface: #7F1D1D; --color-surface-dark: #531313;
+    --color-text-primary: #FEF3C7; --color-text-secondary: #FDE68A;
+    --color-border: #B91C1C; --color-button-text: #FEF3C7;
+}
+html[data-theme="rgb"] { --animation-hue-rotate: hue-rotate-anim 12s linear infinite alternate; }
+html[data-theme="rgb"][data-mode="day"] {
+    --color-primary: hsl(var(--hue-cycle, 0), 80%, 60%);
+    --color-primary-lighter: hsl(var(--hue-cycle, 0), 80%, 70%);
+    --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 80%, 60%);
+    --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 75%, 55%);
+    --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 70%, 60%);
+    --color-background: #E9EEF2; --color-surface: #F7F9FB; --color-surface-dark: #E0E6EB;
+    --color-text-primary: #1C2025; --color-text-secondary: #3E454D;
+    --color-border: hsl(var(--hue-cycle, 0), 70%, 75%); --color-button-text: #FFFFFF;
+    --animation-rgb-filter: rgb-cycle-filter 12s linear infinite;
+    --animation-rgb-border: none; --animation-rgb-text: none;
+}
+html[data-theme="rgb"][data-mode="night"] {
+    --color-primary: hsl(var(--hue-cycle, 0), 100%, 70%);
+    --color-primary-lighter: hsl(var(--hue-cycle, 0), 100%, 80%);
+    --color-secondary: hsl(calc(var(--hue-cycle, 0) + 50), 100%, 70%);
+    --color-accent-one: hsl(calc(var(--hue-cycle, 0) + 100), 90%, 65%);
+    --color-accent-two: hsl(calc(var(--hue-cycle, 0) + 150), 85%, 70%);
+    --color-background: #020408; --color-surface: #050A14; --color-surface-dark: #0A1020;
+    --color-text-primary: #CEDCFF; --color-text-secondary: #9EB0E0;
+    --color-border: hsl(var(--hue-cycle, 0), 90%, 60%); --color-button-text: #020408;
+    --animation-rgb-text: rgb-led-glow-text 3s ease-in-out infinite alternate;
+    --animation-rgb-border: rgb-led-glow-border 3s ease-in-out infinite alternate;
+}
+
+/* --- NEW: Layout & Global Styles --- */
+html {
+    width: 100%; height: 100%; margin: 0; padding: 0;
+    font-family: var(--font-main);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow-x: hidden;
+}
+
+body {
+    width: 100%; min-height: 100%;
+    margin: 0; padding: 0;
+    display: flex; flex-direction: column;
+}
+
+#game-container {
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    width: 100%; flex-grow: 1; display: flex;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#content-pusher {
+    flex-grow: 1;
+    margin-left: var(--main-nav-width); /* Push content to the right of the nav */
+    transition: margin-left 0.3s ease;
+}
+
+/* State when the menu is hidden */
+body.menu-hidden #content-pusher {
+    margin-left: 0;
+}
+
+.content-wrapper {
+    max-width: 72rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    min-height: 100vh;
+}
+
+/* Broad transitions for themed elements */
+#game-container *,
+.modal-content, .tooltip, .module-card, .menu-tab,
+#resources-display > div, select, input, textarea, button {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease;
+}
+h1, h2, h3, h4, h5, h6, p, span, li, label {
+    transition: color 0.3s ease;
+}
+
+/* --- NEW: Modern, Rounded Buttons --- */
+button:hover { filter: brightness(1.15); box-shadow: var(--shadow-md); }
+button:active { transform: scale(0.97); }
+.game-button {
+    background-color: var(--color-primary);
+    color: var(--color-button-text);
+    padding: 0.6rem 1.2rem;
+    border-radius: 9999px; /* Pill shape */
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+html[data-theme="rgb"] .game-button { animation: var(--animation-rgb-filter) forwards;}
+.game-button:disabled { background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important; filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important; }
+#save-button { background-color: var(--color-accent-one); color: white; animation: none !important; }
+#reset-button { background-color: var(--color-secondary); color: white; animation: none !important; }
+#dev-tools-button { background-color: var(--color-accent-one); filter: saturate(1.5); color: white; animation: none !important; }
+
+
+/* --- NEW: Fixed Left Navigation Menu --- */
+#main-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--main-nav-width);
+    height: 100vh;
+    background-color: var(--color-surface);
+    border-right: 1px solid var(--color-border);
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+    z-index: 100;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform: translateX(0);
+    opacity: 1;
+}
+/* State when the menu is hidden */
+body.menu-hidden #main-menu {
+    transform: translateX(-100%);
+    opacity: 0;
+    pointer-events: none;
+}
+.menu-tab {
+    display: block; width: 100%; padding: 0.75rem 1.25rem; text-align: left; font-weight: 500;
+    color: var(--color-text-secondary); background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.75rem; /* Rounded tabs */
+    cursor: pointer;
+    margin-bottom: 0.5rem; /* Space between tabs */
+}
+.menu-tab:hover { background-color: var(--color-surface-dark); color: var(--color-primary); }
+.menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; box-shadow: var(--shadow-lg); }
+
+
+/* --- NEW: Resource Bar Styling --- */
+#resource-bar {
+    background-color: transparent;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--color-text-primary);
+}
+#resource-bar h2 {
+    color: var(--color-primary);
+}
+ html[data-theme="rgb"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards;}
+ html[data-theme="neon"][data-mode="night"] #resource-bar h2 { animation: var(--animation-rgb-text) forwards; }
+
+#resources-display {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem; /* More space between resource items */
+}
+.resource-item-display {
+    background-color: transparent !important;
+    color: var(--color-text-primary) !important;
+    border: none !important;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0;
+    box-shadow: none !important;
+    text-align: left;
+}
+.resource-item-display .font-semibold {
+     color: var(--color-secondary) !important;
+}
+ html[data-theme="rgb"] .resource-item-display .font-semibold {  animation: var(--animation-rgb-text) forwards; }
+
+
+/* Unchanged from original CSS */
+.module-card { background-color: var(--color-surface-dark); border: 1px solid var(--color-border); }
+.tooltip { position: fixed; background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-lg); box-shadow: var(--shadow-md); z-index: 10001; display: none; pointer-events: none; }
+#modal-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; z-index: 10000; pointer-events: none; }
+#modal-container > .modal.active { background-color: rgba(0, 0, 0, 0.6); width: 100%; height: 100%; pointer-events: auto; }
+.modal-content { background-color: var(--color-surface); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 1.5rem; border-radius: var(--border-radius-xl); box-shadow: var(--shadow-xl); width: 90%; max-width: 32rem; z-index: 10001; }
+#main-content, footer { background-color: var(--color-surface); border: 1px solid var(--color-border); color: var(--color-text-primary); }
+select, input[type="text"], input[type="number"], textarea { background-color: var(--color-surface-dark); color: var(--color-text-primary); border: 1px solid var(--color-border); padding: 0.5rem 0.75rem; border-radius: var(--border-radius-lg); }
+select:focus, input:focus, textarea:focus { border-color: var(--color-primary); outline: none; box-shadow: 0 0 0 3px hsla(var(--hue-cycle, 220), 80%, 70%, 0.4); }
+ html[data-theme="modern"] select:focus, html[data-theme="modern"] input:focus, html[data-theme="modern"] textarea:focus { box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.4); }
+ html[data-theme="neon"] select:focus, html[data-theme="neon"] input:focus, html[data-theme="neon"] textarea:focus { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.5); }
