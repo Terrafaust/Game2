@@ -1,73 +1,85 @@
-// /game/modules/prestige_module/prestige_manifest.js
+// /game/modules/prestige_module/prestige_manifest.js (v1.1 - Bug Fix & Refactor)
 import { prestigeData } from './prestige_data.js';
-import { getInitialState } from './prestige_state.js';
+import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
-// ui will be imported and used later
-// import { ui } from './prestige_ui.js';
+import { ui } from './prestige_ui.js';
 
 export const manifest = {
     id: 'prestige',
-    name: 'Ascension',
-    version: '1.0.0',
-    description: 'The Ascension (Prestige) system.',
-    
-    // This module doesn't have hard dependencies, it just affects others.
+    name: 'Prestige',
+    version: '1.1.0',
+    description: 'The Prestige system.',
     dependencies: [],
 
     initialize: (coreSystems) => {
-        const { 
-            staticDataAggregator, 
-            coreResourceManager, 
-            coreGameStateManager, 
-            coreUpgradeManager, 
-            loggingSystem 
-            // coreUIManager, gameLoop will be used later
-        } = coreSystems;
+        const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop, moduleLoader } = coreSystems;
 
         loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${manifest.version}...`);
+        
+        // **BUG FIX**: Initialize the logic module with the core systems.
+        prestigeLogic.initialize(coreSystems);
 
-        // Register static data from prestige_data.js
         staticDataAggregator.registerStaticData(manifest.id, prestigeData);
 
-        // Define the 'ascensionPoints' resource, ensuring it does NOT reset on prestige
-        const apResource = prestigeData.resources.ascensionPoints;
+        // Define the 'prestigePoints' resource, ensuring it does NOT reset on prestige and is hidden initially.
+        const ppResource = prestigeData.resources.prestigePoints;
         coreResourceManager.defineResource(
-            apResource.id,
-            apResource.name,
-            '0', // initial amount
-            true, // showInUI
-            true, // isUnlocked
-            false, // hasProductionRate (it's earned, not generated over time)
-            apResource.resetsOnPrestige // This is false
+            ppResource.id, ppResource.name, '0',
+            false, // showInUI: false initially
+            true,  // isUnlocked
+            false, // hasProductionRate
+            ppResource.resetsOnPrestige // false
+        );
+        
+        // Define a "pseudo-resource" for the prestige count to be displayed in the UI bar
+        coreResourceManager.defineResource(
+            'prestigeCount', 'Prestige Count', '0',
+            false, // showInUI: false initially
+            true,  // isUnlocked
+            false, // hasProductionRate
+            false  // resetsOnPrestige: false
         );
 
-        // Set the initial state for this module if it doesn't exist in the save file
-        if (!coreGameStateManager.getModuleState(manifest.id)) {
-            coreGameStateManager.setModuleState(manifest.id, getInitialState());
+        let currentModuleState = coreGameStateManager.getModuleState(manifest.id);
+        if (!currentModuleState) {
+            currentModuleState = getInitialState();
         }
+        Object.assign(moduleState, currentModuleState);
+        coreGameStateManager.setModuleState(manifest.id, { ...moduleState });
+
 
         // Register the global production bonus effect with the upgrade manager
-        // This makes the bonus from getPrestigeBonusMultiplier available to all other modules.
         coreUpgradeManager.registerEffectSource(
-            manifest.id, // Source module id
-            'global_production_bonus_from_ascension', // A unique key for this effect
-            'global_production', // The system this affects (a generic, global one)
-            'all', // The specific target ID (meaning it applies to everything)
-            'MULTIPLIER', // The type of effect
-            () => prestigeLogic.getPrestigeBonusMultiplier() // The function that provides the bonus value
+            manifest.id, 'global_bonus_from_prestige', 'global_production', 'all', 'MULTIPLIER',
+            () => prestigeLogic.getPrestigeBonusMultiplier()
         );
         
         loggingSystem.info('PrestigeManifest', `Registered global production bonus effect.`);
 
-        // TODO: Register game loop callbacks for producer generation
-        // TODO: Register the UI tab with coreUIManager
-        
+        // **FIX**: Register the producer production logic with the game loop for stable updates.
+        gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
+            prestigeLogic.updateAllPrestigeProducerProductions(deltaTime);
+        });
+
+        // Register the UI Tab
+        coreUIManager.registerMenuTab(
+            manifest.id,
+            prestigeData.ui.tabLabel,
+            (parentElement) => ui.renderMainContent(parentElement),
+            () => coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false), // Only show tab after first prestige
+            () => ui.onShow(),
+            () => {} // onHide
+        );
+
+        // Initialize UI
+        ui.initialize(coreSystems, prestigeLogic);
+
         loggingSystem.info('PrestigeManifest', `${manifest.name} initialized successfully.`);
 
         return {
             id: manifest.id,
             logic: prestigeLogic,
-            // ui: ui // will be added in Phase 5
+            ui: ui
         };
     }
 };

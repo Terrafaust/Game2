@@ -27,18 +27,18 @@ export const ui = {
         apDisplay.className = 'text-lg text-yellow-300';
         header.appendChild(apDisplay);
 
-        const ascendButtonContainer = document.createElement('div');
-        const ascendButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
-        ascendButton.id = 'ascend-button';
-        ascendButtonContainer.appendChild(ascendButton);
-        header.appendChild(ascendButtonContainer);
+        const prestigeButtonContainer = document.createElement('div');
+        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
+        prestigeButton.id = 'prestige-button';
+        prestigeButtonContainer.appendChild(prestigeButton);
+        header.appendChild(prestigeButtonContainer);
         
         container.appendChild(header);
 
         // --- Producers Section ---
         const producersTitle = document.createElement('h3');
         producersTitle.className = 'text-xl font-semibold text-primary mt-6';
-        producersTitle.textContent = 'Ascension Upgrades';
+        producersTitle.textContent = 'Prestige Upgrades';
         container.appendChild(producersTitle);
 
         const producersGrid = document.createElement('div');
@@ -100,20 +100,20 @@ export const ui = {
         // Update AP display
         const apDisplay = parentElementCache.querySelector('#ap-display');
         if (apDisplay) {
-            const ap = coreResourceManager.getAmount('ascensionPoints');
-            apDisplay.textContent = `Ascension Points: ${decimalUtility.format(ap, 2, 0)}`;
+            const ap = coreResourceManager.getAmount('prestigePoints');
+            apDisplay.textContent = `Prestige Points: ${decimalUtility.format(ap, 2, 0)}`;
         }
 
-        // Update Ascend button
-        const ascendButton = parentElementCache.querySelector('#ascend-button');
-        if (ascendButton) {
-            const gain = logic.calculateAscensionGain();
-            const canAscend = logic.canPrestige();
-            ascendButton.disabled = !canAscend || decimalUtility.isZero(gain);
-            if (canAscend) {
-                ascendButton.textContent = `Ascend for ${decimalUtility.format(gain, 2, 0)} AP`;
+        // Update Prestige button
+        const prestigeButton = parentElementCache.querySelector('#prestige-button');
+        if (prestigeButton) {
+            const gain = logic.calculatePrestigeGain();
+            const canPrestige = logic.canPrestige();
+            prestigeButton.disabled = !canPrestige || decimalUtility.isZero(gain);
+            if (canPrestige) {
+                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} AP`;
             } else {
-                ascendButton.textContent = 'Need 10 Professors';
+                prestigeButton.textContent = 'Need 10 Professors';
             }
         }
         
@@ -128,7 +128,7 @@ export const ui = {
                 card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} AP`;
                 
                 const button = card.querySelector(`#prestige-purchase-${producerId}`);
-                button.disabled = !coreResourceManager.canAfford('ascensionPoints', cost);
+                button.disabled = !coreResourceManager.canAfford('prestigePoints', cost);
             }
         }
     },

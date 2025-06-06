@@ -2,9 +2,9 @@
 
 export const prestigeData = {
     resources: {
-        ascensionPoints: {
-            id: 'ascensionPoints',
-            name: 'Ascension Points',
+        prestigePoints: {
+            id: 'prestigePoints',
+            name: 'Prestige Points',
             description: 'Points earned by resetting progress, used for powerful upgrades.',
             resetsOnPrestige: false
         }
@@ -15,7 +15,7 @@ export const prestigeData = {
             id: 'license',
             name: 'License',
             description: 'Automatically produces Students, Classrooms, and Kindergartens.',
-            costResource: 'ascensionPoints',
+            costResource: 'prestigePoints',
             baseCost: '100',
             costGrowthFactor: '1.05',
             production: [
@@ -28,7 +28,7 @@ export const prestigeData = {
             id: 'master1',
             name: "Master's Degree I",
             description: 'Automatically produces Elementary, Middle, and High Schools.',
-            costResource: 'ascensionPoints',
+            costResource: 'prestigePoints',
             baseCost: '10000',
             costGrowthFactor: '1.05',
             production: [
@@ -41,7 +41,7 @@ export const prestigeData = {
             id: 'master2',
             name: "Master's Degree II",
             description: 'Automatically produces Universities.',
-            costResource: 'ascensionPoints',
+            costResource: 'prestigePoints',
             baseCost: '100000',
             costGrowthFactor: '1.05',
             production: [
@@ -52,7 +52,7 @@ export const prestigeData = {
             id: 'phd',
             name: 'PhD',
             description: 'Automatically produces Professors.',
-            costResource: 'ascensionPoints',
+            costResource: 'prestigePoints',
             baseCost: '1e10', // 10e9 is 1e10
             costGrowthFactor: '1.05',
             production: [
@@ -62,8 +62,8 @@ export const prestigeData = {
         postDoc: {
             id: 'postDoc',
             name: 'Post-Doctorate',
-            description: 'Multiplies the production of all other Ascension producers.',
-            costResource: 'ascensionPoints',
+            description: 'Multiplies the production of all other Prestige producers.',
+            costResource: 'prestigePoints',
             baseCost: '1e13', // 10e12 is 1e13
             costGrowthFactor: '1.05',
             // This producer has no direct production, its effect is calculated in logic
@@ -76,7 +76,7 @@ export const prestigeData = {
     },
     
     ui: {
-        tabLabel: "Ascension",
-        ascendButtonText: "Ascend",
+        tabLabel: "Prestige",
+        prestigeButtonText: "Prestige",
     }
 };

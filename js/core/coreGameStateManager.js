@@ -12,7 +12,7 @@ import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js'; 
 
 let gameState = {
-    gameVersion: "1.1.0", // Incremented for Ascension System update
+    gameVersion: "1.1.0", // Incremented for Prestige System update
     lastSaveTime: null,
     totalPlayTimeSeconds: 0, 
     globalFlags: {},

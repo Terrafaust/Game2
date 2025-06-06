@@ -1,4 +1,4 @@
-// modules/achievements_module/achievements_logic.js (v2.0 - Ascension Update)
+// modules/achievements_module/achievements_logic.js (v2.0 - prestige Update)
 
 /**
  * @file achievements_logic.js

@@ -3,8 +3,8 @@
  * @returns {object} The initial state for the prestige module.
  */
 export const getInitialState = () => ({
-    totalAscensionCount: '0',
-    totalAscensionPointsEverEarned: '0',
+    totalPrestigeCount: '0',
+    totalPrestigePointsEverEarned: '0',
     ownedProducers: {
         license: '0',
         mastersDegree: '0',
