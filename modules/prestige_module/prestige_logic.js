@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.1 - Bug Fix & Refactor)
+// /game/modules/prestige_module/prestige_logic.js (v2.2 - Unlock Condition Changed)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -18,6 +18,7 @@ export const getOwnedPrestigeProducerCount = (producerId) => {
 };
 
 export const updateAllPrestigeProducerProductions = (deltaTime) => {
+    // This function's logic remains the same
     const { coreUpgradeManager, moduleLoader } = coreSystemsRef;
     const studiesModule = moduleLoader.getModule('studies');
     if (!studiesModule || !studiesModule.logic) return;
@@ -50,11 +51,13 @@ export const updateAllPrestigeProducerProductions = (deltaTime) => {
     }
 };
 
+/**
+ * NEW UNLOCK LOGIC: Checks if the player has at least 1000 images.
+ * @returns {boolean}
+ */
 export const canPrestige = () => {
-    const studiesState = coreGameStateManager.getModuleState('studies');
-    if (!studiesState || !studiesState.ownedProducers) return false;
-    const professorCount = decimalUtility.new(studiesState.ownedProducers.professor || '0');
-    return decimalUtility.gte(professorCount, 10);
+    const imageAmount = coreResourceManager.getAmount('images');
+    return decimalUtility.gte(imageAmount, 1000);
 };
 
 export const calculatePrestigeGain = () => {
@@ -64,7 +67,6 @@ export const calculatePrestigeGain = () => {
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalPPSpent = decimalUtility.new(moduleState.totalPrestigePointsEverEarned || '0');
 
-    // Formula: (number of prestige/6)+1+(Number of prestige points total / 10e30)
     const part1 = decimalUtility.divide(prestigeCount, 6);
     const part2 = 1;
     const part3 = decimalUtility.divide(totalPPSpent, '1e30');
@@ -72,13 +74,14 @@ export const calculatePrestigeGain = () => {
     let totalGain = decimalUtility.add(part1, part2);
     totalGain = decimalUtility.add(totalGain, part3);
     
-    const apGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
-    totalGain = decimalUtility.multiply(totalGain, apGainBonus);
+    const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
+    totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
 
     return totalGain.floor();
 };
 
 export const getPrestigeBonusMultiplier = () => {
+    // This function's logic remains the same
     const { coreUpgradeManager } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
@@ -96,7 +99,8 @@ export const getPrestigeBonusMultiplier = () => {
 
 export const performPrestige = () => {
     if (!canPrestige()) {
-        coreUIManager.showNotification("You need at least 10 Professors to Prestige.", "error");
+        // Updated error message to reflect new requirement
+        coreUIManager.showNotification("You need at least 1,000 Images to Prestige.", "error");
         return;
     }
     const ppGains = calculatePrestigeGain();
@@ -123,7 +127,6 @@ export const performPrestige = () => {
                     coreResourceManager.addAmount('prestigePoints', ppGains);
                     coreResourceManager.setAmount('prestigeCount', moduleState.totalPrestigeCount);
                     
-                    // Make resources visible after first prestige
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     coreResourceManager.setResourceVisibility('prestigeCount', true);
 
