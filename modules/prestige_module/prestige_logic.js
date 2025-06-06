@@ -52,7 +52,6 @@ export const purchasePrestigeProducer = (producerId) => {
     }
 };
 
-
 export const updateAllPrestigeProducerProductions = (deltaTime) => {
     const { coreUpgradeManager } = coreSystemsRef;
     const studiesModule = moduleLoader.getModule('studies');
@@ -87,12 +86,11 @@ export const updateAllPrestigeProducerProductions = (deltaTime) => {
 };
 
 /**
- * NEW UNLOCK LOGIC: Checks if the player has at least 1000 images.
+ * NEW UNLOCK LOGIC: Checks if the player has at least 1000 images and got the achievements for it.
  * @returns {boolean}
  */
 export const canPrestige = () => {
-    const imageAmount = coreResourceManager.getAmount('images');
-    return decimalUtility.gte(imageAmount, 1000);
+    return coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
 };
 
 export const calculatePrestigeGain = () => {
@@ -134,7 +132,7 @@ export const getPrestigeBonusMultiplier = () => {
 export const performPrestige = () => {
     if (!canPrestige()) {
         // Updated error message to reflect new requirement
-        coreUIManager.showNotification("You need at least 1,000 Images to Prestige.", "error");
+        coreUIManager.showNotification("You have not unlocked Prestige ability yet.", "error");
         return;
     }
     const ppGains = calculatePrestigeGain();

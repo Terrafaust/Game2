@@ -38,6 +38,33 @@ const sspAchTierRewards = [
     { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "6" },
 ];
 
+// --- NEW IMAGE ACHIEVEMENTS ---
+const createImageAchievements = () => {
+    const achievements = {};
+    const tiers = {
+        1: { count: 1, reward: { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.01", description: "+1% Global SP Prod." } },
+        2: { count: 100, reward: { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "knowledge", value: "0.01", description: "+1% Global Knowledge Prod." } },
+        3: { count: 500, reward: { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "10", description: "+10 Free SSP." } },
+        4: { count: 1000, reward: { type: "UNLOCK_FEATURE", flag: "prestigeUnlocked", description: "Unlocks the Prestige system." } },
+        5: { count: 5000, reward: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "ppGain", value: "0.05", description: "+5% Prestige Point Gain." } },
+        6: { count: 10000, reward: { type: "MULTIPLIER", targetSystem: "global_production", targetId: "all", value: "0.01", description: "+1% to ALL production." } }
+    };
+
+    for (const key in tiers) {
+        const tier = tiers[key];
+        const achId = `image_ach_${key}`;
+        achievements[achId] = {
+            id: achId,
+            name: `Image Collector ${key}`,
+            description: `Own a total of ${tier.count.toLocaleString()} Images.`,
+            icon: "🖼️",
+            condition: { type: "resourceAmount", resourceId: "images", amount: tier.count.toString() },
+            reward: tier.reward
+        };
+    }
+    return achievements;
+};
+
 const createProducerAchievements = (producerId, producerName, icon, targetSystemSuffix = "") => {
     let achievements = {};
     producerAchTierCounts.forEach((count, index) => {
@@ -197,8 +224,11 @@ export const staticModuleData = {
         ...createPrestigeProducerAchievements("phd", "PhD", " Doctorate"),
         ...createPrestigeProducerAchievements("postDoc", "Post-Doctorate", "✨"),
 
+        // **NEW** Image Achievements
+        ...createImageAchievements(),
         // New Total Achievement Milestones
         ...createTotalAchievementAchievements(),
+        
     },
     ui: {
         achievementsTabLabel: "Achievements",

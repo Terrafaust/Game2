@@ -127,6 +127,7 @@ export const moduleLogic = {
     checkAndCompleteAchievements() {
         const { coreGameStateManager, loggingSystem, coreUIManager, coreUpgradeManager, decimalUtility, coreResourceManager, moduleLoader } = coreSystemsRef;
         let newAchievementsCompleted = false;
+        let menuNeedsUpdate = false;
 
         for (const achievementId in staticModuleData.achievements) {
             if (!this.isAchievementCompleted(achievementId)) {
@@ -146,6 +147,11 @@ export const moduleLogic = {
                         } else if (reward.type.includes("MULTIPLIER")) { 
                             const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
                             coreUpgradeManager.registerEffectSource('achievements', achievementId, reward.targetSystem, reward.targetId, reward.type, valueProvider);
+                        } else if (reward.type === "UNLOCK_FEATURE") {
+                            // **NEW LOGIC**
+                            coreGameStateManager.setGlobalFlag(reward.flag, true);
+                            loggingSystem.info("AchievementsLogic", `Unlocked feature via achievement ${achievementId}: ${reward.flag}`);
+                            menuNeedsUpdate = true; // Signal that the main menu needs to be redrawn
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.3 - Direct Unlock Check)
+// /game/modules/prestige_module/prestige_manifest.js (v1.4 - Achievement-Based Unlock)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,12 +7,12 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.3.0',
+    version: '1.4.0',
     description: 'The Prestige system.',
     dependencies: [],
 
     initialize: (coreSystems) => {
-        const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop, moduleLoader } = coreSystems;
+        const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop } = coreSystems;
 
         loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${this.version}...`);
         
@@ -38,28 +38,25 @@ export const manifest = {
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(manifest.id, { ...moduleState });
 
-
         coreUpgradeManager.registerEffectSource(
             manifest.id, 'global_bonus_from_prestige', 'global_production', 'all', 'MULTIPLIER',
             () => prestigeLogic.getPrestigeBonusMultiplier()
         );
         
-        loggingSystem.info('PrestigeManifest', `Registered global production bonus effect.`);
-
-        // The production logic for prestige producers is still handled by the game loop.
+        // Production logic is still handled by the game loop.
         gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
             if (Object.values(moduleState.ownedProducers).some(val => val !== '0')) {
                  prestigeLogic.updateAllPrestigeProducerProductions(deltaTime);
             }
         });
 
-        // Register the UI Tab with the new, direct visibility logic
+        // Register the UI Tab with the new, simpler visibility logic
         coreUIManager.registerMenuTab(
             manifest.id,
             prestigeData.ui.tabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
-            // **NEW VISIBILITY LOGIC**: Show if the player can prestige now OR if they have already prestiged before.
-            () => prestigeLogic.canPrestige() || coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false),
+            // **NEW VISIBILITY LOGIC**: Show if the achievement system has unlocked the feature.
+            () => coreGameStateManager.getGlobalFlag('prestigeUnlocked', false),
             () => ui.onShow(),
             () => {}
         );
