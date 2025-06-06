@@ -1,10 +1,12 @@
-// js/main.js (v9.8 - Add BuyMultiplierManager)
+// js/main.js (v9.9 - Theme Init Fix & Restored)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v9.9: Corrects theme initialization order and restores full original file content.
  * v9.8: Adds and initializes the new buyMultiplierManager.
  * v9.7: Ensures globalSettingsManager dispatches initial theme correctly and listener is robust.
+ * v9.6: Changed DevTools button to apply a x100,000 production multiplier.
  */
 
 // --- Core System Imports ---
@@ -19,33 +21,33 @@ import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
-import { buyMultiplierManager } from './core/buyMultiplierManager.js'; // <<< ADDED
+import { buyMultiplierManager } from './core/buyMultiplierManager.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
     // 1. Initialize Logging System
-    loggingSystem.setLogLevel(loggingSystem.levels.DEBUG); // Set to DEBUG for thorough logs
-    loggingSystem.info("Main", "Game initialization sequence started (v9.7).");
+    loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
+    loggingSystem.info("Main", "Game initialization sequence started (v9.9).");
 
-    // Initialize Core Systems in an order that respects dependencies
+    // 2. Initialize Core Systems
     globalSettingsManager.initialize();
-    buyMultiplierManager.initialize(); // <<< ADDED
-    
+    buyMultiplierManager.initialize();
     coreResourceManager.initialize();
     coreUpgradeManager.initialize();
     coreUIManager.initialize();
 
-    // Event listener for theme changes from globalSettingsManager
+    // 3. Set up event listeners AFTER UI Manager is ready
     document.addEventListener('themeChanged', (event) => {
         loggingSystem.debug("Main_ThemeListener", "themeChanged event received", event.detail);
         if (event.detail && event.detail.name && event.detail.mode) {
-            const { name, mode } = event.detail;
-            coreUIManager.applyTheme(name, mode);
+            coreUIManager.applyTheme(event.detail.name, event.detail.mode);
         } else {
             loggingSystem.warn("Main_ThemeListener", "themeChanged event received with invalid detail:", event.detail);
         }
     });
     
+    // 4. *** THIS IS THE FIX ***
+    // Explicitly apply the initial theme after everything is initialized and listening.
     const initialTheme = globalSettingsManager.getSetting('theme');
     if (initialTheme && initialTheme.name && initialTheme.mode) {
         loggingSystem.debug("Main_InitTheme", `Applying initial theme directly: ${initialTheme.name}, ${initialTheme.mode}`);
@@ -58,6 +60,7 @@ async function initializeGame() {
         coreUIManager.showNotification(`Language setting changed to: ${event.detail}. (Localization TBD)`, 'info');
     });
 
+    // 5. Initialize Module Loader
     moduleLoader.initialize(
         staticDataAggregator,
         coreGameStateManager,
@@ -69,9 +72,10 @@ async function initializeGame() {
         coreUpgradeManager,
         globalSettingsManager,
         saveLoadSystem,
-        buyMultiplierManager // <<< ADDED
+        buyMultiplierManager
     );
 
+    // 6. Define Core Data
     const coreResourceDefinitions = {
         studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
         knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: false, hasProductionRate: true },
@@ -87,6 +91,7 @@ async function initializeGame() {
         );
     }
 
+    // 7. Load Game or Start New
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
@@ -95,6 +100,7 @@ async function initializeGame() {
         loggingSystem.info("Main", "Save game loaded.");
     }
 
+    // 8. Load Modules
     try {
         await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
@@ -107,8 +113,10 @@ async function initializeGame() {
         coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
     }
     
+    // 9. Final UI Refresh
     coreUIManager.fullUIRefresh();
 
+    // 10. Setup Footer Buttons (Restored from your original file)
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
@@ -158,7 +166,7 @@ async function initializeGame() {
                             );
                         }
                         
-                        moduleLoader.resetAllModules();
+                        moduleLoader.resetAllModules(); 
                         
                         coreGameStateManager.setGameVersion("0.5.8");
                         
@@ -215,6 +223,7 @@ async function initializeGame() {
         loggingSystem.warn("Main_DevTools_Setup", "devToolsButton not found in the DOM.");
     }
 
+    // 11. Start Game Loop
     if (!gameLoop.isRunning()) {
         gameLoop.start();
     }

@@ -1,8 +1,9 @@
-// js/core/globalSettingsManager.js (v1.1 - Theme Event Detail Fix)
+// js/core/globalSettingsManager.js (v1.2 - Theme Init Fix)
 
 /**
  * @file globalSettingsManager.js
  * @description Manages global user-configurable settings for the game.
+ * v1.2: Prevents race condition on initial load by not dispatching theme event from loadSettings.
  * v1.1: Ensures 'themeChanged' event detail contains correct structure.
  */
 
@@ -29,7 +30,7 @@ let currentSettings = { ...defaultSettings };
 const globalSettingsManager = {
     initialize() {
         this.loadSettings();
-        loggingSystem.info("GlobalSettingsManager", "Global Settings Manager initialized.", this.getAllSettings());
+        loggingSystem.info("GlobalSettingsManager", "Global Settings Manager initialized (v1.2).", this.getAllSettings());
     },
 
     loadSettings() {
@@ -48,15 +49,8 @@ const globalSettingsManager = {
             loggingSystem.error("GlobalSettingsManager", "Error loading settings from storage. Using defaults.", error);
             currentSettings = JSON.parse(JSON.stringify(defaultSettings));
         }
-        // Dispatch theme change after loading settings so UI can pick up initial theme
-        document.dispatchEvent(new CustomEvent('themeChanged', { 
-            detail: { 
-                name: currentSettings.theme.name, 
-                mode: currentSettings.theme.mode 
-            } 
-        }));
-        loggingSystem.debug("GlobalSettingsManager_Load", `Dispatched initial themeChanged event: name=${currentSettings.theme.name}, mode=${currentSettings.theme.mode}`);
-
+        // REMOVED event dispatch from here to prevent race condition on initial load.
+        // main.js will now be responsible for applying the initial theme.
     },
 
     saveSettings() {
