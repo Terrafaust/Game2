@@ -65,11 +65,11 @@ export const staticModuleData = {
     },
     
     // --- Prestige Skills (Completely Overhauled) ---
-    prestigeSkillPointResourceId: 'ascensionPoints',
+    prestigeSkillPointResourceId: 'prestigePoints',
     prestigeSkills: {
         // TIER 1
-        ascendedInsight: { id: 'ascendedInsight', tier: 1, name: "Ascended Insight", description: "Increases Ascension Point gain from prestiging by 10% per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "apGain", valuePerLevel: "0.10" }, unlockCondition: null },
-        enduringLegacy: { id: 'enduringLegacy', tier: 1, name: "Enduring Legacy", description: "The base Prestige Bonus multiplier is 2% stronger per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "prestigeBonus", valuePerLevel: "0.02" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "ascendedInsight", level: 1 } },
+        prestigedInsight: { id: 'prestigedInsight', tier: 1, name: "Prestiged Insight", description: "Increases Prestige Point gain from prestiging by 10% per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "apGain", valuePerLevel: "0.10" }, unlockCondition: null },
+        enduringLegacy: { id: 'enduringLegacy', tier: 1, name: "Enduring Legacy", description: "The base Prestige Bonus multiplier is 2% stronger per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "prestigeBonus", valuePerLevel: "0.02" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "prestigedInsight", level: 1 } },
         // TIER 2
         startingAdvantage: { id: 'startingAdvantage', tier: 2, name: "Starting Advantage", description: "Start each prestige with 10 free Students and 5 free Classrooms per level.", maxLevel: 5, costPerLevel: createPrestigeSkillLevelCosts(2, 5), effect: { type: "MANUAL", description: "Grants free producers on prestige." }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 1, level: 1 } },
         acceleratedLearning: { id: 'acceleratedLearning', tier: 2, name: "Accelerated Learning", description: "All Study Producers cost 5% less per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(2, 10), effect: { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "studies_producers", targetId: "ALL", valuePerLevel: "0.05" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "startingAdvantage", level: 1 } },
@@ -81,12 +81,12 @@ export const staticModuleData = {
         permanentKnowledge: { id: 'permanentKnowledge', tier: 4, name: "Permanent Knowledge", description: "Start each prestige with 1% of your previous prestige's Knowledge per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(4, 10), effect: { type: "MANUAL", description: "Retain a percentage of Knowledge on prestige." }, unlockCondition: { type: "prestigeSkillLevel", skillId: "scholarlySynergy", level: 1 } },
         // TIER 5
         prestigePower: { id: 'prestigePower', tier: 5, name: "Prestige Power", description: "The Prestige Bonus multiplier is boosted by a further 10% per level.", maxLevel: 5, costPerLevel: createPrestigeSkillLevelCosts(5, 5), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "prestigeBonus", valuePerLevel: "0.10" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 4, level: 1 } },
-        ascensionEconomics: { id: 'ascensionEconomics', tier: 5, name: "Ascension Economics", description: "All Ascension Producers cost 5% less per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(5, 10), effect: { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "prestige_producers", targetId: "ALL", valuePerLevel: "0.05" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "prestigePower", level: 1 } },
+        prestigeEconomics: { id: 'prestigeEconomics', tier: 5, name: "Prestige Economics", description: "All Prestige Producers cost 5% less per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(5, 10), effect: { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "prestige_producers", targetId: "ALL", valuePerLevel: "0.05" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "prestigePower", level: 1 } },
         // TIER 6
-        synergisticAscension: { id: 'synergisticAscension', tier: 6, name: "Synergistic Ascension", description: "Total Study Skill Points spent boost Ascension Point gain.", maxLevel: 1, costPerLevel: createPrestigeSkillLevelCosts(6, 1), effect: { type: "SSP_BASED_AP_MULTIPLIER" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 5, level: 1 } },
-        retainedSkills: { id: 'retainedSkills', tier: 6, name: "Retained Skills", description: "Keep 5% of your Study Skill Points on prestige per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(6, 10), effect: { type: "MANUAL" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "synergisticAscension", level: 1 } },
+        synergisticPrestige: { id: 'synergisticPrestige', tier: 6, name: "Synergistic Prestige", description: "Total Study Skill Points spent boost Prestige Point gain.", maxLevel: 1, costPerLevel: createPrestigeSkillLevelCosts(6, 1), effect: { type: "SSP_BASED_AP_MULTIPLIER" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 5, level: 1 } },
+        retainedSkills: { id: 'retainedSkills', tier: 6, name: "Retained Skills", description: "Keep 5% of your Study Skill Points on prestige per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(6, 10), effect: { type: "MANUAL" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "synergisticPrestige", level: 1 } },
         // TIER 7
-        apOverdrive: { id: 'apOverdrive', tier: 7, name: "AP Overdrive", description: "Total Ascension Points ever earned boost ALL production.", maxLevel: 1, costPerLevel: createPrestigeSkillLevelCosts(7, 1), effect: { type: "AP_BASED_GLOBAL_MULTIPLIER" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 6, level: 1 } },
+        apOverdrive: { id: 'apOverdrive', tier: 7, name: "AP Overdrive", description: "Total Prestige Points ever earned boost ALL production.", maxLevel: 1, costPerLevel: createPrestigeSkillLevelCosts(7, 1), effect: { type: "AP_BASED_GLOBAL_MULTIPLIER" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 6, level: 1 } },
         echoesOfPower: { id: 'echoesOfPower', tier: 7, name: "Echoes of Power", description: "The first of each Study Producer is 1000x more powerful per level.", maxLevel: 3, costPerLevel: createPrestigeSkillLevelCosts(7, 3), effect: { type: "FIRST_PRODUCER_BOOST", value: "1000" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "apOverdrive", level: 1 } },
         // TIER 8
         singularity: { id: 'singularity', tier: 8, name: "Singularity", description: "All multipliers from regular skills are squared.", maxLevel: 1, costPerLevel: createPrestigeSkillLevelCosts(8, 1), effect: { type: "SQUARE_SKILL_EFFECTS" }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 7, level: 1 } },
@@ -96,9 +96,9 @@ export const staticModuleData = {
     ui: {
         skillsTabLabel: "Skills",
         skillPointDisplayLabel: "Study Skill Points Available:",
-        prestigeSkillsTitle: "Ascension Skills",
-        prestigeSkillPointDisplayLabel: "Ascension Points Available:",
-        prestigeTierUnlockMessage: (tier) => `Unlock Tier ${tier} by leveling all Ascension skills in Tier ${tier - 1} to at least level 1.`,
+        prestigeSkillsTitle: "Prestige Skills",
+        prestigeSkillPointDisplayLabel: "Prestige Points Available:",
+        prestigeTierUnlockMessage: (tier) => `Unlock Tier ${tier} by leveling all Prestige skills in Tier ${tier - 1} to at least level 1.`,
         tierUnlockMessage: (tier) => `Unlock Tier ${tier} by leveling all skills in Tier ${tier - 1} to at least level 1.`
     }
 };
