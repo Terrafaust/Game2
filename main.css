@@ -387,12 +387,6 @@ html[data-theme="classic"] .menu-tab.active {
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    /* Flex center content */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 5px;
 }
 
 .menu-toggle-button .hamburger-line {
@@ -425,9 +419,13 @@ body.menu-visible .menu-overlay {
 
 /* Styles for screens 768px wide or less (tablets and phones) */
 @media (max-width: 768px) {
-    /* Show the toggle button */
+    /* Show the toggle button and style it for flex content */
     .menu-toggle-button {
         display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 5px;
     }
 
     /* Make main content take full width by removing the margin */
