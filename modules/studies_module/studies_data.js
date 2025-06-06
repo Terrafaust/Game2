@@ -163,7 +163,7 @@ export const staticModuleData = {
             description: "A wise mentor, producing valuable Knowledge.",
             resourceId: "knowledge", 
             baseProduction: "1", 
-            baseCost: "1000000000", 
+            baseCost: "100000000", 
             costResource: "studyPoints",
             costGrowthFactor: "1.03", 
             unlockCondition: {
