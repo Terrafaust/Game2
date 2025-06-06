@@ -1,8 +1,9 @@
-// modules/settings_ui_module/settings_ui_logic.js (v1.5 - CUM Check & Effect Filtering Refinement)
+// modules/settings_ui_module/settings_ui_logic.js (v1.6 - Added live theme application)
 
 /**
  * @file settings_ui_logic.js
  * @description Business logic for the Settings UI module.
+ * v1.6: Fixed bug where themes were not applied visually in real-time.
  * v1.5: Implemented source-specific effect filtering in _getEffectsFromSourceModule.
  * v1.4: Refined check for coreUpgradeManager and its registeredEffectSources.
  * v1.3: Finalized expanded getGameStatistics to include comprehensive data.
@@ -13,12 +14,11 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v1.5).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v1.6).");
         if (!coreSystems.coreUpgradeManager) {
             coreSystemsRef.loggingSystem.error("SettingsUILogic_Init_CRITICAL", "coreUpgradeManager is MISSING in coreSystems passed to SettingsUILogic!");
         } else {
             coreSystemsRef.loggingSystem.debug("SettingsUILogic_Init", "coreUpgradeManager is PRESENT.");
-            // Removed logging all effects here to reduce console noise during init. Can be added back if needed for specific CUM debugging.
         }
     },
 
@@ -46,7 +46,12 @@ export const moduleLogic = {
         const { globalSettingsManager, loggingSystem, coreUIManager } = coreSystemsRef;
         globalSettingsManager.setSetting('theme.name', themeId);
         globalSettingsManager.setSetting('theme.mode', modeId);
+        
+        // --- FIX: This line was missing. It tells the UI manager to visually apply the theme change immediately. ---
+        coreUIManager.applyTheme(themeId, modeId);
+
         loggingSystem.info("SettingsUILogic", `Theme set to: ${themeId}, Mode: ${modeId}`);
+        // The notification is now redundant because coreUIManager.applyTheme handles it, but we can keep it for logging.
         coreUIManager.showNotification(`Theme changed to ${themeId} (${modeId})`, "info");
     },
 
@@ -69,36 +74,25 @@ export const moduleLogic = {
             return effectType.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
         }
         
-        const allEffectsTree = coreUpgradeManager.getAllRegisteredEffects(); // This gets the inspectable structure
+        const allEffectsTree = coreUpgradeManager.getAllRegisteredEffects(); 
         const effectKey = `${targetSystem}_${targetId || 'global'}_${effectType}`;
         const sourcesForThisEffectKey = allEffectsTree[effectKey];
 
         let filteredAggregatedValue = effectType.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
-        let effectsFoundFromSource = false;
-
+        
         if (sourcesForThisEffectKey) {
-            // loggingSystem.debug("SettingsUILogic_GetEffects", `Inspecting sources for effectKey '${effectKey}':`, sourcesForThisEffectKey);
             for (const fullSourceIdKey in sourcesForThisEffectKey) {
-                const effectDetails = sourcesForThisEffectKey[fullSourceIdKey]; // { id, moduleId, ..., currentValue }
+                const effectDetails = sourcesForThisEffectKey[fullSourceIdKey]; 
                 if (effectDetails.moduleId === sourceModuleId) {
-                    effectsFoundFromSource = true;
-                    // effectDetails.currentValue should be a string representation of the Decimal from CUM's getAllRegisteredEffects
                     const value = decimalUtility.new(effectDetails.currentValue || (effectType.includes("MULTIPLIER") ? "1" : "0") );
                     
                     if (effectType.includes("MULTIPLIER")) {
                         filteredAggregatedValue = decimalUtility.multiply(filteredAggregatedValue, value);
-                    } else { // ADDITIVE_BONUS, PERCENTAGE_BONUS (treated as additive for sum)
+                    } else { 
                         filteredAggregatedValue = decimalUtility.add(filteredAggregatedValue, value);
                     }
-                    // loggingSystem.debug("SettingsUILogic_GetEffects", `Applied effect from '${fullSourceIdKey}' (module: ${sourceModuleId}). Value: ${value.toString()}. New Aggregated: ${filteredAggregatedValue.toString()}`);
                 }
             }
-        }
-
-        if (!effectsFoundFromSource) {
-            // loggingSystem.debug("SettingsUILogic_GetEffects", `No effects found for sourceModuleId '${sourceModuleId}' on effectKey '${effectKey}'. Returning default.`);
-        } else {
-             loggingSystem.info("SettingsUILogic_GetEffects", `Final filtered effect for source '${sourceModuleId}' on '${effectKey}': ${filteredAggregatedValue.toString()}`);
         }
         
         return filteredAggregatedValue;
@@ -106,7 +100,7 @@ export const moduleLogic = {
 
     getGameStatistics() {
         if (!coreSystemsRef) return "<p>Core systems not available for statistics.</p>";
-        const { coreResourceManager, coreGameStateManager, moduleLoader, decimalUtility, staticDataAggregator, loggingSystem } = coreSystemsRef; // Removed coreUpgradeManager from here as it's accessed via coreSystemsRef
+        const { coreResourceManager, coreGameStateManager, moduleLoader, decimalUtility, staticDataAggregator, loggingSystem } = coreSystemsRef;
         let statsHtml = "";
 
         const sectionClass = "mb-4 p-3 bg-surface-dark rounded-md shadow";
@@ -202,13 +196,11 @@ export const moduleLogic = {
             statsHtml += `<li>Skills Unlocked: ${skillsUnlockedCount} / ${totalSkillsDefined}</li>`;
             statsHtml += `<li>Skills Maxed: ${skillsMaxedCount} / ${totalSkillsDefined}</li>`;
             
-            // Now accurately get SP multiplier specifically from 'skills' module
             const spMultiplierFromSkills = this._getEffectsFromSourceModule('global_resource_production', 'studyPoints', 'MULTIPLIER', 'skills');
-            if (decimalUtility.gt(spMultiplierFromSkills, 1)) { // Multipliers are 1 + bonus
+            if (decimalUtility.gt(spMultiplierFromSkills, 1)) { 
                 const spPercentageBonus = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(spMultiplierFromSkills, 1), 100), 0);
                 statsHtml += `<li>Global Study Points Prod. Bonus (from Skills): +${spPercentageBonus}%</li>`;
             } else if (decimalUtility.eq(spMultiplierFromSkills, 1) && skillsUnlockedCount > 0) {
-                // If multiplier is 1 but skills are unlocked, it means no *global SP multiplier skills* are active/leveled.
                  statsHtml += `<li>Global Study Points Prod. Bonus (from Skills): None active</li>`;
             }
 
@@ -227,9 +219,8 @@ export const moduleLogic = {
             }
             statsHtml += `<li>Achievements Completed: ${completedCount} / ${Object.keys(achievementsStaticDefs).length}</li>`;
             
-            // Accurately get SP multiplier specifically from 'achievements' module
             const spMultiplierFromAchievements = this._getEffectsFromSourceModule('global_resource_production', 'studyPoints', 'MULTIPLIER', 'achievements');
-            if (decimalUtility.gt(spMultiplierFromAchievements, 1)) { // Multipliers are 1 + bonus
+            if (decimalUtility.gt(spMultiplierFromAchievements, 1)) { 
                 const spPercentageBonusAch = decimalUtility.format(decimalUtility.multiply(decimalUtility.subtract(spMultiplierFromAchievements, 1), 100), 0);
                 statsHtml += `<li>Global Study Points Prod. Bonus (from Achievements): +${spPercentageBonusAch}%</li>`;
             } else if (decimalUtility.eq(spMultiplierFromAchievements, 1) && completedCount > 0) {
@@ -246,7 +237,7 @@ export const moduleLogic = {
         if (!coreSystemsRef || !coreSystemsRef.loggingSystem) {
             return;
         }
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onGameLoad triggered for SettingsUI module (v1.5).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onGameLoad triggered for SettingsUI module (v1.6).");
         this.isSettingsTabUnlocked();
         if (coreSystemsRef.coreUIManager && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
             if (!coreSystemsRef.coreUpgradeManager || typeof coreSystemsRef.coreUpgradeManager.getAllRegisteredEffects !== 'function') {
@@ -261,7 +252,7 @@ export const moduleLogic = {
         if (!coreSystemsRef || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreGameStateManager) {
             return;
         }
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onResetState triggered for SettingsUI module (v1.5).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "onResetState triggered for SettingsUI module (v1.6).");
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('settingsTabPermanentlyUnlocked', false);
             coreSystemsRef.loggingSystem.info("SettingsUILogic", "'settingsTabPermanentlyUnlocked' flag cleared.");
