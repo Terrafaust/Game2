@@ -17,9 +17,44 @@ export const getOwnedPrestigeProducerCount = (producerId) => {
     return decimalUtility.new(moduleState.ownedProducers[producerId] || '0');
 };
 
+export const calculatePrestigeProducerCost = (producerId) => {
+    const producerDef = prestigeData.producers[producerId];
+    if (!producerDef) return decimalUtility.new(Infinity);
+
+    const baseCost = decimalUtility.new(producerDef.baseCost);
+    const growth = decimalUtility.new(producerDef.costGrowthFactor);
+    const owned = getOwnedPrestigeProducerCount(producerId);
+    
+    // Formula: base * growth^owned
+    return decimalUtility.multiply(baseCost, decimalUtility.power(growth, owned));
+};
+
+export const purchasePrestigeProducer = (producerId) => {
+    const cost = calculatePrestigeProducerCost(producerId);
+    if (coreResourceManager.canAfford('prestigePoints', cost)) {
+        coreResourceManager.spendAmount('prestigePoints', cost);
+        
+        const currentState = coreGameStateManager.getModuleState('prestige');
+        currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
+        coreGameStateManager.setModuleState('prestige', currentState);
+
+        coreUIManager.showNotification(`Purchased 1 ${prestigeData.producers[producerId].name}!`, 'success');
+        
+        // Refresh UI
+        const prestigeUI = moduleLoader.getModule('prestige').ui;
+        if(prestigeUI && coreUIManager.isActiveTab('prestige')) {
+            prestigeUI.updateDynamicElements();
+        }
+        return true;
+    } else {
+        coreUIManager.showNotification(`Not enough Prestige Points.`, 'error');
+        return false;
+    }
+};
+
+
 export const updateAllPrestigeProducerProductions = (deltaTime) => {
-    // This function's logic remains the same
-    const { coreUpgradeManager, moduleLoader } = coreSystemsRef;
+    const { coreUpgradeManager } = coreSystemsRef;
     const studiesModule = moduleLoader.getModule('studies');
     if (!studiesModule || !studiesModule.logic) return;
 
@@ -81,7 +116,6 @@ export const calculatePrestigeGain = () => {
 };
 
 export const getPrestigeBonusMultiplier = () => {
-    // This function's logic remains the same
     const { coreUpgradeManager } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
