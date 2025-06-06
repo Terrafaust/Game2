@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.2 - Unlock Condition Changed)
+// /game/modules/prestige_module/prestige_manifest.js (v1.3 - Direct Unlock Check)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,7 +7,7 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.2.0',
+    version: '1.3.0',
     description: 'The Prestige system.',
     dependencies: [],
 
@@ -46,28 +46,20 @@ export const manifest = {
         
         loggingSystem.info('PrestigeManifest', `Registered global production bonus effect.`);
 
+        // The production logic for prestige producers is still handled by the game loop.
         gameLoop.registerUpdateCallback('resourceGeneration', (deltaTime) => {
-            // Check if the tab needs to be revealed
-            const canPrestigeNow = prestigeLogic.canPrestige();
-            const tabUnlocked = coreGameStateManager.getGlobalFlag('prestigeTabUnlocked', false);
-            if(canPrestigeNow && !tabUnlocked) {
-                coreGameStateManager.setGlobalFlag('prestigeTabUnlocked', true);
-                coreUIManager.renderMenu(); // Re-render the menu to show the new tab
-            }
-
-            // Run the production logic if the player owns any prestige producers
             if (Object.values(moduleState.ownedProducers).some(val => val !== '0')) {
                  prestigeLogic.updateAllPrestigeProducerProductions(deltaTime);
             }
         });
 
-        // Register the UI Tab
+        // Register the UI Tab with the new, direct visibility logic
         coreUIManager.registerMenuTab(
             manifest.id,
             prestigeData.ui.tabLabel,
             (parentElement) => ui.renderMainContent(parentElement),
-            // **NEW VISIBILITY LOGIC**: Show if the tab has ever been unlocked.
-            () => coreGameStateManager.getGlobalFlag('prestigeTabUnlocked', false),
+            // **NEW VISIBILITY LOGIC**: Show if the player can prestige now OR if they have already prestiged before.
+            () => prestigeLogic.canPrestige() || coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false),
             () => ui.onShow(),
             () => {}
         );
