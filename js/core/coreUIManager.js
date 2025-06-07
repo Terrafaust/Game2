@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v5.0 - Themed Modal Restyle)
+// js/core/coreUIManager.js (v5.1 - Enhanced Achievement Notifications)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.1: Enhanced notification system with clickability and larger achievement notifications.
  * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
  * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
@@ -49,6 +50,7 @@ function initializeSwipeMenu() {
 const UIElements = {
     resourceBar: null, resourcesDisplay: null, mainMenu: null, menuList: null, mainContent: null,
     modalContainer: null, tooltipContainer: null, gameContainer: null, body: null, htmlElement: null,
+    notificationArea: null, // Added notification area
 };
 
 let registeredMenuTabs = {};
@@ -67,6 +69,7 @@ export const coreUIManager = {
         UIElements.gameContainer = document.getElementById('game-container');
         UIElements.body = document.body;
         UIElements.htmlElement = document.documentElement;
+        UIElements.notificationArea = document.getElementById('notification-area'); // Initialize notification area
 
         if (Object.values(UIElements).some(el => !el)) {
             loggingSystem.error("CoreUIManager_Init", "One or more critical UI elements not found. Initialization failed.");
@@ -84,7 +87,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.0).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.1).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -328,20 +331,62 @@ export const coreUIManager = {
         if (currentTooltipTarget) this._positionTooltip(currentTooltipTarget);
     },
 
-    showNotification(message, type = 'info', duration = 3000) {
-        const notificationArea = document.getElementById('notification-area');
-        if (!notificationArea) return;
+    /**
+     * Shows a notification message.
+     * @param {string} message - The message to display.
+     * @param {'info'|'success'|'warning'|'error'|'achievement'} type - The type of notification.
+     * @param {number} duration - How long the notification should stay (in ms). 0 for infinite.
+     * @param {object} [options] - Optional settings for specific notification types.
+     * @param {string} [options.achievementId] - For 'achievement' type, the ID of the achievement to scroll to.
+     */
+    showNotification(message, type = 'info', duration = 3000, options = {}) {
+        if (!UIElements.notificationArea) return;
         const notification = document.createElement('div');
-        const typeClasses = {
+        
+        let typeClasses = {
             info: 'bg-blue-600 border-blue-500',
             success: 'bg-green-600 border-green-500',
             warning: 'bg-yellow-600 border-yellow-500',
             error: 'bg-red-600 border-red-500',
         };
-        notification.className = `p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
-        notification.textContent = message;
-        notificationArea.appendChild(notification);
-        setTimeout(() => { notification.style.transform = 'translateX(0)'; notification.style.opacity = '1'; }, 10);
+
+        if (type === 'achievement') {
+            notification.className = `achievement-notification`; // Custom class for achievements
+            // Ensure the message includes icon/name for achievements if needed, or pass full HTML
+            notification.innerHTML = message; // Message is expected to be pre-formatted HTML
+            notification.style.pointerEvents = 'auto'; // Make it clickable
+            if (options.achievementId) {
+                notification.addEventListener('click', () => {
+                    // Lazy load moduleLoader here to avoid circular dependency
+                    import('./moduleLoader.js').then(({ moduleLoader }) => {
+                        const achievementsModule = moduleLoader.getModule('achievements');
+                        if (achievementsModule && achievementsModule.ui && achievementsModule.logic) {
+                            this.setActiveTab('achievements', true); // Activate achievements tab
+                            // Ensure UI is rendered before attempting to scroll
+                            setTimeout(() => {
+                                achievementsModule.ui.scrollToAchievement(options.achievementId);
+                            }, 100); // Small delay to ensure tab content is rendered
+                        }
+                    });
+                    notification.remove(); // Remove notification after click
+                });
+            }
+            duration = duration > 0 ? duration : 4000; // Default 4 seconds for achievements
+        } else {
+            notification.className = `p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
+            notification.textContent = message;
+        }
+
+        notification.style.transform = 'translateX(100%)'; // Start off-screen
+        notification.style.opacity = '0'; // Start invisible
+        UIElements.notificationArea.appendChild(notification);
+        
+        // Force reflow and animate in
+        setTimeout(() => { 
+            notification.style.transform = 'translateX(0)'; 
+            notification.style.opacity = '1'; 
+        }, 10);
+
         if (duration > 0) {
             setTimeout(() => {
                 notification.style.transform = 'translateX(100%)';
@@ -349,6 +394,18 @@ export const coreUIManager = {
                 notification.addEventListener('transitionend', () => notification.remove());
             }, duration);
         }
+    },
+
+    /**
+     * Convenience function for showing achievement notifications.
+     * @param {string} achievementName - The name of the achievement.
+     * @param {string} achievementIcon - The icon of the achievement.
+     * @param {string} achievementId - The ID of the achievement for scrolling.
+     * @param {number} [duration=4000] - How long the notification stays (in ms).
+     */
+    showAchievementNotification(achievementName, achievementIcon, achievementId, duration = 4000) {
+        const messageHtml = `<span class="icon">${achievementIcon}</span> <span>Achievement Unlocked: ${achievementName}!</span>`;
+        this.showNotification(messageHtml, 'achievement', duration, { achievementId: achievementId });
     },
 
     applyTheme(themeName, mode) {
@@ -398,3 +455,4 @@ export const coreUIManager = {
         }
     },
 };
+

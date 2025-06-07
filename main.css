@@ -565,3 +565,69 @@ html[data-theme="classic"][data-mode="night"] .modal {
     to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
+/* ========================================================================== */
+/* ==              NEW: ACHIEVEMENT NOTIFICATION STYLES                    == */
+/* ========================================================================== */
+
+/* Main container for the achievement notification */
+.achievement-notification {
+    background-color: var(--color-primary); /* Use primary theme color */
+    border: 2px solid var(--color-primary-lighter);
+    color: var(--color-button-text);
+    padding: 1rem 1.5rem; /* Increased padding */
+    border-radius: 0.75rem; /* Rounded corners */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    font-size: 1.1rem; /* Slightly larger text */
+    font-weight: 600;
+    cursor: pointer; /* Indicate it's clickable */
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Space between icon and text */
+}
+
+.achievement-notification:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.achievement-notification .icon {
+    font-size: 1.8rem; /* Larger icon */
+}
+
+/* ========================================================================== */
+/* ==              NEW: ACHIEVEMENT CARD STYLING                           == */
+/* ========================================================================== */
+
+.achievement-card {
+    border: 1px solid var(--color-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.achievement-card.is-completed {
+    background-color: var(--color-accent-one); /* Use accent color for completed */
+    border-color: var(--color-accent-one);
+    box-shadow: 0 0 10px rgba(0,255,0,0.3); /* Subtle green glow */
+}
+
+.achievement-card:hover:not(.is-completed) {
+    background-color: var(--color-surface-dark);
+}
+
+/* Classic theme adaptation for achievement cards */
+html[data-theme="classic"] .achievement-card {
+    border-radius: 0;
+    border-top: 1px solid var(--color-surface-dark);
+    border-left: 1px solid var(--color-surface-dark);
+    border-right: 1px solid var(--color-text-primary);
+    border-bottom: 1px solid var(--color-text-primary);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+
+html[data-theme="classic"] .achievement-card.is-completed {
+    background-color: #008000; /* Darker green for classic completed */
+    border-color: #008000;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+

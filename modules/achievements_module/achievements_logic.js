@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_logic.js (v2.2 - Ensure UI Refresh on Unlock)
+// modules/achievements_module/achievements_logic.js (v2.3 - Enhanced Achievement Notifications)
 
 /**
  * @file achievements_logic.js
  * @description Business logic for the Achievements module.
+ * v2.3: Integrated new coreUIManager.showAchievementNotification for better UX.
  * v2.2: Added explicit UI refresh for market unlocks (settings/achievements tabs).
  * v2.1: Fixes ReferenceError by moving reward definition.
  * v2.0: Adds prestige conditions and a global multiplier for total achievements.
@@ -16,7 +17,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v2.2).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v2.3).");
         this.applyAllCompletedAchievementRewards();
         this.registerGlobalAchievementBonus(); // New: Register the dynamic global bonus
     },
@@ -138,7 +139,8 @@ export const moduleLogic = {
                     newAchievementsCompleted = true;
                     const achievementDef = staticModuleData.achievements[achievementId];
                     loggingSystem.info("AchievementsLogic", `Achievement Unlocked: ${achievementDef.name}`);
-                    coreUIManager.showNotification(`Achievement Unlocked: ${achievementDef.name}!`, 'success', 4000);
+                    // --- MODIFICATION: Use new showAchievementNotification ---
+                    coreUIManager.showAchievementNotification(achievementDef.name, achievementDef.icon, achievementId);
 
                     // Apply the one-time static reward, if it exists
                     if (achievementDef.reward) {
@@ -205,7 +207,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered (v2.2).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered (v2.3).");
         this.applyAllCompletedAchievementRewards();
         this.registerGlobalAchievementBonus(); 
         this.checkAndCompleteAchievements();
@@ -213,7 +215,7 @@ export const moduleLogic = {
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered (v2.2).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered (v2.3).");
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', false);
         }

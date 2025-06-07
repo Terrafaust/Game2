@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_ui.js (v1.1 - Modal Popups)
+// modules/achievements_module/achievements_ui.js (v1.2 - Achievement Card Styling & Scrolling)
 
 /**
  * @file achievements_ui.js
  * @description Handles UI rendering for the Achievements module.
+ * v1.2: Added theme-adaptive styling for achievement cards and scrolling to specific achievements.
  * v1.1: Switched tooltips to use the new themed modal system.
  */
 
@@ -16,7 +17,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.1).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.2).");
     },
 
     renderMainContent(parentElement) {
@@ -61,11 +62,12 @@ export const ui = {
     _createAchievementCard(achievementDef) {
         const { coreUIManager, decimalUtility } = coreSystemsRef;
         const isCompleted = moduleLogicRef.isAchievementCompleted(achievementDef.id);
-        const isConditionMetCurrently = moduleLogicRef.checkAchievementCondition(achievementDef.id);
-
+        
         const card = document.createElement('div');
-        card.className = `p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
-            isCompleted ? 'bg-green-700 border-2 border-green-400' : 'bg-surface-dark'
+        // --- MODIFICATION: Added achievement-card class and ID for scrolling ---
+        card.id = `achievement-card-${achievementDef.id}`; 
+        card.className = `achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
+            isCompleted ? 'is-completed' : 'bg-surface-dark'
         }`;
         
         const icon = document.createElement('div');
@@ -93,7 +95,6 @@ export const ui = {
         status.textContent = isCompleted ? staticModuleData.ui.completedText : staticModuleData.ui.lockedText;
         card.appendChild(status);
 
-        // --- FIX: Change tooltip to use the new modal system ---
         card.addEventListener('click', () => {
             let modalContent = `<div class="space-y-2">`;
             modalContent += `<p class='text-base text-textPrimary'>${achievementDef.description}</p><hr class='my-2 border-gray-600'>`;
@@ -121,6 +122,35 @@ export const ui = {
             default:
                 // Provide a more descriptive fallback for unhandled types
                 return `Meet a specific in-game criteria. (Type: ${condition.type})`;
+        }
+    },
+
+    /**
+     * Scrolls the achievement grid to make a specific achievement card visible.
+     * @param {string} achievementId - The ID of the achievement to scroll to.
+     */
+    scrollToAchievement(achievementId) {
+        const targetCard = document.getElementById(`achievement-card-${achievementId}`);
+        if (targetCard && parentElementCache) {
+            // Find the main content area which has the scrollbar
+            const mainContent = parentElementCache.closest('#main-content');
+            if (mainContent) {
+                // Calculate position relative to the scrollable container
+                const cardRect = targetCard.getBoundingClientRect();
+                const mainContentRect = mainContent.getBoundingClientRect();
+
+                const scrollPosition = cardRect.top - mainContentRect.top + mainContent.scrollTop - (mainContentRect.height / 3); // Center it roughly
+
+                mainContent.scrollTo({
+                    top: scrollPosition,
+                    behavior: 'smooth'
+                });
+                coreSystemsRef.loggingSystem.info("AchievementsUI", `Scrolled to achievement: ${achievementId}`);
+            } else {
+                coreSystemsRef.loggingSystem.warn("AchievementsUI", `Could not find #main-content to scroll to achievement ${achievementId}.`);
+            }
+        } else {
+            coreSystemsRef.loggingSystem.warn("AchievementsUI", `Achievement card ${achievementId} not found for scrolling.`);
         }
     },
 

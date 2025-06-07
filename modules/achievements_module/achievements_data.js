@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_data.js (v4.1 - PP Terminology & PhD Icon Fix)
+// modules/achievements_module/achievements_data.js (v4.2 - Total Achievements 90 Reward Update)
 
 /**
  * @file achievements_data.js
  * @description Static data definitions for the Achievements module.
+ * v4.2: Updated reward for 'ach_total_90' to be a Study Skill Points cost reduction.
  * v4.1: Corrected 'AP' to 'PP' in total achievement milestones and fixed PhD icon.
  * v4.0: Adds massive number of achievements for Prestige producers and total completion.
  */
@@ -168,7 +169,7 @@ const totalAchievementMilestones = {
     ach_total_60:  { count: 60,  reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '100', description: "+100 Free Prestige Points" } },
     ach_total_70:  { count: 70,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'ppGain', value: '0.10', description: "+10% Prestige Point Gain on Prestige" } },
     ach_total_80:  { count: 80,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'ALL', value: '0.05', description: "-5% Cost for all Prestige Producers" } },
-    ach_total_90:  { count: 90,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'license', value: '0.20', description: "+20% License Production" } },
+    ach_total_90:  { count: 90,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'skills', targetId: 'ALL', value: '0.9', description: "Study Skill Points cost reduced by 90% (0.1x of normal price)" } },
     ach_total_100: { count: 100, reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.10', description: "+10% to ALL production (stacks)" } },
     ach_total_110: { count: 110, reward: { type: 'MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'phd', value: '0.15', description: "+15% PhD Production" } },
     ach_total_120: { count: 120, reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '1000', description: "+1000 Free Prestige Points" } },
