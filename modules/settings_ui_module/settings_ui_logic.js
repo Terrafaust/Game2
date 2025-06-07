@@ -1,8 +1,9 @@
-// modules/settings_ui_module/settings_ui_logic.js (v2.0 - Expanded Stats & Notification Log)
+// modules/settings_ui_module/settings_ui_logic.js (v2.1 - Complete Statistics)
 
 /**
  * @file settings_ui_logic.js
  * @description Business logic for the Settings UI module.
+ * v2.1: Restored original statistics sections and merged with new ones for a complete view.
  * v2.0: Adds Notification Log unlock logic, massively expanded statistics, and prestige history.
  */
 
@@ -11,7 +12,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v2.0).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v2.1).");
     },
 
     isSettingsTabUnlocked() {
@@ -88,7 +89,6 @@ export const moduleLogic = {
         return filteredAggregatedValue;
     },
     
-    // --- FEATURE: Notification Log Unlock & Display Logic ---
     isNotificationLogUnlocked() {
         return coreSystemsRef.coreGameStateManager.getGlobalFlag('notificationLogUnlocked', false);
     },
@@ -112,7 +112,6 @@ export const moduleLogic = {
         }
     },
     
-    // --- CHANGE: Heavily expanded statistics function ---
     getGameStatistics() {
         if (!coreSystemsRef) return "<p>Core systems not available for statistics.</p>";
         const { coreResourceManager, coreGameStateManager, moduleLoader, decimalUtility, staticDataAggregator, loggingSystem } = coreSystemsRef;
@@ -123,7 +122,7 @@ export const moduleLogic = {
         const listClass = "list-disc list-inside space-y-1 pl-2 text-sm";
         const subHeadingClass = "text-md font-medium text-primary mt-3 mb-1";
 
-        // General Info
+        // --- General Game Info ---
         statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">General</h4><ul class="${listClass}">`;
         statsHtml += `<li>Game Version: ${coreGameStateManager.getGameVersion()}</li>`;
         const lastSave = coreGameStateManager.getLastSaveTime();
@@ -131,7 +130,7 @@ export const moduleLogic = {
         statsHtml += `<li>Total Play Time: ${coreGameStateManager.getTotalPlayTimeString()}</li>`;
         statsHtml += `</ul></div>`;
 
-        // Prestige Stats
+        // --- Prestige Stats ---
         const prestigeLogic = this._getModuleLogic('prestige');
         const prestigeState = coreGameStateManager.getModuleState('prestige');
         if (prestigeLogic && prestigeState) {
@@ -144,8 +143,8 @@ export const moduleLogic = {
             statsHtml += `<li>Total Prestiges: ${decimalUtility.format(totalPrestiges, 0)}</li>`;
             statsHtml += `</ul></div>`;
         }
-
-        // Per-Prestige vs Total Stats
+        
+        // --- Production Stats (This Prestige vs. All Time) ---
         statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Production Stats</h4>`;
         const totalSP = coreResourceManager.getTotalEarned('studyPoints') || decimalUtility.new(0);
         const spThisPrestige = decimalUtility.subtract(totalSP, prestigeState?.statsSnapshotAtPrestige?.totalStudyPointsProduced || '0');
@@ -161,6 +160,49 @@ export const moduleLogic = {
         statsHtml += `<li>Produced all time: ${decimalUtility.format(totalK, 2)}</li>`;
         statsHtml += `</ul>`;
         statsHtml += `</div>`;
+        
+        // --- Resource Statistics ---
+        statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Current Resources & Production</h4><ul class="${listClass}">`;
+        const allResources = coreResourceManager.getAllResources();
+        for (const resId in allResources) {
+            const res = allResources[resId];
+            if(res.isUnlocked && res.showInUI) {
+                 statsHtml += `<li>${res.name}: ${decimalUtility.format(res.amount, 2)} (${decimalUtility.format(res.totalProductionRate, 2)}/s)</li>`;
+            }
+        }
+        statsHtml += `</ul></div>`;
+
+        // --- Market Statistics ---
+        const marketLogic = this._getModuleLogic('market');
+        if (marketLogic) {
+            statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Market</h4><ul class="${listClass}">`;
+            const imagesOwned = coreResourceManager.getAmount('images');
+            const sspOwned = coreResourceManager.getAmount('studySkillPoints');
+            statsHtml += `<li>Images Owned: ${decimalUtility.format(imagesOwned, 0)}</li>`;
+            statsHtml += `<li>Study Skill Points (SSP) Owned: ${decimalUtility.format(sspOwned, 0)}</li>`;
+            const settingsUnlockPurchased = coreGameStateManager.getGlobalFlag('marketUnlock_settingsTabUnlocked_purchased', false);
+            statsHtml += `<li>Settings Tab Unlock (Market): ${settingsUnlockPurchased ? '<span class="text-green-400">Purchased</span>' : '<span class="text-yellow-400">Not Purchased</span>'}</li>`;
+            const achievementsUnlockPurchased = coreGameStateManager.getGlobalFlag('marketUnlock_achievementsTabUnlocked_purchased', false);
+            statsHtml += `<li>Achievements Tab Unlock (Market): ${achievementsUnlockPurchased ? '<span class="text-green-400">Purchased</span>' : '<span class="text-yellow-400">Not Purchased</span>'}</li>`;
+            statsHtml += `</ul></div>`;
+        }
+
+        // --- Studies Statistics ---
+        const studiesLogic = this._getModuleLogic('studies');
+        if (studiesLogic && studiesLogic.getOwnedProducerCount) { 
+            statsHtml += `<div class="${sectionClass}"><h4 class="${headingClass}">Studies</h4><ul class="${listClass}">`;
+            const studiesProducerStaticData = staticDataAggregator.getData("studies.producers");
+            if(studiesProducerStaticData){
+                for (const prodId in studiesProducerStaticData) {
+                    const producerDef = studiesProducerStaticData[prodId];
+                    const producerOwned = studiesLogic.getOwnedProducerCount(prodId) || decimalUtility.new(0);
+                    if (decimalUtility.gt(producerOwned,0)) {
+                         statsHtml += `<li>${producerDef.name}: Owned ${decimalUtility.format(producerOwned,0)}</li>`;
+                    }
+                }
+            }
+            statsHtml += `</ul></div>`;
+        }
         
         return statsHtml;
     },

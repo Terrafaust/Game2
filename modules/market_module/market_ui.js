@@ -1,8 +1,9 @@
-// modules/market_module/market_ui.js (v2.0 - Added Automator UI)
+// modules/market_module/market_ui.js (v2.1 - Fixed missing sections)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v2.1: Restored Consumables and Unlocks sections that were accidentally removed.
  * v2.0: Adds UI for the Image Automator.
  */
 
@@ -16,7 +17,9 @@ function getCleanUnlockButtonText(unlockDefName, loggingSystem) {
     let text = unlockDefName;
     if (typeof text === 'string') {
         text = text.replace(/^unlock\s+/i, '').replace(/\s+menu$/i, '');
-    } else { text = "Feature"; }
+    } else {
+        text = "Feature";
+    }
     return `Unlock ${text}`;
 }
 
@@ -24,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.0).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.1).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -56,9 +59,7 @@ export const ui = {
             coreSystemsRef.loggingSystem.warn("MarketUI", "Could not find _createBuyMultiplierControls from Studies UI. Multiplier controls will be missing.");
         }
         
-        // --- FEATURE: Added Automator section ---
         container.appendChild(this._createAutomationsSection());
-        // --- END FEATURE ---
         container.appendChild(this._createScalableItemsSection());
         container.appendChild(this._createUnlocksSection());
 
@@ -66,13 +67,98 @@ export const ui = {
         this.updateDynamicElements();
     },
 
-    _createScalableItemsSection() { /* ... unchanged ... */ return document.createElement('div'); },
-    _createUnlocksSection() { /* ... unchanged ... */ return document.createElement('div'); },
-    _createMarketItemCard(domIdBase, nameText, descriptionText, purchaseCallback, initialButtonText, isScalable, itemKey) { /* ... unchanged ... */ return document.createElement('div'); },
-    _updateScalableItemCard(cardElement, itemDef) { /* ... unchanged ... */ },
-    _updateUnlockItemCard(cardElement, unlockKey, unlockDef) { /* ... unchanged ... */ },
+    _createScalableItemsSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-6';
+        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Consumables</h3>`;
+        const itemsGrid = document.createElement('div');
+        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        for (const itemId in staticModuleData.marketItems) {
+            const itemDef = staticModuleData.marketItems[itemId];
+            itemsGrid.appendChild(this._createMarketItemCard(itemDef.id, itemDef.name, itemDef.description, () => moduleLogicRef.purchaseScalableItem(itemId), '', true, itemId));
+        }
+        section.appendChild(itemsGrid);
+        return section;
+    },
 
-    // --- FEATURE: Functions to create and update automation UI ---
+    _createUnlocksSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-6';
+        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Feature Unlocks</h3>`;
+        const unlocksGrid = document.createElement('div');
+        unlocksGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
+            const unlockDef = staticModuleData.marketUnlocks[unlockKey];
+            unlocksGrid.appendChild(this._createMarketItemCard(unlockDef.id, unlockDef.name, unlockDef.description, () => moduleLogicRef.purchaseUnlock(unlockKey), "Unlock", false, unlockKey));
+        }
+        section.appendChild(unlocksGrid);
+        return section;
+    },
+    
+    _createMarketItemCard(domIdBase, nameText, descriptionText, purchaseCallback, initialButtonText, isScalable, itemKey) {
+        const { coreUIManager } = coreSystemsRef;
+        const card = document.createElement('div');
+        card.id = isScalable ? `market-item-${domIdBase}` : `market-unlock-${domIdBase}`;
+        card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
+        card.innerHTML = `<div><h4 class="text-lg font-semibold text-textPrimary mb-2">${nameText}</h4><p class="text-textSecondary text-sm mb-3">${descriptionText}</p><p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p></div>`;
+        const button = coreUIManager.createButton(initialButtonText, () => {
+                purchaseCallback();
+                this.updateDynamicElements();
+            }, ['w-full', 'mt-auto'], `${card.id}-button`);
+        card.appendChild(button);
+        return card;
+    },
+
+    _updateScalableItemCard(cardElement, itemDef) {
+        if (!cardElement || !itemDef) return;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager } = coreSystemsRef;
+        
+        const costDisplay = cardElement.querySelector(`#market-item-${itemDef.id}-cost`);
+        const button = cardElement.querySelector(`#market-item-${itemDef.id}-button`);
+
+        let quantity = buyMultiplierManager.getMultiplier();
+        let quantityToBuy = (quantity === -1) ? moduleLogicRef.calculateMaxBuyable(itemDef.id) : decimalUtility.new(quantity);
+        
+        const currentCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, quantityToBuy);
+        
+        const quantityToDisplay = (quantity === -1) ? quantityToBuy : decimalUtility.new(quantity);
+
+        if (decimalUtility.gt(quantityToDisplay, 0)) {
+            costDisplay.textContent = `Cost for ${decimalUtility.format(quantityToDisplay,0)}: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
+            button.textContent = `Acquire ${decimalUtility.format(quantityToDisplay,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
+        } else {
+            const singleCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, 1);
+            costDisplay.textContent = `Cost: ${decimalUtility.format(singleCost, 0)} ${itemDef.costResource}`;
+            button.textContent = `Acquire 1 ${itemDef.name.replace('Acquire ', '')}`;
+        }
+
+        const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
+        button.disabled = !canAfford || decimalUtility.eq(quantityToBuy, 0);
+    },
+
+    _updateUnlockItemCard(cardElement, unlockKey, unlockDef) {
+        if (!cardElement || !unlockDef) return;
+        const { decimalUtility, loggingSystem, coreResourceManager } = coreSystemsRef;
+        const costDisplay = cardElement.querySelector(`#market-unlock-${unlockDef.id}-cost`);
+        const button = cardElement.querySelector(`#market-unlock-${unlockDef.id}-button`);
+        const isPurchased = moduleLogicRef.isUnlockPurchased(unlockKey);
+        
+        if (isPurchased) { 
+            costDisplay.textContent = "Already Unlocked!";
+            button.textContent = "Unlocked";
+            button.disabled = true;
+            button.classList.add('bg-green-600', 'cursor-default');
+            button.classList.remove('bg-primary');
+        } else {
+            const costAmount = decimalUtility.new(unlockDef.costAmount);
+            costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${unlockDef.costResource}`;
+            button.textContent = getCleanUnlockButtonText(unlockDef.name, loggingSystem);
+            button.disabled = !coreResourceManager.canAfford(unlockDef.costResource, costAmount);
+            button.classList.remove('bg-green-600');
+            button.classList.add('bg-primary');
+        }
+    },
+
     _createAutomationsSection() {
         const section = document.createElement('section');
         section.className = 'space-y-6';
@@ -110,7 +196,7 @@ export const ui = {
             'Upgrade', 
             () => {
                 moduleLogicRef.purchaseAutomatorUpgrade(automatorDef.id);
-                this.updateDynamicElements(); // Re-render to reflect new state
+                this.updateDynamicElements();
             }, 
             ['w-full', 'mt-auto', 'bg-accentOne', 'hover:bg-accentOne-dark'], 
             `${card.id}-button`
@@ -149,7 +235,6 @@ export const ui = {
             button.disabled = !coreResourceManager.canAfford(automatorDef.costResource, cost);
             button.style.display = 'block';
             costDisplay.style.display = 'block';
-
         } else {
             descDisplay.textContent = "This automator is fully upgraded.";
             costDisplay.style.display = 'none';
@@ -157,26 +242,22 @@ export const ui = {
             button.disabled = true;
         }
     },
-    // --- END FEATURE ---
 
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         
-        // Update automators
         for (const automatorId in staticModuleData.marketAutomations) {
             const automatorDef = staticModuleData.marketAutomations[automatorId];
             const cardElement = parentElementCache.querySelector(`#market-automator-${automatorId}`);
             if (cardElement) this._updateAutomationCard(cardElement, automatorId, automatorDef);
         }
 
-        // Update scalable items
         for (const itemId in staticModuleData.marketItems) { 
             const itemDef = staticModuleData.marketItems[itemId];
             const cardElement = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
             if (cardElement) this._updateScalableItemCard(cardElement, itemDef);
         }
 
-        // Update unlocks
         for (const unlockKey in staticModuleData.marketUnlocks) { 
             const unlockDef = staticModuleData.marketUnlocks[unlockKey];
             const cardElement = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
@@ -184,6 +265,11 @@ export const ui = {
         }
     },
 
-    onShow() { if (parentElementCache) this.renderMainContent(parentElementCache); },
-    onHide() { coreSystemsRef.coreUIManager.hideTooltip(); }
+    onShow() {
+        if (parentElementCache) this.renderMainContent(parentElementCache); 
+    },
+
+    onHide() {
+        coreSystemsRef.coreUIManager.hideTooltip();
+    }
 };
