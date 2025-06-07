@@ -1,9 +1,10 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.9 - UI Function Fix)
+// /game/modules/prestige_module/prestige_logic.js (v4.0 - Prestige History & Buy Multiplier)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
 import { decimalUtility } from '../../js/core/decimalUtility.js';
 import { coreUIManager } from '../../js/core/coreUIManager.js';
+import { buyMultiplierManager } from '../../js/core/buyMultiplierManager.js';
 import { prestigeData } from './prestige_data.js';
 import { moduleState, getInitialState } from './prestige_state.js';
 
@@ -13,45 +14,116 @@ export const initialize = (systems) => {
     coreSystemsRef = systems;
 };
 
+// --- FEATURE: Game loop hook for tracking run time ---
+export const processPrestigeTick = (deltaTimeSeconds) => {
+    if (moduleState.currentPrestigeRunTime !== undefined) {
+        moduleState.currentPrestigeRunTime += deltaTimeSeconds;
+    } else if (coreSystemsRef.coreGameStateManager.getModuleState('prestige')) {
+        // If the state exists but the property doesn't (e.g. loading old save), initialize it.
+        moduleState.currentPrestigeRunTime = 0;
+    }
+};
+
 export const getOwnedPrestigeProducerCount = (producerId) => {
     return decimalUtility.new(moduleState.ownedProducers[producerId] || '0');
 };
 
-// --- FIX: Added the missing function for the UI ---
-/**
- * Gets the total number of times the player has prestiged.
- * @returns {Decimal} The total prestige count.
- */
 export const getTotalPrestigeCount = () => {
     return decimalUtility.new(moduleState.totalPrestigeCount || '0');
 };
-// --- END FIX ---
 
-export const calculatePrestigeProducerCost = (producerId) => {
+export const calculatePrestigeProducerCost = (producerId, quantity) => {
     const producerDef = prestigeData.producers[producerId];
     if (!producerDef) return decimalUtility.new(Infinity);
+
+    const n = decimalUtility.new(quantity);
+    if (n.isZero()) return decimalUtility.new(0);
 
     const baseCost = decimalUtility.new(producerDef.baseCost);
     const growth = decimalUtility.new(producerDef.costGrowthFactor);
     const owned = getOwnedPrestigeProducerCount(producerId);
+
+    if (decimalUtility.eq(growth, 1)) {
+        return decimalUtility.multiply(baseCost, n);
+    }
     
-    return decimalUtility.multiply(baseCost, decimalUtility.power(growth, owned));
+    const futureCostMultiplier = decimalUtility.power(growth, owned);
+    const sumMultiplier = decimalUtility.divide(
+        decimalUtility.subtract(decimalUtility.power(growth, n), 1),
+        decimalUtility.subtract(growth, 1)
+    );
+
+    return decimalUtility.multiply(baseCost, decimalUtility.multiply(futureCostMultiplier, sumMultiplier));
+};
+
+export const calculateMaxBuyablePrestigeProducer = (producerId) => {
+    const producerDef = prestigeData.producers[producerId];
+    if (!producerDef) return decimalUtility.new(0);
+
+    const availablePP = coreResourceManager.getAmount('prestigePoints');
+    const owned = getOwnedPrestigeProducerCount(producerId);
+    const baseCost = decimalUtility.new(producerDef.baseCost);
+    const growth = decimalUtility.new(producerDef.costGrowthFactor);
+
+    if (owned.isZero() && decimalUtility.gt(baseCost, availablePP)) {
+        return decimalUtility.new(0);
+    }
+
+    if (decimalUtility.eq(growth, 1)) {
+        const costOfOne = calculatePrestigeProducerCost(producerId, 1);
+        if (costOfOne.isZero() || costOfOne.gt(availablePP)) return decimalUtility.new(0);
+        return decimalUtility.floor(decimalUtility.divide(availablePP, costOfOne));
+    }
+
+    const costOfNext = decimalUtility.multiply(baseCost, decimalUtility.power(growth, owned));
+    if(costOfNext.gt(availablePP)) return decimalUtility.new(0);
+
+    const numerator = decimalUtility.add(
+        decimalUtility.divide(
+            decimalUtility.multiply(availablePP, decimalUtility.subtract(growth, 1)),
+            costOfNext
+        ),
+        1
+    );
+
+    if (numerator.lte(1)) return decimalUtility.new(0);
+    
+    const max = decimalUtility.floor(
+        decimalUtility.divide(decimalUtility.log10(numerator), decimalUtility.log10(growth))
+    );
+
+    return max.isNaN() ? decimalUtility.new(0) : max;
 };
 
 export const purchasePrestigeProducer = (producerId) => {
-    const cost = calculatePrestigeProducerCost(producerId);
-    if (coreResourceManager.canAfford('prestigePoints', cost)) {
-        coreResourceManager.spendAmount('prestigePoints', cost);
+    const multiplier = buyMultiplierManager.getMultiplier();
+    let quantityToBuy;
+
+    if (multiplier === -1) { 
+        quantityToBuy = calculateMaxBuyablePrestigeProducer(producerId);
+    } else {
+        quantityToBuy = decimalUtility.new(multiplier);
+    }
+
+    if (decimalUtility.lte(quantityToBuy, 0)) {
+        coreUIManager.showNotification(`Cannot purchase 0 ${prestigeData.producers[producerId].name}s.`, 'warning');
+        return false;
+    }
+
+    const totalCost = calculatePrestigeProducerCost(producerId, quantityToBuy);
+
+    if (coreResourceManager.canAfford('prestigePoints', totalCost)) {
+        coreResourceManager.spendAmount('prestigePoints', totalCost);
         
         const currentState = coreGameStateManager.getModuleState('prestige');
-        currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
+        currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, quantityToBuy).toString();
         coreGameStateManager.setModuleState('prestige', currentState);
         
         Object.assign(moduleState, currentState);
 
         updatePrestigeProducerEffects();
 
-        coreUIManager.showNotification(`Purchased 1 ${prestigeData.producers[producerId].name}!`, 'success');
+        coreUIManager.showNotification(`Purchased ${decimalUtility.format(quantityToBuy, 0)} ${prestigeData.producers[producerId].name}!`, 'success');
         
         const prestigeUI = moduleLoader.getModule('prestige').ui;
         if(prestigeUI && coreUIManager.isActiveTab('prestige')) {
@@ -66,7 +138,7 @@ export const purchasePrestigeProducer = (producerId) => {
 
 export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
     if (!coreSystemsRef) return;
-    const { decimalUtility, coreUpgradeManager, moduleLoader, loggingSystem, coreGameStateManager } = coreSystemsRef;
+    const { decimalUtility, moduleLoader, loggingSystem, coreGameStateManager } = coreSystemsRef;
     
     const studiesModule = moduleLoader.getModule('studies');
     if (!studiesModule || !studiesModule.logic.addProducers) {
@@ -150,7 +222,7 @@ export const canPrestige = () => {
 export const calculatePrestigeGain = () => {
     if (!canPrestige()) return decimalUtility.new(0);
 
-    const { coreUpgradeManager, coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
 
@@ -184,7 +256,7 @@ export const getPrestigeBonusMultiplier = () => {
 };
 
 export const performPrestige = () => {
-    const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility } = coreSystemsRef;
+    const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
 
     if (!canPrestige()) {
         coreUIManager.showNotification("You have not unlocked the ability to Prestige yet.", "error");
@@ -241,18 +313,42 @@ export const performPrestige = () => {
                 label: `Prestige for ${decimalUtility.format(ppGains, 2, 0)} PP`,
                 className: "bg-green-600 hover:bg-green-700",
                 callback: () => {
+                    // --- FEATURE: Create prestige history record BEFORE resetting ---
+                    const newPrestigeCount = decimalUtility.add(moduleState.totalPrestigeCount || 0, 1);
+                    const prestigeRecord = {
+                        count: newPrestigeCount.toString(),
+                        time: moduleState.currentPrestigeRunTime || 0,
+                        ppGained: ppGains.toString()
+                    };
+                    
+                    const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])];
+                    if (newHistory.length > 10) {
+                        newHistory.pop();
+                    }
+                    
+                    const newSnapshot = {
+                        totalStudyPointsProduced: coreResourceManager.getTotalEarned('studyPoints')?.toString() || '0',
+                        totalKnowledgeProduced: coreResourceManager.getTotalEarned('knowledge')?.toString() || '0'
+                    };
+                    loggingSystem.info("PrestigeLogic", "Creating new prestige record and stats snapshot.", {prestigeRecord, newSnapshot});
+                    // --- END FEATURE ---
+
                     coreResourceManager.performPrestigeReset();
                     moduleLoader.broadcastLifecycleEvent('onPrestigeReset');
                     
                     const prestigeModuleState = coreGameStateManager.getModuleState('prestige') || getInitialState();
-                    // Increment the totalPrestigeCount and update the resource manager
-                    const newPrestigeCount = decimalUtility.add(prestigeModuleState.totalPrestigeCount || 0, 1);
+                    
                     prestigeModuleState.totalPrestigeCount = newPrestigeCount.toString();
-                    coreResourceManager.setAmount('prestigeCount', newPrestigeCount); // Update the resource directly
+                    coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
 
                     prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
-                    
                     prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
+
+                    // --- FEATURE: Update state with new history and reset timer ---
+                    prestigeModuleState.lastTenPrestiges = newHistory;
+                    prestigeModuleState.currentPrestigeRunTime = 0;
+                    prestigeModuleState.statsSnapshotAtPrestige = newSnapshot;
+                    // --- END FEATURE ---
 
                     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
                     Object.assign(moduleState, prestigeModuleState);
@@ -275,4 +371,3 @@ export const performPrestige = () => {
         ]
     );
 };
-

@@ -1,11 +1,10 @@
-// modules/market_module/market_manifest.js (v1.4 - Prestige Skill Points Resource Definition)
+// modules/market_module/market_manifest.js (v2.0 - Added Automator Game Loop Hook)
 
 /**
  * @file market_manifest.js
  * @description Manifest file for the Market Module.
+ * v2.0: Hooks the automation processing logic into the game loop.
  * v1.4: Ensures correct definition of 'prestigeSkillPoints' on init/reset.
- * v1.3: Ensures correct re-definition of 'images' on reset.
- * v1.2: Added more specific logging for resource definition calls.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -16,8 +15,8 @@ import { ui } from './market_ui.js';
 const marketManifest = {
     id: "market",
     name: "Market",
-    version: "1.0.4", // Version bump
-    description: "Trade resources for items and unlock new game features.",
+    version: "2.0.0", // Version bump for new features
+    description: "Trade resources, unlock features, and manage automations.",
     dependencies: ["studies"], 
 
     async initialize(coreSystems) {
@@ -29,6 +28,7 @@ const marketManifest = {
             resources: staticModuleData.resources, 
             marketItems: staticModuleData.marketItems,
             marketUnlocks: staticModuleData.marketUnlocks,
+            marketAutomations: staticModuleData.marketAutomations, // --- NEW ---
             ui: staticModuleData.ui
         });
 
@@ -41,8 +41,8 @@ const marketManifest = {
                 resDef.id,
                 resDef.name,
                 decimalUtility.new(resDef.initialAmount), 
-                resDef.showInUI, // Use the value from market_data.js
-                resDef.isUnlocked,  // Use the value from market_data.js
+                resDef.showInUI,
+                resDef.isUnlocked,
                 resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
             );
              const checkRes = coreResourceManager.getResource(resDef.id);
@@ -53,20 +53,16 @@ const marketManifest = {
              }
         }
 
-        let currentModuleState = coreGameStateManager.getModuleState(this.id);
-        if (!currentModuleState || !currentModuleState.purchaseCounts) { 
-            currentModuleState = getInitialState();
-        } else {
-            const defaultPurchaseCounts = getInitialState().purchaseCounts;
-            for (const key in defaultPurchaseCounts) {
-                if (!currentModuleState.purchaseCounts.hasOwnProperty(key) || typeof currentModuleState.purchaseCounts[key] === 'undefined') {
-                    currentModuleState.purchaseCounts[key] = defaultPurchaseCounts[key];
-                } else {
-                    currentModuleState.purchaseCounts[key] = decimalUtility.new(currentModuleState.purchaseCounts[key]).toString();
-                }
-            }
-        }
-        Object.assign(moduleState, currentModuleState); 
+        const initialState = getInitialState();
+        let currentModuleState = coreGameStateManager.getModuleState(this.id) || initialState;
+
+        // Safely merge loaded state with initial state structure to handle new fields in updates
+        const finalState = {
+            purchaseCounts: { ...initialState.purchaseCounts, ...(currentModuleState.purchaseCounts || {}) },
+            automatorLevels: { ...initialState.automatorLevels, ...(currentModuleState.automatorLevels || {}) },
+            automationProgress: { ...initialState.automationProgress, ...(currentModuleState.automationProgress || {}) }
+        };
+        Object.assign(moduleState, finalState); 
         coreGameStateManager.setModuleState(this.id, { ...moduleState }); 
 
         moduleLogic.initialize(coreSystems);
@@ -81,11 +77,17 @@ const marketManifest = {
             () => ui.onHide()
         );
 
+        // --- FEATURE: Register automation and UI updates to the game loop ---
+        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
+            moduleLogic.processImageAutomation(deltaTime);
+        });
+        
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
             if (coreUIManager.isActiveTab(this.id)) {
                 ui.updateDynamicElements();
             }
         });
+        // --- END FEATURE ---
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
 
@@ -94,60 +96,15 @@ const marketManifest = {
             logic: moduleLogic,
             ui: ui,
             onGameLoad: () => {
-                loggingSystem.info(this.name, `onGameLoad called for ${this.name}. Ensuring resource definitions and loading state.`);
-                for (const resourceKey in staticModuleData.resources) { 
-                    const resDef = staticModuleData.resources[resourceKey];
-                     loggingSystem.debug(this.name, `onGameLoad: Re-asserting Market's definition for '${resDef.id}'. IsUnlocked: ${resDef.isUnlocked}, ShowInUI: ${resDef.showInUI}`);
-                    coreResourceManager.defineResource(
-                        resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), // Initial amount might be overridden by loadSaveData if save exists
-                        resDef.showInUI, resDef.isUnlocked, 
-                        resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
-                    );
-                     const checkRes = coreResourceManager.getResource(resDef.id);
-                     if (checkRes) loggingSystem.debug(this.name, `State of '${resDef.id}' post onGameLoad define: isUnlocked=${checkRes.isUnlocked}, showInUI=${checkRes.showInUI}, amount=${checkRes.amount.toString()}`);
-                }
-
-                let loadedState = coreGameStateManager.getModuleState(this.id);
-                 if (!loadedState || !loadedState.purchaseCounts) {
-                    loadedState = getInitialState();
-                } else {
-                    const defaultPurchaseCounts = getInitialState().purchaseCounts;
-                     for (const key in defaultPurchaseCounts) {
-                        if (!loadedState.purchaseCounts.hasOwnProperty(key) || typeof loadedState.purchaseCounts[key] === 'undefined') {
-                            loadedState.purchaseCounts[key] = defaultPurchaseCounts[key];
-                        } else {
-                            loadedState.purchaseCounts[key] = decimalUtility.new(loadedState.purchaseCounts[key]).toString();
-                        }
-                    }
-                }
-                Object.assign(moduleState, loadedState);
-                coreGameStateManager.setModuleState(this.id, { ...moduleState }); 
-                moduleLogic.onGameLoad(); // This now also handles visibility of 'images' and 'prestigeSkillPoints' based on loaded amount.
+                loggingSystem.info(this.name, `onGameLoad called for ${this.name}.`);
+                moduleLogic.onGameLoad();
                 if (coreUIManager.isActiveTab(this.id)) {
                     const mainContentEl = document.getElementById('main-content');
                     if (mainContentEl) ui.renderMainContent(mainContentEl);
                 }
             },
             onResetState: () => {
-                loggingSystem.info(this.name, `onResetState called for ${this.name}. Ensuring resource definitions and resetting state.`);
-                 for (const resourceKey in staticModuleData.resources) { 
-                    const resDef = staticModuleData.resources[resourceKey];
-                     loggingSystem.debug(this.name, `onResetState: Re-asserting Market's definition for '${resDef.id}'. IsUnlocked: ${resDef.isUnlocked}, ShowInUI: ${resDef.showInUI}`);
-                    
-                    let resetShowInUI = resDef.id === 'images' || resDef.id === 'prestigeSkillPoints' ? false : resDef.showInUI;
-                    let resetIsUnlocked = resDef.id === 'images' || resDef.id === 'prestigeSkillPoints' ? false : resDef.isUnlocked;
-
-                    coreResourceManager.defineResource(
-                        resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount),
-                        resetShowInUI, resetIsUnlocked, 
-                        resDef.hasProductionRate !== undefined ? resDef.hasProductionRate : true
-                    );
-                     const checkRes = coreResourceManager.getResource(resDef.id);
-                     if (checkRes) loggingSystem.debug(this.name, `State of '${resDef.id}' post onResetState define: isUnlocked=${checkRes.isUnlocked}, showInUI=${checkRes.showInUI}`);
-                }
-                const initialState = getInitialState();
-                Object.assign(moduleState, initialState);
-                coreGameStateManager.setModuleState(this.id, { ...moduleState });
+                loggingSystem.info(this.name, `onResetState called for ${this.name}.`);
                 moduleLogic.onResetState();
                 if (coreUIManager.isActiveTab(this.id)) {
                     const mainContentEl = document.getElementById('main-content');
@@ -156,9 +113,9 @@ const marketManifest = {
             },
             onPrestigeReset: () => {
                 loggingSystem.info(this.name, `onPrestigeReset called for ${this.name}.`);
-                const initialState = getInitialState();
-                Object.assign(moduleState, initialState);
-                coreGameStateManager.setModuleState(this.id, initialState);
+                const stateOnPrestige = getInitialState();
+                Object.assign(moduleState, stateOnPrestige);
+                coreGameStateManager.setModuleState(this.id, stateOnPrestige);
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 }
@@ -168,4 +125,3 @@ const marketManifest = {
 };
 
 export default marketManifest;
-

@@ -14,12 +14,20 @@ export let moduleState = {
     // We don't store the *amount* of these resources here; that's in coreResourceManager.
     // We store the *number of times* their "buy" action was taken, if their cost scales per purchase.
     purchaseCounts: {
-        // images: "0",
-        // studySkillPoints: "0",
-        // prestigeSkillPoints: "0" // New tracking for PSP
+        images: "0",
+        studySkillPoints: "0",
+        prestigeSkillPoints: "0"
     },
     // No specific state needed for menu unlocks as they are one-time and use global flags.
     // If there were market items that had levels or other persistent state, they'd go here.
+    // --- FEATURE: State for automations ---
+    automatorLevels: {
+        imageAutomator: 0
+    },
+    automationProgress: {
+        imageAutomator: "0"
+    }
+    // --- END FEATURE ---
 };
 
 /**
@@ -31,8 +39,15 @@ export function getInitialState() {
         purchaseCounts: {
             images: "0",
             studySkillPoints: "0",
-            prestigeSkillPoints: "0" // Initialize new purchase count
+            prestigeSkillPoints: "0"
         },
+        // --- FEATURE: Initial state for automations ---
+        automatorLevels: {
+            imageAutomator: 0
+        },
+        automationProgress: {
+            imageAutomator: "0"
+        }
+        // --- END FEATURE ---
     };
 }
-

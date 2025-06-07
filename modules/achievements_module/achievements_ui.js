@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_ui.js (v1.2 - Achievement Card Styling & Scrolling)
+// modules/achievements_module/achievements_ui.js (v1.3 - Themed Achievement Cards)
 
 /**
  * @file achievements_ui.js
  * @description Handles UI rendering for the Achievements module.
+ * v1.3: Ensured achievement card colors match the active theme using CSS variables.
  * v1.2: Added theme-adaptive styling for achievement cards and scrolling to specific achievements.
  * v1.1: Switched tooltips to use the new themed modal system.
  */
@@ -17,7 +18,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.3).");
     },
 
     renderMainContent(parentElement) {
@@ -64,15 +65,15 @@ export const ui = {
         const isCompleted = moduleLogicRef.isAchievementCompleted(achievementDef.id);
         
         const card = document.createElement('div');
-        // --- MODIFICATION: Added achievement-card class and ID for scrolling ---
         card.id = `achievement-card-${achievementDef.id}`; 
+        // --- MODIFICATION: Removed hardcoded Tailwind classes for completed state ---
         card.className = `achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
             isCompleted ? 'is-completed' : 'bg-surface-dark'
         }`;
         
         const icon = document.createElement('div');
         icon.className = 'text-4xl mb-2';
-        icon.textContent = achievementDef.icon || '🏆';
+        icon.textContent = achievementDef.icon || '�';
         card.appendChild(icon);
 
         const name = document.createElement('h4');
@@ -98,7 +99,7 @@ export const ui = {
         card.addEventListener('click', () => {
             let modalContent = `<div class="space-y-2">`;
             modalContent += `<p class='text-base text-textPrimary'>${achievementDef.description}</p><hr class='my-2 border-gray-600'>`;
-            modalContent += `<p class='text-sm'><span class="font-semibold text-yellow-400">Reward:</span> ${achievementDef.reward.description}</p>`;
+            modalContent += `<p class class='text-sm'><span class="font-semibold text-yellow-400">Reward:</span> ${achievementDef.reward.description}</p>`;
             if (!isCompleted) {
                 modalContent += `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">Condition:</span> ${this._getConditionText(achievementDef.condition)}</p>`;
             }

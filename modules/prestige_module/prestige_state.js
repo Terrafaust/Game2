@@ -1,9 +1,9 @@
-// /game/modules/prestige_module/prestige_state.js (v1.3 - Full Passive Generation State)
+// /game/modules/prestige_module/prestige_state.js (v2.0 - Prestige History & Stats)
 
 /**
  * @file prestige_state.js
  * @description Defines the dynamic, saveable state for the Prestige module.
- * v1.3: Expands passive production state to all applicable producers.
+ * v2.0: Added state for prestige history, run time, and stat snapshots.
  */
 
 export let moduleState = {};
@@ -18,15 +18,17 @@ export const getInitialState = () => ({
         phd: '0',
         postDoc: '0'
     },
-    // --- FEATURE: Expanded state to track all passive production progress ---
     passiveProductionProgress: {
-        student: '0',
-        classroom: '0',
-        kindergarten: '0',
-        elementarySchool: '0',
-        middleSchool: '0',
-        highSchool: '0',
-        university: '0',
-        professor: '0'
+        student: '0', classroom: '0', kindergarten: '0', elementarySchool: '0',
+        middleSchool: '0', highSchool: '0', university: '0', professor: '0'
+    },
+    // --- FEATURE: State for prestige history and stats ---
+    currentPrestigeRunTime: 0, // In seconds
+    lastTenPrestiges: [], // Stores objects: { count, time, ppGained }
+    statsSnapshotAtPrestige: { // Stores totals at the start of the run
+        totalStudyPointsProduced: '0',
+        totalKnowledgeProduced: '0',
+        // Add other stats to snapshot here as needed
     }
+    // --- END FEATURE ---
 });
