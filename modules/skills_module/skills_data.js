@@ -1,8 +1,9 @@
-// modules/skills_module/skills_data.js (v4.0 - Major Skill Expansion)
+// modules/skills_module/skills_data.js (v4.1 - Renamed Ascension to Prestige)
 
 /**
  * @file skills_data.js
  * @description Static data definitions for the Skills module.
+ * v4.1: Renamed all instances of 'Ascension' to 'Prestige' and similar variations.
  * v4.0: Expanded both regular and prestige skill trees significantly.
  * v3.0: Re-integrated Prestige Skills tree and UI text.
  */
@@ -68,7 +69,7 @@ export const staticModuleData = {
     prestigeSkillPointResourceId: 'prestigePoints',
     prestigeSkills: {
         // TIER 1
-        prestigedInsight: { id: 'prestigedInsight', tier: 1, name: "Prestiged Insight", description: "Increases Prestige Point gain from prestiging by 10% per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "apGain", valuePerLevel: "0.10" }, unlockCondition: null },
+        prestigedInsight: { id: 'prestigedInsight', tier: 1, name: "Prestige Insight", description: "Increases Prestige Point gain from prestiging by 10% per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "apGain", valuePerLevel: "0.10" }, unlockCondition: null },
         enduringLegacy: { id: 'enduringLegacy', tier: 1, name: "Enduring Legacy", description: "The base Prestige Bonus multiplier is 2% stronger per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "prestigeBonus", valuePerLevel: "0.02" }, unlockCondition: { type: "prestigeSkillLevel", skillId: "prestigedInsight", level: 1 } },
         // TIER 2
         startingAdvantage: { id: 'startingAdvantage', tier: 2, name: "Starting Advantage", description: "Start each prestige with 10 free Students and 5 free Classrooms per level.", maxLevel: 5, costPerLevel: createPrestigeSkillLevelCosts(2, 5), effect: { type: "MANUAL", description: "Grants free producers on prestige." }, unlockCondition: { type: "allPrestigeSkillsInTierLevel", tier: 1, level: 1 } },
