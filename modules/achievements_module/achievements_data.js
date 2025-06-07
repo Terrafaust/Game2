@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_data.js (v4.0 - Prestige Update)
+// modules/achievements_module/achievements_data.js (v4.1 - PP Terminology & PhD Icon Fix)
 
 /**
  * @file achievements_data.js
  * @description Static data definitions for the Achievements module.
+ * v4.1: Corrected 'AP' to 'PP' in total achievement milestones and fixed PhD icon.
  * v4.0: Adds massive number of achievements for Prestige producers and total completion.
  */
 
@@ -165,7 +166,7 @@ const totalAchievementMilestones = {
     ach_total_45:  { count: 45,  reward: { type: 'MULTIPLIER', targetSystem: 'studies_producers_knowledge', targetId: 'professor', value: '0.20', description: "+20% Professor Production" } },
     ach_total_50:  { count: 50,  reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.05', description: "+5% to ALL production (stacks with per-achievement bonus)" } },
     ach_total_60:  { count: 60,  reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '100', description: "+100 Free Prestige Points" } },
-    ach_total_70:  { count: 70,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'apGain', value: '0.10', description: "+10% Prestige Point Gain on Prestige" } },
+    ach_total_70:  { count: 70,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'ppGain', value: '0.10', description: "+10% Prestige Point Gain on Prestige" } },
     ach_total_80:  { count: 80,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'ALL', value: '0.05', description: "-5% Cost for all Prestige Producers" } },
     ach_total_90:  { count: 90,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'license', value: '0.20', description: "+20% License Production" } },
     ach_total_100: { count: 100, reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.10', description: "+10% to ALL production (stacks)" } },
@@ -175,8 +176,8 @@ const totalAchievementMilestones = {
     ach_total_140: { count: 140, reward: { type: 'MULTIPLIER', targetSystem: 'global_resource_production', targetId: 'knowledge', value: '0.50', description: "+50% Global Knowledge Production" } },
     ach_total_150: { count: 150, reward: { type: 'MULTIPLIER', targetSystem: 'global_resource_production', targetId: 'studyPoints', value: '0.50', description: "+50% Global SP Production" } },
     ach_total_160: { count: 160, reward: { type: 'MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'postDoc', value: '0.10', description: "+10% Post-Doctorate effect" } },
-    ach_total_170: { count: 170, reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '10000', description: "+10,000 Free AP" } },
-    ach_total_180: { count: 180, reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'apGain', value: '0.25', description: "+25% Prestige Point Gain on Prestige" } },
+    ach_total_170: { count: 170, reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '10000', description: "+10,000 Free PP" } },
+    ach_total_180: { count: 180, reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'ppGain', value: '0.25', description: "+25% Prestige Point Gain on Prestige" } },
     ach_total_190: { count: 190, reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'skills', targetId: 'ALL', value: '0.10', description: "-10% Cost for all Skills (Normal and Prestige)" } },
     ach_total_200: { count: 200, reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.20', description: "A final +20% to ALL production!" } },
 };
@@ -221,7 +222,8 @@ export const staticModuleData = {
         ...createPrestigeProducerAchievements("license", "License", "📜"),
         ...createPrestigeProducerAchievements("master1", "Master's Degree I", "🏅"),
         ...createPrestigeProducerAchievements("master2", "Master's Degree II", "🎖️"),
-        ...createPrestigeProducerAchievements("phd", "PhD", " Doctorate"),
+        // --- FIX: Corrected PhD icon ---
+        ...createPrestigeProducerAchievements("phd", "PhD", "🎓"), 
         ...createPrestigeProducerAchievements("postDoc", "Post-Doctorate", "✨"),
 
         // **NEW** Image Achievements
@@ -236,3 +238,4 @@ export const staticModuleData = {
         lockedText: "Locked"
     }
 };
+

@@ -1,8 +1,9 @@
-// modules/market_module/market_logic.js (v1.9.3 - Prestige Skill Points Integration)
+// modules/market_module/market_logic.js (v1.9.4 - Fixed Image Visibility Logic)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v1.9.4: Fixed ReferenceError when setting 'images' resource visibility.
  * v1.9.3: Handles unlock/visibility for Prestige Skill Points.
  * v1.9.2: Corrects crash by using decimalUtility.max which is now defined.
  * v1.9.1: Fixes a crash in purchaseScalableItem caused by incorrect .toNumber() call.
@@ -16,7 +17,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9.3).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v1.9.4).");
     },
     
     calculateMaxBuyable(itemId) {
@@ -113,8 +114,9 @@ export const moduleLogic = {
             if (itemDef.benefitResource === 'images') {
                 const imagesRes = coreResourceManager.getResource('images');
                 if (imagesRes && !imagesRes.isUnlocked) coreResourceManager.unlockResource('images', true);
-                if (imagesRes && !images.showInUI) coreResourceManager.setResourceVisibility('images', true);
-            } else if (itemDef.benefitResource === 'prestigeSkillPoints') { // --- FEATURE: Handle PSP visibility ---
+                // --- FIX: Corrected 'images' to 'imagesRes' ---
+                if (imagesRes && !imagesRes.showInUI) coreResourceManager.setResourceVisibility('images', true); 
+            } else if (itemDef.benefitResource === 'prestigeSkillPoints') {
                 const pspRes = coreResourceManager.getResource('prestigeSkillPoints');
                 if (pspRes && !pspRes.isUnlocked) coreResourceManager.unlockResource('prestigeSkillPoints', true);
                 if (pspRes && !pspRes.showInUI) coreResourceManager.setResourceVisibility('prestigeSkillPoints', true);
@@ -132,7 +134,7 @@ export const moduleLogic = {
             loggingSystem.info("MarketLogic", `Purchased ${decimalUtility.format(quantity,0)} of ${itemDef.name}.`);
             coreUIManager.showNotification(`Acquired ${decimalUtility.format(benefitAmount,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantity,1) ? 's' : ''}!`, 'success', 2000);
             
-            if (itemDef.benefitResource === 'images' || itemDef.benefitResource === 'prestigeSkillPoints') coreUIManager.updateResourceDisplay(); // Update display for new resources
+            if (itemDef.benefitResource === 'images' || itemDef.benefitResource === 'prestigeSkillPoints') coreUIManager.updateResourceDisplay();
             if (itemDef.benefitResource === 'studySkillPoints') {
                 const skillsModule = moduleLoader.getModule('skills');
                 if (skillsModule?.logic?.isSkillsTabUnlocked) skillsModule.logic.isSkillsTabUnlocked(); 
@@ -192,7 +194,8 @@ export const moduleLogic = {
         const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); 
         if (conditionMet) {
             coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
-            if(coreUIManager) coreUIManager.renderMenu();
+            if(coreUIManager) coreUIManager.renderMenu(); 
+            coreSystemsRef.loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
             return true;
         }
         return false;
@@ -215,7 +218,6 @@ export const moduleLogic = {
         if (imagesRes && imagesRes.isUnlocked && decimalUtility.gt(imagesRes.amount, 0) && !imagesRes.showInUI) {
             coreResourceManager.setResourceVisibility('images', true);
         }
-        // --- FEATURE: Handle PSP visibility on game load ---
         const pspRes = coreResourceManager.getResource('prestigeSkillPoints');
         if (pspRes && pspRes.isUnlocked && decimalUtility.gt(pspRes.amount, 0) && !pspRes.showInUI) {
             coreResourceManager.setResourceVisibility('prestigeSkillPoints', true);
@@ -240,7 +242,7 @@ export const moduleLogic = {
             );
         }
 
-        // --- FEATURE: Reset Prestige Skill Points resource ---
+        // Reset Prestige Skill Points resource
         const pspDef = staticModuleData.resources.prestigeSkillPoints;
         if (pspDef) {
             coreResourceManager.defineResource(

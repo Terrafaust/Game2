@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_logic.js (v2.1 - Reward Definition Fix)
+// modules/achievements_module/achievements_logic.js (v2.2 - Ensure UI Refresh on Unlock)
 
 /**
  * @file achievements_logic.js
  * @description Business logic for the Achievements module.
+ * v2.2: Added explicit UI refresh for market unlocks (settings/achievements tabs).
  * v2.1: Fixes ReferenceError by moving reward definition.
  * v2.0: Adds prestige conditions and a global multiplier for total achievements.
  */
@@ -15,7 +16,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v2.1).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "Logic initialized (v2.2).");
         this.applyAllCompletedAchievementRewards();
         this.registerGlobalAchievementBonus(); // New: Register the dynamic global bonus
     },
@@ -123,11 +124,6 @@ export const moduleLogic = {
                 loggingSystem.warn("AchievementsLogic", `Unknown condition type for achievement ${achievementId}: ${condition.type}`);
                 return false;
         }
-        // **FIX**: If a feature was unlocked, explicitly re-render the menu
-        // This 'menuNeedsUpdate' variable was not declared in the original code snippet for this function,
-        // and its placement here suggests it was a thought-to-be-added feature for this function
-        // which was actually handled in checkAndCompleteAchievements.
-        // It's removed from here to prevent issues.
     },
 
     checkAndCompleteAchievements() {
@@ -146,7 +142,7 @@ export const moduleLogic = {
 
                     // Apply the one-time static reward, if it exists
                     if (achievementDef.reward) {
-                        const reward = achievementDef.reward; // Moved declaration to ensure scope
+                        const reward = achievementDef.reward; 
                         if (reward.type === "RESOURCE_GAIN") { 
                             coreResourceManager.addAmount(reward.resourceId, decimalUtility.new(reward.amount));
                             loggingSystem.info("AchievementsLogic", `Granted one-time reward for ${achievementId}: ${reward.amount} ${reward.resourceId}`);
@@ -154,7 +150,6 @@ export const moduleLogic = {
                             const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
                             coreUpgradeManager.registerEffectSource('achievements', achievementId, reward.targetSystem, reward.targetId, reward.type, valueProvider);
                         } else if (reward.type === "UNLOCK_FEATURE") {
-                            // **NEW LOGIC**
                             coreGameStateManager.setGlobalFlag(reward.flag, true);
                             loggingSystem.info("AchievementsLogic", `Unlocked feature via achievement ${achievementId}: ${reward.flag}`);
                             menuNeedsUpdate = true; // Signal that the main menu needs to be redrawn
@@ -173,12 +168,6 @@ export const moduleLogic = {
             if(studiesModule?.logic?.updateAllProducerProductions){
                 studiesModule.logic.updateAllProducerProductions();
             }
-            // Removed the call to prestigeModule.logic.updateAllPrestigeProducerProductions
-            // as it was removed in the previous step and handled by coreUpgradeManager.
-            // Ensure prestige effects are re-evaluated if needed, perhaps by calling
-            // prestigeLogic.updatePrestigeProducerEffects() if prestige module relies on this.
-            // However, prestigeLogic.updatePrestigeProducerEffects() is likely called on GameLoad/PrestigeReset,
-            // which should be sufficient.
 
             if (coreUIManager.isActiveTab('achievements')) {
                 const achievementsUI = moduleLoader.getModule('achievements')?.ui;
@@ -193,22 +182,21 @@ export const moduleLogic = {
     },
     
     applyAllCompletedAchievementRewards() {
-        const { coreUpgradeManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef; // Added coreGameStateManager
+        const { coreUpgradeManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
 
         for (const achievementId in moduleState.completedAchievements) {
             if (moduleState.completedAchievements[achievementId]) {
                 const achievementDef = staticModuleData.achievements[achievementId];
-                if (!achievementDef || !achievementDef.reward) { // Added check for reward existence
+                if (!achievementDef || !achievementDef.reward) {
                     loggingSystem.warn("AchievementsLogic", `Achievement definition or reward missing for ID: ${achievementId}. Skipping reward application.`);
                     continue;
                 }
-                const reward = achievementDef.reward; // Moved declaration here
+                const reward = achievementDef.reward; 
 
                 if (reward.type.includes("MULTIPLIER")) {
                     const valueProvider = () => decimalUtility.add(1, decimalUtility.new(reward.value));
                     coreUpgradeManager.registerEffectSource('achievements', achievementId, reward.targetSystem, reward.targetId, reward.type, valueProvider);
                 } else if (reward.type === "UNLOCK_FEATURE") {
-                    // Also apply feature unlocks on game load to ensure consistency
                     coreGameStateManager.setGlobalFlag(reward.flag, true);
                 }
             }
@@ -217,17 +205,18 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered (v2.1).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onGameLoad triggered (v2.2).");
         this.applyAllCompletedAchievementRewards();
-        this.registerGlobalAchievementBonus(); // Ensure bonus is registered on load
+        this.registerGlobalAchievementBonus(); 
         this.checkAndCompleteAchievements();
         this.isAchievementsTabUnlocked(); 
     },
 
     onResetState() {
-        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered (v2.1).");
+        coreSystemsRef.loggingSystem.info("AchievementsLogic", "onResetState triggered (v2.2).");
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('achievementsTabPermanentlyUnlocked', false);
         }
     }
 };
+
