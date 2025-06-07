@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_data.js (v2.0 - User Specs)
+// /game/modules/prestige_module/prestige_data.js (v2.1 - Corrected PostDoc effect target)
 
 export const prestigeData = {
     resources: {
@@ -69,8 +69,9 @@ export const prestigeData = {
             // This producer has no direct production, its effect is calculated in logic
             effect: {
                 type: 'MULTIPLIER',
-                target: ['license', 'master1', 'master2', 'phd'],
-                valuePer: '0.1' // Each Post-Doc adds a +10% multiplier
+                targetSystem: 'prestige_producers', // Corrected target system
+                targetId: 'ALL', // Affects all other prestige producers
+                valuePerLevel: '0.1' // Each Post-Doc adds a +10% multiplier (valuePer renamed to valuePerLevel for consistency)
             }
         }
     },
