@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.8 - State Sync Bugfix)
+// /game/modules/prestige_module/prestige_logic.js (v2.9 - UI Function Fix)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -16,6 +16,16 @@ export const initialize = (systems) => {
 export const getOwnedPrestigeProducerCount = (producerId) => {
     return decimalUtility.new(moduleState.ownedProducers[producerId] || '0');
 };
+
+// --- FIX: Added the missing function for the UI ---
+/**
+ * Gets the total number of times the player has prestiged.
+ * @returns {Decimal} The total prestige count.
+ */
+export const getTotalPrestigeCount = () => {
+    return decimalUtility.new(moduleState.totalPrestigeCount || '0');
+};
+// --- END FIX ---
 
 export const calculatePrestigeProducerCost = (producerId) => {
     const producerDef = prestigeData.producers[producerId];
@@ -36,9 +46,7 @@ export const purchasePrestigeProducer = (producerId) => {
         const currentState = coreGameStateManager.getModuleState('prestige');
         currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
         coreGameStateManager.setModuleState('prestige', currentState);
-
-        // --- BUGFIX: The local moduleState must be synchronized with the new state. ---
-        // Without this, the UI and subsequent logic would use the old, incorrect values.
+        
         Object.assign(moduleState, currentState);
 
         updatePrestigeProducerEffects();
@@ -56,11 +64,6 @@ export const purchasePrestigeProducer = (producerId) => {
     }
 };
 
-/**
- * --- FEATURE: Updated to be a generic passive producer generation system ---
- * This function is called by the game loop every tick.
- * @param {number} deltaTimeSeconds - The time elapsed since the last tick.
- */
 export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
     if (!coreSystemsRef) return;
     const { decimalUtility, coreUpgradeManager, moduleLoader, loggingSystem, coreGameStateManager } = coreSystemsRef;
@@ -73,17 +76,14 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
     let producersToAdd = {};
     let stateNeedsUpdate = false;
 
-    // Iterate over all prestige producers defined in the data
     for (const producerId in prestigeData.producers) {
         const producerDef = prestigeData.producers[producerId];
         const ownedCount = getOwnedPrestigeProducerCount(producerId);
 
-        // Only process producers that have the passiveProduction property and are owned
         if (!producerDef.passiveProduction || decimalUtility.eq(ownedCount, 0)) {
             continue;
         }
 
-        // Calculate generation for each target producer type (student, classroom, etc.)
         producerDef.passiveProduction.forEach(target => {
             const baseRate = decimalUtility.new(target.baseRate);
             const totalRate = decimalUtility.multiply(baseRate, ownedCount);
@@ -91,7 +91,7 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
 
             const progressKey = target.producerId;
             if (moduleState.passiveProductionProgress[progressKey] === undefined) {
-                moduleState.passiveProductionProgress[progressKey] = '0'; // Initialize if not present
+                moduleState.passiveProductionProgress[progressKey] = '0';
             }
 
             const currentProgress = decimalUtility.new(moduleState.passiveProductionProgress[progressKey]);
@@ -100,13 +100,11 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
             if (decimalUtility.gte(newProgress, 1)) {
                 const wholeProducers = decimalUtility.floor(newProgress);
                 
-                // Add to the list of producers to create
                 if (!producersToAdd[progressKey]) {
                     producersToAdd[progressKey] = decimalUtility.new(0);
                 }
                 producersToAdd[progressKey] = decimalUtility.add(producersToAdd[progressKey], wholeProducers);
 
-                // Keep the fractional part for the next tick
                 moduleState.passiveProductionProgress[progressKey] = decimalUtility.subtract(newProgress, wholeProducers).toString();
                 stateNeedsUpdate = true;
             } else {
@@ -115,29 +113,20 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
         });
     }
 
-
     if (Object.keys(producersToAdd).length > 0) {
-        // We have whole producers to add. Call the studies module logic.
         studiesModule.logic.addProducers(producersToAdd);
         loggingSystem.debug("PrestigeLogic", "Passively generated producers:", producersToAdd);
     }
     
-    // Save the state if any fractional progress was updated
     if (stateNeedsUpdate) {
         coreGameStateManager.setModuleState('prestige', { ...moduleState });
     }
 };
 
-/**
- * --- CLEANUP: This function now only handles the postDoc multiplier ---
- * The direct resource production logic has been removed as it's now handled
- * by the passive producer generation system.
- */
 export const updatePrestigeProducerEffects = () => {
     if (!coreSystemsRef) return;
     const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
 
-    // Handle the 'postDoc' producer's effect (multiplier on other prestige producers)
     const postDocDef = prestigeData.producers.postDoc;
     if (postDocDef && postDocDef.effect) {
         const postDocCount = getOwnedPrestigeProducerCount('postDoc');
@@ -149,21 +138,10 @@ export const updatePrestigeProducerEffects = () => {
             return multiplier;
         };
 
-        coreUpgradeManager.registerEffectSource(
-            'prestige',
-            'postDoc_prestige_producer_multiplier',
-            postDocDef.effect.targetSystem,
-            postDocDef.effect.targetId,
-            postDocDef.effect.type,
-            postDocEffectValueProvider
-        );
+        coreUpgradeManager.registerEffectSource('prestige', 'postDoc_prestige_producer_multiplier', postDocDef.effect.targetSystem, postDocDef.effect.targetId, postDocDef.effect.type, postDocEffectValueProvider);
         loggingSystem.debug("PrestigeLogic", "Registered/Updated postDoc effect with CoreUpgradeManager.");
     }
-    
-    // All other prestige producers are now handled by the passive generation system,
-    // so no further logic is needed here for them.
 };
-
 
 export const canPrestige = () => {
     return coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
@@ -270,7 +248,6 @@ export const performPrestige = () => {
                     prestigeModuleState.totalPrestigeCount = decimalUtility.add(prestigeModuleState.totalPrestigeCount || 0, 1).toString();
                     prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
                     
-                    // Reset the passive generation progress on prestige
                     prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
 
                     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
