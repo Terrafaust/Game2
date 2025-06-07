@@ -126,3 +126,4 @@ const skillsManifest = {
 };
 
 export default skillsManifest;
+

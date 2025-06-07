@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_data.js (v2.3 - All Producers of Producers)
+// /game/modules/prestige_module/prestige_data.js (v2.4 - Prestige Skill Points Integration)
 
 export const prestigeData = {
     resources: {
@@ -7,6 +7,15 @@ export const prestigeData = {
             name: 'Prestige Points',
             description: 'Points earned by resetting progress, used for powerful upgrades.',
             resetsOnPrestige: false
+        },
+        // --- FEATURE: New resource for Prestige Skill Points ---
+        prestigeSkillPoints: {
+            id: 'prestigeSkillPoints',
+            name: 'Prestige Skill Points',
+            description: 'Special points used to unlock and upgrade permanent Prestige Skills.',
+            resetsOnPrestige: false, // These should persist across prestige resets
+            showInUI: false, // Initially hidden, will be shown if purchased
+            isUnlocked: true // It needs to be unlocked for the market to define it and for it to be purchased
         }
     },
 
@@ -15,7 +24,7 @@ export const prestigeData = {
             id: 'license',
             name: 'License',
             description: 'A professional teaching license. Each one passively generates 1 Student, 1 Classroom, and 1 Kindergarten per second for free.',
-            costResource: 'prestigePoints',
+            costResource: 'prestigeSkillPoints', // Changed to Prestige Skill Points
             baseCost: '100',
             costGrowthFactor: '1.05',
             passiveProduction: [
@@ -27,9 +36,8 @@ export const prestigeData = {
         master1: {
             id: 'master1',
             name: "Master's Degree I",
-            // --- FEATURE: Updated description and converted to passiveProduction ---
             description: 'Each one passively generates 1 Elementary, Middle, and High School per second.',
-            costResource: 'prestigePoints',
+            costResource: 'prestigeSkillPoints', // Changed to Prestige Skill Points
             baseCost: '10000',
             costGrowthFactor: '1.05',
             passiveProduction: [
@@ -41,9 +49,8 @@ export const prestigeData = {
         master2: {
             id: 'master2',
             name: "Master's Degree II",
-             // --- FEATURE: Updated description and converted to passiveProduction ---
             description: 'Each one passively generates 1 University per second.',
-            costResource: 'prestigePoints',
+            costResource: 'prestigeSkillPoints', // Changed to Prestige Skill Points
             baseCost: '100000',
             costGrowthFactor: '1.05',
             passiveProduction: [
@@ -53,9 +60,8 @@ export const prestigeData = {
         phd: {
             id: 'phd',
             name: 'PhD',
-            // --- FEATURE: Updated description and converted to passiveProduction ---
             description: 'Each one passively generates 0.1 Professors per second.',
-            costResource: 'prestigePoints',
+            costResource: 'prestigeSkillPoints', // Changed to Prestige Skill Points
             baseCost: '1e10',
             costGrowthFactor: '1.05',
             passiveProduction: [
@@ -66,7 +72,7 @@ export const prestigeData = {
             id: 'postDoc',
             name: 'Post-Doctorate',
             description: 'Multiplies the production of all other Prestige producers.',
-            costResource: 'prestigePoints',
+            costResource: 'prestigeSkillPoints', // Changed to Prestige Skill Points
             baseCost: '1e13',
             costGrowthFactor: '1.05',
             effect: {
@@ -83,3 +89,4 @@ export const prestigeData = {
         prestigeButtonText: "Prestige",
     }
 };
+

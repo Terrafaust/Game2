@@ -1,8 +1,9 @@
-// modules/skills_module/skills_data.js (v4.2 - Terminology and Unlock Fixes)
+// modules/skills_module/skills_data.js (v4.3 - Prestige Skill Points Currency)
 
 /**
  * @file skills_data.js
  * @description Static data definitions for the Skills module.
+ * v4.3: Changed prestige skill currency from 'prestigePoints' to 'prestigeSkillPoints'.
  * v4.2: Corrected unlock condition types and terminology (AP -> PP, Ascension -> Prestige).
  */
 
@@ -55,7 +56,7 @@ export const staticModuleData = {
         finalFrontier: { id: 'finalFrontier', tier: 8, name: "The Final Frontier", description: "Manual clicks also generate a small percentage of your Knowledge per second.", maxLevel: 1, costPerLevel: createSkillLevelCosts(8,1), effect: { type: "MANUAL_CLICK_KNOWLEDGE_GAIN" }, unlockCondition: { type: "skillLevel", skillId: "ultimateKnowledgeSynthesis", level: 1 } },
     },
     
-    prestigeSkillPointResourceId: 'prestigePoints',
+    prestigeSkillPointResourceId: 'prestigeSkillPoints', // Changed from 'prestigePoints' to 'prestigeSkillPoints'
     prestigeSkills: {
         // --- FIX: Renamed apGain to ppGain and corrected unlock condition types ---
         prestigedInsight: { id: 'prestigedInsight', tier: 1, name: "Prestige Insight", description: "Increases Prestige Point gain from prestiging by 10% per level.", maxLevel: 10, costPerLevel: createPrestigeSkillLevelCosts(1, 10), effect: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "ppGain", valuePerLevel: "0.10" }, unlockCondition: null },
@@ -85,3 +86,4 @@ export const staticModuleData = {
         tierUnlockMessage: (tier) => `Unlock Tier ${tier} by leveling all skills in Tier ${tier - 1} to at least level 1.`
     }
 };
+

@@ -1,8 +1,9 @@
-// modules/market_module/market_ui.js (v1.9 - Bug Fix for toNumber)
+// modules/market_module/market_ui.js (v1.10 - Added Prestige Skill Points Button)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v1.10: Adds rendering for the new Prestige Skill Points buy button.
  * v1.9: Fixes a crash related to an incorrect .toNumber() call.
  * v1.8: Adds 'Buy Max' functionality and reuses multiplier controls.
  */
@@ -27,7 +28,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.9).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v1.10).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -181,3 +182,4 @@ export const ui = {
         coreSystemsRef.coreUIManager.hideTooltip();
     }
 };
+

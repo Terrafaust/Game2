@@ -1,8 +1,9 @@
-// modules/skills_module/skills_ui.js (v2.2 - Function Call Fix)
+// modules/skills_module/skills_ui.js (v2.3 - Prestige Skill Points UI Display)
 
 /**
  * @file skills_ui.js
  * @description Handles UI rendering and interactions for both regular and prestige skills.
+ * v2.3: Updated currency display for prestige skills to use 'PSP'.
  * v2.2: Fixed error 'isPrestigeTierUnlocked is not a function'.
  * v2.1: Rebuilt to handle two distinct skill trees and currencies.
  */
@@ -17,7 +18,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v2.2).");
+        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v2.3).");
     },
 
     renderMainContent(parentElement) {
@@ -170,8 +171,8 @@ export const ui = {
         const costDisplay = cardElement.querySelector(`#skill-${skillDef.id}-cost`);
         const purchaseButton = cardElement.querySelector(`#skill-purchase-${skillDef.id}`);
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
-        const currency = isPrestige ? 'PP' : 'SPP'; // Corrected AP to PP
-
+        const currency = isPrestige ? 'PSP' : 'SPP'; // Changed from 'PP' to 'PSP'
+        
         if (!isUnlocked) {
             cardElement.classList.add('opacity-50', 'grayscale');
             costDisplay.textContent = "Locked";
@@ -198,3 +199,4 @@ export const ui = {
 
     onHide() { /* No action needed */ }
 };
+

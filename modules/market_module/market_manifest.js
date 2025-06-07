@@ -1,8 +1,9 @@
-// modules/market_module/market_manifest.js (v1.3 - Resource Reset Logic)
+// modules/market_module/market_manifest.js (v1.4 - Prestige Skill Points Resource Definition)
 
 /**
  * @file market_manifest.js
  * @description Manifest file for the Market Module.
+ * v1.4: Ensures correct definition of 'prestigeSkillPoints' on init/reset.
  * v1.3: Ensures correct re-definition of 'images' on reset.
  * v1.2: Added more specific logging for resource definition calls.
  */
@@ -15,7 +16,7 @@ import { ui } from './market_ui.js';
 const marketManifest = {
     id: "market",
     name: "Market",
-    version: "1.0.3", 
+    version: "1.0.4", // Version bump
     description: "Trade resources for items and unlock new game features.",
     dependencies: ["studies"], 
 
@@ -121,7 +122,7 @@ const marketManifest = {
                 }
                 Object.assign(moduleState, loadedState);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState }); 
-                moduleLogic.onGameLoad(); // This now also handles visibility of 'images' based on loaded amount.
+                moduleLogic.onGameLoad(); // This now also handles visibility of 'images' and 'prestigeSkillPoints' based on loaded amount.
                 if (coreUIManager.isActiveTab(this.id)) {
                     const mainContentEl = document.getElementById('main-content');
                     if (mainContentEl) ui.renderMainContent(mainContentEl);
@@ -133,8 +134,8 @@ const marketManifest = {
                     const resDef = staticModuleData.resources[resourceKey];
                      loggingSystem.debug(this.name, `onResetState: Re-asserting Market's definition for '${resDef.id}'. IsUnlocked: ${resDef.isUnlocked}, ShowInUI: ${resDef.showInUI}`);
                     
-                    let resetShowInUI = resDef.id === 'images' ? false : resDef.showInUI;
-                    let resetIsUnlocked = resDef.id === 'images' ? false : resDef.isUnlocked;
+                    let resetShowInUI = resDef.id === 'images' || resDef.id === 'prestigeSkillPoints' ? false : resDef.showInUI;
+                    let resetIsUnlocked = resDef.id === 'images' || resDef.id === 'prestigeSkillPoints' ? false : resDef.isUnlocked;
 
                     coreResourceManager.defineResource(
                         resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount),
@@ -167,3 +168,4 @@ const marketManifest = {
 };
 
 export default marketManifest;
+

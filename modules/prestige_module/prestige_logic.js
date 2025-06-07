@@ -245,7 +245,11 @@ export const performPrestige = () => {
                     moduleLoader.broadcastLifecycleEvent('onPrestigeReset');
                     
                     const prestigeModuleState = coreGameStateManager.getModuleState('prestige') || getInitialState();
-                    prestigeModuleState.totalPrestigeCount = decimalUtility.add(prestigeModuleState.totalPrestigeCount || 0, 1).toString();
+                    // Increment the totalPrestigeCount and update the resource manager
+                    const newPrestigeCount = decimalUtility.add(prestigeModuleState.totalPrestigeCount || 0, 1);
+                    prestigeModuleState.totalPrestigeCount = newPrestigeCount.toString();
+                    coreResourceManager.setAmount('prestigeCount', newPrestigeCount); // Update the resource directly
+
                     prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
                     
                     prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
@@ -271,3 +275,4 @@ export const performPrestige = () => {
         ]
     );
 };
+

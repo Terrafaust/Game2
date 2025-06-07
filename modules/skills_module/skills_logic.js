@@ -1,8 +1,10 @@
-// modules/skills_module/skills_logic.js (v1.7 - Prestige Reset & Unlock Fix)
+// modules/skills_module/skills_logic.js (v1.9 - Fixed Syntax Error in Notification)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v1.9: Fixed syntax error in purchase success notification.
+ * v1.8: Ensures prestige skill costs use 'prestigeSkillPoints' from staticData.
  * v1.7: Adds onPrestigeReset logic. Fixes tier unlock logic. Restores full file content.
  * v1.6: Filters skill effects before registering with CoreUpgradeManager.
  * v1.5: Adds validation for effectDef.targetSystem and effectDef.type before registering effects.
@@ -26,7 +28,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.7).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.9).");
         this.registerAllSkillEffects(); 
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
@@ -194,6 +196,7 @@ export const moduleLogic = {
         const cost = this.getSkillNextLevelCost(skillId, isPrestige);
         if (cost === null) return false;
 
+        // The resourceId is now correctly fetched from staticModuleData based on isPrestige
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
 
         if (coreResourceManager.canAfford(resourceId, cost)) {
@@ -219,7 +222,8 @@ export const moduleLogic = {
             }
             return true;
         } else {
-            const currency = isPrestige ? 'Prestige Points' : 'Study Skill Points';
+            // The currency displayed here should match the resourceId
+            const currency = isPrestige ? staticModuleData.ui.prestigeSkillPointDisplayLabel.replace(' Available:', '') : staticModuleData.ui.skillPointDisplayLabel.replace(' Available:', '');
             loggingSystem.debug("SkillsLogic", `Cannot afford skill ${skillId}. Have: ${coreResourceManager.getAmount(resourceId).toString()}. Need: ${decimalUtility.format(cost, 0)} ${currency}.`);
             coreUIManager.showNotification(`Not enough ${currency} for ${skillDef.name}.`, 'error');
             return false;
@@ -378,7 +382,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.7).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.9).");
         this.registerAllSkillEffects();
         this.isSkillsTabUnlocked(); 
         this.applySpecialSkillEffects(0);
@@ -405,3 +409,4 @@ export const moduleLogic = {
         }
     }
 };
+
