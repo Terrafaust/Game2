@@ -460,3 +460,108 @@ body.menu-visible .menu-overlay {
         grid-column: span 1;
     }
 }
+/* ========================================================================== */
+/* ==                     APPEND TO THE END OF main.css                    == */
+/* ========================================================================== */
+
+
+/*
+================================================================================
+===              NEW THEMED MODAL POPUP STYLES (v2)                        ===
+================================================================================
+*/
+
+/* The container that holds the modal and overlay.
+It's fixed to the viewport and uses flexbox to center the modal window. */
+#modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000; /* High z-index to be on top of everything */
+    pointer-events: none; /* Allows clicks to pass through the container itself to the game */
+    padding: 1rem; /* Add some padding so the modal doesn't touch screen edges */
+}
+
+/* The dark background overlay */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 10, 20, 0.7); /* Darker semi-transparent background */
+    backdrop-filter: blur(5px); /* Blur effect for the content underneath */
+    pointer-events: auto; /* It can be clicked (to close the modal) */
+    animation: fade-in 0.2s ease-out forwards;
+}
+
+/* The modal window itself */
+.modal {
+    position: relative;
+    width: 100%;
+    max-width: 650px; /* A good max-width for a "page-like" feel */
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-radius: 1rem; /* Equivalent to Tailwind's rounded-2xl */
+    border: 2px solid var(--color-primary); /* The border the user requested, using the theme color */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-border); /* A more prominent shadow and a subtle inner border */
+    z-index: 2001; /* Above the overlay */
+    pointer-events: auto; /* It can be interacted with */
+    max-height: 90vh; /* Prevent it from being too tall on short screens */
+    display: flex;
+    flex-direction: column;
+    animation: slide-up-and-fade-in 0.3s ease-out forwards;
+    overflow: hidden; /* Ensures the border-radius is respected by children */
+}
+
+/* Override for the 'classic' theme to give it a sharp-edged, retro look */
+html[data-theme="classic"] .modal {
+    border-radius: 0;
+    border-top: 2px solid var(--color-surface-dark);
+    border-left: 2px solid var(--color-surface-dark);
+    border-right: 2px solid var(--color-text-primary);
+    border-bottom: 2px solid var(--color-text-primary);
+    box-shadow: 5px 5px 0px rgba(0,0,0,0.3);
+}
+
+html[data-theme="classic"][data-mode="night"] .modal {
+    border-top-color: #5a5a5a;
+    border-left-color: #5a5a5a;
+    border-right-color: #1e1e1e;
+    border-bottom-color: #1e1e1e;
+}
+
+
+/* The inner content area of the modal */
+.modal-content {
+    padding: 1.5rem;
+    overflow-y: auto; /* Add scrollbar if content is too long */
+}
+@media (min-width: 640px) {
+    .modal-content {
+        padding: 1.5rem 2rem; /* More horizontal padding on larger screens */
+    }
+}
+
+
+.modal-body {
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+/* --- Modal Animations --- */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slide-up-and-fade-in {
+    from { transform: translateY(30px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
