@@ -1,11 +1,10 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.7 - Bugfix)
+// /game/modules/prestige_module/prestige_logic.js (v2.8 - State Sync Bugfix)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
 import { decimalUtility } from '../../js/core/decimalUtility.js';
 import { coreUIManager } from '../../js/core/coreUIManager.js';
 import { prestigeData } from './prestige_data.js';
-// --- BUGFIX: Imported getInitialState to resolve ReferenceError ---
 import { moduleState, getInitialState } from './prestige_state.js';
 
 let coreSystemsRef;
@@ -37,6 +36,10 @@ export const purchasePrestigeProducer = (producerId) => {
         const currentState = coreGameStateManager.getModuleState('prestige');
         currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
         coreGameStateManager.setModuleState('prestige', currentState);
+
+        // --- BUGFIX: The local moduleState must be synchronized with the new state. ---
+        // Without this, the UI and subsequent logic would use the old, incorrect values.
+        Object.assign(moduleState, currentState);
 
         updatePrestigeProducerEffects();
 
