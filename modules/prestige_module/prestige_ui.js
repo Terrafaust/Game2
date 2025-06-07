@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v1.1 - Function Call Fix)
+// /game/modules/prestige_module/prestige_ui.js (v1.2 - UI Text and Count Fixes)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -18,14 +18,25 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        // --- Header Section ---
         const header = document.createElement('div');
         header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
         
-        const apDisplay = document.createElement('div');
-        apDisplay.id = 'ap-display';
-        apDisplay.className = 'text-lg text-yellow-300';
-        header.appendChild(apDisplay);
+        // --- FIX: Container for PP and Prestige Count ---
+        const statsContainer = document.createElement('div');
+        statsContainer.className = 'text-lg space-y-1';
+
+        const ppDisplay = document.createElement('div');
+        ppDisplay.id = 'pp-display';
+        ppDisplay.className = 'text-yellow-300 font-semibold';
+        statsContainer.appendChild(ppDisplay);
+
+        // --- FEATURE: Added Prestige Count Display ---
+        const prestigeCountDisplay = document.createElement('div');
+        prestigeCountDisplay.id = 'prestige-count-display';
+        prestigeCountDisplay.className = 'text-sm text-gray-400';
+        statsContainer.appendChild(prestigeCountDisplay);
+        
+        header.appendChild(statsContainer);
 
         const prestigeButtonContainer = document.createElement('div');
         const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
@@ -35,7 +46,6 @@ export const ui = {
         
         container.appendChild(header);
 
-        // --- Producers Section ---
         const producersTitle = document.createElement('h3');
         producersTitle.className = 'text-xl font-semibold text-primary mt-6';
         producersTitle.textContent = 'Prestige Upgrades';
@@ -97,29 +107,32 @@ export const ui = {
         if (!parentElementCache) return;
         const { decimalUtility, coreResourceManager } = coreSystemsRef;
 
-        // Update AP display
-        const apDisplay = parentElementCache.querySelector('#ap-display');
-        if (apDisplay) {
-            const ap = coreResourceManager.getAmount('prestigePoints');
-            apDisplay.textContent = `Prestige Points: ${decimalUtility.format(ap, 2, 0)}`;
+        // --- FIX: Update PP display and Prestige Count display ---
+        const ppDisplay = parentElementCache.querySelector('#pp-display');
+        if (ppDisplay) {
+            const pp = coreResourceManager.getAmount('prestigePoints');
+            ppDisplay.textContent = `Prestige Points: ${decimalUtility.format(pp, 2, 0)}`;
+        }
+        
+        const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
+        if(prestigeCountDisplay) {
+            const count = logic.getTotalPrestigeCount();
+            prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
         }
 
-        // Update Prestige button
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
             const gain = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
-            // FIX: Replaced decimalUtility.isZero(gain) with decimalUtility.eq(gain, 0)
             prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
-                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} AP`;
+                // --- FIX: Changed AP to PP ---
+                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
             } else {
-                // This text might need to be updated based on the new unlock condition (1k images)
-                prestigeButton.textContent = 'Prestige is not unlocked';
+                prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
             }
         }
         
-        // Update producer cards
         for (const producerId in prestigeData.producers) {
             const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
             if (card) {
@@ -127,7 +140,8 @@ export const ui = {
                 const cost = logic.calculatePrestigeProducerCost(producerId);
 
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
-                card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} AP`;
+                // --- FIX: Changed AP to PP ---
+                card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} PP`;
                 
                 const button = card.querySelector(`#prestige-purchase-${producerId}`);
                 button.disabled = !coreResourceManager.canAfford('prestigePoints', cost);
