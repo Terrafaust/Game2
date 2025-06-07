@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_data.js (v2.1 - Corrected PostDoc effect target)
+// /game/modules/prestige_module/prestige_data.js (v2.3 - All Producers of Producers)
 
 export const prestigeData = {
     resources: {
@@ -14,49 +14,52 @@ export const prestigeData = {
         license: {
             id: 'license',
             name: 'License',
-            description: 'Automatically produces Students, Classrooms, and Kindergartens.',
+            description: 'A professional teaching license. Each one passively generates 1 Student, 1 Classroom, and 1 Kindergarten per second for free.',
             costResource: 'prestigePoints',
             baseCost: '100',
             costGrowthFactor: '1.05',
-            production: [
-                { moduleId: 'studies', producerId: 'student', base: '1' },
-                { moduleId: 'studies', producerId: 'classroom', base: '1' },
-                { moduleId: 'studies', producerId: 'kindergarten', base: '1' }
+            passiveProduction: [
+                { producerId: 'student', baseRate: '1' },
+                { producerId: 'classroom', baseRate: '1' },
+                { producerId: 'kindergarten', baseRate: '1' }
             ]
         },
         master1: {
             id: 'master1',
             name: "Master's Degree I",
-            description: 'Automatically produces Elementary, Middle, and High Schools.',
+            // --- FEATURE: Updated description and converted to passiveProduction ---
+            description: 'Each one passively generates 1 Elementary, Middle, and High School per second.',
             costResource: 'prestigePoints',
             baseCost: '10000',
             costGrowthFactor: '1.05',
-            production: [
-                { moduleId: 'studies', producerId: 'elementarySchool', base: '1' },
-                { moduleId: 'studies', producerId: 'middleSchool', base: '1' },
-                { moduleId: 'studies', producerId: 'highSchool', base: '1' }
+            passiveProduction: [
+                { producerId: 'elementarySchool', baseRate: '1' },
+                { producerId: 'middleSchool', baseRate: '1' },
+                { producerId: 'highSchool', baseRate: '1' }
             ]
         },
         master2: {
             id: 'master2',
             name: "Master's Degree II",
-            description: 'Automatically produces Universities.',
+             // --- FEATURE: Updated description and converted to passiveProduction ---
+            description: 'Each one passively generates 1 University per second.',
             costResource: 'prestigePoints',
             baseCost: '100000',
             costGrowthFactor: '1.05',
-            production: [
-                { moduleId: 'studies', producerId: 'university', base: '1' }
+            passiveProduction: [
+                { producerId: 'university', baseRate: '1' }
             ]
         },
         phd: {
             id: 'phd',
             name: 'PhD',
-            description: 'Automatically produces Professors.',
+            // --- FEATURE: Updated description and converted to passiveProduction ---
+            description: 'Each one passively generates 0.1 Professors per second.',
             costResource: 'prestigePoints',
-            baseCost: '1e10', // 10e9 is 1e10
+            baseCost: '1e10',
             costGrowthFactor: '1.05',
-            production: [
-                { moduleId: 'studies', producerId: 'professor', base: '0.1' }
+            passiveProduction: [
+                { producerId: 'professor', baseRate: '0.1' }
             ]
         },
         postDoc: {
@@ -64,14 +67,13 @@ export const prestigeData = {
             name: 'Post-Doctorate',
             description: 'Multiplies the production of all other Prestige producers.',
             costResource: 'prestigePoints',
-            baseCost: '1e13', // 10e12 is 1e13
+            baseCost: '1e13',
             costGrowthFactor: '1.05',
-            // This producer has no direct production, its effect is calculated in logic
             effect: {
                 type: 'MULTIPLIER',
-                targetSystem: 'prestige_producers', // Corrected target system
-                targetId: 'ALL', // Affects all other prestige producers
-                valuePerLevel: '0.1' // Each Post-Doc adds a +10% multiplier (valuePer renamed to valuePerLevel for consistency)
+                targetSystem: 'prestige_producers', 
+                targetId: 'ALL',
+                valuePerLevel: '0.1'
             }
         }
     },

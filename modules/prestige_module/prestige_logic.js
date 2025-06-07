@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.4 - Prestige Calc and Producer Fixes)
+// /game/modules/prestige_module/prestige_logic.js (v2.6 - Generic Passive Producer Generation)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -37,8 +37,6 @@ export const purchasePrestigeProducer = (producerId) => {
         currentState.ownedProducers[producerId] = decimalUtility.add(currentState.ownedProducers[producerId] || 0, 1).toString();
         coreGameStateManager.setModuleState('prestige', currentState);
 
-        // After purchasing a producer, update its effect registration with coreUpgradeManager
-        // This ensures the multiplier is recalculated and applied immediately.
         updatePrestigeProducerEffects();
 
         coreUIManager.showNotification(`Purchased 1 ${prestigeData.producers[producerId].name}!`, 'success');
@@ -55,122 +53,111 @@ export const purchasePrestigeProducer = (producerId) => {
 };
 
 /**
- * Recalculates and registers/updates all prestige producer effects with the coreUpgradeManager
- * and sets their production rates in coreResourceManager.
- * This should be called when prestige producers are purchased or game state loads.
+ * --- FEATURE: Updated to be a generic passive producer generation system ---
+ * This function is called by the game loop every tick.
+ * @param {number} deltaTimeSeconds - The time elapsed since the last tick.
+ */
+export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
+    if (!coreSystemsRef) return;
+    const { decimalUtility, coreUpgradeManager, moduleLoader, loggingSystem, coreGameStateManager } = coreSystemsRef;
+    
+    const studiesModule = moduleLoader.getModule('studies');
+    if (!studiesModule || !studiesModule.logic.addProducers) {
+        return; 
+    }
+
+    let producersToAdd = {};
+    let stateNeedsUpdate = false;
+
+    // Iterate over all prestige producers defined in the data
+    for (const producerId in prestigeData.producers) {
+        const producerDef = prestigeData.producers[producerId];
+        const ownedCount = getOwnedPrestigeProducerCount(producerId);
+
+        // Only process producers that have the passiveProduction property and are owned
+        if (!producerDef.passiveProduction || decimalUtility.eq(ownedCount, 0)) {
+            continue;
+        }
+
+        // Calculate generation for each target producer type (student, classroom, etc.)
+        producerDef.passiveProduction.forEach(target => {
+            const baseRate = decimalUtility.new(target.baseRate);
+            const totalRate = decimalUtility.multiply(baseRate, ownedCount);
+            const generatedThisTick = decimalUtility.multiply(totalRate, deltaTimeSeconds);
+
+            const progressKey = target.producerId;
+            if (moduleState.passiveProductionProgress[progressKey] === undefined) {
+                moduleState.passiveProductionProgress[progressKey] = '0'; // Initialize if not present
+            }
+
+            const currentProgress = decimalUtility.new(moduleState.passiveProductionProgress[progressKey]);
+            const newProgress = decimalUtility.add(currentProgress, generatedThisTick);
+
+            if (decimalUtility.gte(newProgress, 1)) {
+                const wholeProducers = decimalUtility.floor(newProgress);
+                
+                // Add to the list of producers to create
+                if (!producersToAdd[progressKey]) {
+                    producersToAdd[progressKey] = decimalUtility.new(0);
+                }
+                producersToAdd[progressKey] = decimalUtility.add(producersToAdd[progressKey], wholeProducers);
+
+                // Keep the fractional part for the next tick
+                moduleState.passiveProductionProgress[progressKey] = decimalUtility.subtract(newProgress, wholeProducers).toString();
+                stateNeedsUpdate = true;
+            } else {
+                moduleState.passiveProductionProgress[progressKey] = newProgress.toString();
+            }
+        });
+    }
+
+
+    if (Object.keys(producersToAdd).length > 0) {
+        // We have whole producers to add. Call the studies module logic.
+        studiesModule.logic.addProducers(producersToAdd);
+        loggingSystem.debug("PrestigeLogic", "Passively generated producers:", producersToAdd);
+    }
+    
+    // Save the state if any fractional progress was updated
+    if (stateNeedsUpdate) {
+        coreGameStateManager.setModuleState('prestige', { ...moduleState });
+    }
+};
+
+/**
+ * --- CLEANUP: This function now only handles the postDoc multiplier ---
+ * The direct resource production logic has been removed as it's now handled
+ * by the passive producer generation system.
  */
 export const updatePrestigeProducerEffects = () => {
     if (!coreSystemsRef) return;
-    const { coreUpgradeManager, decimalUtility, loggingSystem, coreResourceManager } = coreSystemsRef;
+    const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
 
-    // First, handle the 'postDoc' producer's effect (multiplier on other prestige producers)
+    // Handle the 'postDoc' producer's effect (multiplier on other prestige producers)
     const postDocDef = prestigeData.producers.postDoc;
     if (postDocDef && postDocDef.effect) {
         const postDocCount = getOwnedPrestigeProducerCount('postDoc');
         
         const postDocEffectValueProvider = () => {
-            // Note: postDocDef.effect.valuePer was renamed to valuePerLevel in prestige_data.js
             let multiplier = decimalUtility.add(1, decimalUtility.multiply(postDocCount, decimalUtility.new(postDocDef.effect.valuePerLevel)));
-            // Apply skill bonuses to postDoc effect if applicable (example: prestige_producers_postDoc_MULTIPLIER)
             const postDocSkillBonus = coreUpgradeManager.getProductionMultiplier('prestige_producers', 'postDoc');
             multiplier = decimalUtility.multiply(multiplier, postDocSkillBonus);
             return multiplier;
         };
 
         coreUpgradeManager.registerEffectSource(
-            'prestige', // Module ID
-            'postDoc_prestige_producer_multiplier', // Unique source key for this effect
-            postDocDef.effect.targetSystem, // 'prestige_producers'
-            postDocDef.effect.targetId,   // 'ALL'
-            postDocDef.effect.type,       // 'MULTIPLIER'
+            'prestige',
+            'postDoc_prestige_producer_multiplier',
+            postDocDef.effect.targetSystem,
+            postDocDef.effect.targetId,
+            postDocDef.effect.type,
             postDocEffectValueProvider
         );
         loggingSystem.debug("PrestigeLogic", "Registered/Updated postDoc effect with CoreUpgradeManager.");
     }
-
-    // Now, iterate through all prestige producers to set their actual output rates
-    // This part handles 'license', 'master1', 'master2', 'phd' which produce studies resources.
-    for (const producerId in prestigeData.producers) {
-        const producerDef = prestigeData.producers[producerId];
-        const ownedCount = getOwnedPrestigeProducerCount(producerId);
-
-        // Production sources should be uniquely identified to avoid conflicts, e.g., 'prestige_license_to_student'
-        const productionSourceKeyPrefix = `prestige_producer_${producerId}`;
-
-        // If producer has no direct production or is not owned, ensure its production in CRM is 0
-        if (!producerDef.production || decimalUtility.eq(ownedCount, 0)) {
-            if (producerDef.production) {
-                producerDef.production.forEach(prod => {
-                    const resourceId = prod.resourceId; // e.g., 'studies'
-                    const producerIdInStudies = prod.producerId; // e.g., 'student'
-                    const sourceKey = `${productionSourceKeyPrefix}_to_${producerIdInStudies}`;
-                    // Important: Resource ID for studies module is generally 'studyPoints' or 'knowledge'.
-                    // The production array refers to studies `producerId`s, but these producers
-                    // generate `studyPoints` or `knowledge` resources. Need to correctly map.
-                    // Assuming prod.resourceId refers to the *output resource* (e.g., 'studyPoints' or 'knowledge')
-                    // and not the studies module ID itself.
-                    // This requires a mapping from producerId in studies to its output resource.
-                    // For now, assuming `prod.resourceId` is the actual resource generated.
-
-                    // Check if the output resource is valid (e.g., 'studyPoints' or 'knowledge')
-                    let actualOutputResourceId;
-                    if (['student', 'classroom', 'kindergarten', 'elementarySchool', 'middleSchool', 'highSchool', 'university'].includes(prod.producerId)) {
-                        actualOutputResourceId = 'studyPoints'; // These studies producers output study points
-                    } else if (prod.producerId === 'professor') {
-                        actualOutputResourceId = 'knowledge'; // Professor outputs knowledge
-                    } else {
-                        loggingSystem.warn("PrestigeLogic", `Unknown producerId in prestige production array: ${prod.producerId}. Cannot determine output resource.`);
-                        actualOutputResourceId = null;
-                    }
-
-                    if (actualOutputResourceId) {
-                         coreResourceManager.setProductionPerSecond(actualOutputResourceId, sourceKey, decimalUtility.new(0));
-                    }
-                });
-            }
-            continue;
-        }
-
-        // Apply skill multipliers and achievement multipliers to this producer's effectiveness
-        let effectiveOwned = ownedCount;
-        const producerSkillMultiplier = coreUpgradeManager.getProductionMultiplier('prestige_producers', producerId);
-        // Assuming achievements can target prestige_producers too, using a specific key for them
-        const producerAchMultiplier = coreUpgradeManager.getAggregatedModifiers('achievements', producerId, 'MULTIPLIER'); 
-
-        effectiveOwned = decimalUtility.multiply(effectiveOwned, producerSkillMultiplier);
-        effectiveOwned = decimalUtility.multiply(effectiveOwned, producerAchMultiplier);
-
-        // Apply the Post-Doc global multiplier if this is not the Post-Doc itself
-        // The postDoc multiplier has targetSystem: 'prestige_producers' and targetId: 'ALL'
-        if (producerId !== 'postDoc') {
-            const postDocMultiplier = coreUpgradeManager.getProductionMultiplier('prestige_producers', 'ALL'); // Get aggregated multiplier for ALL prestige producers
-            effectiveOwned = decimalUtility.multiply(effectiveOwned, postDocMultiplier);
-        }
-
-        // Now, apply the effectiveOwned count to its specific productions
-        producerDef.production.forEach(prod => {
-            const productionRate = decimalUtility.multiply(decimalUtility.new(prod.base), effectiveOwned);
-            const sourceKey = `${productionSourceKeyPrefix}_to_${prod.producerId}`;
-            
-            // Determine the actual resource ID for the production
-            let actualOutputResourceId;
-            if (['student', 'classroom', 'kindergarten', 'elementarySchool', 'middleSchool', 'highSchool', 'university'].includes(prod.producerId)) {
-                actualOutputResourceId = 'studyPoints';
-            } else if (prod.producerId === 'professor') {
-                actualOutputResourceId = 'knowledge';
-            } else {
-                loggingSystem.warn("PrestigeLogic", `Unknown studies producerId in prestige production: ${prod.producerId}. Skipping production setting.`);
-                return; // Skip this production if the output resource cannot be determined
-            }
-
-            coreResourceManager.setProductionPerSecond(
-                actualOutputResourceId, 
-                sourceKey, 
-                productionRate
-            );
-            loggingSystem.debug("PrestigeLogic", `Prestige producer ${producerId} is setting production for ${actualOutputResourceId} (via ${prod.producerId}) at rate: ${productionRate.toString()}`);
-        });
-    }
+    
+    // All other prestige producers are now handled by the passive generation system,
+    // so no further logic is needed here for them.
 };
 
 
@@ -183,9 +170,8 @@ export const calculatePrestigeGain = () => {
 
     const { coreUpgradeManager, coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
-    const totalKnowledge = coreResourceManager.getAmount('knowledge'); // Get current knowledge
+    const totalKnowledge = coreResourceManager.getAmount('knowledge');
 
-    // New formula: 1 + (Total prestige count / 6) + (Total knowledge / 10 000)
     const baseGain = decimalUtility.new(1);
     const prestigeCountContribution = decimalUtility.divide(prestigeCount, 6);
     const knowledgeContribution = decimalUtility.divide(totalKnowledge, 10000); 
@@ -200,12 +186,12 @@ export const calculatePrestigeGain = () => {
 };
 
 export const getPrestigeBonusMultiplier = () => {
-    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef; // Added coreResourceManager
+    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
 
     const prestigeBonus = decimalUtility.divide(prestigeCount, 6);
-    const imageBonus = decimalUtility.divide(images, '1e13'); // Keep original image bonus
+    const imageBonus = decimalUtility.divide(images, '1e13'); 
 
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
     
@@ -229,7 +215,6 @@ export const performPrestige = () => {
         return;
     }
 
-    // Calculate individual components for display
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
 
@@ -238,7 +223,6 @@ export const performPrestige = () => {
     const knowledgeContribDisplay = decimalUtility.divide(totalKnowledge, 10000);
     const ppGainBonus = coreSystemsRef.coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     const totalGainBeforeBonus = decimalUtility.add(baseGainDisplay, decimalUtility.add(prestigeCountContribDisplay, knowledgeContribDisplay));
-
 
     const confirmationMessage = `
         <div class="space-y-3 text-left text-textPrimary">
@@ -282,6 +266,9 @@ export const performPrestige = () => {
                     prestigeModuleState.totalPrestigeCount = decimalUtility.add(prestigeModuleState.totalPrestigeCount || 0, 1).toString();
                     prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
                     
+                    // Reset the passive generation progress on prestige
+                    prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
+
                     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
                     Object.assign(moduleState, prestigeModuleState);
                     
@@ -292,7 +279,6 @@ export const performPrestige = () => {
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     coreResourceManager.setResourceVisibility('prestigeCount', true);
                     
-                    // Re-register effects after prestige reset to ensure they reflect the new state
                     updatePrestigeProducerEffects();
 
                     coreUIManager.fullUIRefresh();

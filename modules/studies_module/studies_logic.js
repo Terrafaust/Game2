@@ -1,8 +1,9 @@
-// modules/studies_module/studies_logic.js (v3.7 - Critical Bug Fix)
+// modules/studies_module/studies_logic.js (v3.8 - Passive Producer Support)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
+ * v3.8: Adds addProducers function to support passive generation from other modules.
  * v3.7: Fixes a crash in purchaseProducer caused by incorrect .toNumber() call.
  * v3.6: Implements 'Buy Max' functionality.
  */
@@ -15,7 +16,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.7).");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.8).");
     },
     
     calculateMaxBuyable(producerId) {
@@ -128,6 +129,38 @@ export const moduleLogic = {
             return false;
         }
     },
+    
+    // --- FEATURE: Function to add producers from external sources (like Prestige) ---
+    /**
+     * Adds a given quantity of multiple producers to the module's state.
+     * @param {object} producersToAdd - An object where keys are producer IDs and values are the string amount to add.
+     * e.g., { student: '10', classroom: '5' }
+     */
+    addProducers(producersToAdd) {
+        if (!coreSystemsRef) return;
+        const { decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
+        let producersAdded = false;
+
+        for (const producerId in producersToAdd) {
+            // Check if the property belongs to the object itself
+            if (Object.prototype.hasOwnProperty.call(producersToAdd, producerId)) {
+                const quantity = decimalUtility.new(producersToAdd[producerId]);
+                if (decimalUtility.gt(quantity, 0)) {
+                    const currentOwned = this.getOwnedProducerCount(producerId);
+                    moduleState.ownedProducers[producerId] = decimalUtility.add(currentOwned, quantity).toString();
+                    producersAdded = true;
+                    loggingSystem.info("StudiesLogic", `Passively added ${quantity.toString()} of ${producerId}.`);
+                }
+            }
+        }
+
+        // Only update production and save state if something actually changed
+        if (producersAdded) {
+            this.updateAllProducerProductions();
+            coreGameStateManager.setModuleState('studies', { ...moduleState });
+        }
+    },
+    // --- END FEATURE ---
 
     updateProducerProduction(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) { return; }

@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.7 - Removed separate Prestige Skills tab)
+// /game/modules/prestige_module/prestige_manifest.js (v1.8 - Passive Generation & Bugfix)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,9 +7,9 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.7.0', // Version bump for menu tab change
-    description: 'The Prestige system.',
-    dependencies: [],
+    version: '1.8.0', // Version bump for new feature and fix
+    description: 'The Prestige system, now with passive producer generation.',
+    dependencies: ['studies'], // Added studies as a dependency for passive generation
 
     initialize: (coreSystems) => {
         const { staticDataAggregator, coreResourceManager, coreGameStateManager, coreUpgradeManager, loggingSystem, gameLoop, coreUIManager } = coreSystems;
@@ -20,11 +20,17 @@ export const manifest = {
 
         staticDataAggregator.registerStaticData(manifest.id, prestigeData);
 
-        const ppResource = prestigeData.resources.prestigePoints;
-        coreResourceManager.defineResource(
-            ppResource.id, ppResource.name, '0',
-            false, true, false, ppResource.resetsOnPrestige
-        );
+        // --- BUGFIX: Added a check to ensure the resource data exists before defining it ---
+        const ppResource = prestigeData.resources?.prestigePoints;
+        if (ppResource && ppResource.id) {
+            coreResourceManager.defineResource(
+                ppResource.id, ppResource.name, '0',
+                false, true, false, ppResource.resetsOnPrestige
+            );
+        } else {
+            loggingSystem.error('PrestigeManifest', 'CRITICAL: prestigePoints resource data not found in prestige_data.js. Cannot define resource.');
+        }
+        // --- END BUGFIX ---
         
         coreResourceManager.defineResource(
             'prestigeCount', 'Prestige Count', '0',
@@ -34,6 +40,10 @@ export const manifest = {
         let currentModuleState = coreGameStateManager.getModuleState(manifest.id);
         if (!currentModuleState) {
             currentModuleState = getInitialState();
+        }
+        // Ensure new state properties exist on loaded save
+        if (!currentModuleState.passiveProductionProgress) {
+            currentModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
         }
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(manifest.id, { ...moduleState });
@@ -60,18 +70,11 @@ export const manifest = {
             () => {}
         );
         
-        // REMOVED: The separate registration for 'prestige_skills' tab
-        /*
-        coreUIManager.registerMenuTab(
-            'prestige_skills',
-            "Prestige Skills",
-            (parentElement) => { 
-                parentElement.innerHTML = `<div class="p-4"><h2 class="text-xl font-semibold">Prestige Skills</h2><p class="text-textSecondary mt-2">This feature is not yet implemented. Spend your Prestige Points here for powerful, permanent upgrades that persist through Prestiges.</p></div>`;
-            },
-            () => coreGameStateManager.getGlobalFlag('hasPrestigedOnce', false), // Only show after first prestige
-            () => {}
-        );
-        */
+        // --- FEATURE: Register passive producer generation with the game loop ---
+        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
+            prestigeLogic.processPassiveProducerGeneration(deltaTime);
+        });
+        // --- END FEATURE ---
 
         ui.initialize(coreSystems, prestigeLogic);
 
@@ -83,11 +86,21 @@ export const manifest = {
             ui: ui,
             onPrestigeReset: () => {
                 loggingSystem.info(manifest.name, `onPrestigeReset called for ${manifest.name}. My state is safe.`);
+                const initialState = getInitialState();
+                 Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(manifest.id, initialState);
                 // Re-register effects after prestige reset to ensure they reflect the new state
                 prestigeLogic.updatePrestigeProducerEffects();
             },
             onGameLoad: () => {
                 loggingSystem.info(manifest.name, `onGameLoad called for ${manifest.name}. Re-evaluating effects.`);
+                 let loadedState = coreGameStateManager.getModuleState(manifest.id);
+                if (!loadedState) loadedState = getInitialState();
+                // Ensure new state properties exist on loaded save
+                if (!loadedState.passiveProductionProgress) {
+                    loadedState.passiveProductionProgress = getInitialState().passiveProductionProgress;
+                }
+                Object.assign(moduleState, loadedState);
                 // Re-register effects on game load to ensure they reflect the loaded state
                 prestigeLogic.updatePrestigeProducerEffects();
             }
