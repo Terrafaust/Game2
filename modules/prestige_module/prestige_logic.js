@@ -1,11 +1,12 @@
-// /game/modules/prestige_module/prestige_logic.js (v2.6 - Generic Passive Producer Generation)
+// /game/modules/prestige_module/prestige_logic.js (v2.7 - Bugfix)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
 import { decimalUtility } from '../../js/core/decimalUtility.js';
 import { coreUIManager } from '../../js/core/coreUIManager.js';
 import { prestigeData } from './prestige_data.js';
-import { moduleState } from './prestige_state.js';
+// --- BUGFIX: Imported getInitialState to resolve ReferenceError ---
+import { moduleState, getInitialState } from './prestige_state.js';
 
 let coreSystemsRef;
 
