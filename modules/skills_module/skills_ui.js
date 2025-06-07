@@ -1,8 +1,9 @@
-// modules/skills_module/skills_ui.js (v2.1 - Remade with Prestige Logic)
+// modules/skills_module/skills_ui.js (v2.2 - Function Call Fix)
 
 /**
  * @file skills_ui.js
  * @description Handles UI rendering and interactions for both regular and prestige skills.
+ * v2.2: Fixed error 'isPrestigeTierUnlocked is not a function'.
  * v2.1: Rebuilt to handle two distinct skill trees and currencies.
  */
 
@@ -16,7 +17,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v2.1).");
+        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v2.2).");
     },
 
     renderMainContent(parentElement) {
@@ -77,11 +78,11 @@ export const ui = {
 
         const tierTitle = document.createElement('h3');
         tierTitle.className = 'text-xl font-medium text-secondary mb-4';
-        tierTitle.textContent = `Tier ${tierNum} ${isPrestige ? 'Ascension' : ''} Skills`;
+        tierTitle.textContent = `Tier ${tierNum} ${isPrestige ? 'Prestige' : ''} Skills`; // Corrected 'Ascension'
         tierContainer.appendChild(tierTitle);
 
-        // Check unlock condition
-        const isTierLocked = isPrestige ? !moduleLogicRef.isPrestigeTierUnlocked(tierNum) : !moduleLogicRef.isTierUnlocked(tierNum);
+        // --- FIX: Corrected function call from isPrestigeTierUnlocked to isTierUnlocked ---
+        const isTierLocked = !moduleLogicRef.isTierUnlocked(tierNum, isPrestige);
 
         if (isTierLocked) {
             const lockMessage = document.createElement('p');
@@ -107,7 +108,6 @@ export const ui = {
         card.className = 'bg-surface p-4 rounded-lg shadow-md flex flex-col justify-between transition-all duration-200';
 
         const contentDiv = document.createElement('div');
-        // ... (name, description, level, effect, cost displays)
         const name = document.createElement('h4'); name.className = 'text-md font-semibold text-textPrimary mb-1'; name.textContent = skillDef.name; contentDiv.appendChild(name);
         const description = document.createElement('p'); description.className = 'text-textSecondary text-xs mb-2 flex-grow'; description.textContent = skillDef.description; contentDiv.appendChild(description);
         const levelDisplay = document.createElement('p'); levelDisplay.id = `skill-${skillDef.id}-level`; levelDisplay.className = 'text-sm text-blue-400 mb-1'; contentDiv.appendChild(levelDisplay);
@@ -117,9 +117,8 @@ export const ui = {
         
         const purchaseButton = coreUIManager.createButton(
             'Level Up', () => {
-                // Call logic with the isPrestige flag to handle the correct skill type
                 if (moduleLogicRef.purchaseSkillLevel(skillDef.id, isPrestige)) {
-                    this.renderMainContent(parentElementCache); // Re-render all on success
+                    this.renderMainContent(parentElementCache);
                 }
             },
             ['w-full', 'text-sm', 'py-1.5', 'mt-auto'],
@@ -171,7 +170,7 @@ export const ui = {
         const costDisplay = cardElement.querySelector(`#skill-${skillDef.id}-cost`);
         const purchaseButton = cardElement.querySelector(`#skill-purchase-${skillDef.id}`);
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
-        const currency = isPrestige ? 'AP' : 'SPP';
+        const currency = isPrestige ? 'PP' : 'SPP'; // Corrected AP to PP
 
         if (!isUnlocked) {
             cardElement.classList.add('opacity-50', 'grayscale');

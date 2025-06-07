@@ -1,12 +1,10 @@
-// js/main.js (v9.9 - Theme Init Fix & Restored)
+// js/main.js (v10.0 - Hard Reset Fix)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v10.0: Fixes hard reset modal not closing.
  * v9.9: Corrects theme initialization order and restores full original file content.
- * v9.8: Adds and initializes the new buyMultiplierManager.
- * v9.7: Ensures globalSettingsManager dispatches initial theme correctly and listener is robust.
- * v9.6: Changed DevTools button to apply a x100,000 production multiplier.
  */
 
 // --- Core System Imports ---
@@ -27,7 +25,7 @@ import { buyMultiplierManager } from './core/buyMultiplierManager.js';
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v9.9).");
+    loggingSystem.info("Main", "Game initialization sequence started (v10.0).");
 
     // 2. Initialize Core Systems
     globalSettingsManager.initialize();
@@ -46,8 +44,7 @@ async function initializeGame() {
         }
     });
     
-    // 4. *** THIS IS THE FIX ***
-    // Explicitly apply the initial theme after everything is initialized and listening.
+    // 4. Explicitly apply the initial theme
     const initialTheme = globalSettingsManager.getSetting('theme');
     if (initialTheme && initialTheme.name && initialTheme.mode) {
         loggingSystem.debug("Main_InitTheme", `Applying initial theme directly: ${initialTheme.name}, ${initialTheme.mode}`);
@@ -95,7 +92,7 @@ async function initializeGame() {
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.8"); // This seems to be an old version, but I'll leave it as is. The main version is set in the gameState object itself.
+        coreGameStateManager.setGameVersion("0.5.8");
     } else {
         loggingSystem.info("Main", "Save game loaded.");
     }
@@ -117,7 +114,6 @@ async function initializeGame() {
         loggingSystem.info('Main', 'Loading Achievements Module...');
         await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
 
-        // ADD THIS LINE HERE:
         loggingSystem.info('Main', 'Loading Prestige Module...');
         await moduleLoader.loadModule('../../modules/prestige_module/prestige_manifest.js');
 
@@ -131,17 +127,14 @@ async function initializeGame() {
     // 9. Final UI Refresh
     coreUIManager.fullUIRefresh();
 
-    // 10. Setup Footer Buttons (Restored from your original file)
+    // 10. Setup Footer Buttons
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
     const devToolsButton = document.getElementById('dev-tools-button');
 
-    if (saveButton) {
-        saveButton.addEventListener('click', () => {
-            saveLoadSystem.saveGame();
-        });
-    }
+    if (saveButton) saveButton.addEventListener('click', () => saveLoadSystem.saveGame());
+    
     if (loadButton) {
         loadButton.addEventListener('click', () => {
             coreUIManager.showModal( "Load Game?", "Loading will overwrite your current unsaved progress. Are you sure?",
@@ -151,11 +144,13 @@ async function initializeGame() {
                         if (wasRunning) gameLoop.stop();
                         
                         if (saveLoadSystem.loadGame()) {
+                            // After loading, all modules need to process their new state
+                            moduleLoader.notifyAllModulesOfLoad(); 
                             coreUIManager.fullUIRefresh();
                         } else {
                             coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
                         }
-                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
+                        if (wasRunning || !gameLoop.isRunning()) setTimeout(() => gameLoop.start(), 100);
                         coreUIManager.closeModal();
                     }},
                     { label: "Cancel", callback: () => coreUIManager.closeModal() }
@@ -163,11 +158,15 @@ async function initializeGame() {
             );
         });
     }
+
     if (resetButton) {
         resetButton.addEventListener('click', () => {
             coreUIManager.showModal("Hard Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
                 [
                     { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
+                        // --- FIX: Close the modal BEFORE performing the reset ---
+                        coreUIManager.closeModal();
+                        
                         const wasRunning = gameLoop.isRunning();
                         if (wasRunning) gameLoop.stop();
                         
@@ -175,13 +174,8 @@ async function initializeGame() {
 
                         for (const resId in coreResourceDefinitions) {
                             const resDef = coreResourceDefinitions[resId];
-                            coreResourceManager.defineResource(
-                                resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount),
-                                resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate
-                            );
+                            coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
                         }
-                        
-                        moduleLoader.resetAllModules(); 
                         
                         coreGameStateManager.setGameVersion("1.1.0");
                         
@@ -190,10 +184,9 @@ async function initializeGame() {
                         coreUIManager.applyTheme(defaultTheme.name, defaultTheme.mode);
 
                         coreUIManager.fullUIRefresh();
-                        if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
-                        coreUIManager.closeModal();
+                        if (wasRunning || !gameLoop.isRunning()) setTimeout(() => gameLoop.start(), 100);
                     }},
-                    { label: "Cancel", callback: () => coreUIManager.closeModal() }
+                    { label: "Cancel", className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
                 ]
             );
         });
@@ -202,15 +195,6 @@ async function initializeGame() {
     if (devToolsButton) {
         devToolsButton.addEventListener('click', () => {
             loggingSystem.info("Main_DevTools", "Dev tools button clicked: Applying production multiplier.");
-            const crmReady = coreResourceManager && typeof coreResourceManager.getAllResources === 'function' &&
-                             typeof coreResourceManager.getProductionFromSource === 'function' &&
-                             typeof coreResourceManager.setProductionPerSecond === 'function';
-
-            if (!crmReady) {
-                loggingSystem.error("Main_DevTools", "coreResourceManager or its methods are not available.");
-                coreUIManager.showNotification("Dev Tools Error: Resource Manager methods missing. Check console.", "error");
-                return;
-            }
             const boostFactor = decimalUtility.new(100000);
             let changesMade = false;
             const allResources = coreResourceManager.getAllResources(); 
@@ -239,9 +223,7 @@ async function initializeGame() {
     }
 
     // 11. Start Game Loop
-    if (!gameLoop.isRunning()) {
-        gameLoop.start();
-    }
+    if (!gameLoop.isRunning()) gameLoop.start();
     loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
 }
 

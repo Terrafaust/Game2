@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_manifest.js (v1.9 - Fixes)
+// /game/modules/prestige_module/prestige_manifest.js (v2.0 - Hard Reset & UI Fix)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
 import * as prestigeLogic from './prestige_logic.js';
@@ -7,7 +7,7 @@ import { ui } from './prestige_ui.js';
 export const manifest = {
     id: 'prestige',
     name: 'Prestige',
-    version: '1.9.0', // Version bump for fixes
+    version: '2.0.0', // Version bump
     description: 'The Prestige system, now with passive producer generation.',
     dependencies: ['studies'], 
 
@@ -30,23 +30,25 @@ export const manifest = {
             loggingSystem.error('PrestigeManifest', 'CRITICAL: prestigePoints resource data not found in prestige_data.js. Cannot define resource.');
         }
         
+        // --- FIX: Set showInUI to true so it appears in the resource bar ---
         coreResourceManager.defineResource(
             'prestigeCount', 'Prestige Count', '0',
-            false, true, false, false
+            true, true, false, false
         );
 
-        let currentModuleState = coreGameStateManager.getModuleState(manifest.id);
-        if (!currentModuleState) {
-            currentModuleState = getInitialState();
-        }
+        let currentModuleState = coreGameStateManager.getModuleState(manifest.id) || getInitialState();
         
-        // Ensure new state properties from updates exist on loaded saves
         const initialState = getInitialState();
-        for(const key in initialState.passiveProductionProgress) {
-            if (!currentModuleState.passiveProductionProgress[key]) {
-                currentModuleState.passiveProductionProgress[key] = initialState.passiveProductionProgress[key];
+        if(!currentModuleState.passiveProductionProgress) {
+             currentModuleState.passiveProductionProgress = initialState.passiveProductionProgress
+        } else {
+             for(const key in initialState.passiveProductionProgress) {
+                if (!currentModuleState.passiveProductionProgress[key]) {
+                    currentModuleState.passiveProductionProgress[key] = initialState.passiveProductionProgress[key];
+                }
             }
         }
+       
 
         Object.assign(moduleState, currentModuleState);
         coreGameStateManager.setModuleState(manifest.id, { ...moduleState });
@@ -84,15 +86,10 @@ export const manifest = {
             ui: ui,
             onPrestigeReset: () => {
                 loggingSystem.info(manifest.name, `onPrestigeReset called for ${manifest.name}. Keeping producers.`);
-                
-                // --- FIX: Only reset the passive production progress, not the whole state ---
-                // This preserves ownedProducers, totalPrestigeCount, etc.
                 const currentState = coreGameStateManager.getModuleState(manifest.id) || getInitialState();
                 currentState.passiveProductionProgress = getInitialState().passiveProductionProgress;
-                
                 Object.assign(moduleState, currentState);
                 coreGameStateManager.setModuleState(manifest.id, currentState);
-                
                 prestigeLogic.updatePrestigeProducerEffects();
             },
             onGameLoad: () => {
@@ -113,6 +110,14 @@ export const manifest = {
 
                 Object.assign(moduleState, loadedState);
                 prestigeLogic.updatePrestigeProducerEffects();
+            },
+            // --- MODIFICATION: Added to handle a full wipe ---
+            onResetState: () => {
+                loggingSystem.info(manifest.name, `onResetState called for ${manifest.name}. Wiping all data.`);
+                const initialState = getInitialState();
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(manifest.id, initialState);
+                prestigeLogic.updatePrestigeProducerEffects(); 
             }
         };
     }

@@ -1,8 +1,9 @@
-// modules/achievements_module/achievements_ui.js (v1)
+// modules/achievements_module/achievements_ui.js (v1.1 - Modal Popups)
 
 /**
  * @file achievements_ui.js
  * @description Handles UI rendering for the Achievements module.
+ * v1.1: Switched tooltips to use the new themed modal system.
  */
 
 import { staticModuleData } from './achievements_data.js';
@@ -15,7 +16,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.1).");
     },
 
     renderMainContent(parentElement) {
@@ -39,7 +40,7 @@ export const ui = {
         achievementsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
         container.appendChild(achievementsGrid);
 
-        this.updateDynamicElements(); // Initial render of achievement cards
+        this.updateDynamicElements();
         parentElement.appendChild(container);
     },
 
@@ -48,7 +49,7 @@ export const ui = {
         const achievementsGrid = parentElementCache.querySelector('#achievements-grid');
         if (!achievementsGrid) return;
 
-        achievementsGrid.innerHTML = ''; // Clear previous cards
+        achievementsGrid.innerHTML = '';
 
         for (const achievementId in staticModuleData.achievements) {
             const achievementDef = staticModuleData.achievements[achievementId];
@@ -60,19 +61,13 @@ export const ui = {
     _createAchievementCard(achievementDef) {
         const { coreUIManager, decimalUtility } = coreSystemsRef;
         const isCompleted = moduleLogicRef.isAchievementCompleted(achievementDef.id);
-        // For locked display, we might need a more complex check if an achievement itself can be "hidden until condition partly met"
-        // For now, all defined achievements are shown, styled by completion.
         const isConditionMetCurrently = moduleLogicRef.checkAchievementCondition(achievementDef.id);
 
-
         const card = document.createElement('div');
-        card.className = `p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 ${
+        card.className = `p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
             isCompleted ? 'bg-green-700 border-2 border-green-400' : 'bg-surface-dark'
         }`;
-        if (!isCompleted && !isConditionMetCurrently) {
-           // card.classList.add('opacity-60'); // Slightly dim if not yet met
-        }
-
+        
         const icon = document.createElement('div');
         icon.className = 'text-4xl mb-2';
         icon.textContent = achievementDef.icon || '🏆';
@@ -95,65 +90,48 @@ export const ui = {
 
         const status = document.createElement('p');
         status.className = `text-sm font-bold ${isCompleted ? 'text-green-300' : 'text-gray-400'}`;
-        if (isCompleted) {
-            status.textContent = staticModuleData.ui.completedText;
-        } else if (isConditionMetCurrently) {
-            // This state means condition is met, but not yet processed by checkAndCompleteAchievements.
-            // Or, if checkAndCompleteAchievements runs frequently, this state might be brief.
-            status.textContent = "Condition Met (Pending)"; 
-        } else {
-            // Show condition text if not completed. This might be too verbose for a small card.
-            // Consider showing on hover/tooltip instead.
-            // For now, just "Locked" or more specific based on your preference.
-            status.textContent = staticModuleData.ui.lockedText;
-        }
+        status.textContent = isCompleted ? staticModuleData.ui.completedText : staticModuleData.ui.lockedText;
         card.appendChild(status);
 
-        // Tooltip for condition details, especially if locked
-        let tooltipContent = `<p class='font-semibold'>${achievementDef.name}</p>`;
-        tooltipContent += `<p class='text-xs'>${achievementDef.description}</p><hr class='my-1 border-gray-600'>`;
-        tooltipContent += `<p class='text-xs'>Reward: ${achievementDef.reward.description}</p>`;
-        if (!isCompleted) {
-            tooltipContent += `<p class='text-xs mt-1'>Condition: ${this._getConditionText(achievementDef.condition)}</p>`;
-        }
-        card.addEventListener('mouseenter', () => coreUIManager.showTooltip(tooltipContent, card));
-        card.addEventListener('mouseleave', () => coreUIManager.hideTooltip());
-
-
+        // --- FIX: Change tooltip to use the new modal system ---
+        card.addEventListener('click', () => {
+            let modalContent = `<div class="space-y-2">`;
+            modalContent += `<p class='text-base text-textPrimary'>${achievementDef.description}</p><hr class='my-2 border-gray-600'>`;
+            modalContent += `<p class='text-sm'><span class="font-semibold text-yellow-400">Reward:</span> ${achievementDef.reward.description}</p>`;
+            if (!isCompleted) {
+                modalContent += `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">Condition:</span> ${this._getConditionText(achievementDef.condition)}</p>`;
+            }
+             modalContent += `</div>`;
+            coreUIManager.showModal(`${achievementDef.icon} ${achievementDef.name}`, modalContent, [{label: "Close", callback: () => coreUIManager.closeModal()}]);
+        });
+        
         return card;
     },
 
     _getConditionText(condition) {
-        const { decimalUtility } = coreSystemsRef;
+        const { decimalUtility, staticDataAggregator } = coreSystemsRef;
         switch (condition.type) {
             case "producerOwned":
-                // Try to get producer name from studies data, fallback to ID
-                const studiesData = coreSystemsRef.staticDataAggregator.getData("studies.producers");
-                const producerName = studiesData && studiesData[condition.producerId] ? studiesData[condition.producerId].name : condition.producerId;
+                const studiesData = staticDataAggregator.getData("studies.producers");
+                const producerName = studiesData?.[condition.producerId]?.name || condition.producerId;
                 return `Own ${condition.count} ${producerName}.`;
             case "resourceAmount":
-                 // Try to get resource name
-                let resourceName = condition.resourceId;
-                const resDefCore = coreSystemsRef.staticDataAggregator.getData(`core_resource_definitions.${condition.resourceId}`);
-                const resDefStudies = coreSystemsRef.staticDataAggregator.getData(`studies.resources.${condition.resourceId}`);
-                const resDefMarket = coreSystemsRef.staticDataAggregator.getData(`market.resources.${condition.resourceId}`);
-                if (resDefCore) resourceName = resDefCore.name;
-                else if (resDefStudies) resourceName = resDefStudies.name;
-                else if (resDefMarket) resourceName = resDefMarket.name;
-                return `Have ${decimalUtility.format(decimalUtility.new(condition.amount),0)} ${resourceName}.`;
+                const resDef = staticDataAggregator.getData(`core_resource_definitions.${condition.resourceId}`) || staticDataAggregator.getData(`studies.resources.${condition.resourceId}`) || { name: condition.resourceId };
+                return `Have ${decimalUtility.format(decimalUtility.new(condition.amount),0)} ${resDef.name}.`;
             default:
-                return "Meet specific criteria.";
+                // Provide a more descriptive fallback for unhandled types
+                return `Meet a specific in-game criteria. (Type: ${condition.type})`;
         }
     },
 
     onShow() {
         coreSystemsRef.loggingSystem.debug("AchievementsUI", "Achievements tab shown.");
-        moduleLogicRef.checkAndCompleteAchievements(); // Check for newly completed achievements
-        this.updateDynamicElements(); // Refresh UI
+        moduleLogicRef.checkAndCompleteAchievements();
+        this.updateDynamicElements();
     },
 
     onHide() {
         coreSystemsRef.loggingSystem.debug("AchievementsUI", "Achievements tab hidden.");
-        coreSystemsRef.coreUIManager.hideTooltip();
+        coreSystemsRef.coreUIManager.hideTooltip(); // Keep this to clear any old tooltips that might be stuck
     }
 };
