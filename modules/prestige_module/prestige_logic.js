@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v4.4 - Final NaN Bugfix)
+// /game/modules/prestige_module/prestige_logic.js (v4.5 - Final NaN Bugfix, Corrected)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -91,8 +91,8 @@ export const calculateMaxBuyablePrestigeProducer = (producerId) => {
         decimalUtility.divide(decimalUtility.log10(numerator), decimalUtility.log10(growth))
     );
 
-    // --- BUGFIX: The error was here. Using decimalUtility.isNaN() to check the Decimal object. ---
-    return decimalUtility.isNaN(max) ? decimalUtility.new(0) : max;
+    // --- FINAL BUGFIX: Check for NaN by comparing the value to itself. ---
+    return !decimalUtility.eq(max, max) ? decimalUtility.new(0) : max;
 };
 
 export const purchasePrestigeProducer = (producerId) => {
