@@ -42,6 +42,16 @@ export const ui = {
         description.className = 'text-textSecondary';
         description.textContent = 'Click the button below to gain Study Points. This is the beginning of your academic journey!';
         container.appendChild(description);
+        
+        // --- MODIFICATION: Added Tip ---
+        const tipBox = document.createElement('div');
+        tipBox.className = 'mt-4 p-3 bg-surface rounded-lg border border-primary/50';
+        const tipText = document.createElement('p');
+        tipText.className = 'text-sm text-accentOne italic text-center';
+        tipText.textContent = '"Get 10 study points to unlock Studies"';
+        tipBox.appendChild(tipText);
+        container.appendChild(tipBox);
+        // --- END MODIFICATION ---
 
         // --- NEW: Wrapper for button and gain display ---
         const buttonWrapper = document.createElement('div');

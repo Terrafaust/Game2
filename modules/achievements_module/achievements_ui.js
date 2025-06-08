@@ -33,9 +33,27 @@ export const ui = {
         container.className = 'p-4 space-y-6';
 
         const title = document.createElement('h2');
-        title.className = 'text-2xl font-semibold text-primary mb-4';
+        title.className = 'text-2xl font-semibold text-primary mb-2';
         title.textContent = 'Achievements';
         container.appendChild(title);
+        
+        // --- MODIFICATION: Added Achievements Tip and Stats Box ---
+        const summaryBox = document.createElement('div');
+        summaryBox.id = 'achievements-summary-box';
+        summaryBox.className = 'bg-surface-dark p-4 rounded-lg text-center space-y-2';
+        
+        const tipText = document.createElement('p');
+        tipText.className = 'text-sm text-textSecondary italic';
+        tipText.textContent = 'Every achievement also gives you a 1% production bonus.';
+        summaryBox.appendChild(tipText);
+        
+        const statsText = document.createElement('p');
+        statsText.id = 'achievements-stats-display';
+        statsText.className = 'text-md font-semibold text-accentOne';
+        summaryBox.appendChild(statsText);
+        
+        container.appendChild(summaryBox);
+        // --- END MODIFICATION ---
 
         const achievementsGrid = document.createElement('div');
         achievementsGrid.id = 'achievements-grid';
@@ -50,6 +68,16 @@ export const ui = {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         const achievementsGrid = parentElementCache.querySelector('#achievements-grid');
         if (!achievementsGrid) return;
+        
+        // --- MODIFICATION: Update stats display ---
+        const statsDisplay = parentElementCache.querySelector('#achievements-stats-display');
+        if (statsDisplay) {
+            const completedCount = moduleLogicRef.getCompletedAchievementCount();
+            const totalAchievements = Object.keys(staticModuleData.achievements).length;
+            const bonusPercentage = completedCount; // Each achievement is 1%
+            statsDisplay.textContent = `Completed: ${completedCount} / ${totalAchievements} | Total Bonus: ${bonusPercentage}%`;
+        }
+        // --- END MODIFICATION ---
 
         achievementsGrid.innerHTML = '';
 
@@ -166,4 +194,3 @@ export const ui = {
         coreSystemsRef.coreUIManager.hideTooltip(); // Keep this to clear any old tooltips that might be stuck
     }
 };
-

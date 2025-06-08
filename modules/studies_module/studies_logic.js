@@ -1,11 +1,10 @@
-// modules/studies_module/studies_logic.js (v3.8 - Passive Producer Support)
+// modules/studies_module/studies_logic.js (v3.9 - Global Bonus Integration)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
+ * v3.9: Ensures the global 'all' production multiplier is applied to all producers.
  * v3.8: Adds addProducers function to support passive generation from other modules.
- * v3.7: Fixes a crash in purchaseProducer caused by incorrect .toNumber() call.
- * v3.6: Implements 'Buy Max' functionality.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -16,10 +15,11 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.8).");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.9).");
     },
     
     calculateMaxBuyable(producerId) {
+        // This function remains unchanged
         const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
         if (!producerDef) return decimalUtility.ZERO;
@@ -57,11 +57,11 @@ export const moduleLogic = {
 
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         
-        // This line now works because decimalUtility.max is defined
         return decimalUtility.max(max_n, 0);
     },
 
     calculateProducerCost(producerId, quantity = 1) {
+        // This function remains unchanged
         const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
@@ -97,6 +97,7 @@ export const moduleLogic = {
     },
 
     purchaseProducer(producerId) {
+        // This function remains unchanged
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, buyMultiplierManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
@@ -130,19 +131,13 @@ export const moduleLogic = {
         }
     },
     
-    // --- FEATURE: Function to add producers from external sources (like Prestige) ---
-    /**
-     * Adds a given quantity of multiple producers to the module's state.
-     * @param {object} producersToAdd - An object where keys are producer IDs and values are the string amount to add.
-     * e.g., { student: '10', classroom: '5' }
-     */
     addProducers(producersToAdd) {
+        // This function remains unchanged
         if (!coreSystemsRef) return;
         const { decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
         let producersAdded = false;
 
         for (const producerId in producersToAdd) {
-            // Check if the property belongs to the object itself
             if (Object.prototype.hasOwnProperty.call(producersToAdd, producerId)) {
                 const quantity = decimalUtility.new(producersToAdd[producerId]);
                 if (decimalUtility.gt(quantity, 0)) {
@@ -154,28 +149,40 @@ export const moduleLogic = {
             }
         }
 
-        // Only update production and save state if something actually changed
         if (producersAdded) {
             this.updateAllProducerProductions();
             coreGameStateManager.setModuleState('studies', { ...moduleState });
         }
     },
-    // --- END FEATURE ---
 
     updateProducerProduction(producerId) {
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager || !coreSystemsRef.decimalUtility || !coreSystemsRef.loggingSystem || !coreSystemsRef.coreUpgradeManager) { return; }
         const { coreResourceManager, decimalUtility, loggingSystem, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
         if (!producerDef) { return; }
+
         const ownedCount = decimalUtility.new(moduleState.ownedProducers[producerId] || 0);
         const baseProductionPerUnit = decimalUtility.new(producerDef.baseProduction);
+        
         let totalProduction = decimalUtility.multiply(baseProductionPerUnit, ownedCount);
+        
+        // --- MODIFICATION: Apply all relevant multipliers in order ---
+        // 1. Specific producer multiplier (e.g., from a skill that only boosts Students)
         const productionMultiplier = coreUpgradeManager.getProductionMultiplier('studies_producers', producerId);
         totalProduction = decimalUtility.multiply(totalProduction, productionMultiplier);
+        
+        // 2. Global multiplier for the specific resource this producer makes (e.g., global Study Point bonus)
         const globalResourceMultiplier = coreUpgradeManager.getProductionMultiplier('global_resource_production', producerDef.resourceId);
         totalProduction = decimalUtility.multiply(totalProduction, globalResourceMultiplier);
+
+        // 3. Global multiplier for ALL production (e.g., from achievements)
+        const globalAllMultiplier = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
+        totalProduction = decimalUtility.multiply(totalProduction, globalAllMultiplier);
+        // --- END MODIFICATION ---
+
         const sourceKey = `studies_module_${producerId}`;
         coreResourceManager.setProductionPerSecond(producerDef.resourceId, sourceKey, totalProduction);
+
         if (producerId === 'professor' && decimalUtility.gt(totalProduction, 0)) {
             const knowledgeResourceState = coreResourceManager.getAllResources()['knowledge'];
             if (knowledgeResourceState && !knowledgeResourceState.isUnlocked) {
@@ -198,6 +205,7 @@ export const moduleLogic = {
     },
 
     isProducerUnlocked(producerId) {
+        // This function remains unchanged
         if (!coreSystemsRef || !coreSystemsRef.coreResourceManager) { return false; }
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
@@ -220,6 +228,7 @@ export const moduleLogic = {
     },
 
     isStudiesTabUnlocked() {
+        // This function remains unchanged
         if (!coreSystemsRef) { return true; }
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
         if (coreGameStateManager.getGlobalFlag('studiesTabPermanentlyUnlocked', false)) { return true; }
@@ -242,6 +251,7 @@ export const moduleLogic = {
     },
 
     updateGlobalFlags() {
+        // This function remains unchanged
         if (!coreSystemsRef) { return; }
         const { coreGameStateManager, loggingSystem, decimalUtility, coreUIManager } = coreSystemsRef;
         for (const flagKey in staticModuleData.globalFlagsToSet) {
@@ -260,6 +270,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
+        // This function remains unchanged
         if (!coreSystemsRef) { return; }
         this.updateAllProducerProductions();
         this.updateGlobalFlags();
@@ -273,6 +284,7 @@ export const moduleLogic = {
     },
     
     onResetState() {
+        // This function remains unchanged
         if (!coreSystemsRef) { return; }
         this.updateAllProducerProductions();
         const knowledgeDef = staticModuleData.resources.knowledge;

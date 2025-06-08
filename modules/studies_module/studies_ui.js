@@ -37,10 +37,15 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
+        // --- MODIFICATION: Added Tip ---
         container.innerHTML = `
-            <h2 class="text-2xl font-semibold text-primary mb-4">Studies Department</h2>
+            <h2 class="text-2xl font-semibold text-primary mb-2">Studies Department</h2>
+            <div class="p-3 bg-surface rounded-lg border border-primary/50 text-center">
+                <p class="text-sm text-accentOne italic">"Get 10 professors to unlock Market"</p>
+            </div>
             <p class="text-textSecondary mb-6">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
         `;
+        // --- END MODIFICATION ---
 
         container.appendChild(this._createBuyMultiplierControls());
 

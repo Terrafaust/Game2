@@ -48,9 +48,19 @@ export const ui = {
         container.className = 'p-4 space-y-8'; 
 
         const title = document.createElement('h2');
-        title.className = 'text-2xl font-semibold text-primary mb-6';
+        title.className = 'text-2xl font-semibold text-primary mb-2';
         title.textContent = 'Trade & Unlocks Market';
         container.appendChild(title);
+
+        // --- MODIFICATION: Added Tip ---
+        const tipBox = document.createElement('div');
+        tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-primary/50 text-center';
+        const tipText = document.createElement('p');
+        tipText.className = 'text-sm text-accentOne italic';
+        tipText.textContent = '"Get 1000 images to unlock Prestige"';
+        tipBox.appendChild(tipText);
+        container.appendChild(tipBox);
+        // --- END MODIFICATION ---
 
         const studiesUI = coreSystemsRef.moduleLoader.getModule('studies')?.ui;
         if (studiesUI && typeof studiesUI._createBuyMultiplierControls === 'function') {

@@ -93,7 +93,6 @@ export const moduleLogic = {
             } else if (itemDef.benefitResource === 'prestigeSkillPoints') {
                 const pspRes = coreResourceManager.getResource('prestigeSkillPoints');
                 if (pspRes && !pspRes.isUnlocked) coreResourceManager.unlockResource('prestigeSkillPoints', true);
-                // --- CHANGE: The line that set visibility to true has been removed. ---
             }
             
             const benefitAmount = decimalUtility.multiply(itemDef.benefitAmountPerPurchase, quantity);

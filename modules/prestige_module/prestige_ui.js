@@ -24,6 +24,16 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
+        // --- MODIFICATION: Added Tip ---
+        const tipBox = document.createElement('div');
+        tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center';
+        const tipText = document.createElement('p');
+        tipText.className = 'text-sm text-red-300 italic';
+        tipText.textContent = '"The end already ?"';
+        tipBox.appendChild(tipText);
+        container.appendChild(tipBox);
+        // --- END MODIFICATION ---
+
         const header = document.createElement('div');
         header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
         

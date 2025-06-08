@@ -55,6 +55,42 @@ export const moduleLogic = {
         return false;
     },
 
+    // --- NEW: Function to get knowledge retention from 'permanentKnowledge' skill ---
+    getKnowledgeRetentionPercentage() {
+        const { decimalUtility } = coreSystemsRef;
+        const level = this.getSkillLevel('permanentKnowledge', true); // isPrestige = true
+        if (level === 0) {
+            return decimalUtility.new(0);
+        }
+        // 1% per level, so 0.01 per level
+        return decimalUtility.multiply(level, 0.01);
+    },
+
+    // --- NEW: Function to get SSP retention from 'retainedSkills' skill ---
+    getSspRetentionPercentage() {
+        const { decimalUtility } = coreSystemsRef;
+        const level = this.getSkillLevel('retainedSkills', true); // isPrestige = true
+        if (level === 0) {
+            return decimalUtility.new(0);
+        }
+        // 5% per level, so 0.05 per level
+        return decimalUtility.multiply(level, 0.05);
+    },
+    
+    // --- NEW: Function to get free producers from 'startingAdvantage' skill ---
+    getStartingProducers() {
+        const { decimalUtility } = coreSystemsRef;
+        const level = this.getSkillLevel('startingAdvantage', true); // isPrestige = true
+        if (level === 0) {
+            return {};
+        }
+        // 10 free Students and 5 free Classrooms per level
+        return {
+            student: decimalUtility.multiply(level, 10),
+            classroom: decimalUtility.multiply(level, 5)
+        };
+    },
+
     /**
      * Gets the current level of a skill.
      * @param {string} skillId - The ID of the skill.

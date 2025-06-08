@@ -16,8 +16,8 @@ export const staticModuleData = {
 
     marketItems: {
         buyImages: { id: 'buyImages', name: 'Acquire Images', description: 'Purchase decorative Images with your Study Points.', costResource: 'studyPoints', baseCost: '1000000', costGrowthFactor: '1.0005', benefitResource: 'images', benefitAmountPerPurchase: '1', },
-        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Points', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.5', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
-        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Points', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e12', costGrowthFactor: '1.8', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
+        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Points', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.2', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
+        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Points', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e7', costGrowthFactor: '1.2', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
     },
 
     marketUnlocks: {
