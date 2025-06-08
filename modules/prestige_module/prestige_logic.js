@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v4.5 - Final NaN Bugfix, Corrected)
+// /game/modules/prestige_module/prestige_logic.js (v4.7 - Updated Prestige Formula)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -30,7 +30,7 @@ export const getTotalPrestigeCount = () => {
     return decimalUtility.new(moduleState.totalPrestigeCount || '0');
 };
 
-export const calculatePrestigeProducerCost = (producerId, quantity) => {
+export const calculatePrestigeProducerCost = (producerId, quantity = 1) => {
     const producerDef = prestigeData.producers[producerId];
     if (!producerDef) return decimalUtility.new(Infinity);
 
@@ -91,7 +91,6 @@ export const calculateMaxBuyablePrestigeProducer = (producerId) => {
         decimalUtility.divide(decimalUtility.log10(numerator), decimalUtility.log10(growth))
     );
 
-    // --- FINAL BUGFIX: Check for NaN by comparing the value to itself. ---
     return !decimalUtility.eq(max, max) ? decimalUtility.new(0) : max;
 };
 
@@ -214,6 +213,7 @@ export const canPrestige = () => {
     return coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
 };
 
+// --- CHANGE: Updated prestige point calculation formula ---
 export const calculatePrestigeGain = () => {
     if (!canPrestige()) return decimalUtility.new(0);
 
@@ -222,12 +222,15 @@ export const calculatePrestigeGain = () => {
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
 
     const baseGain = decimalUtility.new(1);
-    const prestigeCountContribution = decimalUtility.divide(prestigeCount, 6);
-    const knowledgeContribution = decimalUtility.divide(totalKnowledge, 10000); 
-
-    let totalGain = decimalUtility.add(baseGain, prestigeCountContribution);
-    totalGain = decimalUtility.add(totalGain, knowledgeContribution);
     
+    // New formula part: (prestigeCount / 6) * (knowledge / 1000)
+    const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
+    const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
+    const formulaGain = decimalUtility.multiply(prestigeFactor, knowledgeFactor);
+
+    let totalGain = decimalUtility.add(baseGain, formulaGain);
+    
+    // Apply global PP gain bonuses
     const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
 
@@ -262,13 +265,16 @@ export const performPrestige = () => {
         coreUIManager.showNotification("You would not gain any Prestige Points.", "warning");
         return;
     }
+
+    // --- CHANGE: Update the confirmation modal to reflect the new formula ---
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
     const baseGainDisplay = decimalUtility.new(1);
-    const prestigeCountContribDisplay = decimalUtility.divide(prestigeCount, 6);
-    const knowledgeContribDisplay = decimalUtility.divide(totalKnowledge, 10000);
+    const prestigeFactorDisplay = decimalUtility.divide(prestigeCount, 6);
+    const knowledgeFactorDisplay = decimalUtility.divide(totalKnowledge, 1000);
+    const formulaGainDisplay = decimalUtility.multiply(prestigeFactorDisplay, knowledgeFactorDisplay);
     const ppGainBonus = coreSystemsRef.coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
-    const totalGainBeforeBonus = decimalUtility.add(baseGainDisplay, decimalUtility.add(prestigeCountContribDisplay, knowledgeContribDisplay));
+    const totalGainBeforeBonus = decimalUtility.add(baseGainDisplay, formulaGainDisplay);
 
     const confirmationMessage = `
         <div class="space-y-3 text-left text-textPrimary">
@@ -281,8 +287,7 @@ export const performPrestige = () => {
                 <p class="mt-2 text-xs text-green-400">Calculation: </p>
                 <ul class="list-disc list-inside text-xs text-green-400">
                     <li>Base: ${decimalUtility.format(baseGainDisplay, 0)}</li>
-                    <li>Prestige Count Bonus: ${decimalUtility.format(prestigeCountContribDisplay, 2, 0)} (Total Prestige Count / 6)</li>
-                    <li>Knowledge Bonus: ${decimalUtility.format(knowledgeContribDisplay, 2, 0)} (Total Knowledge / 10,000)</li>
+                    <li>Formula Bonus: ${decimalUtility.format(formulaGainDisplay, 2, 0)} ((Prestige Count / 6) * (Knowledge / 1000))</li>
                     <li>Subtotal: ${decimalUtility.format(totalGainBeforeBonus, 2, 0)}</li>
                     <li>Multiplier from skills/achievements: ${decimalUtility.format(ppGainBonus, 2)}x</li>
                 </ul>
@@ -336,8 +341,11 @@ export const performPrestige = () => {
                     Object.assign(moduleState, prestigeModuleState);
                     coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
                     coreResourceManager.addAmount('prestigePoints', ppGains);
+                    
+                    // Logic to ensure visibility is set correctly after first prestige
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     coreResourceManager.setResourceVisibility('prestigeCount', true);
+                    
                     updatePrestigeProducerEffects();
                     coreUIManager.fullUIRefresh();
                     coreUIManager.showNotification("You have Prestiged! This might affect your production rates.", "success", 5000);
