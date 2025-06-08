@@ -1,16 +1,633 @@
 /* main.css */
-/* Styles defined within the <style> tag in index.html are preferred for Tailwind integration */
-/* This file can be used for more complex global styles or overrides if necessary. */
 
-/* Example of a global style if not using Tailwind for everything, or for very specific overrides:
-body {
-    font-family: 'Arial', sans-serif; /* This would be overridden by Tailwind's font-inter if Inter is loaded */
-    background-color: #f0f0f0;
-    color: #333;
-    margin: 0;
-    padding: 0;
-    line-height: 1.6;
+/* --- Animation Keyframes --- */
+@keyframes gear-rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes border-glow-neon {
+    from { box-shadow: 0 0 5px var(--color-primary), 0 0 10px var(--color-primary), inset 0 0 3px var(--color-primary-lighter); }
+    to { box-shadow: 0 0 10px var(--color-secondary), 0 0 20px var(--color-secondary), inset 0 0 3px var(--color-primary-lighter); }
 }
+@keyframes text-glow-rgb {
+    0% { text-shadow: 0 0 4px #ff33ff; color: #ff99ff; }
+    33% { text-shadow: 0 0 4px #33ffff; color: #99ffff; }
+    66% { text-shadow: 0 0 4px #ffff33; color: #ffff99; }
+    100% { text-shadow: 0 0 4px #ff33ff; color: #ff99ff; }
+}
+@keyframes glow-gold {
+    from { text-shadow: 0 0 4px var(--color-secondary), 0 0 8px var(--color-secondary); filter: brightness(1.2); }
+    to { text-shadow: 0 0 8px var(--color-secondary), 0 0 16px var(--color-secondary); filter: brightness(1.4); }
+}
+@keyframes steampunk-flicker {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.15) saturate(1.2); }
+}
+@keyframes background-pan-rgb {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* --- THEME DEFINITIONS --- */
+
+/* 1. Default Theme (Modern Day) */
+:root { 
+    --font-main: 'Inter', sans-serif;
+    --color-primary: #4F46E5; --color-primary-lighter: #6366F1;
+    --color-secondary: #EC4899; --color-accent-one: #10B981; --color-accent-two: #F59E0B;
+    --color-background: #F3F4F6; 
+    --color-surface: #FFFFFF; --color-surface-dark: #E5E7EB; 
+    --color-text-primary: #111827; --color-text-secondary: #374151;
+    --color-border: #D1D5DB; --color-button-text: #FFFFFF;
+    --animation-button-border: none;
+    --animation-special-text: none;
+    --background-image: none;
+}
+
+/* 2. Modern Night Theme */
+html[data-theme="modern"][data-mode="night"] {
+    --color-primary: #818CF8; --color-primary-lighter: #A78BFA; --color-secondary: #F472B6;
+    --color-accent-one: #34D399; --color-accent-two: #FBBF24;
+    --color-background: #0F172A; --color-surface: #1E293B; --color-surface-dark: #334155;
+    --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
+    --color-border: #475569; --color-button-text: #F1F5F9;
+}
+
+/* 3. CLASSIC THEME (WINDOWS XP/VISTA STYLE) */
+html[data-theme="classic"] { 
+    --font-main: 'Tahoma', sans-serif; 
+    --background-image: none; /* Default to none */
+}
+html[data-theme="classic"][data-mode="day"] {
+    --color-primary: #0058e1; --color-primary-lighter: #3a8cff;
+    --color-secondary: #008000;
+    --color-background: #3A6EA5; /* Fallback color */
+    --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
+    --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
+    --color-border: #808080; --color-button-text: #000000;
+    --background-image: url('assets/bliss.jpg');
+}
+html[data-theme="classic"][data-mode="night"] {
+    --color-primary: #3a8cff; --color-primary-lighter: #79bbff;
+    --color-secondary: #00a300;
+    --color-background: #000000; --color-surface: #2b2b2b; --color-surface-dark: #1e1e1e;
+    --color-text-primary: #ffffff; --color-text-secondary: #c0c0c0;
+    --color-border: #5a5a5a; --color-button-text: #ffffff;
+}
+
+/* 4. NEON THEME (Updated to Green) */
+html[data-theme="neon"][data-mode="day"] {
+    --color-primary: #39FF14; --color-primary-lighter: #98FB98;
+    --color-secondary: #00F0F0;
+    --color-background: #F0FFF0; --color-surface: #FFFFFF; --color-surface-dark: #E0EEE0;
+    --color-text-primary: #004d00; --color-text-secondary: #006400;
+    --color-border: #98FB98; --color-button-text: #003300;
+    --animation-button-border: border-glow-neon 1.5s infinite alternate;
+}
+html[data-theme="neon"][data-mode="night"] {
+    --color-primary: #39FF14; --color-primary-lighter: #7FFF00;
+    --color-secondary: #00FFFF;
+    --color-background: #0D1C02; --color-surface: #1A3504; --color-surface-dark: #2A4711;
+    --color-text-primary: #C1FFC1; --color-text-secondary: #90EE90;
+    --color-border: #2E8B57; --color-button-text: #FFFFFF;
+    --animation-button-border: border-glow-neon 1.5s infinite alternate;
+}
+
+/* 5. STEAMPUNK THEMES */
+html[data-theme="steampunk"][data-mode="day"] {
+    --color-primary: #8B4513; --color-primary-lighter: #A0522D;
+    --color-secondary: #CD853F;
+    --color-background: #FDF5E6; --color-surface: #FAF0E6; --color-surface-dark: #F5DEB3;
+    --color-text-primary: #5A2D0C; --color-text-secondary: #6B4423;
+    --color-border: #D2B48C; --color-button-text: #FFFFFF;
+    --animation-special-text: steampunk-flicker 3s infinite;
+}
+html[data-theme="steampunk"][data-mode="night"] {
+    --color-primary: #CD7F32; --color-primary-lighter: #D99058;
+    --color-secondary: #B8860B;
+    --color-background: #3D2B1F; --color-surface: #4A3728; --color-surface-dark: #5C4033;
+    --color-text-primary: #F5DEB3; --color-text-secondary: #D2B48C;
+    --color-border: #805533; --color-button-text: #2C1E12;
+    --animation-special-text: steampunk-flicker 2s infinite;
+}
+
+/* 6. PINK THEMES */
+html[data-theme="pink"][data-mode="day"] {
+    --color-primary: #FF69B4; --color-primary-lighter: #FF85C1;
+    --color-secondary: #C71585;
+    --color-background: #FFF0F5; --color-surface: #FFFFFF; --color-surface-dark: #FFE4E1;
+    --color-text-primary: #8B008B; --color-text-secondary: #9932CC;
+    --color-border: #FFC0CB; --color-button-text: #FFFFFF;
+}
+html[data-theme="pink"][data-mode="night"] {
+    --color-primary: #FF1493; --color-primary-lighter: #FF69B4;
+    --color-secondary: #DB7093;
+    --color-background: #2E081B; --color-surface: #4C0F2E; --color-surface-dark: #6B1741;
+    --color-text-primary: #FFE4E1; --color-text-secondary: #FFB6C1;
+    --color-border: #8B008B; --color-button-text: #FFFFFF;
+}
+
+/* 7. RED & YELLOW THEMES */
+html[data-theme="red_yellow"][data-mode="day"] {
+    --color-primary: #DC2626; --color-primary-lighter: #EF4444;
+    --color-secondary: #F59E0B;
+    --color-background: #FFFBEB; --color-surface: #FEF2F2; --color-surface-dark: #FEE2E2;
+    --color-text-primary: #991B1B; --color-text-secondary: #B91C1C;
+    --color-border: #FCA5A5; --color-button-text: #FFFFFF;
+}
+html[data-theme="red_yellow"][data-mode="night"] {
+    --color-primary: #F87171; --color-primary-lighter: #FB923C;
+    --color-secondary: #FBBF24; /* Golden Color */
+    --color-background: #450A0A; --color-surface: #7F1D1D; --color-surface-dark: #991B1B;
+    --color-text-primary: #FEE2E2; --color-text-secondary: #FCD34D;
+    --color-border: #B91C1C; --color-button-text: #450A0A;
+    --animation-special-text: glow-gold 2s infinite alternate;
+}
+
+/* 8. RGB THEME (UPDATED) */
+html[data-theme="rgb"] {
+    --animation-special-text: text-glow-rgb 3s infinite linear;
+    --button-background-gradient: linear-gradient(90deg, #ff0000, #ff7300, #fffb00, #48ff00, #00ffd5, #002bff, #7a00ff, #ff00c8, #ff0000);
+    --animation-button-background: background-pan-rgb 10s linear infinite;
+}
+html[data-theme="rgb"][data-mode="day"] {
+    --color-secondary: #33ffff;
+    --color-background: #e0e0e0;
+    --color-surface: #f5f5f5;
+    --color-surface-dark: #dcdcdc;
+    --color-text-primary: #111;
+    --color-text-secondary: #444;
+    --color-border: #c0c0c0;
+    --color-button-text: #000;
+}
+html[data-theme="rgb"][data-mode="night"] {
+    --color-secondary: #33ffff;
+    --color-background: #111;
+    --color-surface: #1a1a1a;
+    --color-surface-dark: #2a2a2a;
+    --color-text-primary: #eee;
+    --color-text-secondary: #bbb;
+    --color-border: #444;
+    --color-button-text: #fff;
+}
+
+
+/* --- Base Layout & SCROLLING FIX --- */
+html {
+    width: 100%; height: 100vh;
+    margin: 0; padding: 0;
+    font-family: var(--font-main);
+    background-color: var(--color-background); 
+    background-image: var(--background-image);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: var(--color-text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body { 
+    width: 100%; height: 100%; 
+    margin: 0; padding: 0;
+    display: flex;
+    position: relative;
+    overflow: hidden; /* Hide body overflow to contain everything */
+}
+
+/* --- STEAMPUNK GEAR ANIMATION --- */
+#game-container::before, #game-container::after,
+.content-wrapper::before, .content-wrapper::after {
+    content: '';
+    position: fixed;
+    background-size: contain;
+    z-index: 0;
+    pointer-events: none;
+    display: none; /* Hidden by default */
+    opacity: 0.15;
+}
+html[data-theme="steampunk"] #game-container::before,
+html[data-theme="steampunk"] #game-container::after,
+html[data-theme="steampunk"] .content-wrapper::before,
+html[data-theme="steampunk"] .content-wrapper::after {
+    display: block; /* Only show for steampunk theme */
+    background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%238B4513"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
+    animation: gear-rotate 20s linear infinite;
+}
+html[data-theme="steampunk"][data-mode="night"] #game-container::before,
+html[data-theme="steampunk"][data-mode="night"] #game-container::after,
+html[data-theme="steampunk"][data-mode="night"] .content-wrapper::before,
+html[data-theme="steampunk"][data-mode="night"] .content-wrapper::after {
+     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%23CD7F32"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
+}
+#game-container::before { top: -50px; left: -60px; width: 200px; height: 200px; }
+#game-container::after { bottom: -40px; right: -30px; width: 120px; height: 120px; animation-duration: 15s; animation-direction: reverse; }
+.content-wrapper::before { top: 50%; left: 50%; width: 300px; height: 300px; margin-left: -150px; margin-top: -150px; animation-duration: 45s; opacity: 0.05; }
+.content-wrapper::after { bottom: 80px; left: -20px; width: 150px; height: 150px; animation-duration: 25s; }
+
+
+#game-container { width: 100%; display: flex; }
+#content-pusher { flex-grow: 1; margin-left: 240px; transition: margin-left 0.3s ease; display: flex; }
+body.menu-hidden #content-pusher { margin-left: 0; }
+.content-wrapper { 
+    width: 100%; max-width: 72rem; margin: auto; padding: 1.5rem; 
+    display: flex; flex-direction: column; 
+    z-index: 1; 
+    height: 100%; /* Make wrapper take full height */
+}
+header#resource-bar { flex-shrink: 0; padding-bottom: 1rem; }
+main { flex-grow: 1; min-height: 0; position: relative; } /* Added position relative */
+footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top: 1rem; }
+
+/* FIX: This ensures the scrolling content is clipped by its container */
+#main-content {
+    background-color: var(--color-surface); 
+    border: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    overflow-y: auto; 
+    border-radius: 0.75rem; 
+    padding: 1.5rem;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0; /* Fill the parent <main> */
+}
+
+/* --- Component Styling & Animations --- */
+#resources-display {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
+    grid-auto-rows: min-content;
+    gap: 1rem;
+}
+@media (min-width: 1024px) {
+    #resources-display {
+        grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
+    }
+}
+
+/* Give more space to the primary resources to prevent numbers from wrapping */
+#resource-studyPoints-display,
+#resource-knowledge-display {
+    grid-column: span 2;
+}
+
+/* Broad transitions for most elements */
+#game-container *, .modal-content, .tooltip {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease, font-family 0.3s ease;
+}
+
+/* Modern Button style (default) */
+.game-button { 
+    background-color: var(--color-primary); 
+    color: var(--color-button-text); 
+    padding: 0.6rem 1.2rem; border-radius: 9999px;
+    font-weight: 500; cursor: pointer; border: 1px solid transparent; 
+    animation: var(--animation-button-border, none);
+}
+.game-button:hover { filter: brightness(1.15); }
+.game-button:active { transform: scale(0.97); }
+
+/* RGB Theme Button Override */
+html[data-theme="rgb"] .game-button {
+    background-image: var(--button-background-gradient);
+    background-size: 200% 200%;
+    animation: var(--animation-button-background);
+}
+
+/* Classic Theme Overrides */
+html[data-theme="classic"] #main-content {
+    border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
+    border-right: 2px solid #4f4f4f; border-bottom: 2px solid #4f4f4f;
+    border-radius: 0;
+}
+html[data-theme="classic"] .game-button {
+    border-radius: 0;
+    border-top: 1px solid #ffffff; border-left: 1px solid #ffffff;
+    border-right: 1px solid #4f4f4f; border-bottom: 1px solid #4f4f4f;
+    background: var(--color-surface-dark);
+    padding: 0.5rem 1rem;
+    box-shadow: none; filter: none;
+}
+html[data-theme="classic"] .game-button:hover { filter: brightness(1.05); }
+html[data-theme="classic"] .game-button:active {
+    border-top: 1px solid #4f4f4f; border-left: 1px solid #4f4f4f;
+    border-right: 1px solid #ffffff; border-bottom: 1px solid #ffffff;
+    transform: none;
+}
+
+.game-button:disabled { background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important; filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important; }
+
+/* Special Text Animations Application */
+html[data-theme="steampunk"] .resource-item-display {
+    animation: var(--animation-special-text);
+}
+html[data-theme="red_yellow"][data-mode="night"] .resource-item-display .font-semibold,
+html[data-theme="red_yellow"][data-mode="night"] #resources-display [id$="-amount"] {
+    animation: var(--animation-special-text);
+}
+html[data-theme="rgb"] h2, html[data-theme="rgb"] h3, html[data-theme="rgb"] .menu-tab.active {
+    animation: var(--animation-special-text);
+}
+
+/* Fixed Left Navigation Menu */
+#main-menu {
+    position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
+    background-color: var(--color-surface); border-right: 1px solid var(--color-border);
+    padding: 1.5rem 1rem; overflow-y: auto; z-index: 110; /* Increased z-index */
+    transition: transform 0.3s ease;
+    transform: translateX(0);
+}
+
+body.menu-hidden #main-menu { 
+    transform: translateX(-100%);
+}
+
+.menu-tab {
+    display: block; width: 100%; padding: 0.75rem 1.25rem; text-align: left; font-weight: 500;
+    color: var(--color-text-secondary); background-color: transparent;
+    border: 1px solid transparent; border-radius: 0.75rem; cursor: pointer; margin-bottom: 0.5rem;
+}
+.menu-tab:hover { background-color: var(--color-surface-dark); color: var(--color-primary); }
+.menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; }
+
+/* --- CLASSIC THEME SIDE MENU OVERRIDES --- */
+html[data-theme="classic"] #main-menu { 
+    background: #004e8c; /* Classic windows blue */
+    border-right: 2px solid #4f4f4f;
+}
+html[data-theme="classic"] .menu-tab { 
+    border-radius: 0; 
+    border: 1px solid transparent; 
+    color: #FFFFFF; /* White text for contrast */
+}
+html[data-theme="classic"] .menu-tab:hover {
+    background-color: #3a8cff;
+    color: #FFFFFF;
+}
+html[data-theme="classic"] .menu-tab.active {
+    background: #0058e1; 
+    color: #fff; 
+    font-weight: bold; 
+    border-color: #3a8cff;
+}
+
+/*
+================================================================================
+===                        NEW: RESPONSIVE STYLES                            ===
+================================================================================
 */
 
-/* Placeholder for any future global CSS needs */
+/* --- Mobile Menu Toggle Button --- */
+.menu-toggle-button {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 120; /* Must be on top of everything */
+    width: 50px;
+    height: 50px;
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    /* Flex center content */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.menu-toggle-button .hamburger-line {
+    width: 24px;
+    height: 3px;
+    background-color: var(--color-text-primary);
+    border-radius: 3px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+
+/* --- Menu Overlay for mobile --- */
+.menu-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 105; /* Between menu and content */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+body.menu-visible .menu-overlay {
+    display: block;
+    opacity: 1;
+}
+
+/* Styles for screens 768px wide or less (tablets and phones) */
+@media (max-width: 768px) {
+    /* Show the toggle button */
+    .menu-toggle-button {
+        display: flex;
+    }
+
+    /* Make main content take full width by removing the margin */
+    #content-pusher {
+        margin-left: 0;
+    }
+
+    /* The menu is now hidden off-screen by default on mobile */
+    #main-menu {
+        transform: translateX(-100%);
+        box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+    }
+    
+    /* The .menu-visible class on the BODY will now slide the menu in */
+    body.menu-visible #main-menu {
+        transform: translateX(0);
+    }
+
+    /* Adjust padding for smaller screens */
+    .content-wrapper {
+        padding: 1rem;
+    }
+    header#resource-bar {
+        padding-top: 60px; /* Add padding to top of resource bar to not be overlapped by the hamburger button */
+    }
+
+    /* Make primary resources stack instead of taking half the width */
+    #resource-studyPoints-display,
+    #resource-knowledge-display {
+        grid-column: span 1;
+    }
+}
+/* ========================================================================== */
+/* ==                     APPEND TO THE END OF main.css                    == */
+/* ========================================================================== */
+
+
+/*
+================================================================================
+===              NEW THEMED MODAL POPUP STYLES (v2)                        ===
+================================================================================
+*/
+
+/* The container that holds the modal and overlay.
+It's fixed to the viewport and uses flexbox to center the modal window. */
+#modal-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000; /* High z-index to be on top of everything */
+    pointer-events: none; /* Allows clicks to pass through the container itself to the game */
+    padding: 1rem; /* Add some padding so the modal doesn't touch screen edges */
+}
+
+/* The dark background overlay */
+.modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(10, 10, 20, 0.7); /* Darker semi-transparent background */
+    backdrop-filter: blur(5px); /* Blur effect for the content underneath */
+    pointer-events: auto; /* It can be clicked (to close the modal) */
+    animation: fade-in 0.2s ease-out forwards;
+}
+
+/* The modal window itself */
+.modal {
+    position: relative;
+    width: 100%;
+    max-width: 650px; /* A good max-width for a "page-like" feel */
+    background-color: var(--color-surface);
+    color: var(--color-text-primary);
+    border-radius: 1rem; /* Equivalent to Tailwind's rounded-2xl */
+    border: 2px solid var(--color-primary); /* The border the user requested, using the theme color */
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-border); /* A more prominent shadow and a subtle inner border */
+    z-index: 2001; /* Above the overlay */
+    pointer-events: auto; /* It can be interacted with */
+    max-height: 90vh; /* Prevent it from being too tall on short screens */
+    display: flex;
+    flex-direction: column;
+    animation: slide-up-and-fade-in 0.3s ease-out forwards;
+    overflow: hidden; /* Ensures the border-radius is respected by children */
+}
+
+/* Override for the 'classic' theme to give it a sharp-edged, retro look */
+html[data-theme="classic"] .modal {
+    border-radius: 0;
+    border-top: 2px solid var(--color-surface-dark);
+    border-left: 2px solid var(--color-surface-dark);
+    border-right: 2px solid var(--color-text-primary);
+    border-bottom: 2px solid var(--color-text-primary);
+    box-shadow: 5px 5px 0px rgba(0,0,0,0.3);
+}
+
+html[data-theme="classic"][data-mode="night"] .modal {
+    border-top-color: #5a5a5a;
+    border-left-color: #5a5a5a;
+    border-right-color: #1e1e1e;
+    border-bottom-color: #1e1e1e;
+}
+
+
+/* The inner content area of the modal */
+.modal-content {
+    padding: 1.5rem;
+    overflow-y: auto; /* Add scrollbar if content is too long */
+}
+@media (min-width: 640px) {
+    .modal-content {
+        padding: 1.5rem 2rem; /* More horizontal padding on larger screens */
+    }
+}
+
+
+.modal-body {
+    line-height: 1.6;
+    color: var(--color-text-secondary);
+}
+
+/* --- Modal Animations --- */
+@keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slide-up-and-fade-in {
+    from { transform: translateY(30px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+/* ========================================================================== */
+/* ==              NEW: ACHIEVEMENT NOTIFICATION STYLES                    == */
+/* ========================================================================== */
+
+/* Main container for the achievement notification */
+.achievement-notification {
+    background-color: var(--color-primary); /* Use primary theme color */
+    border: 2px solid var(--color-primary-lighter);
+    color: var(--color-button-text);
+    padding: 1rem 1.5rem; /* Increased padding */
+    border-radius: 0.75rem; /* Rounded corners */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    font-size: 1.1rem; /* Slightly larger text */
+    font-weight: 600;
+    cursor: pointer; /* Indicate it's clickable */
+    transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem; /* Space between icon and text */
+}
+
+.achievement-notification:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+}
+
+.achievement-notification .icon {
+    font-size: 1.8rem; /* Larger icon */
+}
+
+/* ========================================================================== */
+/* ==              NEW: ACHIEVEMENT CARD STYLING                           == */
+/* ========================================================================== */
+
+.achievement-card {
+    border: 1px solid var(--color-border);
+    transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.achievement-card.is-completed {
+    background-color: var(--color-accent-one); /* Use accent color for completed */
+    border-color: var(--color-accent-one);
+    box-shadow: 0 0 10px rgba(0,255,0,0.3); /* Subtle green glow */
+}
+
+.achievement-card:hover:not(.is-completed) {
+    background-color: var(--color-surface-dark);
+}
+
+/* Classic theme adaptation for achievement cards */
+html[data-theme="classic"] .achievement-card {
+    border-radius: 0;
+    border-top: 1px solid var(--color-surface-dark);
+    border-left: 1px solid var(--color-surface-dark);
+    border-right: 1px solid var(--color-text-primary);
+    border-bottom: 1px solid var(--color-text-primary);
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+
+html[data-theme="classic"] .achievement-card.is-completed {
+    background-color: #008000; /* Darker green for classic completed */
+    border-color: #008000;
+    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
+}
+

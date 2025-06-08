@@ -83,9 +83,6 @@ const decimalUtility = {
         const decA = this.isDecimal(a) ? a : this.new(a);
         const decB = this.isDecimal(b) ? b : this.new(b);
         if (decB.eq(0)) {
-            // console.warn("decimalUtility.divide: Division by zero attempted. Returning 0.");
-            // In many incremental games, dividing by zero (e.g. 0 production speed) should yield 0 effect.
-            // For critical errors, throwing an error might be better, but for production, 0 is often fine.
             return this.new(0);
         }
         return decA.div(decB);
@@ -99,7 +96,6 @@ const decimalUtility = {
      */
     power(base, exponent) {
         const decBase = this.isDecimal(base) ? base : this.new(base);
-        // The exponent in break_infinity.js's pow method is typically a number, not a Decimal.
         const numExponent = this.isDecimal(exponent) ? exponent.toNumber() : parseFloat(exponent);
         if (isNaN(numExponent)) {
             console.error(`decimalUtility.power: Invalid exponent: ${exponent}. Using 1.`);
@@ -120,203 +116,89 @@ const decimalUtility = {
         return decA.cmp(decB);
     },
 
-    /**
-     * Checks if a < b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    lt(a, b) {
-        return this.compare(a, b) < 0;
-    },
-
-    /**
-     * Checks if a <= b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    lte(a, b) {
-        return this.compare(a, b) <= 0;
-    },
-
-    /**
-     * Checks if a > b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    gt(a, b) {
-        return this.compare(a, b) > 0;
-    },
-
-    /**
-     * Checks if a >= b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    gte(a, b) {
-        return this.compare(a, b) >= 0;
-    },
-
-    /**
-     * Checks if a == b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    eq(a, b) {
-        return this.compare(a, b) === 0;
-    },
-
-    /**
-     * Checks if a != b.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {boolean}
-     */
-    neq(a, b) {
-        return this.compare(a, b) !== 0;
-    },
+    lt(a, b) { return this.compare(a, b) < 0; },
+    lte(a, b) { return this.compare(a, b) <= 0; },
+    gt(a, b) { return this.compare(a, b) > 0; },
+    gte(a, b) { return this.compare(a, b) >= 0; },
+    eq(a, b) { return this.compare(a, b) === 0; },
+    neq(a, b) { return this.compare(a, b) !== 0; },
     
-    /**
-     * Returns the absolute value of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     abs(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
         return decValue.abs();
     },
 
-    /**
-     * Returns the floor of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     floor(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
         return decValue.floor();
     },
 
-    /**
-     * Returns the ceiling of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     ceil(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
         return decValue.ceil();
     },
 
-    /**
-     * Returns the rounded value of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     round(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
         return decValue.round();
     },
 
-    /**
-     * Returns the natural logarithm (base E) of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     ln(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
         return decValue.ln();
     },
 
-    /**
-     * Returns the base-10 logarithm of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     log10(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.log10(); // or .log(10) if log10 is not direct
+        return decValue.log10();
     },
 
-    /**
-     * Returns the base-2 logarithm of a Decimal.
-     * @param {Decimal|number|string} value
-     * @returns {Decimal}
-     */
     log2(value) {
         const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.log2(); // or .log(2)
+        return decValue.log2();
     },
 
     /**
-     * Formats a Decimal value to a string.
-     * This is a basic version. A more advanced version would handle different notations (scientific, engineering, etc.)
-     * and precision. break_infinity.js has its own `format` method or similar.
-     * @param {Decimal|number|string} value - The Decimal value to format.
-     * @param {number} [places=2] - Number of decimal places for numbers < 1000.
-     * @param {number} [mantissaPlaces=2] - Number of decimal places for mantissa in scientific notation.
-     * @returns {string} The formatted string representation of the Decimal.
+     * NEW: Returns the larger of two Decimal values.
+     * @param {Decimal|number|string} a
+     * @param {Decimal|number|string} b
+     * @returns {Decimal}
      */
-    format(value, places = 2, mantissaPlaces = 2) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-
-        // Corrected check for NaN or Infinity using break_infinity.js properties
-        if (decValue.isNan || decValue.isInfinite) { 
-            return decValue.toString(); // "NaN", "Infinity"
-        }
-        
-        // For very large or very small numbers, break_infinity usually has a good formatter.
-        // Example: using exponent threshold for scientific notation
-        if (decValue.abs().lt(1e-6) && decValue.neq(0)) { // Very small non-zero
-             return decValue.toExponential(mantissaPlaces);
-        }
-        if (decValue.abs().gte(1e9)) { // Large numbers
-            // Standard scientific notation: 1.23e+9
-            // break_infinity might have specific formatting options e.g. game.format(value, precision, smallPrecision)
-            // For now, a simple approach:
-            return decValue.toExponential(mantissaPlaces);
-        }
-        if (decValue.abs().lt(0.01) && decValue.neq(0)) {
-             return decValue.toFixed(places + 2); // more precision for small numbers
-        }
-
-        // For numbers that are "reasonably" sized, use toFixed or a similar method.
-        // The definition of "reasonably sized" can vary.
-        // break_infinity.js often has a `format` method that handles this logic internally.
-        // If we rely on its toString or toFixed, we need to be mindful of its default behavior.
-        // This is a simplified formatting logic.
-        if (decValue.lt(1000) && decValue.gt(-1000)) {
-            // Check if it has decimal part
-            if (decValue.neq(decValue.floor())) {
-                 return decValue.toFixed(places);
-            } else {
-                 return decValue.toFixed(0); // No decimal places for whole numbers
-            }
-        }
-        // Default to scientific for other cases not caught, or rely on Decimal's toString.
-        // A more sophisticated formatting function (like OmegaNum.format or similar)
-        // would handle various notations (scientific, engineering, standard abbreviations like K, M, B, T, etc.)
-        // For now, we use a simplified version.
-        // return decValue.toString(); // Fallback, might not be pretty.
-        return decValue.toPrecision(mantissaPlaces + (decValue.exponent || 0).toString().length);
-
-
-        // A more common approach in incremental games for numbers >= 1000:
-        // if (decValue.gte(1000)) {
-        //    return decValue.toExponential(mantissaPlaces); // or custom like 1.23K, 1.23M
-        // }
-        // return decValue.toFixed(places);
+    max(a, b) {
+        const decA = this.isDecimal(a) ? a : this.new(a);
+        const decB = this.isDecimal(b) ? b : this.new(b);
+        return Decimal.max(decA, decB);
     },
 
-    // Constants (can be useful)
+    /**
+     * NEW: Returns the smaller of two Decimal values.
+     * @param {Decimal|number|string} a
+     * @param {Decimal|number|string} b
+     * @returns {Decimal}
+     */
+    min(a, b) {
+        const decA = this.isDecimal(a) ? a : this.new(a);
+        const decB = this.isDecimal(b) ? b : this.new(b);
+        return Decimal.min(decA, decB);
+    },
+
+    format(value, places = 2, mantissaPlaces = 2) {
+        // ... (Formatting logic is unchanged)
+        const decValue = this.isDecimal(value) ? value : this.new(value);
+        if (decValue.isNan || decValue.isInfinite) { return decValue.toString(); }
+        if (decValue.abs().lt(1e-6) && decValue.neq(0)) { return decValue.toExponential(mantissaPlaces); }
+        if (decValue.abs().gte(1e9)) { return decValue.toExponential(mantissaPlaces); }
+        if (decValue.abs().lt(0.01) && decValue.neq(0)) { return decValue.toFixed(places + 2); }
+        if (decValue.lt(1000) && decValue.gt(-1000)) {
+            if (decValue.neq(decValue.floor())) { return decValue.toFixed(places); }
+            else { return decValue.toFixed(0); }
+        }
+        return decValue.toPrecision(mantissaPlaces + (decValue.exponent || 0).toString().length);
+    },
+
     ZERO: new Decimal(0),
     ONE: new Decimal(1),
     TEN: new Decimal(10),
-    // Add more constants as needed (e.g., for specific game mechanics)
 };
 
-// Make it available globally or export it if using modules in other files
-// In main.js, we will import it.
 export { decimalUtility };

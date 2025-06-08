@@ -12,7 +12,7 @@ import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js'; 
 
 let gameState = {
-    gameVersion: "0.1.0", 
+    gameVersion: "1.1.0", // Incremented for Prestige System update
     lastSaveTime: null,
     totalPlayTimeSeconds: 0, 
     globalFlags: {},
@@ -26,7 +26,7 @@ const coreGameStateManager = {
             loggingSystem.info("CoreGameStateManager", "Initialized with provided state.", initialState);
         } else {
             // Ensure default structure if no initial state provided
-            gameState.gameVersion = gameState.gameVersion || "0.1.0";
+            gameState.gameVersion = gameState.gameVersion || "1.1.0";
             gameState.lastSaveTime = gameState.lastSaveTime || null;
             gameState.totalPlayTimeSeconds = gameState.totalPlayTimeSeconds || 0; 
             gameState.globalFlags = gameState.globalFlags || {};
@@ -190,7 +190,7 @@ const coreGameStateManager = {
     },
 
     resetState() {
-        const defaultVersion = "0.1.0"; 
+        const defaultVersion = "1.1.0"; 
         gameState = {
             gameVersion: defaultVersion,
             lastSaveTime: null,

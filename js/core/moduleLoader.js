@@ -1,12 +1,10 @@
-// js/core/moduleLoader.js (v2.3.2 - Add saveLoadSystem)
+// js/core/moduleLoader.js (v2.4.0 - Add buyMultiplierManager)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
+ * v2.4.0: Accepts and passes buyMultiplierManager.
  * v2.3.2: Accepts and passes saveLoadSystem.
- * v2.3.1: Fixes duplicate export error by ensuring single export statement. Accepts and passes globalSettingsManager.
- * v2.3: Accepts and passes globalSettingsManager to modules.
- * v2.2: Ensures moduleLoader itself is part of the coreSystems passed to modules.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -18,11 +16,12 @@ let coreSystemsBase = {
     coreResourceManager: null,
     coreUIManager: null,
     decimalUtility: null,
-    loggingSystem: null, // This will be the imported loggingSystem instance
+    loggingSystem: null,
     gameLoop: null,
     coreUpgradeManager: null,
     globalSettingsManager: null,
-    saveLoadSystem: null, // <<< Added saveLoadSystem
+    saveLoadSystem: null,
+    buyMultiplierManager: null, // <<< ADDED
     // moduleLoader: null // This will be added dynamically in loadModule
 };
 
@@ -30,29 +29,31 @@ const loadedModules = {
     // moduleId: { manifest: object, instance: object (the module's main exported object) }
 };
 
-const moduleLoader = { // Declared as const, not exported inline
+const moduleLoader = {
     initialize(
         staticDataAggregatorRef,
         coreGameStateManagerRef,
         coreResourceManagerRef,
         coreUIManagerRef,
         decimalUtilityRef,
-        loggingSystemRef, // Note: This is the imported loggingSystem, not a separate ref if it's a singleton
+        loggingSystemRef,
         gameLoopRef,
         coreUpgradeManagerRef,
         globalSettingsManagerRef,
-        saveLoadSystemRef // <<< Added saveLoadSystemRef parameter
+        saveLoadSystemRef,
+        buyMultiplierManagerRef // <<< ADDED
     ) {
         coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
         coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
         coreSystemsBase.coreResourceManager = coreResourceManagerRef;
         coreSystemsBase.coreUIManager = coreUIManagerRef;
         coreSystemsBase.decimalUtility = decimalUtilityRef;
-        coreSystemsBase.loggingSystem = loggingSystem; // Use the directly imported loggingSystem
+        coreSystemsBase.loggingSystem = loggingSystem;
         coreSystemsBase.gameLoop = gameLoopRef;
         coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
         coreSystemsBase.globalSettingsManager = globalSettingsManagerRef;
-        coreSystemsBase.saveLoadSystem = saveLoadSystemRef; // <<< Assign ref
+        coreSystemsBase.saveLoadSystem = saveLoadSystemRef;
+        coreSystemsBase.buyMultiplierManager = buyMultiplierManagerRef; // <<< ADDED
 
         if (typeof decimalUtilityRef === 'undefined') {
             loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
@@ -70,7 +71,7 @@ const moduleLoader = { // Declared as const, not exported inline
             loggingSystem.info("ModuleLoader", "saveLoadSystemRef received successfully in initialize.");
         }
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.3.2).");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.4.0).");
     },
 
     async loadModule(manifestPath) {
@@ -97,20 +98,17 @@ const moduleLoader = { // Declared as const, not exported inline
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
-            // Prepare the coreSystems object to pass to the module
             const systemsForModule = {
-                ...coreSystemsBase, // This now includes globalSettingsManager and saveLoadSystem
+                ...coreSystemsBase,
                 moduleLoader: this
             };
             
-            // Diagnostic log for both critical systems for settings_ui
             if (!systemsForModule.globalSettingsManager) {
                 loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `globalSettingsManager is MISSING in systemsForModule for module '${manifest.id}'!`);
             }
             if (!systemsForModule.saveLoadSystem) {
                 loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `saveLoadSystem is MISSING in systemsForModule for module '${manifest.id}'!`);
             }
-
 
             const moduleInstance = await manifest.initialize(systemsForModule);
 
@@ -174,5 +172,4 @@ const moduleLoader = { // Declared as const, not exported inline
     }
 };
 
-// Single export statement at the end of the file
 export { moduleLoader };

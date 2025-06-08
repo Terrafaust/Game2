@@ -1,37 +1,63 @@
-// js/core/coreUIManager.js (v4.6 - Theme Apply Refinement & Logging)
+// js/core/coreUIManager.js (v5.1 - Enhanced Achievement Notifications)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
- * v4.6: Modified theme apply to add/remove a body class to help trigger reflow.
- * v4.5: Attempt to force style recalculation on theme apply.
+ * v5.1: Enhanced notification system with clickability and larger achievement notifications.
+ * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
+ * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
-// coreGameStateManager and staticDataAggregator are not directly used in this version of the file but often are in UIManagers.
-// import { coreGameStateManager } from './coreGameStateManager.js';
-// import { staticDataAggregator } from './staticDataAggregator.js';
+
+function initializeSwipeMenu() {
+    const body = document.body;
+    let touchStartX = 0, touchStartY = 0, touchEndX = 0, touchEndY = 0;
+    const swipeThreshold = 50, edgeThreshold = 40, verticalThreshold = 75;
+
+    body.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    body.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture();
+    });
+
+    function handleSwipeGesture() {
+        const swipeX = touchEndX - touchStartX;
+        const swipeY = touchEndY - touchStartY;
+        const isMenuVisible = body.classList.contains('menu-visible');
+
+        if (Math.abs(swipeX) < swipeThreshold || Math.abs(swipeY) > verticalThreshold) return;
+        if (!isMenuVisible && swipeX > 0 && touchStartX < edgeThreshold) body.classList.add('menu-visible');
+        if (isMenuVisible && swipeX < 0) body.classList.remove('menu-visible');
+    }
+    
+    const menuOverlay = document.querySelector('.menu-overlay');
+    if (menuOverlay) menuOverlay.addEventListener('click', () => body.classList.remove('menu-visible'));
+    
+    const menu = document.getElementById('main-menu');
+    if (menu) menu.addEventListener('click', (e) => {
+        if (e.target.classList.contains('menu-tab') && window.innerWidth <= 768) body.classList.remove('menu-visible');
+    });
+}
 
 const UIElements = {
-    resourceBar: null,
-    resourcesDisplay: null,
-    mainMenu: null,
-    menuList: null,
-    mainContent: null,
-    modalContainer: null,
-    tooltipContainer: null,
-    gameContainer: null,
-    body: null,
-    htmlElement: null,
+    resourceBar: null, resourcesDisplay: null, mainMenu: null, menuList: null, mainContent: null,
+    modalContainer: null, tooltipContainer: null, gameContainer: null, body: null, htmlElement: null,
+    notificationArea: null, // Added notification area
 };
 
 let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
 
-const coreUIManager = {
+export const coreUIManager = {
     initialize() {
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
@@ -43,8 +69,9 @@ const coreUIManager = {
         UIElements.gameContainer = document.getElementById('game-container');
         UIElements.body = document.body;
         UIElements.htmlElement = document.documentElement;
+        UIElements.notificationArea = document.getElementById('notification-area'); // Initialize notification area
 
-        if (!UIElements.resourceBar || !UIElements.resourcesDisplay || !UIElements.mainMenu || !UIElements.menuList || !UIElements.mainContent || !UIElements.modalContainer || !UIElements.tooltipContainer || !UIElements.gameContainer || !UIElements.body || !UIElements.htmlElement) {
+        if (Object.values(UIElements).some(el => !el)) {
             loggingSystem.error("CoreUIManager_Init", "One or more critical UI elements not found. Initialization failed.");
             return;
         }
@@ -59,7 +86,8 @@ const coreUIManager = {
             loggingSystem.error("CoreUIManager_Init", "menuList element not found, click handler not attached.");
         }
         
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v4.6).");
+        initializeSwipeMenu();
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.1).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -72,15 +100,7 @@ const coreUIManager = {
             return;
         }
 
-        registeredMenuTabs[moduleId] = {
-            id: moduleId,
-            label: label,
-            renderCallback: renderCallback,
-            isUnlocked: isUnlockedCheck,
-            onShowCallback: onShowCallback,
-            onHideCallback: onHideCallback,
-        };
-        loggingSystem.info("CoreUIManager_RegisterTab", `Menu tab '${label}' (${moduleId}) registered.`);
+        registeredMenuTabs[moduleId] = { id: moduleId, label, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
         this.renderMenu();
 
         if (isDefaultTab && !activeTabId) {
@@ -90,56 +110,50 @@ const coreUIManager = {
             }
         } else if (!activeTabId && Object.keys(registeredMenuTabs).length > 0) {
             const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
-            if (firstUnlockedTab) {
-                this.setActiveTab(firstUnlockedTab.id);
-            }
+            if (firstUnlockedTab) this.setActiveTab(firstUnlockedTab.id);
         }
     },
 
     renderMenu() {
-        if (!UIElements.menuList) {
-            loggingSystem.warn("CoreUIManager_RenderMenu", "menuList element not found. Cannot render menu.");
+        if (!UIElements.menuList || !UIElements.body) {
+            loggingSystem.warn("CoreUIManager_RenderMenu", "menuList or body element not found. Cannot render menu.");
             return;
         }
         UIElements.menuList.innerHTML = '';
+        const unlockedTabs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
+
+        if (unlockedTabs.length <= 1) { UIElements.body.classList.add('menu-hidden'); } 
+        else { UIElements.body.classList.remove('menu-hidden'); }
 
         let hasActiveTabBeenSetOrRemainsValid = false;
-        Object.values(registeredMenuTabs).forEach(tab => {
-            if (tab.isUnlocked()) {
-                const listItem = document.createElement('li');
-                listItem.className = 'menu-tab';
-                listItem.textContent = tab.label;
-                listItem.dataset.tabTarget = tab.id;
-                if (tab.id === activeTabId) {
-                    listItem.classList.add('active');
-                    hasActiveTabBeenSetOrRemainsValid = true;
-                }
-                UIElements.menuList.appendChild(listItem);
+        unlockedTabs.forEach(tab => {
+            const listItem = document.createElement('li');
+            listItem.className = 'menu-tab';
+            listItem.textContent = tab.label;
+            listItem.dataset.tabTarget = tab.id;
+            if (tab.id === activeTabId) {
+                listItem.classList.add('active');
+                hasActiveTabBeenSetOrRemainsValid = true;
             }
+            UIElements.menuList.appendChild(listItem);
         });
         
-        if (!hasActiveTabBeenSetOrRemainsValid && Object.keys(registeredMenuTabs).length > 0) {
+        if (!hasActiveTabBeenSetOrRemainsValid && unlockedTabs.length > 0) {
             activeTabId = null; 
-            const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
-            if (firstUnlockedTab) {
-                this.setActiveTab(firstUnlockedTab.id, true); 
-            } else {
-                this.clearMainContent();
-                if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features unlocked yet.</p>';
-            }
+            this.setActiveTab(unlockedTabs[0].id, true); 
         } else if (activeTabId && registeredMenuTabs[activeTabId] && !registeredMenuTabs[activeTabId].isUnlocked()){
             activeTabId = null;
-            const firstUnlockedTab = Object.values(registeredMenuTabs).find(tab => tab.isUnlocked());
+            const firstUnlockedTab = unlockedTabs[0];
             if (firstUnlockedTab) this.setActiveTab(firstUnlockedTab.id, true);
-        } else if (Object.keys(registeredMenuTabs).length === 0) {
+        } else if (unlockedTabs.length === 0) {
              this.clearMainContent();
              if (UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No modules loaded.</p>';
         }
     },
 
     _handleMenuClick(event) {
-        const target = event.target;
-        if (target.matches('.menu-tab') && target.dataset.tabTarget) {
+        const target = event.target.closest('.menu-tab');
+        if (target && target.dataset.tabTarget) {
             const tabId = target.dataset.tabTarget;
             if (registeredMenuTabs[tabId] && registeredMenuTabs[tabId].isUnlocked()) {
                 this.setActiveTab(tabId);
@@ -217,40 +231,182 @@ const coreUIManager = {
         if (!hasVisibleResources) UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full text-center py-2">No resources to display yet.</p>';
     },
 
+    // --- MODIFICATION: New Modal System ---
     showModal(title, content, buttons) {
         if (!UIElements.modalContainer) return;
-        this.closeModal(); 
+        this.closeModal(); // Ensure no other modals are open
+
+        // 1. Create the dark overlay
+        const modalOverlay = document.createElement('div');
+        modalOverlay.id = 'modal-overlay';
+        modalOverlay.className = 'modal-overlay'; // For CSS styling
+        modalOverlay.addEventListener('click', () => this.closeModal()); // Close when clicking overlay
+
+        // 2. Create the main modal window
         const modalElement = document.createElement('div');
+        modalElement.className = 'modal'; // For CSS styling
         modalElement.id = 'active-modal';
-        modalElement.className = 'modal active'; 
+
+        // 3. Create the inner content container
         const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'modal-content'; 
-        modalContentDiv.innerHTML = `<div class="flex justify-between items-center mb-4"><h3 class="text-xl font-semibold text-primary">${title}</h3><button id="modal-close-button" class="text-textSecondary hover:text-textPrimary text-2xl leading-none">&times;</button></div>`;
+        modalContentDiv.className = 'modal-content';
+        
+        // 4. Create the header with title and close button
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'flex justify-between items-start mb-4';
+        headerDiv.innerHTML = `<h3 class="text-2xl font-bold text-primary">${title}</h3>`;
+        const closeButton = this.createButton('&times;', () => this.closeModal(), ['text-3xl', 'leading-none', 'font-bold', 'p-0', 'w-8', 'h-8', 'flex', 'items-center', 'justify-center', 'bg-transparent', 'hover:bg-surface-dark']);
+        closeButton.style.color = 'var(--color-text-secondary)';
+        closeButton.onmouseover = () => closeButton.style.color = 'var(--color-primary)';
+        closeButton.onmouseout = () => closeButton.style.color = 'var(--color-text-secondary)';
+
+        headerDiv.appendChild(closeButton);
+        modalContentDiv.appendChild(headerDiv);
+        
+        // 5. Create the body content area
         const bodyDiv = document.createElement('div');
-        if (typeof content === 'string') bodyDiv.innerHTML = content;
-        else if (content instanceof HTMLElement) bodyDiv.appendChild(content);
+        bodyDiv.className = 'modal-body';
+        if (typeof content === 'string') {
+            bodyDiv.innerHTML = content;
+        } else if (content instanceof HTMLElement) {
+            bodyDiv.appendChild(content);
+        }
         modalContentDiv.appendChild(bodyDiv);
+
+        // 6. Create the button footer if buttons are provided
         if (buttons && buttons.length > 0) {
             const buttonsDiv = document.createElement('div');
-            buttonsDiv.className = 'mt-6 flex justify-end space-x-3';
+            buttonsDiv.className = 'mt-6 flex justify-end items-center gap-4';
             buttons.forEach(btnInfo => {
-                const classList = Array.isArray(btnInfo.className) ? btnInfo.className : (btnInfo.className ? [btnInfo.className] : ['bg-primary']);
-                buttonsDiv.appendChild(this.createButton(btnInfo.label, btnInfo.callback, classList));
+                // Ensure a default class is applied if none is given, for consistency
+                const btnClasses = btnInfo.className ? (Array.isArray(btnInfo.className) ? btnInfo.className : [btnInfo.className]) : ['bg-primary'];
+                const button = this.createButton(btnInfo.label, btnInfo.callback, btnClasses);
+                buttonsDiv.appendChild(button);
             });
             modalContentDiv.appendChild(buttonsDiv);
         }
+
+        // 7. Assemble and append to the DOM
         modalElement.appendChild(modalContentDiv);
+        UIElements.modalContainer.appendChild(modalOverlay);
         UIElements.modalContainer.appendChild(modalElement);
-        document.getElementById('modal-close-button').addEventListener('click', () => this.closeModal());
-        modalElement.addEventListener('click', (event) => { if (event.target === modalElement) this.closeModal(); });
     },
 
-    closeModal() { const activeModal = document.getElementById('active-modal'); if (activeModal) activeModal.remove(); },
-    showTooltip(content, targetElement) { /* ... (no changes) ... */ },
-    hideTooltip() { /* ... (no changes) ... */ },
-    _positionTooltip(targetEl) { /* ... (no changes) ... */ },
-    _handleTooltipPosition(event) { /* ... (no changes) ... */ },
-    showNotification(message, type = 'info', duration = 3000) { /* ... (no changes) ... */ },
+    closeModal() {
+        if (!UIElements.modalContainer) return;
+        const modal = UIElements.modalContainer.querySelector('.modal');
+        const overlay = UIElements.modalContainer.querySelector('.modal-overlay');
+        if (modal) modal.remove();
+        if (overlay) overlay.remove();
+    },
+    // --- END MODIFICATION ---
+
+    showTooltip(content, targetElement) {
+        if (!UIElements.tooltipContainer || !targetElement) return;
+        UIElements.tooltipContainer.innerHTML = content;
+        UIElements.tooltipContainer.style.display = 'block';
+        currentTooltipTarget = targetElement;
+        this._positionTooltip(targetElement);
+    },
+
+    hideTooltip() {
+        if (UIElements.tooltipContainer) UIElements.tooltipContainer.style.display = 'none';
+        currentTooltipTarget = null;
+    },
+
+    _positionTooltip(targetEl) {
+        if (!UIElements.tooltipContainer || !targetEl) return;
+        const targetRect = targetEl.getBoundingClientRect();
+        const tooltipRect = UIElements.tooltipContainer.getBoundingClientRect();
+        let top = targetRect.bottom + 5;
+        let left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+        if (left < 10) left = 10;
+        if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
+        if (top + tooltipRect.height > window.innerHeight - 10) top = targetRect.top - tooltipRect.height - 5;
+        UIElements.tooltipContainer.style.left = `${left}px`;
+        UIElements.tooltipContainer.style.top = `${top}px`;
+    },
+
+    _handleTooltipPosition(event) {
+        if (currentTooltipTarget) this._positionTooltip(currentTooltipTarget);
+    },
+
+    /**
+     * Shows a notification message.
+     * @param {string} message - The message to display.
+     * @param {'info'|'success'|'warning'|'error'|'achievement'} type - The type of notification.
+     * @param {number} duration - How long the notification should stay (in ms). 0 for infinite.
+     * @param {object} [options] - Optional settings for specific notification types.
+     * @param {string} [options.achievementId] - For 'achievement' type, the ID of the achievement to scroll to.
+     */
+    showNotification(message, type = 'info', duration = 3000, options = {}) {
+        if (!UIElements.notificationArea) return;
+        const notification = document.createElement('div');
+        
+        let typeClasses = {
+            info: 'bg-blue-600 border-blue-500',
+            success: 'bg-green-600 border-green-500',
+            warning: 'bg-yellow-600 border-yellow-500',
+            error: 'bg-red-600 border-red-500',
+        };
+
+        if (type === 'achievement') {
+            notification.className = `achievement-notification`; // Custom class for achievements
+            // Ensure the message includes icon/name for achievements if needed, or pass full HTML
+            notification.innerHTML = message; // Message is expected to be pre-formatted HTML
+            notification.style.pointerEvents = 'auto'; // Make it clickable
+            if (options.achievementId) {
+                notification.addEventListener('click', () => {
+                    // Lazy load moduleLoader here to avoid circular dependency
+                    import('./moduleLoader.js').then(({ moduleLoader }) => {
+                        const achievementsModule = moduleLoader.getModule('achievements');
+                        if (achievementsModule && achievementsModule.ui && achievementsModule.logic) {
+                            this.setActiveTab('achievements', true); // Activate achievements tab
+                            // Ensure UI is rendered before attempting to scroll
+                            setTimeout(() => {
+                                achievementsModule.ui.scrollToAchievement(options.achievementId);
+                            }, 100); // Small delay to ensure tab content is rendered
+                        }
+                    });
+                    notification.remove(); // Remove notification after click
+                });
+            }
+            duration = duration > 0 ? duration : 4000; // Default 4 seconds for achievements
+        } else {
+            notification.className = `p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
+            notification.textContent = message;
+        }
+
+        notification.style.transform = 'translateX(100%)'; // Start off-screen
+        notification.style.opacity = '0'; // Start invisible
+        UIElements.notificationArea.appendChild(notification);
+        
+        // Force reflow and animate in
+        setTimeout(() => { 
+            notification.style.transform = 'translateX(0)'; 
+            notification.style.opacity = '1'; 
+        }, 10);
+
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.style.transform = 'translateX(100%)';
+                notification.style.opacity = '0';
+                notification.addEventListener('transitionend', () => notification.remove());
+            }, duration);
+        }
+    },
+
+    /**
+     * Convenience function for showing achievement notifications.
+     * @param {string} achievementName - The name of the achievement.
+     * @param {string} achievementIcon - The icon of the achievement.
+     * @param {string} achievementId - The ID of the achievement for scrolling.
+     * @param {number} [duration=4000] - How long the notification stays (in ms).
+     */
+    showAchievementNotification(achievementName, achievementIcon, achievementId, duration = 4000) {
+        const messageHtml = `<span class="icon">${achievementIcon}</span> <span>Achievement Unlocked: ${achievementName}!</span>`;
+        this.showNotification(messageHtml, 'achievement', duration, { achievementId: achievementId });
+    },
 
     applyTheme(themeName, mode) {
         if (!UIElements.htmlElement || !UIElements.body) {
@@ -263,19 +419,17 @@ const coreUIManager = {
         html.dataset.theme = themeName; 
         html.dataset.mode = mode;     
         
-        // Attempt to force style recalculation by toggling a class on the body
         body.classList.add('theme-refresh-temp');
-        // Reading offsetHeight can trigger reflow
         void body.offsetHeight; 
         body.classList.remove('theme-refresh-temp');
         
-        loggingSystem.info("CoreUIManager_ApplyTheme", `Theme applied: ${themeName}, Mode: ${mode}. Attributes set on <html>, style refresh attempted.`);
+        loggingSystem.info("CoreUIManager_ApplyTheme", `Theme applied: ${themeName}, Mode: ${mode}.`);
     },
 
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
-        button.textContent = text;
-        button.className = 'game-button'; 
+        button.innerHTML = text; // Use innerHTML to allow for entities like &times;
+        button.className = 'game-button';
         if (Array.isArray(additionalClasses)) {
             additionalClasses.forEach(cls => { if (typeof cls === 'string') { cls.split(' ').forEach(c => { if(c) button.classList.add(c);});}});
         } else if (typeof additionalClasses === 'string') {
@@ -291,12 +445,14 @@ const coreUIManager = {
         this.renderMenu(); 
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
             this.setActiveTab(activeTabId, true); 
-        } else if (Object.keys(registeredMenuTabs).length > 0) {
+        } else {
             const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
-            if (firstUnlocked) this.setActiveTab(firstUnlocked.id, true); 
-            else { if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';}
+            if (firstUnlocked) {
+                this.setActiveTab(firstUnlocked.id, true);
+            } else {
+                if(UIElements.mainContent) UIElements.mainContent.innerHTML = '<p class="text-textSecondary text-center py-10">No features available after refresh.</p>';
+            }
         }
     },
 };
 
-export { coreUIManager };

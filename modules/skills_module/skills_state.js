@@ -1,14 +1,20 @@
-// modules/skills_module/skills_state.js (v1)
+// modules/skills_module/skills_state.js (v2 - Added Prestige Skills State)
 
 /**
  * @file skills_state.js
- * @description Defines the dynamic state for the Skills module, primarily skill levels.
+ * @description Defines the dynamic state for the Skills module, including regular and prestige skills.
+ * v2: Added prestigeSkillLevels to ensure they persist across prestiges.
  */
 
 export let moduleState = {
-    // Stores the current level of each purchased skill.
+    // Stores the current level of each purchased regular skill. Resets on prestige.
     // Key: skillId (e.g., 'basicLearning'), Value: number (level)
     skillLevels: {},
+
+    // --- MODIFICATION: Added state for prestige skills ---
+    // Stores the current level of each purchased prestige skill. Does NOT reset on prestige.
+    // Key: skillId (e.g., 'prestigedInsight'), Value: number (level)
+    prestigeSkillLevels: {},
 };
 
 /**
@@ -17,8 +23,8 @@ export let moduleState = {
  */
 export function getInitialState() {
     // All skills start at level 0 (not purchased).
-    // The skillLevels object will be populated as skills are purchased.
     return {
         skillLevels: {},
+        prestigeSkillLevels: {} // Initialize as empty
     };
 }

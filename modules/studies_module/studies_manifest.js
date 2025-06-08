@@ -79,11 +79,8 @@ const studiesManifest = {
 
         gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             moduleLogic.updateGlobalFlags();
-            // Check studies tab unlock condition here as well, as SP can increase passively
-            // This ensures the tab appears as soon as condition is met, not just on next menu render
             if (!coreGameStateManager.getGlobalFlag('studiesTabPermanentlyUnlocked', false)) {
-                 if(moduleLogic.isStudiesTabUnlocked()){ // This will set the flag and render menu
-                     // loggingSystem.debug("StudiesManifest", "Studies tab unlocked via generalLogic check.");
+                 if(moduleLogic.isStudiesTabUnlocked()){
                  }
             }
         });
@@ -130,6 +127,16 @@ const studiesManifest = {
                     ui.renderMainContent(document.getElementById('main-content'));
                 } else {
                      ui.updateDynamicElements();
+                }
+            },
+            onPrestigeReset: () => {
+                loggingSystem.info(this.name, `onPrestigeReset called for ${this.name}.`);
+                const initialState = getInitialState();
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(this.id, initialState);
+                moduleLogic.updateAllProducerProductions(); // This will effectively set production to 0
+                if (coreUIManager.isActiveTab(this.id)) {
+                    ui.renderMainContent(document.getElementById('main-content'));
                 }
             },
             getProducerData: (producerId) => { 
