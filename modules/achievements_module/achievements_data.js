@@ -1,11 +1,10 @@
-// modules/achievements_module/achievements_data.js (v4.2 - Total Achievements 90 Reward Update)
+// modules/achievements_module/achievements_data.js (v5.0 - SSP Reward Rework)
 
 /**
  * @file achievements_data.js
  * @description Static data definitions for the Achievements module.
+ * v5.0: Reworked SSP rewards to provide a cost reduction for buying SSP in the market.
  * v4.2: Updated reward for 'ach_total_90' to be a Study Skill Points cost reduction.
- * v4.1: Corrected 'AP' to 'PP' in total achievement milestones and fixed PhD icon.
- * v4.0: Adds massive number of achievements for Prestige producers and total completion.
  */
 
 // --- Helper functions for generating achievement sets ---
@@ -22,31 +21,32 @@ const resourceAchTierRewards = [0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.03, 0.03, 
 const clickAchTierCounts = [10, 50, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000];
 const clickAchTierRewards = [0.50, 0.70, 1.00, 1.20, 1.50, 1.80, 2.00, 2.20, 2.50, 3.00];
 
+// --- MODIFICATION: Reworked SSP rewards ---
 const sspAchTierCounts = [1, 5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 200, 250, 300];
 const sspAchTierRewards = [ 
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015" }, 
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" }, 
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015" },
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "2" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020" },  
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "3" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020" },
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "3" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035" }, 
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "4" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035" },
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "4" },
-    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.050" },  
-    { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "6" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015", description: "+1.5% Global SP Prod." }, 
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.01", description: "-1% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.015", description: "+1.5% Global SP Prod." },
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.01", description: "-1% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020", description: "+2% Global SP Prod." },  
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.02", description: "-2% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.020", description: "+2% Global SP Prod." },
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.02", description: "-2% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035", description: "+3.5% Global SP Prod." }, 
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.03", description: "-3% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.035", description: "+3.5% Global SP Prod." },
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.03", description: "-3% SSP Purchase Cost" },
+    { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.050", description: "+5% Global SP Prod." },  
+    { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.05", description: "-5% SSP Purchase Cost" },
 ];
+// --- END MODIFICATION ---
 
-// --- NEW IMAGE ACHIEVEMENTS ---
 const createImageAchievements = () => {
     const achievements = {};
     const tiers = {
         1: { count: 1, reward: { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.01", description: "+1% Global SP Prod." } },
         2: { count: 100, reward: { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "knowledge", value: "0.01", description: "+1% Global Knowledge Prod." } },
-        3: { count: 500, reward: { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: "10", description: "+10 Free SSP." } },
+        3: { count: 500, reward: { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.10", description: "-10% SSP Purchase Cost." } },
         4: { count: 1000, reward: { type: "UNLOCK_FEATURE", flag: "prestigeUnlocked", description: "Unlocks the Prestige system." } },
         5: { count: 5000, reward: { type: "MULTIPLIER", targetSystem: "prestige_mechanics", targetId: "ppGain", value: "0.05", description: "+5% Prestige Point Gain." } },
         6: { count: 10000, reward: { type: "MULTIPLIER", targetSystem: "global_production", targetId: "all", value: "0.01", description: "+1% to ALL production." } }
@@ -89,8 +89,8 @@ const createResourceAchievements = (resourceId, resourceName, icon, customCounts
         const achId = `${resourceId}_ach_${index + 1}`;
         const rewardValue = rewards[index];
         let rewardData;
-        if (typeof rewardValue === 'object' && rewardValue.type === "RESOURCE_GAIN") {
-            rewardData = { type: "RESOURCE_GAIN", resourceId: rewardValue.resourceId, amount: rewardValue.amount, description: `+${rewardValue.amount} ${rewardValue.resourceId === 'studySkillPoints' ? 'SSP' : rewardValue.resourceId}` };
+        if (typeof rewardValue === 'object' && (rewardValue.type === "RESOURCE_GAIN" || rewardValue.type === "COST_REDUCTION_MULTIPLIER")) {
+            rewardData = { ...rewardValue }; // Copy the reward object
         } else { 
             const valStr = (typeof rewardValue === 'object' && rewardValue.value) ? rewardValue.value : rewardValue.toString();
             const valNum = parseFloat(valStr);
@@ -104,6 +104,7 @@ const createResourceAchievements = (resourceId, resourceName, icon, customCounts
     });
     return achievements;
 };
+
 
 const createClickAchievements = () => { 
     let achievements = {};
@@ -120,7 +121,8 @@ for (let i = 1; i <= 8; i++) {
     if (i === 1) {
         rewardData = { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.005", description: "+0.5% Global SP Production (One time)" };
     } else {
-        rewardData = { type: "RESOURCE_GAIN", resourceId: "studySkillPoints", amount: i.toString(), description: `+${i} Study Skill Point${i > 1 ? 's' : ''} (One time)` };
+        // --- MODIFICATION: Changed SSP gain to cost reduction ---
+        rewardData = { type: "COST_REDUCTION_MULTIPLIER", targetSystem: "market_items", targetId: "buyStudySkillPoints", value: "0.50", description: `-${50}% SSP Purchase Cost` };
     }
     skillTierAchievements[`skillTier${i}Unlocked`] = { id: `skillTier${i}Unlocked`, name: `Adept Learner - Tier ${i}`, description: `Unlock Skill Tier ${i}.`, icon: "🛠️", condition: { type: "skillTierUnlocked", moduleId: "skills", tier: i }, reward: rewardData };
 }
@@ -135,9 +137,8 @@ expandedSkillIds.forEach(skillId => {
     skillMaxedAchievements[`skill_${skillId}_max`] = { id: `skill_${skillId}_max`, name: `Master of ${skillName}`, description: `Max out the '${skillName}' skill.`, icon: "🌟", condition: { type: "skillMaxLevel", moduleId: "skills", skillId: skillId }, reward: { type: "MULTIPLIER", targetSystem: "global_resource_production", targetId: "studyPoints", value: "0.01", description: "+1% Global SP Production" } };
 });
 
-// --- NEW PRESTIGE ACHIEVEMENTS ---
 const prestigeProducerAchCounts = [1, 5, 10, 25, 50, 75, 100, 150, 200, 250];
-const prestigeProducerAchRewards = [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1]; // Flat 5% then 10% boost to self
+const prestigeProducerAchRewards = [0.05, 0.05, 0.05, 0.05, 0.05, 0.1, 0.1, 0.1, 0.1, 0.1];
 
 const createPrestigeProducerAchievements = (producerId, producerName, icon) => {
     let achievements = {};
@@ -153,7 +154,6 @@ const createPrestigeProducerAchievements = (producerId, producerName, icon) => {
     return achievements;
 };
 
-// --- NEW TOTAL ACHIEVEMENT MILESTONES ---
 const totalAchievementMilestones = {
     ach_total_1:   { count: 1,   reward: { type: 'MULTIPLIER', targetSystem: 'core_gameplay_click', targetId: 'studyPoints', value: '0.10', description: "+10% Manual Click Power" } },
     ach_total_5:   { count: 5,   reward: { type: 'MULTIPLIER', targetSystem: 'global_resource_production', targetId: 'studyPoints', value: '0.05', description: "+5% Global SP Production" } },
@@ -166,10 +166,12 @@ const totalAchievementMilestones = {
     ach_total_40:  { count: 40,  reward: { type: 'MULTIPLIER', targetSystem: 'studies_producers', targetId: 'university', value: '0.20', description: "+20% University Production" } },
     ach_total_45:  { count: 45,  reward: { type: 'MULTIPLIER', targetSystem: 'studies_producers_knowledge', targetId: 'professor', value: '0.20', description: "+20% Professor Production" } },
     ach_total_50:  { count: 50,  reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.05', description: "+5% to ALL production (stacks with per-achievement bonus)" } },
-    ach_total_60:  { count: 60,  reward: { type: 'RESOURCE_GAIN', resourceId: 'studySkillPoints', amount: '5', description: "+5 Free SSP" } },
+    // --- MODIFICATION: Reworked SSP rewards ---
+    ach_total_60:  { count: 60,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'market_items', targetId: 'buyStudySkillPoints', value: '0.05', description: "-5% SSP Purchase Cost" } },
     ach_total_70:  { count: 70,  reward: { type: 'MULTIPLIER', targetSystem: 'prestige_mechanics', targetId: 'ppGain', value: '0.10', description: "+10% Prestige Point Gain on Prestige" } },
     ach_total_80:  { count: 80,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'ALL', value: '0.05', description: "-5% Cost for all Prestige Producers" } },
-    ach_total_90:  { count: 90,  reward: { type: 'COST_REDUCTION_MULTIPLIER', targetSystem: 'skills', targetId: 'ALL', value: '0.9', description: "Study Skill Points cost reduced by 90% (0.1x of normal price)" } },
+    // This is a cost *growth* reduction. This will need special handling in the market logic.
+    ach_total_90:  { count: 90,  reward: { type: 'COST_GROWTH_REDUCTION', targetSystem: 'market_items', targetId: 'buyStudySkillPoints', value: '0.01', description: "SSP cost growth reduced by 1% (multiplicative)." } },
     ach_total_100: { count: 100, reward: { type: 'MULTIPLIER', targetSystem: 'global_production', targetId: 'all', value: '0.10', description: "+10% to ALL production (stacks)" } },
     ach_total_110: { count: 110, reward: { type: 'MULTIPLIER', targetSystem: 'prestige_producers', targetId: 'phd', value: '0.15', description: "+15% PhD Production" } },
     ach_total_120: { count: 120, reward: { type: 'RESOURCE_GAIN', resourceId: 'prestigePoints', amount: '1000', description: "+1000 Free Prestige Points" } },
@@ -199,11 +201,8 @@ const createTotalAchievementAchievements = () => {
     return achievements;
 };
 
-// --- Main Export ---
-
 export const staticModuleData = {
     achievements: {
-        // Original Achievements
         ...createClickAchievements(),
         ...createProducerAchievements("student", "Student", "🧑‍🎓"),
         ...createProducerAchievements("classroom", "Classroom", "🏫"),
@@ -218,20 +217,13 @@ export const staticModuleData = {
         ...createResourceAchievements("studySkillPoints", "Study Skill Points", "🧠", sspAchTierCounts, sspAchTierRewards),
         ...skillTierAchievements,
         ...skillMaxedAchievements,
-
-        // New Prestige Achievements
         ...createPrestigeProducerAchievements("license", "License", "📜"),
         ...createPrestigeProducerAchievements("master1", "Master's Degree I", "🏅"),
         ...createPrestigeProducerAchievements("master2", "Master's Degree II", "🎖️"),
-        // --- FIX: Corrected PhD icon ---
         ...createPrestigeProducerAchievements("phd", "PhD", "🎓"), 
         ...createPrestigeProducerAchievements("postDoc", "Post-Doctorate", "✨"),
-
-        // **NEW** Image Achievements
         ...createImageAchievements(),
-        // New Total Achievement Milestones
         ...createTotalAchievementAchievements(),
-        
     },
     ui: {
         achievementsTabLabel: "Achievements",
@@ -239,4 +231,3 @@ export const staticModuleData = {
         lockedText: "Locked"
     }
 };
-

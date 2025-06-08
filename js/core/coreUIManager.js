@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v5.1 - Enhanced Achievement Notifications)
+// js/core/coreUIManager.js (v5.2 - Menu Duplication Fix)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
  * v5.1: Enhanced notification system with clickability and larger achievement notifications.
  * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
  * v4.8: Added swipe-to-toggle functionality for mobile menu.
@@ -50,7 +51,7 @@ function initializeSwipeMenu() {
 const UIElements = {
     resourceBar: null, resourcesDisplay: null, mainMenu: null, menuList: null, mainContent: null,
     modalContainer: null, tooltipContainer: null, gameContainer: null, body: null, htmlElement: null,
-    notificationArea: null, // Added notification area
+    notificationArea: null,
 };
 
 let registeredMenuTabs = {};
@@ -69,7 +70,7 @@ export const coreUIManager = {
         UIElements.gameContainer = document.getElementById('game-container');
         UIElements.body = document.body;
         UIElements.htmlElement = document.documentElement;
-        UIElements.notificationArea = document.getElementById('notification-area'); // Initialize notification area
+        UIElements.notificationArea = document.getElementById('notification-area');
 
         if (Object.values(UIElements).some(el => !el)) {
             loggingSystem.error("CoreUIManager_Init", "One or more critical UI elements not found. Initialization failed.");
@@ -87,7 +88,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.1).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.2).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -98,6 +99,11 @@ export const coreUIManager = {
         if (typeof renderCallback !== 'function') {
             loggingSystem.warn("CoreUIManager_RegisterTab", `renderCallback for '${moduleId}' must be a function.`);
             return;
+        }
+        
+        // --- MODIFICATION: Add a warning if a tab is being re-registered ---
+        if (registeredMenuTabs[moduleId]) {
+            loggingSystem.warn("CoreUIManager_RegisterTab", `Module ID '${moduleId}' is being re-registered. This may indicate an initialization issue.`);
         }
 
         registeredMenuTabs[moduleId] = { id: moduleId, label, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
@@ -119,22 +125,32 @@ export const coreUIManager = {
             loggingSystem.warn("CoreUIManager_RenderMenu", "menuList or body element not found. Cannot render menu.");
             return;
         }
-        UIElements.menuList.innerHTML = '';
-        const unlockedTabs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
 
-        if (unlockedTabs.length <= 1) { UIElements.body.classList.add('menu-hidden'); } 
-        else { UIElements.body.classList.remove('menu-hidden'); }
+        // --- MODIFICATION: Filter for unique tabs to prevent duplication from race conditions ---
+        const unlockedTabDefs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
+        const unlockedTabs = [...new Map(unlockedTabDefs.map(item => [item.id, item])).values()];
+        
+        UIElements.menuList.innerHTML = ''; // Clear existing menu items before re-rendering
+
+        if (unlockedTabs.length <= 1 && window.innerWidth > 768) { 
+            UIElements.body.classList.add('menu-hidden'); 
+        } else { 
+            UIElements.body.classList.remove('menu-hidden'); 
+        }
 
         let hasActiveTabBeenSetOrRemainsValid = false;
         unlockedTabs.forEach(tab => {
             const listItem = document.createElement('li');
-            listItem.className = 'menu-tab';
-            listItem.textContent = tab.label;
-            listItem.dataset.tabTarget = tab.id;
+            const button = document.createElement('button'); // Use button for better accessibility
+            button.className = 'menu-tab';
+            button.textContent = tab.label;
+            button.dataset.tabTarget = tab.id;
+
             if (tab.id === activeTabId) {
-                listItem.classList.add('active');
+                button.classList.add('active');
                 hasActiveTabBeenSetOrRemainsValid = true;
             }
+            listItem.appendChild(button);
             UIElements.menuList.appendChild(listItem);
         });
         
@@ -204,7 +220,15 @@ export const coreUIManager = {
         if (!UIElements.resourcesDisplay) return;
         const allResources = coreResourceManager.getAllResources();
         let hasVisibleResources = false;
-        UIElements.resourcesDisplay.innerHTML = ''; 
+        
+        // --- MODIFICATION: Update Prestige Count resource specifically ---
+        const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
+        if (prestigeModule) {
+            const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
+            coreResourceManager.setAmount('prestigeCount', prestigeCount);
+        }
+        // --- END MODIFICATION ---
+
         Object.values(allResources).forEach(res => {
             const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
             if (res.isUnlocked && res.showInUI) {
@@ -218,11 +242,20 @@ export const coreUIManager = {
                 }
                 const amountFormatted = decimalUtility.format(res.amount, 2);
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
-                let rateHTML = '';
-                if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
-                    rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                
+                let innerHTML;
+                // Special case for prestige count to not show "/s"
+                if (res.id === 'prestigeCount') {
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(res.amount, 0)}</span>`;
+                } else {
+                     let rateHTML = '';
+                    if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
+                        rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                    }
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
                 }
-                displayElement.innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+                displayElement.innerHTML = innerHTML;
+
             } else {
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
                 if (displayElement) displayElement.remove();
@@ -230,28 +263,23 @@ export const coreUIManager = {
         });
         if (!hasVisibleResources) UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full text-center py-2">No resources to display yet.</p>';
     },
-
-    // --- MODIFICATION: New Modal System ---
+    
     showModal(title, content, buttons) {
         if (!UIElements.modalContainer) return;
-        this.closeModal(); // Ensure no other modals are open
+        this.closeModal(); 
 
-        // 1. Create the dark overlay
         const modalOverlay = document.createElement('div');
         modalOverlay.id = 'modal-overlay';
-        modalOverlay.className = 'modal-overlay'; // For CSS styling
-        modalOverlay.addEventListener('click', () => this.closeModal()); // Close when clicking overlay
+        modalOverlay.className = 'modal-overlay'; 
+        modalOverlay.addEventListener('click', () => this.closeModal()); 
 
-        // 2. Create the main modal window
         const modalElement = document.createElement('div');
-        modalElement.className = 'modal'; // For CSS styling
+        modalElement.className = 'modal'; 
         modalElement.id = 'active-modal';
 
-        // 3. Create the inner content container
         const modalContentDiv = document.createElement('div');
         modalContentDiv.className = 'modal-content';
         
-        // 4. Create the header with title and close button
         const headerDiv = document.createElement('div');
         headerDiv.className = 'flex justify-between items-start mb-4';
         headerDiv.innerHTML = `<h3 class="text-2xl font-bold text-primary">${title}</h3>`;
@@ -263,7 +291,6 @@ export const coreUIManager = {
         headerDiv.appendChild(closeButton);
         modalContentDiv.appendChild(headerDiv);
         
-        // 5. Create the body content area
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'modal-body';
         if (typeof content === 'string') {
@@ -273,12 +300,10 @@ export const coreUIManager = {
         }
         modalContentDiv.appendChild(bodyDiv);
 
-        // 6. Create the button footer if buttons are provided
         if (buttons && buttons.length > 0) {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end items-center gap-4';
             buttons.forEach(btnInfo => {
-                // Ensure a default class is applied if none is given, for consistency
                 const btnClasses = btnInfo.className ? (Array.isArray(btnInfo.className) ? btnInfo.className : [btnInfo.className]) : ['bg-primary'];
                 const button = this.createButton(btnInfo.label, btnInfo.callback, btnClasses);
                 buttonsDiv.appendChild(button);
@@ -286,7 +311,6 @@ export const coreUIManager = {
             modalContentDiv.appendChild(buttonsDiv);
         }
 
-        // 7. Assemble and append to the DOM
         modalElement.appendChild(modalContentDiv);
         UIElements.modalContainer.appendChild(modalOverlay);
         UIElements.modalContainer.appendChild(modalElement);
@@ -299,7 +323,6 @@ export const coreUIManager = {
         if (modal) modal.remove();
         if (overlay) overlay.remove();
     },
-    // --- END MODIFICATION ---
 
     showTooltip(content, targetElement) {
         if (!UIElements.tooltipContainer || !targetElement) return;
@@ -331,14 +354,6 @@ export const coreUIManager = {
         if (currentTooltipTarget) this._positionTooltip(currentTooltipTarget);
     },
 
-    /**
-     * Shows a notification message.
-     * @param {string} message - The message to display.
-     * @param {'info'|'success'|'warning'|'error'|'achievement'} type - The type of notification.
-     * @param {number} duration - How long the notification should stay (in ms). 0 for infinite.
-     * @param {object} [options] - Optional settings for specific notification types.
-     * @param {string} [options.achievementId] - For 'achievement' type, the ID of the achievement to scroll to.
-     */
     showNotification(message, type = 'info', duration = 3000, options = {}) {
         if (!UIElements.notificationArea) return;
         const notification = document.createElement('div');
@@ -351,37 +366,33 @@ export const coreUIManager = {
         };
 
         if (type === 'achievement') {
-            notification.className = `achievement-notification`; // Custom class for achievements
-            // Ensure the message includes icon/name for achievements if needed, or pass full HTML
-            notification.innerHTML = message; // Message is expected to be pre-formatted HTML
-            notification.style.pointerEvents = 'auto'; // Make it clickable
+            notification.className = `achievement-notification`; 
+            notification.innerHTML = message; 
+            notification.style.pointerEvents = 'auto'; 
             if (options.achievementId) {
                 notification.addEventListener('click', () => {
-                    // Lazy load moduleLoader here to avoid circular dependency
                     import('./moduleLoader.js').then(({ moduleLoader }) => {
                         const achievementsModule = moduleLoader.getModule('achievements');
                         if (achievementsModule && achievementsModule.ui && achievementsModule.logic) {
-                            this.setActiveTab('achievements', true); // Activate achievements tab
-                            // Ensure UI is rendered before attempting to scroll
+                            this.setActiveTab('achievements', true); 
                             setTimeout(() => {
                                 achievementsModule.ui.scrollToAchievement(options.achievementId);
-                            }, 100); // Small delay to ensure tab content is rendered
+                            }, 100); 
                         }
                     });
-                    notification.remove(); // Remove notification after click
+                    notification.remove();
                 });
             }
-            duration = duration > 0 ? duration : 4000; // Default 4 seconds for achievements
+            duration = duration > 0 ? duration : 4000;
         } else {
             notification.className = `p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
             notification.textContent = message;
         }
 
-        notification.style.transform = 'translateX(100%)'; // Start off-screen
-        notification.style.opacity = '0'; // Start invisible
+        notification.style.transform = 'translateX(100%)'; 
+        notification.style.opacity = '0';
         UIElements.notificationArea.appendChild(notification);
         
-        // Force reflow and animate in
         setTimeout(() => { 
             notification.style.transform = 'translateX(0)'; 
             notification.style.opacity = '1'; 
@@ -396,13 +407,6 @@ export const coreUIManager = {
         }
     },
 
-    /**
-     * Convenience function for showing achievement notifications.
-     * @param {string} achievementName - The name of the achievement.
-     * @param {string} achievementIcon - The icon of the achievement.
-     * @param {string} achievementId - The ID of the achievement for scrolling.
-     * @param {number} [duration=4000] - How long the notification stays (in ms).
-     */
     showAchievementNotification(achievementName, achievementIcon, achievementId, duration = 4000) {
         const messageHtml = `<span class="icon">${achievementIcon}</span> <span>Achievement Unlocked: ${achievementName}!</span>`;
         this.showNotification(messageHtml, 'achievement', duration, { achievementId: achievementId });
@@ -428,7 +432,7 @@ export const coreUIManager = {
 
     createButton(text, onClickCallback, additionalClasses = [], id) {
         const button = document.createElement('button');
-        button.innerHTML = text; // Use innerHTML to allow for entities like &times;
+        button.innerHTML = text;
         button.className = 'game-button';
         if (Array.isArray(additionalClasses)) {
             additionalClasses.forEach(cls => { if (typeof cls === 'string') { cls.split(' ').forEach(c => { if(c) button.classList.add(c);});}});
@@ -455,4 +459,3 @@ export const coreUIManager = {
         }
     },
 };
-

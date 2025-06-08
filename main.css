@@ -325,46 +325,90 @@ html[data-theme="rgb"] h2, html[data-theme="rgb"] h3, html[data-theme="rgb"] .me
     animation: var(--animation-special-text);
 }
 
-/* Fixed Left Navigation Menu */
+/* --- MODIFICATION: Updated Menu Styling --- */
 #main-menu {
-    position: fixed; top: 0; left: 0; width: 240px; height: 100vh;
-    background-color: var(--color-surface); border-right: 1px solid var(--color-border);
-    padding: 1.5rem 1rem; overflow-y: auto; z-index: 110; /* Increased z-index */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    /* Removed background and border */
+    background-color: transparent;
+    border-right: none;
+    /* Use flexbox to center the content */
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically center */
+    align-items: center; /* Horizontally center items in the container */
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+    z-index: 110;
     transition: transform 0.3s ease;
     transform: translateX(0);
+    /* Make it immune to clicks if it's just a container */
+    pointer-events: none;
 }
+
+/* Make sure the list itself is centered and takes space */
+#menu-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
 
 body.menu-hidden #main-menu { 
     transform: translateX(-100%);
 }
 
 .menu-tab {
-    display: block; width: 100%; padding: 0.75rem 1.25rem; text-align: left; font-weight: 500;
-    color: var(--color-text-secondary); background-color: transparent;
-    border: 1px solid transparent; border-radius: 0.75rem; cursor: pointer; margin-bottom: 0.5rem;
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    /* Center the text within the button */
+    text-align: center;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    margin-bottom: 0.5rem;
+    /* Re-enable pointer events for the buttons themselves */
+    pointer-events: auto;
 }
+/* --- END MODIFICATION --- */
+
 .menu-tab:hover { background-color: var(--color-surface-dark); color: var(--color-primary); }
 .menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; }
 
 /* --- CLASSIC THEME SIDE MENU OVERRIDES --- */
 html[data-theme="classic"] #main-menu { 
-    background: #004e8c; /* Classic windows blue */
+    /* Still transparent, but we can add back a border if we want for this theme */
     border-right: 2px solid #4f4f4f;
 }
 html[data-theme="classic"] .menu-tab { 
     border-radius: 0; 
     border: 1px solid transparent; 
-    color: #FFFFFF; /* White text for contrast */
+    color: var(--color-text-primary); /* Use primary text for visibility on transparent bg */
 }
+html[data-theme="classic"][data-mode="night"] .menu-tab {
+    color: var(--color-text-primary); /* White text on dark themes */
+}
+
 html[data-theme="classic"] .menu-tab:hover {
-    background-color: #3a8cff;
-    color: #FFFFFF;
+    background-color: var(--color-surface-dark);
+    color: var(--color-text-primary);
 }
 html[data-theme="classic"] .menu-tab.active {
-    background: #0058e1; 
-    color: #fff; 
+    background: var(--color-primary);
+    color: var(--color-button-text);
     font-weight: bold; 
-    border-color: #3a8cff;
+    border-color: var(--color-primary-lighter);
 }
 
 /*
@@ -435,10 +479,15 @@ body.menu-visible .menu-overlay {
         margin-left: 0;
     }
 
-    /* The menu is now hidden off-screen by default on mobile */
+    /* --- MODIFICATION: On mobile, give the menu a background so it's visible --- */
     #main-menu {
         transform: translateX(-100%);
         box-shadow: 5px 0 15px rgba(0,0,0,0.1);
+        /* Give it a background on mobile so it's not transparent */
+        background-color: var(--color-surface);
+        border-right: 1px solid var(--color-border);
+        /* Disable click-through on mobile */
+        pointer-events: auto;
     }
     
     /* The .menu-visible class on the BODY will now slide the menu in */
@@ -630,4 +679,3 @@ html[data-theme="classic"] .achievement-card.is-completed {
     border-color: #008000;
     box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
 }
-

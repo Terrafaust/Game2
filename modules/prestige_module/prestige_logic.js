@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v5.0 - Manual Skill Implementation)
+// /game/modules/prestige_module/prestige_logic.js (v6.0 - Post-Doc Rework & UI Logic)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -28,6 +28,18 @@ export const getOwnedPrestigeProducerCount = (producerId) => {
 
 export const getTotalPrestigeCount = () => {
     return decimalUtility.new(moduleState.totalPrestigeCount || '0');
+};
+
+// --- NEW FUNCTION: Calculate the Post-Doctorate multiplier ---
+export const getPostDocMultiplier = () => {
+    if (!coreSystemsRef) return decimalUtility.new(1);
+    const { decimalUtility } = coreSystemsRef;
+    const owned = getOwnedPrestigeProducerCount('postDoc');
+    if (decimalUtility.eq(owned, 0)) {
+        return decimalUtility.new(1);
+    }
+    // Calculates 1.08 ^ owned
+    return decimalUtility.power('1.08', owned);
 };
 
 export const calculatePrestigeProducerCost = (producerId, quantity = 1) => {
@@ -149,8 +161,14 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
 
     let producersToAdd = {};
     let stateNeedsUpdate = false;
+    
+    // --- MODIFICATION: Get the post-doc multiplier once per tick ---
+    const postDocMultiplier = getPostDocMultiplier();
 
     for (const producerId in prestigeData.producers) {
+        // Skip postDoc itself from this calculation
+        if (producerId === 'postDoc') continue;
+
         const producerDef = prestigeData.producers[producerId];
         const ownedCount = getOwnedPrestigeProducerCount(producerId);
 
@@ -160,7 +178,11 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
 
         producerDef.passiveProduction.forEach(target => {
             const baseRate = decimalUtility.new(target.baseRate);
-            const totalRate = decimalUtility.multiply(baseRate, ownedCount);
+            let totalRate = decimalUtility.multiply(baseRate, ownedCount);
+            
+            // --- MODIFICATION: Apply the post-doc multiplier to the rate ---
+            totalRate = decimalUtility.multiply(totalRate, postDocMultiplier);
+
             const generatedThisTick = decimalUtility.multiply(totalRate, deltaTimeSeconds);
             const progressKey = target.producerId;
             if (moduleState.passiveProductionProgress[progressKey] === undefined) {
@@ -199,9 +221,11 @@ export const updatePrestigeProducerEffects = () => {
 
     for (const producerId in prestigeData.producers) {
         const producerDef = prestigeData.producers[producerId];
-        if (producerDef.effect) {
+        // --- MODIFICATION: Skip postDoc as its effect is now handled manually ---
+        if (producerDef.effect && producerId !== 'postDoc') {
             const producerCount = getOwnedPrestigeProducerCount(producerId);
             const effectValueProvider = () => {
+                // This logic is for effects like ADR, not the old postDoc effect
                 return decimalUtility.add(1, decimalUtility.multiply(producerCount, decimalUtility.new(producerDef.effect.valuePerLevel)));
             };
 
@@ -209,6 +233,7 @@ export const updatePrestigeProducerEffects = () => {
         }
     }
 };
+
 
 export const canPrestige = () => {
     const flagUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
@@ -271,7 +296,6 @@ export const performPrestige = () => {
         return;
     }
 
-    // --- MODIFICATION: Get retention values from Skills module ---
     const skillsLogic = moduleLoader.getModule('skills')?.logic;
     let retainedKnowledge = decimalUtility.new(0);
     let retainedSsp = decimalUtility.new(0);
@@ -363,15 +387,15 @@ export const performPrestige = () => {
                     coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
                     
                     coreResourceManager.addAmount('prestigePoints', ppGains);
+                    // --- MODIFICATION: Update the prestigeCount resource ---
+                    coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
                     
-                    // --- MODIFICATION: Add back retained resources ---
                     if (decimalUtility.gt(retainedKnowledge, 0)) coreResourceManager.addAmount('knowledge', retainedKnowledge);
                     if (decimalUtility.gt(retainedSsp, 0)) coreResourceManager.addAmount('studySkillPoints', retainedSsp);
                     if (Object.keys(startingProducers).length > 0) {
                         const studiesLogic = moduleLoader.getModule('studies')?.logic;
                         if (studiesLogic) studiesLogic.addProducers(startingProducers);
                     }
-                    // --- END MODIFICATION ---
 
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     updatePrestigeProducerEffects();

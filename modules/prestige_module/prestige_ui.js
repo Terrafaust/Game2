@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v2.0 - Added Buy Multiplier)
+// /game/modules/prestige_module/prestige_ui.js (v3.0 - Production Display)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -8,13 +8,12 @@ let parentElementCache = null;
 export const ui = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        // FEATURE: Listen for changes in the buy multiplier to update the UI
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef && coreSystemsRef.coreUIManager.isActiveTab('prestige')) {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized.");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.0).");
     },
 
     renderMainContent(parentElement) {
@@ -24,7 +23,6 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        // --- MODIFICATION: Added Tip ---
         const tipBox = document.createElement('div');
         tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center';
         const tipText = document.createElement('p');
@@ -32,7 +30,6 @@ export const ui = {
         tipText.textContent = '"The end already ?"';
         tipBox.appendChild(tipText);
         container.appendChild(tipBox);
-        // --- END MODIFICATION ---
 
         const header = document.createElement('div');
         header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
@@ -60,12 +57,10 @@ export const ui = {
         
         container.appendChild(header);
 
-        // --- FEATURE: Add Buy Multiplier Controls ---
         const multiplierContainer = document.createElement('div');
         multiplierContainer.className = 'flex justify-center items-center p-2 bg-surface-dark rounded-lg mt-4';
         this._createBuyMultiplierControls(multiplierContainer);
         container.appendChild(multiplierContainer);
-        // --- END FEATURE ---
 
         const producersTitle = document.createElement('h3');
         producersTitle.className = 'text-xl font-semibold text-primary mt-6';
@@ -87,7 +82,6 @@ export const ui = {
         this.updateDynamicElements();
     },
 
-    // --- FEATURE: Function to create multiplier buttons ---
     _createBuyMultiplierControls(container) {
         const { coreUIManager, buyMultiplierManager } = coreSystemsRef;
         const multipliers = [
@@ -134,6 +128,14 @@ export const ui = {
         ownedDisplay.id = `prestige-owned-${producerDef.id}`;
         ownedDisplay.className = 'text-sm text-blue-400 mb-2';
         card.appendChild(ownedDisplay);
+        
+        // --- MODIFICATION: Added production display element ---
+        if (producerDef.passiveProduction) {
+            const productionDisplay = document.createElement('div');
+            productionDisplay.id = `prestige-production-${producerDef.id}`;
+            productionDisplay.className = 'text-xs text-green-400 mb-2 space-y-1';
+            card.appendChild(productionDisplay);
+        }
 
         const costDisplay = document.createElement('p');
         costDisplay.id = `prestige-cost-${producerDef.id}`;
@@ -152,8 +154,8 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        if (!parentElementCache) return;
-        const { decimalUtility, coreResourceManager, buyMultiplierManager } = coreSystemsRef;
+        if (!parentElementCache || !coreSystemsRef) return;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator } = coreSystemsRef;
 
         const ppDisplay = parentElementCache.querySelector('#pp-display');
         if (ppDisplay) {
@@ -164,6 +166,7 @@ export const ui = {
         const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
         if(prestigeCountDisplay) {
             const count = logic.getTotalPrestigeCount();
+            // This is now handled by coreUIManager.updateResourceDisplay, but we can keep it for faster updates
             prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
         }
 
@@ -179,7 +182,6 @@ export const ui = {
             }
         }
         
-        // --- FEATURE: Update multiplier buttons active state ---
         const currentMultiplier = buyMultiplierManager.getMultiplier();
         const multiplierButtons = parentElementCache.querySelectorAll('#prestige-buy-multiplier-controls button');
         multiplierButtons.forEach(btn => {
@@ -192,12 +194,40 @@ export const ui = {
             }
         });
 
-        // --- FEATURE: Update producer cards with multiplier logic ---
+        const postDocMultiplier = logic.getPostDocMultiplier();
+
         for (const producerId in prestigeData.producers) {
             const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
             if (card) {
+                const producerDef = prestigeData.producers[producerId];
                 const owned = logic.getOwnedPrestigeProducerCount(producerId);
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
+
+                // --- MODIFICATION: Update production display ---
+                const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
+                if (productionDisplay) {
+                    if (producerDef.passiveProduction && decimalUtility.gt(owned, 0)) {
+                        let productionHtml = '';
+                        producerDef.passiveProduction.forEach(p => {
+                            const baseRate = decimalUtility.new(p.baseRate);
+                            let finalRate = decimalUtility.multiply(baseRate, owned);
+                            // Apply Post-Doc multiplier
+                            if(producerId !== 'postDoc') {
+                                finalRate = decimalUtility.multiply(finalRate, postDocMultiplier);
+                            }
+
+                            if (decimalUtility.gt(finalRate, 0)) {
+                                const studiesProducerData = staticDataAggregator.getData(`studies.producers.${p.producerId}`);
+                                const producerName = studiesProducerData ? studiesProducerData.name : p.producerId;
+                                productionHtml += `<div>Production: ${decimalUtility.format(finalRate, 2)} ${producerName}/s</div>`;
+                            }
+                        });
+                        productionDisplay.innerHTML = productionHtml;
+                    } else {
+                        productionDisplay.innerHTML = ''; // Clear if not producing
+                    }
+                }
+                // --- END MODIFICATION ---
 
                 let quantityToBuy;
                 if (currentMultiplier === -1) {

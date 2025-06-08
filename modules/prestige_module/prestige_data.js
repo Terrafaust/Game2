@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_data.js (v2.5 - ADR and Currency Correction)
+// /game/modules/prestige_module/prestige_data.js (v2.6 - Post-Doc Rework)
 
 export const prestigeData = {
     resources: {
@@ -23,9 +23,8 @@ export const prestigeData = {
             id: 'license',
             name: 'License',
             description: 'A professional teaching license. Each one passively generates 1 Student, 1 Classroom, and 1 Kindergarten per second for free.',
-            // --- MODIFICATION: Corrected currency to Prestige Points (PP) for consistency with UI ---
             costResource: 'prestigePoints',
-            baseCost: '100',
+            baseCost: '25',
             costGrowthFactor: '1.05',
             passiveProduction: [
                 { producerId: 'student', baseRate: '1' },
@@ -38,7 +37,7 @@ export const prestigeData = {
             name: "Master's Degree I",
             description: 'Each one passively generates 1 Elementary, Middle, and High School per second.',
             costResource: 'prestigePoints',
-            baseCost: '10000',
+            baseCost: '1000',
             costGrowthFactor: '1.05',
             passiveProduction: [
                 { producerId: 'elementarySchool', baseRate: '1' },
@@ -51,7 +50,7 @@ export const prestigeData = {
             name: "Master's Degree II",
             description: 'Each one passively generates 1 University per second.',
             costResource: 'prestigePoints',
-            baseCost: '100000',
+            baseCost: '25000',
             costGrowthFactor: '1.05',
             passiveProduction: [
                 { producerId: 'university', baseRate: '1' }
@@ -62,7 +61,7 @@ export const prestigeData = {
             name: 'PhD',
             description: 'Each one passively generates 0.1 Professors per second.',
             costResource: 'prestigePoints',
-            baseCost: '1e10',
+            baseCost: '1e7',
             costGrowthFactor: '1.05',
             passiveProduction: [
                 { producerId: 'professor', baseRate: '0.1' }
@@ -71,25 +70,21 @@ export const prestigeData = {
         postDoc: {
             id: 'postDoc',
             name: 'Post-Doctorate',
-            description: 'Multiplies the production of all other Prestige producers.',
+            // --- MODIFICATION: Updated description and removed old effect block ---
+            description: 'Multiplies the passive generation of all other Prestige producers by 1.08x for each level, stacking multiplicatively.',
             costResource: 'prestigePoints',
-            baseCost: '1e13',
+            baseCost: '1e9',
             costGrowthFactor: '1.05',
-            effect: {
-                type: 'MULTIPLIER',
-                targetSystem: 'prestige_producers', 
-                targetId: 'ALL',
-                valuePerLevel: '0.1'
-            }
+            // The effect is now handled directly in prestige_logic.js
         },
-        // --- MODIFICATION: Added new ADR upgrade ---
+        // --- END MODIFICATION ---
         adr: {
             id: 'adr',
             name: 'ADR (Authorization to Direct Research)',
             description: 'Each level multiplies the total production of Knowledge by x10.',
             costResource: 'prestigePoints',
-            baseCost: '1e12',
-            costGrowthFactor: '100', // Cost increases significantly
+            baseCost: '1e10',
+            costGrowthFactor: '12', // Cost increases significantly
             effect: {
                 type: 'MULTIPLIER',
                 targetSystem: 'global_resource_production',

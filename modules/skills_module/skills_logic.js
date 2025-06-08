@@ -55,15 +55,29 @@ export const moduleLogic = {
         return false;
     },
 
-    // --- NEW: Function to get knowledge retention from 'permanentKnowledge' skill ---
+    // --- MODIFICATION: Made knowledge retention logic more robust and added logging ---
     getKnowledgeRetentionPercentage() {
-        const { decimalUtility } = coreSystemsRef;
-        const level = this.getSkillLevel('permanentKnowledge', true); // isPrestige = true
-        if (level === 0) {
-            return decimalUtility.new(0);
+        if (!coreSystemsRef) return new coreSystemsRef.decimalUtility.new(0);
+
+        const { decimalUtility, loggingSystem } = coreSystemsRef;
+        const skillId = 'permanentKnowledge';
+        const level = this.getSkillLevel(skillId, true); // isPrestige = true
+
+        if (level > 0) {
+            const skillDef = staticModuleData.prestigeSkills[skillId];
+            if (skillDef) {
+                // The skill gives 1% per level, which is a multiplier of 0.01
+                const retentionPerLevel = decimalUtility.new('0.01');
+                const totalRetention = decimalUtility.multiply(level, retentionPerLevel);
+                loggingSystem.info("SkillsLogic_Retention", `Skill '${skillId}' is level ${level}. Retaining ${totalRetention.toExponential(2)} of Knowledge.`);
+                return totalRetention;
+            } else {
+                loggingSystem.warn("SkillsLogic_Retention", `Could not find skill definition for '${skillId}'.`);
+                return decimalUtility.new(0);
+            }
         }
-        // 1% per level, so 0.01 per level
-        return decimalUtility.multiply(level, 0.01);
+        
+        return decimalUtility.new(0);
     },
 
     // --- NEW: Function to get SSP retention from 'retainedSkills' skill ---

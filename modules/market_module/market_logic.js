@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v2.1 - Fixed PSP Visibility)
+// modules/market_module/market_logic.js (v3.0 - Cost Reduction Rework)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v3.0: Implemented cost reduction multipliers from achievements.
  * v2.1: Removed logic that forced Prestige Skill Points to be visible in the UI.
- * v2.0: Added logic for purchasing and processing the Image Automator.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,48 +15,89 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v2.1).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v3.0).");
     },
     
     calculateMaxBuyable(itemId) {
-        const { coreResourceManager, decimalUtility } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return decimalUtility.ZERO;
+
         const purchaseCountKey = itemDef.benefitResource;
         const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
         const costResource = itemDef.costResource;
-        const currentResources = coreResourceManager.getAmount(costResource);
+        
+        const availableCurrency = coreResourceManager.getAmount(costResource);
+        
+        // --- MODIFICATION: Apply cost reduction by calculating effective resources ---
+        const costReductionMultiplier = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_REDUCTION_MULTIPLIER');
+        let effectiveResources = availableCurrency;
+        if (decimalUtility.gt(costReductionMultiplier, 0) && decimalUtility.lt(costReductionMultiplier, 1)) {
+            effectiveResources = decimalUtility.divide(availableCurrency, costReductionMultiplier);
+        }
+        // --- END MODIFICATION ---
+
         const baseCost = decimalUtility.new(itemDef.baseCost);
-        const costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
-        if (decimalUtility.lt(currentResources, baseCost)) { return decimalUtility.ZERO; }
+        
+        // --- MODIFICATION: Apply cost growth reduction ---
+        let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
+        const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
+        if(decimalUtility.gt(growthReduction, 1)) {
+            // The reduction is 1 - ( (1-reductionPerSource1) * (1-reductionPerSource2) )
+            // The final multiplier is what's left. e.g. 1 - 0.01 = 0.99
+            const effectiveGrowthMultiplier = decimalUtility.subtract(1, growthReduction);
+            costGrowthFactor = decimalUtility.add(1, decimalUtility.multiply(decimalUtility.subtract(costGrowthFactor, 1), effectiveGrowthMultiplier));
+        }
+        // --- END MODIFICATION ---
+
+        if (decimalUtility.lt(effectiveResources, baseCost)) return decimalUtility.ZERO;
+        
         const R = costGrowthFactor;
         const R_minus_1 = decimalUtility.subtract(R, 1);
         const C_base_pow_owned = decimalUtility.multiply(baseCost, decimalUtility.power(R, ownedCount));
         if (decimalUtility.lte(C_base_pow_owned, 0)) return decimalUtility.new(Infinity);
-        const term = decimalUtility.divide(decimalUtility.multiply(currentResources, R_minus_1), C_base_pow_owned);
+
+        const term = decimalUtility.divide(decimalUtility.multiply(effectiveResources, R_minus_1), C_base_pow_owned);
         const LHS = decimalUtility.add(term, 1);
         if (decimalUtility.lte(LHS, 1)) return decimalUtility.ZERO;
+
         const log_LHS = decimalUtility.ln(LHS);
         const log_R = decimalUtility.ln(R);
         if (decimalUtility.lte(log_R, 0)) return decimalUtility.ZERO;
+        
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         return decimalUtility.max(max_n, 0);
     },
 
     calculateScalableItemCost(itemId, quantity = 1) {
-        const { decimalUtility, loggingSystem } = coreSystemsRef;
+        const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return decimalUtility.new(Infinity);
+        
         let n = decimalUtility.new(quantity);
         if (quantity === -1) {
             n = this.calculateMaxBuyable(itemId);
             if (decimalUtility.eq(n, 0)) return decimalUtility.new(Infinity);
         }
+
         const baseCost = decimalUtility.new(itemDef.baseCost);
-        const costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
+        
+        // --- MODIFICATION: Apply cost growth reduction ---
+        let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
+        const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
+        if(decimalUtility.lt(growthReduction, 1)) {
+            // The upgrade manager returns the final multiplier, e.g. 0.99 for a 1% reduction.
+            // We want to reduce the "growth" part of the factor, which is (factor - 1).
+            const growthPart = decimalUtility.subtract(costGrowthFactor, 1);
+            const reducedGrowthPart = decimalUtility.multiply(growthPart, growthReduction);
+            costGrowthFactor = decimalUtility.add(1, reducedGrowthPart);
+        }
+        // --- END MODIFICATION ---
+        
         const purchaseCountKey = itemDef.benefitResource;
         const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
         let totalCost;
+
         if (decimalUtility.eq(costGrowthFactor, 1)) {
             totalCost = decimalUtility.multiply(baseCost, n);
         } else {
@@ -65,24 +106,37 @@ export const moduleLogic = {
             const denominator = decimalUtility.subtract(costGrowthFactor, 1);
             totalCost = decimalUtility.multiply(baseCost, decimalUtility.divide(numerator, denominator));
         }
+
         const priceIncreaseFromOwned = decimalUtility.power(costGrowthFactor, ownedCount);
         totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
+
+        // --- MODIFICATION: Apply final cost reduction ---
+        const costReductionMultiplier = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_REDUCTION_MULTIPLIER');
+        if (decimalUtility.lt(costReductionMultiplier, 1)) {
+            totalCost = decimalUtility.multiply(totalCost, costReductionMultiplier);
+        }
+        // --- END MODIFICATION ---
+
         return totalCost;
     },
 
     purchaseScalableItem(itemId) {
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return false;
+        
         let quantity = buyMultiplierManager.getMultiplier();
         if (quantity === -1) {
             quantity = this.calculateMaxBuyable(itemId);
             if (decimalUtility.lte(quantity, 0)) {
+                 coreUIManager.showNotification(`Cannot afford any ${itemDef.name.replace('Acquire ', '')}.`, 'warning');
                 return false;
             }
         }
+
         const cost = this.calculateScalableItemCost(itemId, quantity);
         const costResource = itemDef.costResource;
+
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
             
@@ -112,6 +166,7 @@ export const moduleLogic = {
             }
             return true;
         } else {
+             coreUIManager.showNotification(`Not enough resources.`, 'error');
             return false;
         }
     },
@@ -131,7 +186,7 @@ export const moduleLogic = {
     },
 
     purchaseUnlock(unlockId) { 
-        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef || this.isUnlockPurchased(unlockId)) return false;
         
@@ -142,15 +197,14 @@ export const moduleLogic = {
             coreUIManager.showNotification(`${unlockDef.name.replace('Unlock ','').replace(' Menu','')} Unlocked!`, 'success', 3000);
             coreUIManager.renderMenu();
             return true;
-        } else {
-            return false;
         }
+        return false;
     },
 
     isMarketTabUnlocked() {
-        if (!coreSystemsRef) { return true; }
+        if (!coreSystemsRef) return true; 
         const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
-        if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) { return true; }
+        if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) return true; 
         const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); 
         if (conditionMet) {
             coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
@@ -205,12 +259,10 @@ export const moduleLogic = {
     },
 
     processImageAutomation(deltaTimeSeconds) {
-        const { coreResourceManager, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
+        const { coreResourceManager, coreGameStateManager, decimalUtility } = coreSystemsRef;
         const automatorInfo = this.getAutomatorInfo('imageAutomator');
         
-        if (!automatorInfo || automatorInfo.currentLevel === 0) {
-            return;
-        }
+        if (!automatorInfo || automatorInfo.currentLevel === 0) return;
 
         const currentLevelDef = staticModuleData.marketAutomations.imageAutomator.levels[automatorInfo.currentLevel - 1];
         const rate = decimalUtility.new(currentLevelDef.rate);
