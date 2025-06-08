@@ -1,8 +1,9 @@
-// modules/market_module/market_logic.js (v2.0 - Added Automator Logic)
+// modules/market_module/market_logic.js (v2.1 - Fixed PSP Visibility)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v2.1: Removed logic that forced Prestige Skill Points to be visible in the UI.
  * v2.0: Added logic for purchasing and processing the Image Automator.
  */
 
@@ -14,10 +15,9 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v2.0).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v2.1).");
     },
     
-    // --- UNCHANGED ORIGINAL FUNCTIONS ---
     calculateMaxBuyable(itemId) {
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
@@ -42,6 +42,7 @@ export const moduleLogic = {
         const max_n = decimalUtility.floor(decimalUtility.divide(log_LHS, log_R));
         return decimalUtility.max(max_n, 0);
     },
+
     calculateScalableItemCost(itemId, quantity = 1) {
         const { decimalUtility, loggingSystem } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
@@ -68,6 +69,7 @@ export const moduleLogic = {
         totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
         return totalCost;
     },
+
     purchaseScalableItem(itemId) {
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
         const itemDef = staticModuleData.marketItems[itemId];
@@ -76,7 +78,6 @@ export const moduleLogic = {
         if (quantity === -1) {
             quantity = this.calculateMaxBuyable(itemId);
             if (decimalUtility.lte(quantity, 0)) {
-                loggingSystem.debug("MarketLogic", `Buy Max for ${itemDef.name} calculated 0, purchase aborted.`);
                 return false;
             }
         }
@@ -84,6 +85,7 @@ export const moduleLogic = {
         const costResource = itemDef.costResource;
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
+            
             if (itemDef.benefitResource === 'images') {
                 const imagesRes = coreResourceManager.getResource('images');
                 if (imagesRes && !imagesRes.isUnlocked) coreResourceManager.unlockResource('images', true);
@@ -91,80 +93,75 @@ export const moduleLogic = {
             } else if (itemDef.benefitResource === 'prestigeSkillPoints') {
                 const pspRes = coreResourceManager.getResource('prestigeSkillPoints');
                 if (pspRes && !pspRes.isUnlocked) coreResourceManager.unlockResource('prestigeSkillPoints', true);
-                if (pspRes && !pspRes.showInUI) coreResourceManager.setResourceVisibility('prestigeSkillPoints', true);
+                // --- CHANGE: The line that set visibility to true has been removed. ---
             }
+            
             const benefitAmount = decimalUtility.multiply(itemDef.benefitAmountPerPurchase, quantity);
             coreResourceManager.addAmount(itemDef.benefitResource, benefitAmount);
             const purchaseCountKey = itemDef.benefitResource;
             let currentPurchaseCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
             moduleState.purchaseCounts[purchaseCountKey] = decimalUtility.add(currentPurchaseCount, quantity).toString();
             coreGameStateManager.setModuleState('market', { ...moduleState });
-            loggingSystem.info("MarketLogic", `Purchased ${decimalUtility.format(quantity,0)} of ${itemDef.name}.`);
             coreUIManager.showNotification(`Acquired ${decimalUtility.format(benefitAmount,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantity,1) ? 's' : ''}!`, 'success', 2000);
-            if (itemDef.benefitResource === 'images' || itemDef.benefitResource === 'prestigeSkillPoints') coreUIManager.updateResourceDisplay();
-            if (itemDef.benefitResource === 'studySkillPoints') {
-                const skillsModule = moduleLoader.getModule('skills');
-                if (skillsModule?.logic?.isSkillsTabUnlocked) skillsModule.logic.isSkillsTabUnlocked(); 
-                else coreUIManager.renderMenu();
+            
+            if (itemDef.benefitResource === 'images') coreUIManager.updateResourceDisplay();
+            
+            const skillsModule = moduleLoader.getModule('skills');
+            if (itemDef.benefitResource === 'studySkillPoints' || itemDef.benefitResource === 'prestigeSkillPoints') {
+                 if (skillsModule?.logic?.isSkillsTabUnlocked) skillsModule.logic.isSkillsTabUnlocked(); 
+                 else coreUIManager.renderMenu();
             }
             return true;
         } else {
             return false;
         }
     },
+    
     canAffordUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return false;
         return coreResourceManager.canAfford(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
     },
+
     isUnlockPurchased(unlockId) { 
         const { coreGameStateManager } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return true;
         return coreGameStateManager.getGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);
     },
+
     purchaseUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         const unlockDef = staticModuleData.marketUnlocks[unlockId];
-        if (!unlockDef) return false;
-        if (this.isUnlockPurchased(unlockId)) return false;
+        if (!unlockDef || this.isUnlockPurchased(unlockId)) return false;
+        
         if (this.canAffordUnlock(unlockId)) { 
             coreResourceManager.spendAmount(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
             coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true);
             coreGameStateManager.setGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, true); 
             coreUIManager.showNotification(`${unlockDef.name.replace('Unlock ','').replace(' Menu','')} Unlocked!`, 'success', 3000);
-            if (unlockId === 'settingsTab') {
-                const settingsModule = moduleLoader.getModule('settings_ui');
-                if (settingsModule?.logic?.isSettingsTabUnlocked) settingsModule.logic.isSettingsTabUnlocked(); 
-                else coreUIManager.renderMenu();
-            } else if (unlockId === 'achievementsTab') {
-                 const achievementsModule = moduleLoader.getModule('achievements');
-                if (achievementsModule?.logic?.isAchievementsTabUnlocked) achievementsModule.logic.isAchievementsTabUnlocked(); 
-                else coreUIManager.renderMenu();
-            } else {
-                 coreUIManager.renderMenu(); 
-            }
+            coreUIManager.renderMenu();
             return true;
         } else {
             return false;
         }
     },
+
     isMarketTabUnlocked() {
         if (!coreSystemsRef) { return true; }
-        const { coreGameStateManager, coreUIManager } = coreSystemsRef;
+        const { coreGameStateManager, coreUIManager, loggingSystem } = coreSystemsRef;
         if (coreGameStateManager.getGlobalFlag('marketTabPermanentlyUnlocked', false)) { return true; }
         const conditionMet = coreGameStateManager.getGlobalFlag('marketUnlocked', false); 
         if (conditionMet) {
             coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', true);
             if(coreUIManager) coreUIManager.renderMenu(); 
-            coreSystemsRef.loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
+            loggingSystem.info("MarketLogic", "Market tab permanently unlocked.");
             return true;
         }
         return false;
     },
 
-    // --- FEATURE: Logic for Automator ---
     getAutomatorLevel(automatorId) {
         return moduleState.automatorLevels[automatorId] || 0;
     },
@@ -174,12 +171,12 @@ export const moduleLogic = {
         if (!automatorDef) return null;
 
         const currentLevel = this.getAutomatorLevel(automatorId);
-        const nextLevelInfo = automatorDef.levels[currentLevel]; // nextLevel is currentLevel because arrays are 0-indexed
+        const nextLevelInfo = automatorDef.levels[currentLevel];
 
         return {
             currentLevel: currentLevel,
             maxLevel: automatorDef.levels.length,
-            nextLevelInfo: nextLevelInfo || null // null if max level is reached
+            nextLevelInfo: nextLevelInfo || null
         };
     },
     
@@ -226,8 +223,6 @@ export const moduleLogic = {
         if (decimalUtility.gte(newProgress, 1)) {
             const wholeImagesToBuy = decimalUtility.floor(newProgress);
             
-            // This is the core logic: add the resource directly and update the purchase count
-            // to ensure the manual purchase cost scales correctly for the player.
             coreResourceManager.addAmount('images', wholeImagesToBuy);
             
             const currentPurchaseCount = decimalUtility.new(moduleState.purchaseCounts.images || "0");
@@ -236,9 +231,7 @@ export const moduleLogic = {
             moduleState.automationProgress.imageAutomator = decimalUtility.subtract(newProgress, wholeImagesToBuy).toString();
             
             coreGameStateManager.setModuleState('market', { ...moduleState });
-            loggingSystem.debug("MarketLogic", `Automator generated ${wholeImagesToBuy.toString()} images.`);
-
-            // Ensure images are visible if they were just generated for the first time
+            
             const imagesRes = coreResourceManager.getResource('images');
             if (imagesRes && !imagesRes.isUnlocked) coreResourceManager.unlockResource('images', true);
             if (imagesRes && !imagesRes.showInUI) coreResourceManager.setResourceVisibility('images', true);
@@ -246,19 +239,16 @@ export const moduleLogic = {
             moduleState.automationProgress.imageAutomator = newProgress.toString();
         }
     },
-    // --- END FEATURE ---
 
     onGameLoad() {
         const { coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
         let loadedState = coreGameStateManager.getModuleState('market');
         const initialState = getInitialState();
 
-        // Safely merge loaded state with initial state structure
         moduleState.purchaseCounts = { ...initialState.purchaseCounts, ...(loadedState?.purchaseCounts || {}) };
         moduleState.automatorLevels = { ...initialState.automatorLevels, ...(loadedState?.automatorLevels || {}) };
         moduleState.automationProgress = { ...initialState.automationProgress, ...(loadedState?.automationProgress || {}) };
         
-        // Ensure all values are Decimals
         Object.keys(moduleState.purchaseCounts).forEach(key => {
             moduleState.purchaseCounts[key] = decimalUtility.new(moduleState.purchaseCounts[key] || "0").toString();
         });
@@ -267,10 +257,6 @@ export const moduleLogic = {
         const imagesRes = coreResourceManager.getResource('images');
         if (imagesRes && imagesRes.isUnlocked && decimalUtility.gt(imagesRes.amount, 0) && !imagesRes.showInUI) {
             coreResourceManager.setResourceVisibility('images', true);
-        }
-        const pspRes = coreResourceManager.getResource('prestigeSkillPoints');
-        if (pspRes && pspRes.isUnlocked && decimalUtility.gt(pspRes.amount, 0) && !pspRes.showInUI) {
-            coreResourceManager.setResourceVisibility('prestigeSkillPoints', true);
         }
     },
 

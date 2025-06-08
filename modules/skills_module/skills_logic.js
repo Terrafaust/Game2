@@ -203,6 +203,9 @@ export const moduleLogic = {
             coreResourceManager.spendAmount(resourceId, cost);
             
             if (isPrestige) {
+                if (!moduleState.prestigeSkillLevels) {
+                    moduleState.prestigeSkillLevels = {};
+                }
                 moduleState.prestigeSkillLevels[skillId] = currentLevel + 1;
             } else {
                 moduleState.skillLevels[skillId] = currentLevel + 1;

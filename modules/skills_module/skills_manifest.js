@@ -1,7 +1,8 @@
-// modules/skills_module/skills_manifest.js (v1.3 - Prestige Reset Fix)
+// modules/skills_module/skills_manifest.js (v1.4 - Robust State Initialization)
 /**
  * @file skills_manifest.js
  * @description Manifest file for the Skills Module.
+ * v1.4: Implements robust state initialization to prevent crashes on new/old saves.
  * v1.3: Implements onPrestigeReset to only reset regular skills.
  */
 
@@ -13,7 +14,7 @@ import { ui } from './skills_ui.js';
 const skillsManifest = {
     id: "skills",
     name: "Skills",
-    version: "1.3.0", // Version bump for prestige reset fix
+    version: "1.4.0",
     description: "Unlock and level up skills to boost your progress.",
     dependencies: ["market"], 
 
@@ -24,19 +25,22 @@ const skillsManifest = {
 
         staticDataAggregator.registerStaticData(this.id, staticModuleData);
 
-        let currentModuleState = coreGameStateManager.getModuleState(this.id);
-        if (!currentModuleState) {
-            currentModuleState = getInitialState();
-        } else {
-            if (typeof currentModuleState.skillLevels !== 'object' || currentModuleState.skillLevels === null) {
-                currentModuleState.skillLevels = {};
-            }
-            if (typeof currentModuleState.prestigeSkillLevels !== 'object' || currentModuleState.prestigeSkillLevels === null) {
-                currentModuleState.prestigeSkillLevels = {};
-            }
-        }
-        Object.assign(moduleState, currentModuleState);
+        // --- CHANGE: More robust state initialization ---
+        const initialState = getInitialState();
+        const loadedState = coreGameStateManager.getModuleState(this.id);
+        
+        // Merge the loaded state over the default initial state.
+        // This ensures that if new properties are added to the state in an update,
+        // they will exist even when loading an older save.
+        const finalState = { ...initialState, ...loadedState };
+
+        // Ensure nested objects are valid, just in case.
+        finalState.skillLevels = finalState.skillLevels || {};
+        finalState.prestigeSkillLevels = finalState.prestigeSkillLevels || {};
+        
+        Object.assign(moduleState, finalState);
         coreGameStateManager.setModuleState(this.id, { ...moduleState });
+        // --- END CHANGE ---
 
         moduleLogic.initialize(coreSystems);
         ui.initialize(coreSystems, moduleState, moduleLogic);
@@ -70,51 +74,40 @@ const skillsManifest = {
             ui: ui,
             onGameLoad: () => {
                 loggingSystem.info(this.name, `onGameLoad called for ${this.name}.`);
-                let loadedState = coreGameStateManager.getModuleState(this.id);
-                if (!loadedState) {
-                    loadedState = getInitialState();
-                } else {
-                     if (typeof loadedState.skillLevels !== 'object' || loadedState.skillLevels === null) {
-                        loadedState.skillLevels = {};
-                    }
-                    if (typeof loadedState.prestigeSkillLevels !== 'object' || loadedState.prestigeSkillLevels === null) {
-                        loadedState.prestigeSkillLevels = {};
-                    }
-                }
-                Object.assign(moduleState, loadedState);
+                // Use the same robust initialization logic on game load
+                const reloadedState = coreGameStateManager.getModuleState(this.id);
+                const reloadedFinalState = { ...getInitialState(), ...reloadedState };
+                reloadedFinalState.skillLevels = reloadedFinalState.skillLevels || {};
+                reloadedFinalState.prestigeSkillLevels = reloadedFinalState.prestigeSkillLevels || {};
+
+                Object.assign(moduleState, reloadedFinalState);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState });
+
                 moduleLogic.onGameLoad();
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 }
             },
-            // --- FIX: This handles a hard reset of the entire game ---
             onResetState: () => {
                 loggingSystem.info(this.name, `onResetState called for ${this.name}. Resetting ALL skills.`);
-                const initialState = getInitialState();
-                Object.assign(moduleState, initialState);
+                const initialStateOnReset = getInitialState();
+                Object.assign(moduleState, initialStateOnReset);
                 coreGameStateManager.setModuleState(this.id, { ...moduleState });
                 moduleLogic.onResetState();
                 if (coreUIManager.isActiveTab(this.id)) {
                      ui.renderMainContent(document.getElementById('main-content'));
                 }
             },
-            // --- FEATURE: This handles a prestige, keeping prestige skills ---
             onPrestigeReset: () => {
                 loggingSystem.info(this.name, `onPrestigeReset called for ${this.name}. Resetting regular skills only.`);
                 
-                // Get the current state, which includes prestige skill levels
                 const currentState = coreGameStateManager.getModuleState(this.id) || getInitialState();
                 
-                // Reset only the regular skill levels and SSP
                 currentState.skillLevels = {};
-                // The SSP resource is reset automatically by the resource manager
                 
-                // Save the modified state back
                 coreGameStateManager.setModuleState(this.id, currentState);
-                Object.assign(moduleState, currentState); // Sync the local state
+                Object.assign(moduleState, currentState);
                 
-                // Tell the logic to re-register effects with the new state
                 moduleLogic.onPrestigeReset();
                 
                  if (coreUIManager.isActiveTab(this.id)) {
@@ -126,4 +119,3 @@ const skillsManifest = {
 };
 
 export default skillsManifest;
-
