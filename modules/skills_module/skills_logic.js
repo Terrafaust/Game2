@@ -1,14 +1,14 @@
-// modules/skills_module/skills_logic.js (v4.0 - Full Skill Implementation)
+// modules/skills_module/skills_logic.js (v4.1 - Crash Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v4.1: Fixed TypeError crash by safely handling skill effect definitions.
  * v4.0: Implemented and corrected logic for all special and standard skill effects based on detailed review.
- * v1.9: Fixed syntax error in purchase success notification.
  */
 
 import { staticModuleData } from './skills_data.js';
-import { moduleState } from './skills_state.js';
+import { moduleState, getInitialState as getSkillsInitialState } from './skills_state.js';
 
 let coreSystemsRef = null;
 
@@ -23,7 +23,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.0).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.1).");
         this.registerAllSkillEffects();
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
@@ -80,7 +80,6 @@ export const moduleLogic = {
         };
     },
     
-    // --- NEW: Logic for 'The Final Frontier' ---
     getManualKnowledgeGainPercent() {
         const skillId = 'finalFrontier';
         const level = this.getSkillLevel(skillId, false);
@@ -163,7 +162,6 @@ export const moduleLogic = {
         if (cost && coreResourceManager.canAfford(resourceId, cost)) {
             coreResourceManager.spendAmount(resourceId, cost);
             
-            // --- NEW: Track SSP spent for Synergistic Prestige ---
             if (!isPrestige) {
                 const currentSpent = decimalUtility.new(moduleState.studySkillPointsSpentThisPrestige || '0');
                 moduleState.studySkillPointsSpentThisPrestige = decimalUtility.add(currentSpent, cost).toString();
@@ -190,7 +188,6 @@ export const moduleLogic = {
         }
     },
 
-    // --- NEW: Helper for Singularity ---
     getSingularityPower() {
         return this.getSkillLevel('singularity', true) > 0 ? 2 : 1;
     },
@@ -202,9 +199,17 @@ export const moduleLogic = {
         const processSkills = (skillsCollection, isPrestigeFlag) => {
             for (const skillId in skillsCollection) {
                 const skillDef = skillsCollection[skillId];
-                const effects = skillDef.effect ? [skillDef.effect] : (skillDef.effects || []);
+                
+                // --- FIX: Safely create an array of effects to process ---
+                let effectsToProcess = [];
+                if (skillDef.effect && typeof skillDef.effect === 'object') {
+                    effectsToProcess = [skillDef.effect];
+                } else if (Array.isArray(skillDef.effects)) {
+                    effectsToProcess = skillDef.effects;
+                }
+                // This ensures effectsToProcess is always an array, preventing the crash.
 
-                effects.forEach(effectDef => {
+                effectsToProcess.forEach(effectDef => {
                     if (!effectDef || !REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return;
 
                     const valueProvider = () => {
@@ -232,7 +237,6 @@ export const moduleLogic = {
                         }
                         return finalMultiplier;
                     };
-                    // Ensure unique source key for multi-effect skills
                     const sourceKey = `${isPrestigeFlag ? 'p_' : 's_'}${skillId}_${effectDef.targetSystem}_${effectDef.targetId || 'ALL'}`;
                     coreUpgradeManager.registerEffectSource('skills', sourceKey, effectDef.targetSystem, effectDef.targetId, effectDef.type, valueProvider);
                 });
@@ -247,20 +251,27 @@ export const moduleLogic = {
     applySpecialSkillEffects(deltaTimeSeconds) {
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, moduleLoader, coreUpgradeManager } = coreSystemsRef;
         
-        // --- Full implementation of special skills ---
         const processSpecialSkills = (skillsCollection, isPrestigeFlag) => {
             for (const skillId in skillsCollection) {
                 const skillDef = skillsCollection[skillId];
                 const level = this.getSkillLevel(skillId, isPrestigeFlag);
+
+                // --- FIX: Unregister effect if level is 0 ---
                 if (level === 0) {
-                     // Unregister if level is 0
                      if (skillDef.effect && !REGISTERABLE_EFFECT_TYPES.includes(skillDef.effect.type)) {
                         coreUpgradeManager.unregisterEffectSource('skills', `${skillId}_special`, skillDef.effect.targetSystem, skillDef.effect.targetId, 'MULTIPLIER');
                      }
                      continue;
                 };
 
-                const effectsToProcess = skillDef.effect ? [skillDef.effect] : (skillDef.effects || []);
+                // --- FIX: Safely create an array of effects to process ---
+                let effectsToProcess = [];
+                if (skillDef.effect && typeof skillDef.effect === 'object') {
+                    effectsToProcess = [skillDef.effect];
+                } else if (Array.isArray(skillDef.effects)) {
+                    effectsToProcess = skillDef.effects;
+                }
+
                 effectsToProcess.forEach(effectDef => {
                     if (!effectDef || REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return;
 
@@ -284,7 +295,6 @@ export const moduleLogic = {
                             coreUpgradeManager.registerEffectSource('skills', 'ppOverdrive_special', 'global_production', 'all', 'MULTIPLIER', () => globalBonus);
                             break;
 
-                        // These are handled elsewhere (Singularity in register, others are manual/flags)
                         case "MANUAL_CLICK_KNOWLEDGE_GAIN":
                         case "SQUARE_STUDY_SKILL_MULTIPLIERS":
                         case "MANUAL":
@@ -340,7 +350,12 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.0).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.1).");
+        // Ensure moduleState is fully initialized on load
+        Object.assign(moduleState, {
+            ...getSkillsInitialState(),
+            ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
+        });
         this.registerAllSkillEffects();
         this.isSkillsTabUnlocked(); 
         this.applySpecialSkillEffects(0);
@@ -355,6 +370,8 @@ export const moduleLogic = {
 
     onResetState() {
         coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered. Resetting ALL skills and flags.");
+        // Restore to initial state
+        Object.assign(moduleState, getSkillsInitialState());
         this.registerAllSkillEffects();
         // Manually clean up special effects
         coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'knowledgeIsPower_special', 'global_resource_production', 'studyPoints', 'MULTIPLIER');
