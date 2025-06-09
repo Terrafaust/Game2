@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v6.0 - Post-Doc Rework & UI Logic)
+// /game/modules/prestige_module/prestige_logic.js (v7.1 - Enhanced Confirmation Modal)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -20,6 +20,7 @@ export const processPrestigeTick = (deltaTimeSeconds) => {
     } else if (coreSystemsRef.coreGameStateManager.getModuleState('prestige')) {
         moduleState.currentPrestigeRunTime = 0;
     }
+    processPassiveProducerGeneration(deltaTimeSeconds);
 };
 
 export const getOwnedPrestigeProducerCount = (producerId) => {
@@ -30,7 +31,10 @@ export const getTotalPrestigeCount = () => {
     return decimalUtility.new(moduleState.totalPrestigeCount || '0');
 };
 
-// --- NEW FUNCTION: Calculate the Post-Doctorate multiplier ---
+export const getTotalPPEarned = () => {
+    return decimalUtility.new(moduleState.totalPrestigePointsEverEarned || '0');
+}
+
 export const getPostDocMultiplier = () => {
     if (!coreSystemsRef) return decimalUtility.new(1);
     const { decimalUtility } = coreSystemsRef;
@@ -38,11 +42,11 @@ export const getPostDocMultiplier = () => {
     if (decimalUtility.eq(owned, 0)) {
         return decimalUtility.new(1);
     }
-    // Calculates 1.08 ^ owned
     return decimalUtility.power('1.08', owned);
 };
 
 export const calculatePrestigeProducerCost = (producerId, quantity = 1) => {
+    const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
     const producerDef = prestigeData.producers[producerId];
     if (!producerDef) return decimalUtility.new(Infinity);
 
@@ -53,8 +57,11 @@ export const calculatePrestigeProducerCost = (producerId, quantity = 1) => {
     const growth = decimalUtility.new(producerDef.costGrowthFactor);
     const owned = getOwnedPrestigeProducerCount(producerId);
 
+    const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('prestige_producers', producerId);
+    const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+
     if (decimalUtility.eq(growth, 1)) {
-        return decimalUtility.multiply(baseCost, n);
+        return decimalUtility.multiply(effectiveBaseCost, n);
     }
     
     const futureCostMultiplier = decimalUtility.power(growth, owned);
@@ -63,11 +70,11 @@ export const calculatePrestigeProducerCost = (producerId, quantity = 1) => {
         decimalUtility.subtract(growth, 1)
     );
 
-    return decimalUtility.multiply(baseCost, decimalUtility.multiply(futureCostMultiplier, sumMultiplier));
+    return decimalUtility.multiply(effectiveBaseCost, decimalUtility.multiply(futureCostMultiplier, sumMultiplier));
 };
 
 export const calculateMaxBuyablePrestigeProducer = (producerId) => {
-    const { coreResourceManager, decimalUtility } = coreSystemsRef;
+    const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
     const producerDef = prestigeData.producers[producerId];
     if (!producerDef) return decimalUtility.new(0);
     
@@ -76,17 +83,19 @@ export const calculateMaxBuyablePrestigeProducer = (producerId) => {
     const baseCost = decimalUtility.new(producerDef.baseCost);
     const growth = decimalUtility.new(producerDef.costGrowthFactor);
     
-    if (decimalUtility.eq(owned, 0) && decimalUtility.gt(baseCost, availableCurrency)) {
+    const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('prestige_producers', producerId);
+    const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+
+    if (decimalUtility.eq(owned, 0) && decimalUtility.gt(effectiveBaseCost, availableCurrency)) {
         return decimalUtility.new(0);
     }
 
     if (decimalUtility.eq(growth, 1)) {
-        const costOfOne = calculatePrestigeProducerCost(producerId, 1);
-        if (decimalUtility.eq(costOfOne, 0) || decimalUtility.gt(costOfOne, availableCurrency)) return decimalUtility.new(0);
-        return decimalUtility.floor(decimalUtility.divide(availableCurrency, costOfOne));
+        if (decimalUtility.lte(effectiveBaseCost, 0) || decimalUtility.gt(effectiveBaseCost, availableCurrency)) return decimalUtility.new(0);
+        return decimalUtility.floor(decimalUtility.divide(availableCurrency, effectiveBaseCost));
     }
 
-    const costOfNext = decimalUtility.multiply(baseCost, decimalUtility.power(growth, owned));
+    const costOfNext = decimalUtility.multiply(effectiveBaseCost, decimalUtility.power(growth, owned));
     if(costOfNext.gt(availableCurrency)) return decimalUtility.new(0);
 
     const numerator = decimalUtility.add(
@@ -152,7 +161,7 @@ export const purchasePrestigeProducer = (producerId) => {
 
 export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
     if (!coreSystemsRef) return;
-    const { decimalUtility, moduleLoader, loggingSystem, coreGameStateManager } = coreSystemsRef;
+    const { decimalUtility, moduleLoader, loggingSystem, coreGameStateManager, coreUpgradeManager } = coreSystemsRef;
     
     const studiesModule = moduleLoader.getModule('studies');
     if (!studiesModule || !studiesModule.logic.addProducers) {
@@ -162,11 +171,9 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
     let producersToAdd = {};
     let stateNeedsUpdate = false;
     
-    // --- MODIFICATION: Get the post-doc multiplier once per tick ---
     const postDocMultiplier = getPostDocMultiplier();
 
     for (const producerId in prestigeData.producers) {
-        // Skip postDoc itself from this calculation
         if (producerId === 'postDoc') continue;
 
         const producerDef = prestigeData.producers[producerId];
@@ -180,8 +187,11 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
             const baseRate = decimalUtility.new(target.baseRate);
             let totalRate = decimalUtility.multiply(baseRate, ownedCount);
             
-            // --- MODIFICATION: Apply the post-doc multiplier to the rate ---
             totalRate = decimalUtility.multiply(totalRate, postDocMultiplier);
+            const specificMultiplier = coreUpgradeManager.getProductionMultiplier('prestige_producers', producerId);
+            totalRate = decimalUtility.multiply(totalRate, specificMultiplier);
+            const globalAllMultiplier = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
+            totalRate = decimalUtility.multiply(totalRate, globalAllMultiplier);
 
             const generatedThisTick = decimalUtility.multiply(totalRate, deltaTimeSeconds);
             const progressKey = target.producerId;
@@ -193,9 +203,7 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
 
             if (decimalUtility.gte(newProgress, 1)) {
                 const wholeProducers = decimalUtility.floor(newProgress);
-                if (!producersToAdd[progressKey]) {
-                    producersToAdd[progressKey] = decimalUtility.new(0);
-                }
+                if (!producersToAdd[progressKey]) producersToAdd[progressKey] = decimalUtility.new(0);
                 producersToAdd[progressKey] = decimalUtility.add(producersToAdd[progressKey], wholeProducers);
                 moduleState.passiveProductionProgress[progressKey] = decimalUtility.subtract(newProgress, wholeProducers).toString();
                 stateNeedsUpdate = true;
@@ -217,23 +225,19 @@ export const processPassiveProducerGeneration = (deltaTimeSeconds) => {
 
 export const updatePrestigeProducerEffects = () => {
     if (!coreSystemsRef) return;
-    const { coreUpgradeManager, decimalUtility, loggingSystem } = coreSystemsRef;
+    const { coreUpgradeManager, decimalUtility } = coreSystemsRef;
 
     for (const producerId in prestigeData.producers) {
         const producerDef = prestigeData.producers[producerId];
-        // --- MODIFICATION: Skip postDoc as its effect is now handled manually ---
         if (producerDef.effect && producerId !== 'postDoc') {
             const producerCount = getOwnedPrestigeProducerCount(producerId);
             const effectValueProvider = () => {
-                // This logic is for effects like ADR, not the old postDoc effect
                 return decimalUtility.add(1, decimalUtility.multiply(producerCount, decimalUtility.new(producerDef.effect.valuePerLevel)));
             };
-
             coreUpgradeManager.registerEffectSource('prestige', `${producerId}_effect_multiplier`, producerDef.effect.targetSystem, producerDef.effect.targetId, producerDef.effect.type, effectValueProvider);
         }
     }
 };
-
 
 export const canPrestige = () => {
     const flagUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
@@ -245,41 +249,30 @@ export const calculatePrestigeGain = () => {
     if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
         return decimalUtility.new(0);
     }
-
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
-
     const baseGain = decimalUtility.new(1);
-    
     const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
     const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
     const formulaGain = decimalUtility.multiply(prestigeFactor, knowledgeFactor);
-
     let totalGain = decimalUtility.add(baseGain, formulaGain);
-    
     const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     const globalBonus = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-    
     totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
     totalGain = decimalUtility.multiply(totalGain, globalBonus);
-
     return totalGain.floor();
 };
 
-export const getPrestigeBonusMultiplier = () => {
+export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
-    const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
+    const prestigeCount = prestigeCountOverride !== null ? decimalUtility.new(prestigeCountOverride) : decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
-
     const prestigeBonus = decimalUtility.divide(prestigeCount, 6);
     const imageBonus = decimalUtility.divide(images, '1e13'); 
-
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
-    
     let totalBonus = decimalUtility.add(1, decimalUtility.add(prestigeBonus, imageBonus));
     totalBonus = decimalUtility.multiply(totalBonus, prestigeBonusBonus);
-    
     return totalBonus;
 };
 
@@ -302,26 +295,27 @@ export const performPrestige = () => {
     let startingProducers = {};
 
     if (skillsLogic) {
-        const knowledgeRetainPercent = skillsLogic.getKnowledgeRetentionPercentage();
-        if (decimalUtility.gt(knowledgeRetainPercent, 0)) {
-            retainedKnowledge = decimalUtility.multiply(coreResourceManager.getAmount('knowledge'), knowledgeRetainPercent);
-        }
-
-        const sspRetainPercent = skillsLogic.getSspRetentionPercentage();
-        if (decimalUtility.gt(sspRetainPercent, 0)) {
-            retainedSsp = decimalUtility.multiply(coreResourceManager.getAmount('studySkillPoints'), sspRetainPercent);
-        }
-        
+        retainedKnowledge = decimalUtility.multiply(coreResourceManager.getAmount('knowledge'), skillsLogic.getKnowledgeRetentionPercentage());
+        retainedSsp = decimalUtility.multiply(coreResourceManager.getAmount('studySkillPoints'), skillsLogic.getSspRetentionPercentage());
         startingProducers = skillsLogic.getStartingProducers();
     }
     
+    // --- MODIFICATION: Calculate current and next prestige bonuses ---
+    const currentPrestigeCount = getTotalPrestigeCount();
+    const currentPrestigeBonus = getPrestigeBonusMultiplier();
+    const nextPrestigeBonus = getPrestigeBonusMultiplier(currentPrestigeCount.add(1));
+
+    let gainsMessage = `<li><span class="font-bold text-green-200">${decimalUtility.format(ppGains, 2, 0)}</span> Prestige Points</li>
+                        <li>All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(currentPrestigeBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(nextPrestigeBonus, 2)}x</span></li>`;
+
+    if (currentPrestigeCount.eq(0)) {
+        gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
+    }
+    // --- END MODIFICATION ---
+
     let keptResourcesMessage = '';
-    if (decimalUtility.gt(retainedKnowledge, 0)) {
-        keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedKnowledge, 2)}</span> Knowledge</li>`;
-    }
-    if (decimalUtility.gt(retainedSsp, 0)) {
-        keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedSsp, 0)}</span> Study Skill Points</li>`;
-    }
+    if (decimalUtility.gt(retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedKnowledge, 2)}</span> Knowledge</li>`;
+    if (decimalUtility.gt(retainedSsp, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedSsp, 0)}</span> Study Skill Points</li>`;
     if (Object.keys(startingProducers).length > 0) {
         for(const prodId in startingProducers) {
              keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(startingProducers[prodId], 0)}</span> starting ${prodId}s</li>`;
@@ -334,7 +328,7 @@ export const performPrestige = () => {
             <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
                 <p class="font-semibold text-green-300">You will gain:</p>
                 <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
-                    <li><span class="font-bold text-green-200">${decimalUtility.format(ppGains, 2, 0)}</span> Prestige Points</li>
+                    ${gainsMessage}
                 </ul>
             </div>
             ${keptResourcesMessage ? `
@@ -351,10 +345,9 @@ export const performPrestige = () => {
                     <li>Regular Skill levels and their SSP cost</li>
                 </ul>
             </div>
-             <p class="text-xs text-gray-400">Achievements, Unlocked Tabs, Prestige Upgrades, Automator Levels, and Prestige Skills are kept.</p>
+             <p class="text-xs text-gray-400">Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.</p>
         </div>
     `;
-
 
     coreUIManager.showModal("Confirm Prestige", confirmationMessage, [
             {
@@ -363,14 +356,8 @@ export const performPrestige = () => {
                 callback: () => {
                     const newPrestigeCount = decimalUtility.add(moduleState.totalPrestigeCount || 0, 1);
                     const prestigeRecord = { count: newPrestigeCount.toString(), time: moduleState.currentPrestigeRunTime || 0, ppGained: ppGains.toString() };
-                    const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])];
-                    if (newHistory.length > 10) newHistory.pop();
+                    const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])].slice(0, 10);
                     
-                    const newSnapshot = {
-                        totalStudyPointsProduced: coreResourceManager.getTotalEarned('studyPoints')?.toString() || '0',
-                        totalKnowledgeProduced: coreResourceManager.getTotalEarned('knowledge')?.toString() || '0'
-                    };
-
                     coreResourceManager.performPrestigeReset();
                     moduleLoader.broadcastLifecycleEvent('onPrestigeReset');
                     
@@ -380,22 +367,16 @@ export const performPrestige = () => {
                     prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
                     prestigeModuleState.lastTenPrestiges = newHistory;
                     prestigeModuleState.currentPrestigeRunTime = 0;
-                    prestigeModuleState.statsSnapshotAtPrestige = newSnapshot;
 
                     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
                     Object.assign(moduleState, prestigeModuleState);
                     coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
-                    
                     coreResourceManager.addAmount('prestigePoints', ppGains);
-                    // --- MODIFICATION: Update the prestigeCount resource ---
                     coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
                     
                     if (decimalUtility.gt(retainedKnowledge, 0)) coreResourceManager.addAmount('knowledge', retainedKnowledge);
                     if (decimalUtility.gt(retainedSsp, 0)) coreResourceManager.addAmount('studySkillPoints', retainedSsp);
-                    if (Object.keys(startingProducers).length > 0) {
-                        const studiesLogic = moduleLoader.getModule('studies')?.logic;
-                        if (studiesLogic) studiesLogic.addProducers(startingProducers);
-                    }
+                    if (Object.keys(startingProducers).length > 0) moduleLoader.getModule('studies')?.logic.addProducers(startingProducers);
 
                     coreResourceManager.setResourceVisibility('prestigePoints', true);
                     updatePrestigeProducerEffects();

@@ -1,10 +1,10 @@
-// modules/studies_module/studies_logic.js (v3.9 - Global Bonus Integration)
+// modules/studies_module/studies_logic.js (v4.0 - Cost Reduction Fix)
 
 /**
  * @file studies_logic.js
  * @description Contains the business logic for the Studies module.
+ * v4.0: Corrected cost reduction logic to apply to base cost.
  * v3.9: Ensures the global 'all' production multiplier is applied to all producers.
- * v3.8: Adds addProducers function to support passive generation from other modules.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -15,11 +15,10 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v3.9).");
+        coreSystemsRef.loggingSystem.info("StudiesLogic", "Logic initialized (v4.0).");
     },
     
     calculateMaxBuyable(producerId) {
-        // This function remains unchanged
         const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
         if (!producerDef) return decimalUtility.ZERO;
@@ -30,9 +29,12 @@ export const moduleLogic = {
 
         const baseCost = decimalUtility.new(producerDef.baseCost);
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
-        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
         
+        // --- MODIFICATION: Cost reduction is now applied to the base cost first ---
+        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
+
         if (decimalUtility.lte(effectiveBaseCost, 0)) return decimalUtility.new(Infinity);
 
         if (decimalUtility.lt(currentResources, effectiveBaseCost)) {
@@ -61,7 +63,6 @@ export const moduleLogic = {
     },
 
     calculateProducerCost(producerId, quantity = 1) {
-        // This function remains unchanged
         const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
 
@@ -77,21 +78,23 @@ export const moduleLogic = {
         const costGrowthFactor = decimalUtility.new(producerDef.costGrowthFactor);
         const ownedCount = this.getOwnedProducerCount(producerId);
         
+        // --- MODIFICATION: Cost reduction is now applied to the base cost first ---
+        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
+        const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
+
         let totalCost;
         if (decimalUtility.eq(costGrowthFactor, 1)) {
-            totalCost = decimalUtility.multiply(baseCost, n);
+            totalCost = decimalUtility.multiply(effectiveBaseCost, n);
         } else {
             const R_pow_n = decimalUtility.power(costGrowthFactor, n);
             const numerator = decimalUtility.subtract(R_pow_n, 1);
             const denominator = decimalUtility.subtract(costGrowthFactor, 1);
-            totalCost = decimalUtility.multiply(baseCost, decimalUtility.divide(numerator, denominator));
+            totalCost = decimalUtility.multiply(effectiveBaseCost, decimalUtility.divide(numerator, denominator));
         }
         
         const priceIncreaseFromOwned = decimalUtility.power(costGrowthFactor, ownedCount);
         totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
-
-        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('studies_producers', producerId);
-        totalCost = decimalUtility.multiply(totalCost, costReductionMultiplier);
         
         return totalCost;
     },
@@ -179,6 +182,14 @@ export const moduleLogic = {
         const globalAllMultiplier = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
         totalProduction = decimalUtility.multiply(totalProduction, globalAllMultiplier);
         // --- END MODIFICATION ---
+
+        // --- MODIFICATION for UniversityExcellence knowledge boost ---
+        if (producerId === 'professor') {
+            const knowledgeMultiplier = coreUpgradeManager.getProductionMultiplier('studies_producers_knowledge', 'professor');
+            totalProduction = decimalUtility.multiply(totalProduction, knowledgeMultiplier);
+        }
+        // --- END MODIFICATION ---
+
 
         const sourceKey = `studies_module_${producerId}`;
         coreResourceManager.setProductionPerSecond(producerDef.resourceId, sourceKey, totalProduction);

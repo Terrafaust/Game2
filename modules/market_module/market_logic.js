@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v3.0 - Cost Reduction Rework)
+// modules/market_module/market_logic.js (v4.0 - Correct Cost Reduction)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v4.0: Corrected cost reduction logic to apply to base cost.
  * v3.0: Implemented cost reduction multipliers from achievements.
- * v2.1: Removed logic that forced Prestige Skill Points to be visible in the UI.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,7 +15,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v4.0).");
     },
     
     calculateMaxBuyable(itemId) {
@@ -28,36 +28,28 @@ export const moduleLogic = {
         const costResource = itemDef.costResource;
         
         const availableCurrency = coreResourceManager.getAmount(costResource);
-        
-        // --- MODIFICATION: Apply cost reduction by calculating effective resources ---
-        const costReductionMultiplier = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_REDUCTION_MULTIPLIER');
-        let effectiveResources = availableCurrency;
-        if (decimalUtility.gt(costReductionMultiplier, 0) && decimalUtility.lt(costReductionMultiplier, 1)) {
-            effectiveResources = decimalUtility.divide(availableCurrency, costReductionMultiplier);
-        }
-        // --- END MODIFICATION ---
-
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
-        // --- MODIFICATION: Apply cost growth reduction ---
+        // --- MODIFICATION: Apply cost reduction to base cost ---
+        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
+        const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
+        
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
         if(decimalUtility.gt(growthReduction, 1)) {
-            // The reduction is 1 - ( (1-reductionPerSource1) * (1-reductionPerSource2) )
-            // The final multiplier is what's left. e.g. 1 - 0.01 = 0.99
             const effectiveGrowthMultiplier = decimalUtility.subtract(1, growthReduction);
             costGrowthFactor = decimalUtility.add(1, decimalUtility.multiply(decimalUtility.subtract(costGrowthFactor, 1), effectiveGrowthMultiplier));
         }
-        // --- END MODIFICATION ---
 
-        if (decimalUtility.lt(effectiveResources, baseCost)) return decimalUtility.ZERO;
+        if (decimalUtility.lt(availableCurrency, effectiveBaseCost)) return decimalUtility.ZERO;
         
         const R = costGrowthFactor;
         const R_minus_1 = decimalUtility.subtract(R, 1);
-        const C_base_pow_owned = decimalUtility.multiply(baseCost, decimalUtility.power(R, ownedCount));
+        const C_base_pow_owned = decimalUtility.multiply(effectiveBaseCost, decimalUtility.power(R, ownedCount));
         if (decimalUtility.lte(C_base_pow_owned, 0)) return decimalUtility.new(Infinity);
 
-        const term = decimalUtility.divide(decimalUtility.multiply(effectiveResources, R_minus_1), C_base_pow_owned);
+        const term = decimalUtility.divide(decimalUtility.multiply(availableCurrency, R_minus_1), C_base_pow_owned);
         const LHS = decimalUtility.add(term, 1);
         if (decimalUtility.lte(LHS, 1)) return decimalUtility.ZERO;
 
@@ -82,40 +74,34 @@ export const moduleLogic = {
 
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
-        // --- MODIFICATION: Apply cost growth reduction ---
+        // --- MODIFICATION: Apply cost reduction to base cost ---
+        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
+        const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
+
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
         if(decimalUtility.lt(growthReduction, 1)) {
-            // The upgrade manager returns the final multiplier, e.g. 0.99 for a 1% reduction.
-            // We want to reduce the "growth" part of the factor, which is (factor - 1).
             const growthPart = decimalUtility.subtract(costGrowthFactor, 1);
             const reducedGrowthPart = decimalUtility.multiply(growthPart, growthReduction);
             costGrowthFactor = decimalUtility.add(1, reducedGrowthPart);
         }
-        // --- END MODIFICATION ---
         
         const purchaseCountKey = itemDef.benefitResource;
         const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
         let totalCost;
 
         if (decimalUtility.eq(costGrowthFactor, 1)) {
-            totalCost = decimalUtility.multiply(baseCost, n);
+            totalCost = decimalUtility.multiply(effectiveBaseCost, n);
         } else {
             const R_pow_n = decimalUtility.power(costGrowthFactor, n);
             const numerator = decimalUtility.subtract(R_pow_n, 1);
             const denominator = decimalUtility.subtract(costGrowthFactor, 1);
-            totalCost = decimalUtility.multiply(baseCost, decimalUtility.divide(numerator, denominator));
+            totalCost = decimalUtility.multiply(effectiveBaseCost, decimalUtility.divide(numerator, denominator));
         }
 
         const priceIncreaseFromOwned = decimalUtility.power(costGrowthFactor, ownedCount);
         totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
-
-        // --- MODIFICATION: Apply final cost reduction ---
-        const costReductionMultiplier = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_REDUCTION_MULTIPLIER');
-        if (decimalUtility.lt(costReductionMultiplier, 1)) {
-            totalCost = decimalUtility.multiply(totalCost, costReductionMultiplier);
-        }
-        // --- END MODIFICATION ---
 
         return totalCost;
     },
@@ -132,6 +118,8 @@ export const moduleLogic = {
                  coreUIManager.showNotification(`Cannot afford any ${itemDef.name.replace('Acquire ', '')}.`, 'warning');
                 return false;
             }
+        } else {
+            quantity = decimalUtility.new(quantity);
         }
 
         const cost = this.calculateScalableItemCost(itemId, quantity);

@@ -1,10 +1,10 @@
-// modules/core_gameplay_module/core_gameplay_logic.js (v2.3 - Global Bonus Integration)
+// modules/core_gameplay_module/core_gameplay_logic.js (v3.0 - Final Frontier Skill)
 
 /**
  * @file core_gameplay_logic.js
  * @description Contains the business logic for the Core Gameplay module.
+ * v3.0: Implements the 'Final Frontier' skill effect, adding Knowledge gain to manual clicks.
  * v2.3: Manual click gain now benefits from all production multipliers.
- * v2.2: Added calculateManualStudyGain to expose click value to UI.
  */
 
 import { staticModuleData } from './core_gameplay_data.js';
@@ -15,37 +15,46 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems, initialStateRef) { 
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("CoreGameplayLogic", "Logic initialized (v2.3).");
+        coreSystemsRef.loggingSystem.info("CoreGameplayLogic", "Logic initialized (v3.0).");
     },
 
     calculateManualStudyGain() {
-        if (!coreSystemsRef) return new (self.Decimal || Decimal)(0);
-        const { coreResourceManager, coreUpgradeManager, decimalUtility } = coreSystemsRef;
+        if (!coreSystemsRef) return { studyPointsGain: new (self.Decimal || Decimal)(0), knowledgeGain: new (self.Decimal || Decimal)(0) };
+        const { coreResourceManager, coreUpgradeManager, decimalUtility, moduleLoader } = coreSystemsRef;
         
+        // --- Calculate Study Point Gain ---
         let baseAmountGained = decimalUtility.new(staticModuleData.clickAmount);
         
-        // Bonus from SPS
         const currentSps = coreResourceManager.getTotalProductionRate('studyPoints');
         const bonusPercentage = decimalUtility.new(0.10); 
         const spsBonus = decimalUtility.multiply(currentSps, bonusPercentage);
         
-        let totalGain = decimalUtility.add(baseAmountGained, spsBonus);
+        let studyPointsTotalGain = decimalUtility.add(baseAmountGained, spsBonus);
 
-        // --- MODIFICATION: Apply all relevant multipliers to the click gain ---
-        // 1. Specific click multiplier (from achievements, etc.)
         const clickMultiplier = coreUpgradeManager.getProductionMultiplier('core_gameplay_click', 'studyPoints');
-        totalGain = decimalUtility.multiply(totalGain, clickMultiplier);
+        studyPointsTotalGain = decimalUtility.multiply(studyPointsTotalGain, clickMultiplier);
 
-        // 2. Global multiplier for the resource being generated (Study Points)
         const globalResourceMultiplier = coreUpgradeManager.getProductionMultiplier('global_resource_production', 'studyPoints');
-        totalGain = decimalUtility.multiply(totalGain, globalResourceMultiplier);
+        studyPointsTotalGain = decimalUtility.multiply(studyPointsTotalGain, globalResourceMultiplier);
 
-        // 3. Global multiplier for ALL production
         const globalAllMultiplier = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-        totalGain = decimalUtility.multiply(totalGain, globalAllMultiplier);
-        // --- END MODIFICATION ---
+        studyPointsTotalGain = decimalUtility.multiply(studyPointsTotalGain, globalAllMultiplier);
 
-        return totalGain;
+        // --- MODIFICATION: Calculate Knowledge Gain from 'Final Frontier' skill ---
+        let knowledgeTotalGain = decimalUtility.new(0);
+        const skillsModule = moduleLoader.getModule('skills');
+        if (skillsModule) {
+            const knowledgeGainPercent = skillsModule.logic.getManualKnowledgeGainPercent();
+            if (decimalUtility.gt(knowledgeGainPercent, 0)) {
+                const kps = coreResourceManager.getTotalProductionRate('knowledge');
+                knowledgeTotalGain = decimalUtility.multiply(kps, knowledgeGainPercent);
+            }
+        }
+        
+        return {
+            studyPointsGain: studyPointsTotalGain,
+            knowledgeGain: knowledgeTotalGain
+        };
     },
 
     performManualStudy() {
@@ -55,16 +64,22 @@ export const moduleLogic = {
         }
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
         
-        const totalAmountGained = this.calculateManualStudyGain();
+        const { studyPointsGain, knowledgeGain } = this.calculateManualStudyGain();
         
-        coreResourceManager.addAmount(staticModuleData.resourceId, totalAmountGained);
+        coreResourceManager.addAmount(staticModuleData.resourceId, studyPointsGain);
+        
+        // --- MODIFICATION: Add knowledge if there is any to add ---
+        if (decimalUtility.gt(knowledgeGain, 0)) {
+            coreResourceManager.addAmount('knowledge', knowledgeGain);
+        }
+
         moduleState.totalManualClicks++;
         coreGameStateManager.setModuleState('core_gameplay', { ...moduleState });
 
-        loggingSystem.debug("CoreGameplayLogic", `Manually studied. Total Gained: ${totalAmountGained} ${staticModuleData.resourceId}. Total clicks: ${moduleState.totalManualClicks}`);
+        loggingSystem.debug("CoreGameplayLogic", `Manually studied. Gained: ${studyPointsGain} SP, ${knowledgeGain} Knowledge. Total clicks: ${moduleState.totalManualClicks}`);
         
         return {
-            amountGained: totalAmountGained, 
+            amountGained: studyPointsGain, // Keep original return structure for UI feedback
             newTotal: coreResourceManager.getAmount(staticModuleData.resourceId)
         };
     },
