@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v7.1 - Enhanced Confirmation Modal)
+// /game/modules/prestige_module/prestige_logic.js (v7.2 - Enhanced Confirmation Modal)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -300,10 +300,19 @@ export const performPrestige = () => {
         startingProducers = skillsLogic.getStartingProducers();
     }
     
-    // --- MODIFICATION: Calculate current and next prestige bonuses ---
+    // --- MODIFICATION: Enhanced prestige confirmation message ---
     const currentPrestigeCount = getTotalPrestigeCount();
+    const nextPrestigeNumber = currentPrestigeCount.add(1);
+    
+    const getOrdinal = (n) => {
+        const s = ["th", "st", "nd", "rd"];
+        const v = n % 100;
+        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+    };
+    const prestigeOrdinal = getOrdinal(nextPrestigeNumber.toNumber());
+
     const currentPrestigeBonus = getPrestigeBonusMultiplier();
-    const nextPrestigeBonus = getPrestigeBonusMultiplier(currentPrestigeCount.add(1));
+    const nextPrestigeBonus = getPrestigeBonusMultiplier(nextPrestigeNumber);
 
     let gainsMessage = `<li><span class="font-bold text-green-200">${decimalUtility.format(ppGains, 2, 0)}</span> Prestige Points</li>
                         <li>All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(currentPrestigeBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(nextPrestigeBonus, 2)}x</span></li>`;
@@ -311,7 +320,6 @@ export const performPrestige = () => {
     if (currentPrestigeCount.eq(0)) {
         gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
     }
-    // --- END MODIFICATION ---
 
     let keptResourcesMessage = '';
     if (decimalUtility.gt(retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedKnowledge, 2)}</span> Knowledge</li>`;
@@ -324,7 +332,7 @@ export const performPrestige = () => {
 
     const confirmationMessage = `
         <div class="space-y-3 text-left text-textPrimary">
-            <p>Are you sure you want to Prestige?</p>
+            <p>Are you sure you want to proceed with your ${prestigeOrdinal} prestige?</p>
             <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
                 <p class="font-semibold text-green-300">You will gain:</p>
                 <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
