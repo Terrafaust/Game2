@@ -1,15 +1,10 @@
-// modules/skills_module/skills_logic.js (v1.9 - Fixed Syntax Error in Notification)
+// modules/skills_module/skills_logic.js (v4.0 - Full Skill Implementation)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v4.0: Implemented and corrected logic for all special and standard skill effects based on detailed review.
  * v1.9: Fixed syntax error in purchase success notification.
- * v1.8: Ensures prestige skill costs use 'prestigeSkillPoints' from staticData.
- * v1.7: Adds onPrestigeReset logic. Fixes tier unlock logic. Restores full file content.
- * v1.6: Filters skill effects before registering with CoreUpgradeManager.
- * v1.5: Adds validation for effectDef.targetSystem and effectDef.type before registering effects.
- * v1.4: Integrates logic for Prestige Skills, handling two distinct skill trees and currencies.
- * v1.3: Ensures 'skillsTabPermanentlyUnlocked' flag is cleared on reset.
  */
 
 import { staticModuleData } from './skills_data.js';
@@ -21,15 +16,15 @@ let coreSystemsRef = null;
 const REGISTERABLE_EFFECT_TYPES = [
     "MULTIPLIER",
     "ADDITIVE_BONUS",
-    "PERCENTAGE_BONUS",
+    "PERCENTAGE_BONUS", // Legacy, functionally same as ADDITIVE_BONUS
     "COST_REDUCTION_MULTIPLIER"
 ];
 
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v1.9).");
-        this.registerAllSkillEffects(); 
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.0).");
+        this.registerAllSkillEffects();
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             this.applySpecialSkillEffects(deltaTime);
@@ -55,334 +50,247 @@ export const moduleLogic = {
         return false;
     },
 
-    // --- MODIFICATION: Made knowledge retention logic more robust and added logging ---
     getKnowledgeRetentionPercentage() {
         if (!coreSystemsRef) return new coreSystemsRef.decimalUtility.new(0);
-
         const { decimalUtility, loggingSystem } = coreSystemsRef;
         const skillId = 'permanentKnowledge';
-        const level = this.getSkillLevel(skillId, true); // isPrestige = true
-
+        const level = this.getSkillLevel(skillId, true);
         if (level > 0) {
-            const skillDef = staticModuleData.prestigeSkills[skillId];
-            if (skillDef) {
-                // The skill gives 1% per level, which is a multiplier of 0.01
-                const retentionPerLevel = decimalUtility.new('0.01');
-                const totalRetention = decimalUtility.multiply(level, retentionPerLevel);
-                loggingSystem.info("SkillsLogic_Retention", `Skill '${skillId}' is level ${level}. Retaining ${totalRetention.toExponential(2)} of Knowledge.`);
-                return totalRetention;
-            } else {
-                loggingSystem.warn("SkillsLogic_Retention", `Could not find skill definition for '${skillId}'.`);
-                return decimalUtility.new(0);
-            }
+            const retentionPerLevel = decimalUtility.new('0.01');
+            const totalRetention = decimalUtility.multiply(level, retentionPerLevel);
+            loggingSystem.info("SkillsLogic_Retention", `Skill '${skillId}' is level ${level}. Retaining ${totalRetention.toExponential(2)} of Knowledge.`);
+            return totalRetention;
         }
-        
         return decimalUtility.new(0);
     },
 
-    // --- NEW: Function to get SSP retention from 'retainedSkills' skill ---
     getSspRetentionPercentage() {
         const { decimalUtility } = coreSystemsRef;
-        const level = this.getSkillLevel('retainedSkills', true); // isPrestige = true
-        if (level === 0) {
-            return decimalUtility.new(0);
-        }
-        // 5% per level, so 0.05 per level
+        const level = this.getSkillLevel('retainedSkills', true);
         return decimalUtility.multiply(level, 0.05);
     },
     
-    // --- NEW: Function to get free producers from 'startingAdvantage' skill ---
     getStartingProducers() {
         const { decimalUtility } = coreSystemsRef;
-        const level = this.getSkillLevel('startingAdvantage', true); // isPrestige = true
-        if (level === 0) {
-            return {};
-        }
-        // 10 free Students and 5 free Classrooms per level
+        const level = this.getSkillLevel('startingAdvantage', true);
+        if (level === 0) return {};
         return {
             student: decimalUtility.multiply(level, 10),
             classroom: decimalUtility.multiply(level, 5)
         };
     },
+    
+    // --- NEW: Logic for 'The Final Frontier' ---
+    getManualKnowledgeGainPercent() {
+        const skillId = 'finalFrontier';
+        const level = this.getSkillLevel(skillId, false);
+        if (level > 0) {
+            const skillDef = staticModuleData.skills[skillId];
+            return coreSystemsRef.decimalUtility.new(skillDef.effect.value || '0');
+        }
+        return coreSystemsRef.decimalUtility.new('0');
+    },
 
-    /**
-     * Gets the current level of a skill.
-     * @param {string} skillId - The ID of the skill.
-     * @param {boolean} [isPrestige=false] - True if it's a prestige skill.
-     * @returns {number} The current level of the skill.
-     */
     getSkillLevel(skillId, isPrestige = false) {
-        // Ensure moduleState properties are initialized as objects before accessing
         if (isPrestige) {
             return moduleState.prestigeSkillLevels?.[skillId] || 0;
         }
         return moduleState.skillLevels?.[skillId] || 0;
     },
 
-    /**
-     * Gets the maximum level of a skill.
-     * @param {string} skillId - The ID of the skill.
-     * @param {boolean} [isPrestige=false] - True if it's a prestige skill.
-     * @returns {number} The maximum level of the skill.
-     */
     getSkillMaxLevel(skillId, isPrestige = false) {
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
-        const skillDef = skillsCollection[skillId];
-        return skillDef ? skillDef.maxLevel : 0;
+        return skillsCollection[skillId]?.maxLevel || 0;
     },
 
-    /**
-     * Checks if a skill tier is unlocked.
-     * @param {number} tierNum - The tier number.
-     * @param {boolean} isPrestige - Whether to check the prestige skill tree.
-     * @returns {boolean} True if the tier is unlocked.
-     */
     isTierUnlocked(tierNum, isPrestige = false) {
         if (tierNum <= 1) return true; 
         const prevTier = tierNum - 1;
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillsInPrevTier = Object.values(skillsCollection).filter(s => s.tier === prevTier);
-        if (skillsInPrevTier.length === 0 && prevTier > 0) { 
-            return true;
-        }
+        if (skillsInPrevTier.length === 0 && prevTier > 0) return true;
         return skillsInPrevTier.every(s => this.getSkillLevel(s.id, isPrestige) >= 1);
     },
 
-    /**
-     * Checks if a skill is unlocked based on its conditions.
-     * @param {string} skillId - The ID of the skill.
-     * @param {boolean} [isPrestige=false] - True if it's a prestige skill.
-     * @returns {boolean} True if the skill is unlocked.
-     */
     isSkillUnlocked(skillId, isPrestige = false) {
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillDef = skillsCollection[skillId];
-        if (!skillDef) return false;
-
-        // --- FIX: The primary check is whether the tier itself is unlocked ---
-        if (!this.isTierUnlocked(skillDef.tier, isPrestige)) {
-            return false;
-        }
-        
-        // If the tier is unlocked and there's no further condition, the skill is available.
+        if (!skillDef || !this.isTierUnlocked(skillDef.tier, isPrestige)) return false;
         if (!skillDef.unlockCondition) return true; 
 
         const { type, skillId: requiredSkillId, level: requiredLevel, tier: requiredTierNum } = skillDef.unlockCondition;
-
         switch (type) {
-            case "skillLevel":
-                // This condition checks for a skill level within the SAME tree.
-                return this.getSkillLevel(requiredSkillId, isPrestige) >= requiredLevel;
-
+            case "skillLevel": return this.getSkillLevel(requiredSkillId, isPrestige) >= requiredLevel;
             case "allSkillsInTierLevel":
-                 // This condition also checks within the SAME tree.
                 const skillsInTier = Object.values(skillsCollection).filter(s => s.tier === requiredTierNum);
                 if (skillsInTier.length === 0) return true; 
                 return skillsInTier.every(s => this.getSkillLevel(s.id, isPrestige) >= requiredLevel);
-
             case "prestigeSkillLevel": 
-                // This condition is for a REGULAR skill that depends on a PRESTIGE skill.
-                // It should only be found on non-prestige skills.
                 const prestigeSkillsCollection = staticModuleData.prestigeSkills;
                 if (!prestigeSkillsCollection[requiredSkillId]) {
-                     coreSystemsRef.loggingSystem.warn("SkillsLogic", `Required prestige skill ${requiredSkillId} for ${skillId} not found.`);
+                    coreSystemsRef.loggingSystem.warn("SkillsLogic", `Required prestige skill ${requiredSkillId} for ${skillId} not found.`);
                     return false;
                 }
                 return this.getSkillLevel(requiredSkillId, true) >= requiredLevel;
-
             default:
                 coreSystemsRef.loggingSystem.warn("SkillsLogic", `Unknown skill unlock condition type: ${type} for skill ${skillId}`);
                 return false;
         }
     },
 
-    /**
-     * Calculates the cost to level up a skill to its next level.
-     * @param {string} skillId - The ID of the skill.
-     * @param {boolean} [isPrestige=false] - True if it's a prestige skill.
-     * @returns {Decimal|null} The cost as a Decimal, or null if at max level.
-     */
     getSkillNextLevelCost(skillId, isPrestige = false) {
         const { decimalUtility } = coreSystemsRef;
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillDef = skillsCollection[skillId];
         const currentLevel = this.getSkillLevel(skillId, isPrestige);
-
-        if (!skillDef || currentLevel >= skillDef.maxLevel) {
-            return null;
-        }
+        if (!skillDef || currentLevel >= skillDef.maxLevel) return null;
         return decimalUtility.new(skillDef.costPerLevel[currentLevel]);
     },
 
-    /**
-     * Attempts to purchase the next level of a skill.
-     * @param {string} skillId - The ID of the skill.
-     * @param {boolean} [isPrestige=false] - True if it's a prestige skill.
-     * @returns {boolean} True if the purchase was successful, false otherwise.
-     */
     purchaseSkillLevel(skillId, isPrestige = false) {
-        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, coreUIManager, moduleLoader } = coreSystemsRef;
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillDef = skillsCollection[skillId];
 
-        if (!skillDef) {
-            loggingSystem.error("SkillsLogic", `Attempted to purchase unknown skill: ${skillId}`);
-            return false;
-        }
-
-        if (!this.isSkillUnlocked(skillId, isPrestige)) {
-            loggingSystem.debug("SkillsLogic", `Skill ${skillId} is locked.`);
-            coreUIManager.showNotification("This skill is currently locked.", "warning");
-            return false;
-        }
-
-        const currentLevel = this.getSkillLevel(skillId, isPrestige);
-        if (currentLevel >= skillDef.maxLevel) {
-            loggingSystem.debug("SkillsLogic", `Skill ${skillId} is already at max level.`);
-            coreUIManager.showNotification(`${skillDef.name} is at max level.`, "info");
+        if (!skillDef || !this.isSkillUnlocked(skillId, isPrestige) || this.getSkillLevel(skillId, isPrestige) >= skillDef.maxLevel) {
+            coreUIManager.showNotification("Cannot purchase skill.", "warning");
             return false;
         }
 
         const cost = this.getSkillNextLevelCost(skillId, isPrestige);
-        if (cost === null) return false;
-
-        // The resourceId is now correctly fetched from staticModuleData based on isPrestige
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
 
-        if (coreResourceManager.canAfford(resourceId, cost)) {
+        if (cost && coreResourceManager.canAfford(resourceId, cost)) {
             coreResourceManager.spendAmount(resourceId, cost);
             
-            if (isPrestige) {
-                if (!moduleState.prestigeSkillLevels) {
-                    moduleState.prestigeSkillLevels = {};
-                }
-                moduleState.prestigeSkillLevels[skillId] = currentLevel + 1;
-            } else {
-                moduleState.skillLevels[skillId] = currentLevel + 1;
+            // --- NEW: Track SSP spent for Synergistic Prestige ---
+            if (!isPrestige) {
+                const currentSpent = decimalUtility.new(moduleState.studySkillPointsSpentThisPrestige || '0');
+                moduleState.studySkillPointsSpentThisPrestige = decimalUtility.add(currentSpent, cost).toString();
             }
+
+            const levelObject = isPrestige ? (moduleState.prestigeSkillLevels ??= {}) : (moduleState.skillLevels ??= {});
+            levelObject[skillId] = (levelObject[skillId] || 0) + 1;
+            
             coreGameStateManager.setModuleState('skills', { ...moduleState });
+            loggingSystem.info("SkillsLogic", `Purchased level ${levelObject[skillId]} of ${skillDef.name}.`);
+            coreUIManager.showNotification(`${skillDef.name} leveled up to ${levelObject[skillId]}!`, 'success');
             
-            loggingSystem.info("SkillsLogic", `Purchased level ${this.getSkillLevel(skillId, isPrestige)} of ${isPrestige ? 'prestige skill' : 'skill'} ${skillId} (${skillDef.name}).`);
-            coreUIManager.showNotification(`${skillDef.name} leveled up to ${this.getSkillLevel(skillId, isPrestige)}!`, 'success');
-            
+            this.registerAllSkillEffects(); 
             this.isSkillsTabUnlocked();
 
-            this.registerAllSkillEffects(); 
-
             if (coreUIManager.isActiveTab('skills')) { 
-                const skillsUI = coreSystemsRef.moduleLoader.getModule('skills')?.ui;
-                if (skillsUI) skillsUI.renderMainContent(document.getElementById('main-content'));
+                moduleLoader.getModule('skills')?.ui?.renderMainContent(document.getElementById('main-content'));
             }
             return true;
         } else {
-            // The currency displayed here should match the resourceId
-            const currency = isPrestige ? staticModuleData.ui.prestigeSkillPointDisplayLabel.replace(' Available:', '') : staticModuleData.ui.skillPointDisplayLabel.replace(' Available:', '');
-            loggingSystem.debug("SkillsLogic", `Cannot afford skill ${skillId}. Have: ${coreResourceManager.getAmount(resourceId).toString()}. Need: ${decimalUtility.format(cost, 0)} ${currency}.`);
-            coreUIManager.showNotification(`Not enough ${currency} for ${skillDef.name}.`, 'error');
+            const currency = coreResourceManager.getResource(resourceId)?.name || 'currency';
+            coreUIManager.showNotification(`Not enough ${currency}.`, 'error');
             return false;
         }
     },
 
+    // --- NEW: Helper for Singularity ---
+    getSingularityPower() {
+        return this.getSkillLevel('singularity', true) > 0 ? 2 : 1;
+    },
+
     registerAllSkillEffects() {
         const { coreUpgradeManager, loggingSystem, decimalUtility } = coreSystemsRef;
-        if (!coreUpgradeManager) {
-            loggingSystem.error("SkillsLogic", "CoreUpgradeManager not available for registering skill effects.");
-            return;
-        }
+        if (!coreUpgradeManager) return;
 
         const processSkills = (skillsCollection, isPrestigeFlag) => {
             for (const skillId in skillsCollection) {
                 const skillDef = skillsCollection[skillId];
-                const processEffect = (effectDef) => {
-                    if (!effectDef) {
-                        return;
-                    }
-                    if (!REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) {
-                        return;
-                    }
-                    if (!effectDef.targetSystem || !effectDef.type || typeof effectDef.targetSystem !== 'string' || typeof effectDef.type !== 'string') {
-                         loggingSystem.error("SkillsLogic", `Invalid targetSystem or type for skill ${skillId} effect.`);
-                         return;
-                    }
+                const effects = skillDef.effect ? [skillDef.effect] : (skillDef.effects || []);
+
+                effects.forEach(effectDef => {
+                    if (!effectDef || !REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return;
 
                     const valueProvider = () => {
                         const level = this.getSkillLevel(skillId, isPrestigeFlag);
-                        if (level === 0) { 
-                            return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
-                        }
-                        if (effectDef.valuePerLevel === undefined || effectDef.valuePerLevel === null) {
-                            loggingSystem.warn("SkillsLogic", `Missing valuePerLevel for registerable effect type ${effectDef.type} on skill ${skillId}.`);
-                            return decimalUtility.new(effectDef.type.includes("MULTIPLIER") ? 1 : 0);
-                        }
+                        if (level === 0) return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
 
-                        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel);
+                        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
                         let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
-
-                        if (effectDef.type.includes("MULTIPLIER")) {
-                            if (effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER") {
-                                return decimalUtility.add(1, effectValue); 
-                            } else if (effectDef.aggregation === "SUBTRACTIVE_FROM_BASE_FOR_MULTIPLIER") {
-                                return decimalUtility.subtract(1, effectValue); 
-                            }
-                            return effectValue; 
+                        
+                        let finalMultiplier;
+                        if (effectDef.type === "MULTIPLIER") {
+                             finalMultiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
+                                ? decimalUtility.add(1, effectValue) 
+                                : effectValue;
+                        } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+                             finalMultiplier = decimalUtility.subtract(1, effectValue);
+                        } else {
+                            return effectValue; // For ADDITIVE_BONUS
                         }
-                        return effectValue; 
-                    };
 
-                    coreUpgradeManager.registerEffectSource('skills', `${isPrestigeFlag ? 'prestige_' : ''}${skillId}${effectDef.targetId ? `_${effectDef.targetId}` : ''}`, effectDef.targetSystem, effectDef.targetId, effectDef.type, valueProvider);
-                };
-                
-                if (skillDef.effect) { 
-                    processEffect(skillDef.effect);
-                } else if (skillDef.effects && Array.isArray(skillDef.effects)) { 
-                    skillDef.effects.forEach(processEffect);
-                }
+                        // Apply Singularity
+                        if (!isPrestigeFlag && finalMultiplier.gt(0)) {
+                            const power = this.getSingularityPower();
+                            if (power > 1) finalMultiplier = decimalUtility.power(finalMultiplier, power);
+                        }
+                        return finalMultiplier;
+                    };
+                    // Ensure unique source key for multi-effect skills
+                    const sourceKey = `${isPrestigeFlag ? 'p_' : 's_'}${skillId}_${effectDef.targetSystem}_${effectDef.targetId || 'ALL'}`;
+                    coreUpgradeManager.registerEffectSource('skills', sourceKey, effectDef.targetSystem, effectDef.targetId, effectDef.type, valueProvider);
+                });
             }
         };
 
         processSkills(staticModuleData.skills, false);
         processSkills(staticModuleData.prestigeSkills, true);
-
-        loggingSystem.info("SkillsLogic", "All regular and prestige skill effects registered/updated.");
+        loggingSystem.info("SkillsLogic", "All skill effects registered/updated.");
     },
 
     applySpecialSkillEffects(deltaTimeSeconds) {
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager, moduleLoader, coreUpgradeManager } = coreSystemsRef;
-
+        
+        // --- Full implementation of special skills ---
         const processSpecialSkills = (skillsCollection, isPrestigeFlag) => {
             for (const skillId in skillsCollection) {
                 const skillDef = skillsCollection[skillId];
                 const level = this.getSkillLevel(skillId, isPrestigeFlag);
-                if (level === 0) continue;
+                if (level === 0) {
+                     // Unregister if level is 0
+                     if (skillDef.effect && !REGISTERABLE_EFFECT_TYPES.includes(skillDef.effect.type)) {
+                        coreUpgradeManager.unregisterEffectSource('skills', `${skillId}_special`, skillDef.effect.targetSystem, skillDef.effect.targetId, 'MULTIPLIER');
+                     }
+                     continue;
+                };
 
                 const effectsToProcess = skillDef.effect ? [skillDef.effect] : (skillDef.effects || []);
-
                 effectsToProcess.forEach(effectDef => {
-                    if (!effectDef || REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) {
-                        return;
-                    }
+                    if (!effectDef || REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return;
 
                     switch (effectDef.type) {
-                        case "MANUAL":
-                            break;
                         case "KNOWLEDGE_BASED_SP_MULTIPLIER":
                             const knowledgeAmount = coreResourceManager.getAmount('knowledge');
-                            if (decimalUtility.gt(knowledgeAmount, 0)) {
-                                const magnitude = decimalUtility.log10(knowledgeAmount);
-                                const bonusFactor = decimalUtility.multiply(magnitude, decimalUtility.new(effectDef.valuePerLevel || '0.001'));
-                                const totalMultiplier = decimalUtility.add(1, bonusFactor);
-                                coreUpgradeManager.registerEffectSource('skills', `${skillId}_knowledge_multiplier`, 'global_resource_production', 'studyPoints', 'MULTIPLIER', () => totalMultiplier);
-                            } else {
-                                coreUpgradeManager.unregisterEffectSource('skills', `${skillId}_knowledge_multiplier`, 'global_resource_production', 'studyPoints', 'MULTIPLIER');
-                            }
+                            const mult = decimalUtility.gt(knowledgeAmount, 1) ? decimalUtility.add(1, decimalUtility.multiply(decimalUtility.log10(knowledgeAmount), '0.001')) : decimalUtility.new(1);
+                            coreUpgradeManager.registerEffectSource('skills', 'knowledgeIsPower_special', 'global_resource_production', 'studyPoints', 'MULTIPLIER', () => mult);
                             break;
-                        case "SSP_BASED_AP_MULTIPLIER":
-                        case "AP_BASED_GLOBAL_MULTIPLIER":
-                        case "FIRST_PRODUCER_BOOST":
-                        case "SQUARE_SKILL_EFFECTS":
+                        
+                        case "SSP_BASED_PP_MULTIPLIER":
+                            const sspSpent = decimalUtility.new(moduleState.studySkillPointsSpentThisPrestige || '0');
+                            const ppBonus = decimalUtility.add(1, decimalUtility.multiply(sspSpent, 0.01));
+                            coreUpgradeManager.registerEffectSource('skills', 'synergisticPrestige_special', 'prestige_mechanics', 'ppGain', 'MULTIPLIER', () => ppBonus);
+                            break;
+
+                        case "TOTAL_PP_BASED_GLOBAL_MULTIPLIER":
+                            const prestigeModule = moduleLoader.getModule('prestige');
+                            const totalPPEarned = prestigeModule?.logic?.getTotalPPEarned ? prestigeModule.logic.getTotalPPEarned() : decimalUtility.new(0);
+                            const globalBonus = totalPPEarned.gt(1) ? decimalUtility.add(1, decimalUtility.multiply(decimalUtility.log10(totalPPEarned), effectDef.valuePerMagnitude || '0.1')) : decimalUtility.new(1);
+                            coreUpgradeManager.registerEffectSource('skills', 'ppOverdrive_special', 'global_production', 'all', 'MULTIPLIER', () => globalBonus);
+                            break;
+
+                        // These are handled elsewhere (Singularity in register, others are manual/flags)
+                        case "MANUAL_CLICK_KNOWLEDGE_GAIN":
+                        case "SQUARE_STUDY_SKILL_MULTIPLIERS":
+                        case "MANUAL":
                         case "UNLOCK_SECRET_MECHANIC":
-                            loggingSystem.debug("SkillsLogic", `Special effect ${skillId} (type: ${effectDef.type}) logic to be implemented.`);
                             break;
+                            
                         default:
                             loggingSystem.warn("SkillsLogic", `Unhandled special skill effect type: ${effectDef.type} for skill ${skillId}`);
                             break;
@@ -402,64 +310,59 @@ export const moduleLogic = {
         const effectDef = specificEffectDef || skillDef.effect || (skillDef.effects ? skillDef.effects[0] : null); 
 
         if (!skillDef || !effectDef) return "N/A";
-
         const level = this.getSkillLevel(skillId, isPrestige);
-        if (!REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) {
-            return effectDef.description || "Special Effect (details TBD)";
-        }
+        if (!REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return effectDef.description || "Special Effect";
+        if (level === 0) return "Not active"; 
 
-        if (level === 0 && !specificEffectDef) return "Not active"; 
-
-        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel);
+        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
         let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
-        let effectText = "";
-
-        switch (effectDef.type) {
-            case "MULTIPLIER":
-                if (effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" || effectDef.aggregation === "SUBTRACTIVE_FROM_BASE_FOR_MULTIPLIER") {
-                     effectText = `${effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" ? '+' : '-'}${decimalUtility.format(decimalUtility.multiply(currentEffectValue, 100), 0)}%`;
-                } else {
-                    effectText = `${decimalUtility.format(currentEffectValue, 2)}x`;
-                }
-                break;
-            case "COST_REDUCTION_MULTIPLIER":
-                effectText = `-${decimalUtility.format(decimalUtility.multiply(currentEffectValue, 100), 0)}% Cost`;
-                break;
-            case "ADDITIVE_BONUS":
-                effectText = `+${decimalUtility.format(currentEffectValue, 2)}`;
-                break;
-            default:
-                effectText = decimalUtility.format(currentEffectValue, 2);
+        
+        let multiplier;
+        if (effectDef.type === "MULTIPLIER") {
+            multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" ? decimalUtility.add(1, currentEffectValue) : currentEffectValue;
+        } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+            multiplier = decimalUtility.subtract(1, currentEffectValue);
+        } else {
+             return `+${decimalUtility.format(currentEffectValue, 2)}`;
         }
-        return effectText;
+
+        if (!isPrestige) {
+            const power = this.getSingularityPower();
+            if (power > 1) multiplier = decimalUtility.power(multiplier, power);
+        }
+
+        if (effectDef.type === "MULTIPLIER") return `x${decimalUtility.format(multiplier, 2)}`;
+        if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+            const reduction = decimalUtility.subtract(1, multiplier);
+            return `-${decimalUtility.format(decimalUtility.multiply(reduction, 100), 2)}% Cost`;
+        }
+        return "Effect";
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v1.9).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.0).");
         this.registerAllSkillEffects();
         this.isSkillsTabUnlocked(); 
         this.applySpecialSkillEffects(0);
     },
 
-    // --- FEATURE: Added to handle selective reset on prestige ---
     onPrestigeReset() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onPrestigeReset triggered. Resetting regular skills only.");
-        moduleState.skillLevels = {}; // Reset regular skills
-        // `prestigeSkillLevels` are intentionally not reset.
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onPrestigeReset triggered. Resetting regular skills and SSP tracker.");
+        moduleState.skillLevels = {}; 
+        moduleState.studySkillPointsSpentThisPrestige = '0';
         this.registerAllSkillEffects();
     },
 
     onResetState() {
         coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered. Resetting ALL skills and flags.");
-        // Re-register to reset effects based on level 0
         this.registerAllSkillEffects();
         // Manually clean up special effects
-        coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'knowledgeIsPower_knowledge_multiplier', 'global_resource_production', 'studyPoints', 'MULTIPLIER');
+        coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'knowledgeIsPower_special', 'global_resource_production', 'studyPoints', 'MULTIPLIER');
+        coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'synergisticPrestige_special', 'prestige_mechanics', 'ppGain', 'MULTIPLIER');
+        coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'ppOverdrive_special', 'global_production', 'all', 'MULTIPLIER');
         
         if (coreSystemsRef.coreGameStateManager) { 
             coreSystemsRef.coreGameStateManager.setGlobalFlag('skillsTabPermanentlyUnlocked', false);
-            coreSystemsRef.loggingSystem.info("SkillsLogic", "'skillsTabPermanentlyUnlocked' flag cleared.");
         }
     }
 };
-
