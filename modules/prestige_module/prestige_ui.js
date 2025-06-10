@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v4.0 - Refactored Modal)
+// /game/modules/prestige_module/prestige_ui.js (v4.1 - Bugfix)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.0).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.1).");
     },
 
     renderMainContent(parentElement) {
@@ -151,11 +151,13 @@ export const ui = {
 
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
-            const gainInfo = logic.calculatePrestigeGain();
+            // FIX: Call the original calculatePrestigeGain which returns a Decimal, not an object.
+            const gain = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
-            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gainInfo.points, 0);
+            // FIX: Use the Decimal 'gain' directly.
+            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
-                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gainInfo.points, 2, 0)} PP`;
+                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
             } else {
                 prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
             }
@@ -217,9 +219,6 @@ export const ui = {
         }
     },
 
-    /**
-     * NEW: Creates and shows the prestige confirmation modal with detailed calculations.
-     */
     showPrestigeConfirmationModal() {
         const { coreUIManager, decimalUtility } = coreSystemsRef;
         const details = logic.getPrestigeConfirmationDetails();

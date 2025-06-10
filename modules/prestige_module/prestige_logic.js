@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v8.0 - Refactored for UI)
+// /game/modules/prestige_module/prestige_logic.js (v8.1 - Bugfix and Refactor)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -246,69 +246,81 @@ export const canPrestige = () => {
 };
 
 /**
- * MODIFIED: Returns an object with the calculated points and an explanation string.
+ * RESTORED: Calculates and returns the number of prestige points to be gained.
+ * This is kept separate to ensure backward compatibility with other game modules.
+ * @returns {Decimal} The amount of prestige points to be gained.
  */
 export const calculatePrestigeGain = () => {
-    const { coreUpgradeManager, coreResourceManager, decimalUtility, coreGameStateManager } = coreSystemsRef;
-
-    if (!coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
-        return { points: decimalUtility.new(0), explanation: "Prestige has not been unlocked yet." };
+    if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
+        return decimalUtility.new(0);
     }
-
+    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
     const baseGain = decimalUtility.new(1);
-
     const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
     const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
     const formulaGain = decimalUtility.multiply(prestigeFactor, knowledgeFactor);
     let totalGain = decimalUtility.add(baseGain, formulaGain);
-
     const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     const globalBonus = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-
-    const finalGain = decimalUtility.multiply(decimalUtility.multiply(totalGain, ppGainBonus), globalBonus).floor();
-
-    const explanation = `(1 + P.Count/6 * Know./1k) * Bonuses = (1 + ${decimalUtility.format(prestigeFactor, 2)} * ${decimalUtility.format(knowledgeFactor,2)}) * ${decimalUtility.format(ppGainBonus, 2)}x * ${decimalUtility.format(globalBonus, 2)}x`;
-    
-    return { points: finalGain, explanation };
+    totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
+    totalGain = decimalUtility.multiply(totalGain, globalBonus);
+    return totalGain.floor();
 };
 
 /**
- * MODIFIED: Returns an object with the calculated bonus and an explanation string.
+ * RESTORED: Calculates the total production bonus from prestiging.
+ * This is kept separate to ensure backward compatibility.
+ * @param {Decimal|null} prestigeCountOverride - An optional override for the prestige count.
+ * @returns {Decimal} The total production bonus multiplier.
  */
 export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = prestigeCountOverride !== null ? decimalUtility.new(prestigeCountOverride) : decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
-
     const prestigeBonus = decimalUtility.divide(prestigeCount, 6);
     const imageBonus = decimalUtility.divide(images, '1e13'); 
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
-
     let totalBonus = decimalUtility.add(1, decimalUtility.add(prestigeBonus, imageBonus));
     totalBonus = decimalUtility.multiply(totalBonus, prestigeBonusBonus);
-    
-    const explanation = `(1 + Prestige Bonus + Image Bonus) * Multiplier = (1 + ${decimalUtility.format(prestigeBonus, 2)} + ${decimalUtility.format(imageBonus, 2)}) * ${decimalUtility.format(prestigeBonusBonus, 2)}x`;
-
-    return { bonus: totalBonus, explanation };
+    return totalBonus;
 };
 
 /**
- * NEW: Gathers all data needed for the prestige confirmation modal.
+ * NEW: Gathers all data needed for the prestige confirmation modal, including explanations.
  */
 export const getPrestigeConfirmationDetails = () => {
-    const { decimalUtility, moduleLoader, coreResourceManager } = coreSystemsRef;
+    const { decimalUtility, moduleLoader, coreResourceManager, coreUpgradeManager } = coreSystemsRef;
 
     if (!canPrestige()) {
         return { canPrestige: false, reason: "Requires 1,000 Images to Prestige." };
     }
     
-    const gainInfo = calculatePrestigeGain();
-    if (decimalUtility.lte(gainInfo.points, 0)) {
+    const ppGains = calculatePrestigeGain();
+    if (decimalUtility.lte(ppGains, 0)) {
         return { canPrestige: false, reason: "You would not gain any Prestige Points." };
     }
     
+    // --- Build Explanations ---
+    const prestigeCount = getTotalPrestigeCount();
+    const totalKnowledge = coreResourceManager.getAmount('knowledge');
+    const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
+    const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
+    const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
+    const globalBonus = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
+    const ppGainsExplanation = `(1 + P.Count/6 * Know./1k) * Bonuses = (1 + ${decimalUtility.format(prestigeFactor, 2)} * ${decimalUtility.format(knowledgeFactor,2)}) * ${decimalUtility.format(ppGainBonus, 2)}x * ${decimalUtility.format(globalBonus, 2)}x`;
+
+    const currentBonus = getPrestigeBonusMultiplier();
+    const nextPrestigeNumber = prestigeCount.add(1);
+    const nextBonus = getPrestigeBonusMultiplier(nextPrestigeNumber);
+    const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
+    const nextPrestigeBonusComp = decimalUtility.divide(nextPrestigeNumber, 6);
+    const imageBonus = decimalUtility.divide(images, '1e13');
+    const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
+    const bonusExplanation = `(1 + P.Bonus + Img.Bonus) * Mult = (1 + ${decimalUtility.format(nextPrestigeBonusComp, 2)} + ${decimalUtility.format(imageBonus, 2)}) * ${decimalUtility.format(prestigeBonusBonus, 2)}x`;
+    // --- End Explanations ---
+
     const skillsLogic = moduleLoader.getModule('skills')?.logic;
     let retainedKnowledge = decimalUtility.new(0);
     let retainedSsp = decimalUtility.new(0);
@@ -319,20 +331,14 @@ export const getPrestigeConfirmationDetails = () => {
         retainedSsp = decimalUtility.multiply(coreResourceManager.getAmount('studySkillPoints'), skillsLogic.getSspRetentionPercentage());
         startingProducers = skillsLogic.getStartingProducers();
     }
-    
-    const currentPrestigeCount = getTotalPrestigeCount();
-    const nextPrestigeNumber = currentPrestigeCount.add(1);
-
-    const currentBonusInfo = getPrestigeBonusMultiplier();
-    const nextBonusInfo = getPrestigeBonusMultiplier(nextPrestigeNumber);
 
     return {
         canPrestige: true,
-        ppGains: gainInfo.points,
-        ppGainsExplanation: gainInfo.explanation,
-        currentBonus: currentBonusInfo.bonus,
-        nextBonus: nextBonusInfo.bonus,
-        bonusExplanation: nextBonusInfo.explanation,
+        ppGains,
+        ppGainsExplanation,
+        currentBonus,
+        nextBonus,
+        bonusExplanation,
         retainedKnowledge,
         retainedSsp,
         startingProducers,
@@ -344,7 +350,7 @@ export const getPrestigeConfirmationDetails = () => {
  * NEW: Executes the actual prestige reset logic.
  */
 export const executePrestigeReset = (ppGains) => {
-    const { coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
+    const { coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility } = coreSystemsRef;
     
     const skillsLogic = moduleLoader.getModule('skills')?.logic;
     let retainedKnowledge = decimalUtility.new(0);
