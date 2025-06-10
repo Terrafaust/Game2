@@ -1,11 +1,10 @@
-// modules/market_module/market_ui.js (v3.0 - UI Restructure)
+// modules/market_module/market_ui.js (v3.1 - Event Listener Fix)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v3.1: Replaced inline onmouseover/out events with addEventListener to prevent load-time errors.
  * v3.0: Complete UI restructure into Consumables, Skill Points, and Feature Unlocks sections.
- * v2.4: Placed multiplier controls on the same line as the section title.
- * v2.3: Moved buy multiplier controls to be directly above the items they affect.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -28,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.1).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -50,16 +49,10 @@ export const ui = {
 
         container.innerHTML = `<h2 class="text-2xl font-semibold text-primary mb-4">Trade & Unlocks Market</h2>`;
         
-        // --- MODIFICATION: Create new UI structure ---
         container.appendChild(this._createSection('Consumables', staticModuleData.consumables, true));
         container.appendChild(this._createSection('Skill Points', staticModuleData.skillPoints, true));
         container.appendChild(this._createSection('Feature Unlocks', staticModuleData.featureUnlocks, false));
         container.appendChild(this._createAlreadyUnlockedSection());
-        // Automations could be its own section if needed, but the roadmap doesn't specify its placement.
-        // Let's place it logically. Automations feel like a feature unlock that is upgradeable.
-        // For now, let's keep it separate as per the old UI to avoid confusion.
-        // container.appendChild(this._createAutomationsSection());
-
 
         parentElement.appendChild(container);
         this.updateDynamicElements();
@@ -119,37 +112,52 @@ export const ui = {
         const card = document.createElement('div');
         card.id = `market-item-${itemDef.id}`;
         card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between market-card';
-        card.dataset.itemId = itemDef.id; // Store item id for updates
+        card.dataset.itemId = itemDef.id;
         card.dataset.itemType = isScalable ? 'scalable' : 'unlock';
 
-        let descriptionHTML = `<p class="text-textSecondary text-sm mb-3">${itemDef.description}</p>`;
+        const contentDiv = document.createElement('div');
         
-        // --- MODIFICATION: Add tooltip for prestige unlock requirement ---
+        const title = document.createElement('h4');
+        title.className = 'text-lg font-semibold text-textPrimary mb-2';
+        title.textContent = itemDef.name;
+        contentDiv.appendChild(title);
+        
+        // --- MODIFICATION: Create description elements programmatically ---
+        const descriptionP = document.createElement('p');
+        descriptionP.className = 'text-textSecondary text-sm mb-3';
+        descriptionP.textContent = itemDef.description;
+        contentDiv.appendChild(descriptionP);
+
         if (itemDef.id === 'buyImages') {
+            const prestigeInfo = document.createElement('p');
+            prestigeInfo.className = 'text-xs text-accentOne italic cursor-pointer';
+            prestigeInfo.textContent = '(Important for game progression)';
             const prestigeUnlockText = 'Get 1000 images to unlock Prestige';
-            descriptionHTML += `<p class="text-xs text-accentOne italic" 
-                                   onmouseover="core.ui.showTooltip('${prestigeUnlockText}', this)"
-                                   onmouseout="core.ui.hideTooltip()">
-                                   (Important for game progression)
-                                </p>`;
+            
+            prestigeInfo.addEventListener('mouseover', (e) => coreUIManager.showTooltip(prestigeUnlockText, e.target));
+            prestigeInfo.addEventListener('mouseout', () => coreUIManager.hideTooltip());
+            
+            contentDiv.appendChild(prestigeInfo);
         }
         
-        card.innerHTML = `
-            <div>
-                <h4 class="text-lg font-semibold text-textPrimary mb-2">${itemDef.name}</h4>
-                ${descriptionHTML}
-                <p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p>
-            </div>`;
+        const costP = document.createElement('p');
+        costP.id = `${card.id}-cost`;
+        costP.className = 'text-sm text-yellow-400 mb-4 mt-2';
+        contentDiv.appendChild(costP);
+
+        card.appendChild(contentDiv);
+        // --- END MODIFICATION ---
+
         const button = coreUIManager.createButton('', () => {
                 if (isScalable) {
                     moduleLogicRef.purchaseScalableItem(itemDef.id);
                 } else {
                     moduleLogicRef.purchaseUnlock(itemDef.id);
                 }
-                // Full render to move cards if needed
                 this.renderMainContent(parentElementCache);
             }, ['w-full', 'mt-auto'], `${card.id}-button`);
         card.appendChild(button);
+        
         return card;
     },
     
@@ -159,14 +167,12 @@ export const ui = {
         const allItems = { ...staticModuleData.consumables, ...staticModuleData.skillPoints };
         const allUnlocks = { ...staticModuleData.featureUnlocks };
         
-        // Update scalable items
         for (const itemId in allItems) {
             const itemDef = allItems[itemId];
             const card = parentElementCache.querySelector(`[data-item-id="${itemId}"]`);
             if (card) this._updateScalableItemCard(card, itemDef);
         }
         
-        // Update unlock items
         const unlockedGrid = parentElementCache.querySelector('#market-already-unlocked-grid');
         const unlockedSection = parentElementCache.querySelector('#market-already-unlocked-section');
         if (!unlockedGrid || !unlockedSection) return;
@@ -185,7 +191,6 @@ export const ui = {
                 unlockedPill.textContent = getCleanUnlockButtonText(unlockDef.name);
                 unlockedGrid.appendChild(unlockedPill);
                 
-                // Hide the original card if it exists
                 if (card) card.style.display = 'none';
 
             } else {
@@ -196,7 +201,6 @@ export const ui = {
             }
         }
         
-        // Show/hide the "Already Unlocked" section
         if (unlockedCount > 0) {
             unlockedSection.classList.remove('hidden');
         } else {
