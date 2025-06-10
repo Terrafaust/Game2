@@ -1,9 +1,10 @@
-// js/core/coreResourceManager.js (v2.2 - Enforced UI Order)
+// js/core/coreResourceManager.js (v2.3 - Robust UI Visibility)
 
 /**
  * @file coreResourceManager.js
  * @description Manages all game resources (e.g., Study Points, Knowledge),
  * their current amounts, and their generation rates per second.
+ * v2.3: Implemented robust linked visibility for prestige resources within getAllResources.
  * v2.2: Modified getAllResources to enforce a specific UI display order.
  * v2.1: Added getGridOrderedResources for fixed UI layouts.
  * v2.0: Added totalEarned tracking for detailed statistics.
@@ -16,7 +17,6 @@ import { staticDataAggregator } from './staticDataAggregator.js';
 
 let resources = {};
 
-// --- NEW ---
 // Define the desired display order for resources. This will be used to order
 // the resources returned to the UI, ensuring a consistent layout.
 const resourceDisplayOrder = [
@@ -33,7 +33,7 @@ const resourceDisplayOrder = [
 const coreResourceManager = {
     initialize() {
         resources = {}; 
-        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v2.2).");
+        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v2.3).");
     },
 
     defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true, resetsOnPrestige = true) {
@@ -258,52 +258,57 @@ const coreResourceManager = {
         const resource = resources[resourceId];
         if (resource) {
             resource.showInUI = !!show;
-
-            // Per user request, ensure prestigeCount becomes visible at the same time as prestigePoints.
-            // This links their visibility state without needing to modify other game logic files.
-            if (resourceId === 'prestigePoints' && show) {
-                if (resources['prestigeCount']) {
-                    resources['prestigeCount'].showInUI = true;
-                }
-            }
         }
     },
     
     getAllResources() {
         const resourcesCopy = {};
         const returnedIds = new Set();
-
+    
+        // Determine the visibility of the main prestige resource. This will control the visibility
+        // of related prestige resources for the UI.
+        const prestigePointsVisible = (resources['prestigePoints'] && resources['prestigePoints'].showInUI);
+    
         // Helper function to copy resource data to avoid repetition.
         const copyResource = (resId) => {
             const original = resources[resId];
             if (original && original.isInitialized) {
-                resourcesCopy[resId] = {
+                // Create a deep copy to prevent unintended modifications to the original resource objects.
+                const newCopy = {
                     ...original,
                     amount: decimalUtility.new(original.amount),
                     totalProductionRate: decimalUtility.new(original.totalProductionRate),
                     productionSources: { ...original.productionSources },
                 };
-                for (const srcKey in resourcesCopy[resId].productionSources) {
-                    resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]);
+                for (const srcKey in newCopy.productionSources) {
+                    newCopy.productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]);
                 }
+    
+                // --- ROBUST VISIBILITY LOGIC ---
+                // Enforce that prestigeCount is only visible when prestigePoints is also visible.
+                // This overrides the internal 'showInUI' property for display purposes only,
+                // providing a single source of truth for this UI rule.
+                if (resId === 'prestigeCount') {
+                    newCopy.showInUI = prestigePointsVisible;
+                }
+    
+                resourcesCopy[resId] = newCopy;
                 returnedIds.add(resId);
             }
         };
-
-        // First, add resources in the specified display order.
-        // This ensures the UI renders them in a consistent, predictable order.
+    
+        // First, process resources in the specified display order.
         for (const resId of resourceDisplayOrder) {
             copyResource(resId);
         }
-
-        // Second, add any other resources that are not in the main display list.
-        // This ensures any new or temporary resources are still accessible to the game.
+    
+        // Second, process any other resources not in the main display list.
         for (const resId in resources) {
             if (!returnedIds.has(resId)) {
                 copyResource(resId);
             }
         }
-
+    
         return resourcesCopy;
     },
 
