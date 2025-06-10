@@ -1,11 +1,10 @@
-// modules/market_module/market_data.js (v3.0 - UI Restructure)
+// modules/market_module/market_data.js (v3.1 - Decouple Dependencies)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v3.1: Removed unlockCondition functions to prevent load-time dependency errors. Conditions are now checked in the UI.
  * v3.0: Restructured data into categories for the new UI. Added new feature unlocks and updated conditions.
- * v2.0: Added tiered Image Automator upgrade.
- * v1.4: Added Prestige Skill Points resource and market item.
  */
 
 export const staticModuleData = {
@@ -15,7 +14,6 @@ export const staticModuleData = {
         prestigeSkillPoints: { id: 'prestigeSkillPoints', name: 'Prestige Skill Points', initialAmount: '0', isUnlocked: true, showInUI: false, hasProductionRate: false }
     },
 
-    // --- MODIFICATION: Data restructured into new categories ---
     consumables: {
         buyImages: { 
             id: 'buyImages', 
@@ -49,13 +47,7 @@ export const staticModuleData = {
             costGrowthFactor: '1.2', 
             benefitResource: 'prestigeSkillPoints', 
             benefitAmountPerPurchase: '1',
-            // Prestige Skill Points are only visible after the first prestige.
-            unlockCondition: (coreSystems) => {
-                const prestigeModule = coreSystems.moduleLoader.getModule('prestige');
-                if (!prestigeModule || !prestigeModule.logic) return false;
-                const prestigeCount = prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : (prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : coreSystems.decimalUtility.new(0));
-                return coreSystems.decimalUtility.gte(prestigeCount, 1);
-            }
+            unlockPrestigeLevel: 1 // Condition check moved to UI
         }
     },
 
@@ -97,28 +89,36 @@ export const staticModuleData = {
             name: 'Unlock Automator Menu',
             description: 'Gain access to the Automator menu to automate parts of the game.',
             costResource: 'images',
-            costAmount: '1e7',
+            costAmount: '500000',
             flagToSet: 'automatorMenuUnlocked',
-            unlockCondition: (coreSystems) => {
-                 const prestigeModule = coreSystems.moduleLoader.getModule('prestige');
-                 if (!prestigeModule || !prestigeModule.logic) return false;
-                 const prestigeCount = prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : (prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : coreSystems.decimalUtility.new(0));
-                 return coreSystems.decimalUtility.gte(prestigeCount, 3);
-            }
+            unlockPrestigeLevel: 3 // Condition check moved to UI
         },
          modifiedUI: {
             id: 'unlockModifiedUI',
             name: 'Unlock Modified UI',
             description: 'Unlocks a modified UI layout.',
             costResource: 'images',
-            costAmount: '1e9',
+            costAmount: '100000000',
             flagToSet: 'modifiedUIUnlocked',
-             unlockCondition: (coreSystems) => {
-                 const prestigeModule = coreSystems.moduleLoader.getModule('prestige');
-                 if (!prestigeModule || !prestigeModule.logic) return false;
-                 const prestigeCount = prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : (prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : coreSystems.decimalUtility.new(0));
-                 return coreSystems.decimalUtility.gte(prestigeCount, 3);
-            }
+            unlockPrestigeLevel: 3 // Condition check moved to UI
         }
+    },
+
+    marketAutomations: {
+        imageAutomator: {
+            id: 'imageAutomator',
+            name: 'Image Purchase Automator',
+            description: 'Automatically purchases Images for you.',
+            costResource: 'prestigePoints',
+            levels: [
+                { level: 1, cost: '1e5',  rate: 10,   description: 'Automatically buys 10 Images per second.' },
+                { level: 2, cost: '1e10', rate: 100,  description: 'Upgrades to 100 Images per second.' },
+                { level: 3, cost: '1e15', rate: 1000, description: 'Upgrades to 1000 Images per second.' },
+            ]
+        }
+    },
+
+    ui: {
+        marketTabLabel: "Market",
     }
 };

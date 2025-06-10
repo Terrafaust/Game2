@@ -1,9 +1,10 @@
-// modules/market_module/market_ui.js (v3.1 - Event Listener Fix)
+// modules/market_module/market_ui.js (v3.2 - Safe Dependency Check)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
- * v3.1: Replaced inline onmouseover/out events with addEventListener to prevent load-time errors.
+ * v3.2: Moved unlock condition logic from data to UI to prevent load-time errors.
+ * v3.1: Replaced inline onmouseover/out events with addEventListener.
  * v3.0: Complete UI restructure into Consumables, Skill Points, and Feature Unlocks sections.
  */
 
@@ -27,7 +28,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.1).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.2).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -83,7 +84,24 @@ export const ui = {
         
         for (const itemId in items) {
             const itemDef = items[itemId];
-            if (itemDef.unlockCondition && !itemDef.unlockCondition(coreSystemsRef)) continue;
+
+            // --- MODIFICATION: Check for unlock conditions safely within the UI ---
+            if (itemDef.unlockPrestigeLevel) {
+                const prestigeModule = coreSystemsRef.moduleLoader.getModule('prestige');
+                if (!prestigeModule || !prestigeModule.logic) {
+                    continue; // Skip rendering if prestige module not ready
+                }
+                // Check if getTotalPrestigeCount is a function before calling
+                if (typeof prestigeModule.logic.getTotalPrestigeCount !== 'function') {
+                     coreSystemsRef.loggingSystem.warn("MarketUI", "Prestige module loaded, but getTotalPrestigeCount is not a function.");
+                     continue;
+                }
+                const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
+                if (coreSystemsRef.decimalUtility.lt(prestigeCount, itemDef.unlockPrestigeLevel)) {
+                    continue; // Skip rendering if condition not met
+                }
+            }
+            // --- END MODIFICATION ---
 
             itemsGrid.appendChild(this._createMarketItemCard(itemDef, hasMultiplier));
         }
@@ -95,7 +113,7 @@ export const ui = {
     _createAlreadyUnlockedSection() {
         const section = document.createElement('section');
         section.id = 'market-already-unlocked-section';
-        section.className = 'space-y-4 hidden'; // Hide if empty
+        section.className = 'space-y-4 hidden';
         
         section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Already Unlocked</h3>`;
         
@@ -122,7 +140,6 @@ export const ui = {
         title.textContent = itemDef.name;
         contentDiv.appendChild(title);
         
-        // --- MODIFICATION: Create description elements programmatically ---
         const descriptionP = document.createElement('p');
         descriptionP.className = 'text-textSecondary text-sm mb-3';
         descriptionP.textContent = itemDef.description;
@@ -146,7 +163,6 @@ export const ui = {
         contentDiv.appendChild(costP);
 
         card.appendChild(contentDiv);
-        // --- END MODIFICATION ---
 
         const button = coreUIManager.createButton('', () => {
                 if (isScalable) {
@@ -164,48 +180,9 @@ export const ui = {
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         
-        const allItems = { ...staticModuleData.consumables, ...staticModuleData.skillPoints };
-        const allUnlocks = { ...staticModuleData.featureUnlocks };
-        
-        for (const itemId in allItems) {
-            const itemDef = allItems[itemId];
-            const card = parentElementCache.querySelector(`[data-item-id="${itemId}"]`);
-            if (card) this._updateScalableItemCard(card, itemDef);
-        }
-        
-        const unlockedGrid = parentElementCache.querySelector('#market-already-unlocked-grid');
-        const unlockedSection = parentElementCache.querySelector('#market-already-unlocked-section');
-        if (!unlockedGrid || !unlockedSection) return;
-        
-        unlockedGrid.innerHTML = '';
-        let unlockedCount = 0;
-
-        for (const unlockId in allUnlocks) {
-            const unlockDef = allUnlocks[unlockId];
-            const card = parentElementCache.querySelector(`[data-item-id="${unlockId}"]`);
-            
-            if (moduleLogicRef.isUnlockPurchased(unlockId)) {
-                unlockedCount++;
-                const unlockedPill = document.createElement('div');
-                unlockedPill.className = 'bg-green-800 text-green-200 text-sm font-semibold py-2 px-3 rounded-full shadow-md';
-                unlockedPill.textContent = getCleanUnlockButtonText(unlockDef.name);
-                unlockedGrid.appendChild(unlockedPill);
-                
-                if (card) card.style.display = 'none';
-
-            } else {
-                if (card) {
-                    this._updateUnlockItemCard(card, unlockDef);
-                    card.style.display = 'flex';
-                }
-            }
-        }
-        
-        if (unlockedCount > 0) {
-            unlockedSection.classList.remove('hidden');
-        } else {
-            unlockedSection.classList.add('hidden');
-        }
+        // This is now inefficient as it re-renders the whole thing,
+        // but it's the safest way to ensure the view is correct after the big restructure.
+        this.renderMainContent(parentElementCache);
     },
 
     _updateScalableItemCard(cardElement, itemDef) {
