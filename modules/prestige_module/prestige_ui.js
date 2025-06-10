@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v4.0 - Roadmap UI Tweaks)
+// /game/modules/prestige_module/prestige_ui.js (v4.2 - Centralized UI Call)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -8,12 +8,8 @@ let parentElementCache = null;
 export const ui = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        document.addEventListener('buyMultiplierChanged', () => {
-            if (coreSystemsRef && coreSystemsRef.coreUIManager.isActiveTab('prestige')) {
-                this.updateDynamicElements();
-            }
-        });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.0).");
+        // The global listener in coreUIManager now handles this.
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.2).");
     },
 
     renderMainContent(parentElement) {
@@ -40,21 +36,17 @@ export const ui = {
         `;
         header.appendChild(statsContainer);
         
-        // --- ROADMAP 4.2: Move buy multiplier controls between stats and button ---
-        const { coreGameStateManager } = coreSystemsRef;
+        const { coreGameStateManager, coreUIManager } = coreSystemsRef;
         if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
-             const studiesUI = coreSystemsRef.moduleLoader.getModule('studies')?.ui;
-             if (studiesUI && typeof studiesUI._createBuyMultiplierControls === 'function') {
-                const multiplierContainer = document.createElement('div');
-                multiplierContainer.className = 'flex justify-center items-center py-2';
-                const multiplierControls = studiesUI._createBuyMultiplierControls();
-                multiplierControls.classList.remove('mb-6');
-                multiplierContainer.appendChild(multiplierControls);
-                header.appendChild(multiplierContainer);
-            }
+            const multiplierContainer = document.createElement('div');
+            multiplierContainer.className = 'flex justify-center items-center py-2';
+            // Call the new centralized function
+            const multiplierControls = coreUIManager.createBuyMultiplierControls();
+            multiplierContainer.appendChild(multiplierControls);
+            header.appendChild(multiplierContainer);
         }
         
-        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-3', 'px-6', 'text-lg', 'w-full', 'md:w-auto']);
+        const prestigeButton = coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-3', 'px-6', 'text-lg', 'w-full', 'md:w-auto']);
         prestigeButton.id = 'prestige-button';
         header.appendChild(prestigeButton);
         container.appendChild(header);
@@ -78,6 +70,9 @@ export const ui = {
         
         this.updateDynamicElements();
     },
+
+    // _createBuyMultiplierControls and _updateMultiplierButtonStyles are now removed,
+    // as this functionality is handled by coreUIManager.
     
     _createProducerCard(producerDef) {
         const { coreUIManager } = coreSystemsRef;
@@ -106,7 +101,7 @@ export const ui = {
 
     updateDynamicElements() {
         if (!parentElementCache || !coreSystemsRef) return;
-        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator, coreGameStateManager } = coreSystemsRef;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator, coreGameStateManager, coreUIManager } = coreSystemsRef;
 
         const ppDisplay = parentElementCache.querySelector('#pp-display');
         if (ppDisplay) {
@@ -134,12 +129,26 @@ export const ui = {
             }
         }
         
-        // This is now handled by the generic `_updateMultiplierButtonStyles` in studies_ui
-        const studiesUI = coreSystemsRef.moduleLoader.getModule('studies')?.ui;
-        const multiplierControls = parentElementCache.querySelector('.flex.space-x-2');
-        if (multiplierControls && studiesUI && typeof studiesUI._updateMultiplierButtonStyles === 'function') {
-            studiesUI._updateMultiplierButtonStyles(multiplierControls);
+        const header = parentElementCache.querySelector('.text-center.space-y-4');
+        if (header) {
+            let multiplierContainer = header.querySelector('.flex.justify-center');
+             if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
+                if (!multiplierContainer) {
+                    multiplierContainer = document.createElement('div');
+                    multiplierContainer.className = 'flex justify-center items-center py-2';
+                    const multiplierControls = coreUIManager.createBuyMultiplierControls();
+                    multiplierContainer.appendChild(multiplierControls);
+                    // Insert after stats, before button
+                    const prestigeBtn = header.querySelector('#prestige-button');
+                    if (prestigeBtn) {
+                        header.insertBefore(multiplierContainer, prestigeBtn);
+                    }
+                }
+            } else {
+                if (multiplierContainer) multiplierContainer.remove();
+            }
         }
+
 
         const postDocMultiplier = logic.getPostDocMultiplier();
 
@@ -150,7 +159,7 @@ export const ui = {
                 const owned = logic.getOwnedPrestigeProducerCount(producerId);
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
                 
-                const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
+                const productionDisplay = card.querySelector(`#prestige-production-${producerDef.id}`);
                 if (productionDisplay) {
                     let productionHtml = '';
                     if (producerDef.passiveProduction && decimalUtility.gt(owned, 0)) {
@@ -170,7 +179,7 @@ export const ui = {
                      productionDisplay.innerHTML = productionHtml;
                 }
                 
-                let quantityToBuy = 1;
+                let quantityToBuy = decimalUtility.new(1);
                 let buyMode = '1';
                 
                 if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
@@ -180,7 +189,7 @@ export const ui = {
                         buyMode = 'Max';
                     } else {
                         quantityToBuy = decimalUtility.new(multiplier);
-                        buyMode = multiplier;
+                        buyMode = `${multiplier}`;
                     }
                 }
 
@@ -190,7 +199,7 @@ export const ui = {
                 const button = card.querySelector(`#prestige-purchase-${producerId}`);
                 button.disabled = !coreResourceManager.canAfford('prestigePoints', cost) || decimalUtility.lte(quantityToBuy, 0);
 
-                if (buyMode === 'Max') {
+                if (buyMode === 'Max' && decimalUtility.gt(quantityToBuy, 0)) {
                     button.textContent = `Buy ${decimalUtility.format(quantityToBuy, 0)} (Max)`;
                 } else {
                      button.textContent = `Buy ${buyMode}`;

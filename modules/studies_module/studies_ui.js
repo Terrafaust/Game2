@@ -1,11 +1,10 @@
-// js/modules/studies_module/studies_ui.js (v3.0 - Roadmap UI Tweaks)
+// js/modules/studies_module/studies_ui.js (v3.1 - Centralized UI Call)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
+ * v3.1: Modified to call the centralized coreUIManager.createBuyMultiplierControls.
  * v3.0: Moved buy multiplier controls next to title as per roadmap.
- * v2.2: Fixes a crash related to an incorrect .toNumber() call.
- * v2.1: Adds 'Buy Max' button and logic to multiplier controls.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -18,13 +17,9 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v3.1).");
 
-        document.addEventListener('buyMultiplierChanged', () => {
-            if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
-                this.updateDynamicElements();
-            }
-        });
+        // The global listener in coreUIManager now handles this.
     },
 
     renderMainContent(parentElement) {
@@ -38,7 +33,6 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        // --- ROADMAP 4.2: Header with inline controls ---
         const header = document.createElement('div');
         header.className = 'flex justify-between items-center gap-4 flex-wrap';
 
@@ -47,11 +41,10 @@ export const ui = {
         title.textContent = 'Studies Department';
         header.appendChild(title);
 
-        // Conditionally add buy multiplier controls if unlocked
-        const { coreGameStateManager } = coreSystemsRef;
+        const { coreGameStateManager, coreUIManager } = coreSystemsRef;
         if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
-             const multiplierControls = this._createBuyMultiplierControls();
-             multiplierControls.classList.remove('mb-6'); // Remove bottom margin for inline display
+             // Call the new centralized function
+             const multiplierControls = coreUIManager.createBuyMultiplierControls();
              header.appendChild(multiplierControls);
         }
         
@@ -64,8 +57,6 @@ export const ui = {
             <p class="text-textSecondary">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
         `;
         container.insertBefore(header, container.firstChild);
-        // --- END ROADMAP MODIFICATION ---
-
 
         const producersContainer = document.createElement('div');
         producersContainer.id = 'studies-producers-container';
@@ -102,69 +93,25 @@ export const ui = {
         return card;
     },
 
-    _createBuyMultiplierControls() {
-        const { coreUIManager, buyMultiplierManager } = coreSystemsRef;
-        const controlWrapper = document.createElement('div');
-        controlWrapper.className = 'flex justify-center items-center space-x-2 bg-surface-dark rounded-full p-1';
-        
-        buyMultiplierManager.getAvailableMultipliers().forEach(multiplier => {
-            const button = coreUIManager.createButton(
-                buyMultiplierManager.getMultiplierLabel(multiplier),
-                () => buyMultiplierManager.setMultiplier(multiplier),
-                ['px-3', 'py-1', 'text-xs', 'rounded-full'], // Adjusted padding and size
-                `buy-multiplier-${multiplier}`
-            );
-            controlWrapper.appendChild(button);
-        });
-        
-        this._updateMultiplierButtonStyles(controlWrapper);
-        document.addEventListener('buyMultiplierChanged', () => this._updateMultiplierButtonStyles(controlWrapper));
-        return controlWrapper;
-    },
-
-    _updateMultiplierButtonStyles(wrapper) {
-        if (!wrapper) {
-            // Try to find it if not passed
-            wrapper = parentElementCache?.querySelector('.flex.space-x-2.bg-surface-dark');
-            if (!wrapper) return;
-        }
-        const { buyMultiplierManager } = coreSystemsRef;
-        const currentMultiplier = buyMultiplierManager.getMultiplier();
-        const buttons = wrapper.querySelectorAll('button');
-        
-        buttons.forEach(button => {
-            // Extract multiplier value from the ID, assuming format 'buy-multiplier-X'
-            const buttonMultiplier = parseInt(button.id.split('-').pop(), 10);
-
-            if (buttonMultiplier === currentMultiplier) {
-                button.classList.add('bg-accentOne', 'text-white', 'opacity-100');
-                button.classList.remove('opacity-60', 'hover:bg-primary-dark');
-            } else {
-                button.classList.remove('bg-accentOne', 'text-white', 'opacity-100');
-                button.classList.add('opacity-60', 'hover:bg-primary-dark');
-            }
-        });
-    },
+    // _createBuyMultiplierControls and _updateMultiplierButtonStyles are now removed,
+    // as this functionality is handled by coreUIManager.
 
     updateDynamicElements() {
         if (!parentElementCache) return;
-        const { coreResourceManager, decimalUtility, buyMultiplierManager, coreGameStateManager } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, buyMultiplierManager, coreGameStateManager, coreUIManager } = coreSystemsRef;
         
-        // Update visibility of multiplier controls
         const header = parentElementCache.querySelector('.flex.justify-between.items-center');
         if(header) {
-            let controls = header.querySelector('.flex.space-x-2.bg-surface-dark');
+            let controls = header.querySelector('.buy-multiplier-controls');
             if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
                 if (!controls) {
-                    controls = this._createBuyMultiplierControls();
-                    controls.classList.remove('mb-6');
+                    controls = coreUIManager.createBuyMultiplierControls();
                     header.appendChild(controls);
                 }
             } else {
                 if (controls) controls.remove();
             }
         }
-
 
         for (const producerId in staticModuleData.producers) {
             const producerDef = staticModuleData.producers[producerId];
@@ -185,7 +132,7 @@ export const ui = {
                 ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
                 prodDisplay.textContent = `Production: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
 
-                let quantityToBuy = 1;
+                let quantityToBuy = decimalUtility.new(1);
                 let buyMode = '1';
 
                 if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
@@ -194,14 +141,14 @@ export const ui = {
                         quantityToBuy = moduleLogicRef.calculateMaxBuyable(producerId);
                         buyMode = 'Max';
                     } else {
-                        quantityToBuy = quantityToBuy = decimalUtility.new(multiplier);
-                        buyMode = multiplier;
+                        quantityToBuy = decimalUtility.new(multiplier);
+                        buyMode = `${multiplier}`;
                     }
                 }
                 
                 const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy);
                 
-                if (buyMode === 'Max') {
+                if (buyMode === 'Max' && decimalUtility.gt(quantityToBuy, 0)) {
                     costDisplay.textContent = `Cost for ${decimalUtility.format(quantityToBuy, 0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
                     buyButton.textContent = `Buy ${decimalUtility.format(quantityToBuy, 0)} (Max)`;
                 } else {

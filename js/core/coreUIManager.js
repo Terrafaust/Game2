@@ -1,18 +1,17 @@
-// js/core/coreUIManager.js (v5.4 - Corrected Resource Visibility)
+// js/core/coreUIManager.js (v5.5 - Centralized Multiplier Controls)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.5: Centralized the creation and management of buy multiplier controls.
  * v5.4: Corrected resource bar logic to hide unlocked resources while maintaining static layout.
  * v5.3: Implemented static resource bar layout as per roadmap.
- * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
- * v5.1: Enhanced notification system with clickability and larger achievement notifications.
- * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
+import { buyMultiplierManager } from './buyMultiplierManager.js'; // Import buyMultiplierManager
 
 function initializeSwipeMenu() {
     const body = document.body;
@@ -61,6 +60,7 @@ let currentTooltipTarget = null;
 
 export const coreUIManager = {
     initialize() {
+        // Cache UI elements
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
         UIElements.mainMenu = document.getElementById('main-menu');
@@ -89,7 +89,57 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.4).");
+        
+        // --- NEW: Global listener for buy multiplier changes ---
+        document.addEventListener('buyMultiplierChanged', this._updateAllMultiplierButtonStyles.bind(this));
+
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.5).");
+    },
+    
+    // --- NEW: Function to create the multiplier controls ---
+    createBuyMultiplierControls() {
+        const controlWrapper = document.createElement('div');
+        controlWrapper.className = 'buy-multiplier-controls flex justify-center items-center space-x-2 bg-surface-dark rounded-full p-1';
+        
+        buyMultiplierManager.getAvailableMultipliers().forEach(multiplier => {
+            const button = this.createButton(
+                buyMultiplierManager.getMultiplierLabel(multiplier),
+                () => buyMultiplierManager.setMultiplier(multiplier),
+                ['px-3', 'py-1', 'text-xs', 'rounded-full'],
+                `buy-multiplier-${multiplier}-${Math.random().toString(36).substring(7)}`
+            );
+            button.dataset.multiplierValue = multiplier;
+            controlWrapper.appendChild(button);
+        });
+        
+        this._updateAllMultiplierButtonStyles(); // Set initial state
+        return controlWrapper;
+    },
+    
+    // --- NEW: Global function to update styles of all controls ---
+    _updateAllMultiplierButtonStyles() {
+        const currentMultiplier = buyMultiplierManager.getMultiplier();
+        const allControlWrappers = document.querySelectorAll('.buy-multiplier-controls');
+
+        allControlWrappers.forEach(wrapper => {
+            const buttons = wrapper.querySelectorAll('button');
+            buttons.forEach(button => {
+                const buttonMultiplier = parseInt(button.dataset.multiplierValue, 10);
+                if (isNaN(buttonMultiplier)) return;
+                
+                if (buttonMultiplier === currentMultiplier) {
+                    button.classList.add('bg-accentOne', 'text-white', 'opacity-100');
+                    button.classList.remove('opacity-60', 'hover:bg-primary-dark', 'bg-primary');
+                } else {
+                    button.classList.remove('bg-accentOne', 'text-white', 'opacity-100');
+                    button.classList.add('opacity-60', 'hover:bg-primary-dark');
+                    // Ensure it has a base color if not active
+                    if(!button.classList.contains('bg-primary')) {
+                        button.classList.add('bg-primary');
+                    }
+                }
+            });
+        });
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -217,9 +267,6 @@ export const coreUIManager = {
 
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
-
-        // --- ROADMAP 1.1 MODIFICATION (v2) ---
-        // This version maintains the static layout but correctly hides resources that are not yet unlocked.
         
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
         if (prestigeModule) {
@@ -233,7 +280,6 @@ export const coreUIManager = {
             { id: 'studyPoints', name: 'Study Points' }, { id: 'images', name: 'Images' }, { id: 'prestigeCount', name: 'Prestige count' },
             { id: 'knowledge', name: 'Knowledge' }, { id: 'prestigePoints', name: 'Prestige points' },
         ];
-        // Add a placeholder to ensure the grid is always even if the last item is hidden.
         resourceLayout.push({ id: 'placeholder', name: '' });
 
         UIElements.resourcesDisplay.innerHTML = ''; 
@@ -289,7 +335,6 @@ export const coreUIManager = {
             }
             UIElements.resourcesDisplay.appendChild(displayElement);
         }
-        // --- ROADMAP 1.1 MODIFICATION (v2) END ---
     },
     
     showModal(title, content, buttons) {
