@@ -1,10 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v7.3 - Dynamic Confirmation Modal)
-import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
-import { coreResourceManager } from '../../js/core/coreResourceManager.js';
-import { moduleLoader } from '../../js/core/moduleLoader.js';
-import { decimalUtility } from '../../js/core/decimalUtility.js';
-import { coreUIManager } from '../../js/core/coreUIManager.js';
-import { buyMultiplierManager } from '../../js/core/buyMultiplierManager.js';
+// /game/modules/prestige_module/prestige_logic.js (v7.4 - Dependency Refactor)
 import { prestigeData } from './prestige_data.js';
 import { moduleState, getInitialState } from './prestige_state.js';
 
@@ -12,9 +6,11 @@ let coreSystemsRef;
 
 export const initialize = (systems) => {
     coreSystemsRef = systems;
+    coreSystemsRef.loggingSystem.info("PrestigeLogic", "Logic initialized (v7.4).");
 };
 
 export const processPrestigeTick = (deltaTimeSeconds) => {
+    if (!coreSystemsRef) return;
     if (moduleState.currentPrestigeRunTime !== undefined) {
         moduleState.currentPrestigeRunTime += deltaTimeSeconds;
     } else if (coreSystemsRef.coreGameStateManager.getModuleState('prestige')) {
@@ -24,19 +20,22 @@ export const processPrestigeTick = (deltaTimeSeconds) => {
 };
 
 export const getOwnedPrestigeProducerCount = (producerId) => {
-    return decimalUtility.new(moduleState.ownedProducers[producerId] || '0');
+    if (!coreSystemsRef) return new Decimal(0);
+    return coreSystemsRef.decimalUtility.new(moduleState.ownedProducers[producerId] || '0');
 };
 
 export const getTotalPrestigeCount = () => {
-    return decimalUtility.new(moduleState.totalPrestigeCount || '0');
+    if (!coreSystemsRef) return new Decimal(0);
+    return coreSystemsRef.decimalUtility.new(moduleState.totalPrestigeCount || '0');
 };
 
 export const getTotalPPEarned = () => {
-    return decimalUtility.new(moduleState.totalPrestigePointsEverEarned || '0');
+    if (!coreSystemsRef) return new Decimal(0);
+    return coreSystemsRef.decimalUtility.new(moduleState.totalPrestigePointsEverEarned || '0');
 }
 
 export const getPostDocMultiplier = () => {
-    if (!coreSystemsRef) return decimalUtility.new(1);
+    if (!coreSystemsRef) return coreSystemsRef.decimalUtility.new(1);
     const { decimalUtility } = coreSystemsRef;
     const owned = getOwnedPrestigeProducerCount('postDoc');
     if (decimalUtility.eq(owned, 0)) {
@@ -240,21 +239,21 @@ export const updatePrestigeProducerEffects = () => {
 };
 
 export const canPrestige = () => {
+    if (!coreSystemsRef) return false;
     const flagUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
     const hasEnoughImages = coreSystemsRef.coreResourceManager.canAfford('images', 1000);
     return flagUnlocked && hasEnoughImages;
 };
 
-// --- MODIFICATION: Function now returns value and explanation object ---
 export const calculatePrestigeGain = () => {
-    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+    const { coreUpgradeManager, coreResourceManager, decimalUtility, coreGameStateManager } = coreSystemsRef;
     
     const result = {
         points: decimalUtility.new(0),
         explanation: "Not unlocked."
     };
 
-    if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
+    if (!coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
         return result;
     }
     
@@ -287,7 +286,6 @@ export const calculatePrestigeGain = () => {
     return result;
 };
 
-// --- MODIFICATION: Function now returns value and explanation object ---
 export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     
@@ -313,7 +311,7 @@ export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
 };
 
 export const performPrestige = () => {
-    const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
+    const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility } = coreSystemsRef;
 
     if (!canPrestige()) {
         coreUIManager.showNotification("Requires 1,000 Images to Prestige.", "error");
@@ -336,7 +334,6 @@ export const performPrestige = () => {
         startingProducers = skillsLogic.getStartingProducers();
     }
     
-    // --- MODIFICATION: Enhanced prestige confirmation message using new calculation objects ---
     const currentPrestigeCount = getTotalPrestigeCount();
     const nextPrestigeNumber = currentPrestigeCount.add(1);
     
