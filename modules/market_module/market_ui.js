@@ -1,11 +1,10 @@
-// modules/market_module/market_ui.js (v2.2 - Centralized Multiplier UI)
+// modules/market_module/market_ui.js (v2.3 - Corrected Multiplier Placement)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
- * v2.2: Refactored to use the centralized buyMultiplierUI helper, removing dependency on studies_ui.
- * v2.1: Restored Consumables and Unlocks sections that were accidentally removed.
- * v2.0: Adds UI for the Image Automator.
+ * v2.3: Moved buy multiplier controls to be directly above the items they affect.
+ * v2.2: Refactored to use the centralized buyMultiplierUI helper.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -28,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.2).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.3).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -48,29 +47,15 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-8'; 
 
-        const title = document.createElement('h2');
-        title.className = 'text-2xl font-semibold text-primary mb-2';
-        title.textContent = 'Trade & Unlocks Market';
-        container.appendChild(title);
-
-        const tipBox = document.createElement('div');
-        tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-primary/50 text-center';
-        const tipText = document.createElement('p');
-        tipText.className = 'text-sm text-accentOne italic';
-        tipText.textContent = '"Get 1000 images to unlock Prestige"';
-        tipBox.appendChild(tipText);
-        container.appendChild(tipBox);
-
-        // --- MODIFICATION: Use the centralized UI helper ---
-        if (coreSystemsRef.buyMultiplierUI) {
-            container.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
-        } else {
-            coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplierUI helper not found in core systems!");
-        }
-        // --- END MODIFICATION ---
+        container.innerHTML = `
+            <h2 class="text-2xl font-semibold text-primary mb-2">Trade & Unlocks Market</h2>
+            <div class="mb-6 p-3 bg-surface rounded-lg border border-primary/50 text-center">
+                <p class="text-sm text-accentOne italic">"Get 1000 images to unlock Prestige"</p>
+            </div>
+        `;
         
         container.appendChild(this._createAutomationsSection());
-        container.appendChild(this._createScalableItemsSection());
+        container.appendChild(this._createScalableItemsSection()); // This will now include the multiplier
         container.appendChild(this._createUnlocksSection());
 
         parentElement.appendChild(container);
@@ -79,8 +64,17 @@ export const ui = {
 
     _createScalableItemsSection() {
         const section = document.createElement('section');
-        section.className = 'space-y-6';
+        section.className = 'space-y-4';
         section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Consumables</h3>`;
+        
+        // --- MODIFICATION: Add multiplier controls here, as they only affect this section ---
+        if (coreSystemsRef.buyMultiplierUI) {
+            section.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+        } else {
+            coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplierUI helper not found!");
+        }
+        // --- END MODIFICATION ---
+
         const itemsGrid = document.createElement('div');
         itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
         for (const itemId in staticModuleData.marketItems) {

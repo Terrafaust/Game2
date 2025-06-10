@@ -1,11 +1,10 @@
-// js/modules/studies_module/studies_ui.js (v2.3 - Centralized Multiplier UI)
+// js/modules/studies_module/studies_ui.js (v2.4 - Corrected Multiplier Placement)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
+ * v2.4: Adjusted placement of the buy multiplier controls to be directly above the producers list.
  * v2.3: Refactored to use the centralized buyMultiplierUI helper.
- * v2.2: Fixes a crash related to an incorrect .toNumber() call.
- * v2.1: Adds 'Buy Max' button and logic to multiplier controls.
  */
 
 import { staticModuleData } from './studies_data.js';
@@ -18,7 +17,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.3).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.4).");
 
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
@@ -36,28 +35,34 @@ export const ui = {
         parentElement.innerHTML = '';
 
         const container = document.createElement('div');
-        container.className = 'p-4 space-y-6';
+        container.className = 'p-4 space-y-4';
         
         container.innerHTML = `
             <h2 class="text-2xl font-semibold text-primary mb-2">Studies Department</h2>
             <div class="p-3 bg-surface rounded-lg border border-primary/50 text-center">
                 <p class="text-sm text-accentOne italic">"Get 10 professors to unlock Market"</p>
             </div>
-            <p class="text-textSecondary mb-6">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
+            <p class="text-textSecondary">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
         `;
 
-        // --- MODIFICATION: Use the centralized UI helper ---
+        // --- MODIFICATION: Create a dedicated section for producers that includes the multiplier ---
+        const producersSection = document.createElement('div');
+        
+        // Add the multiplier controls at the top of this section
         if (coreSystemsRef.buyMultiplierUI) {
-            container.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+            producersSection.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
         } else {
             coreSystemsRef.loggingSystem.error("StudiesUI", "buyMultiplierUI helper not found in core systems!");
         }
-        // --- END MODIFICATION ---
 
+        // Add the grid for producer cards
         const producersContainer = document.createElement('div');
         producersContainer.id = 'studies-producers-container';
         producersContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
-        container.appendChild(producersContainer);
+        producersSection.appendChild(producersContainer);
+
+        container.appendChild(producersSection);
+        // --- END MODIFICATION ---
 
         for (const producerId in staticModuleData.producers) {
             producersContainer.appendChild(this._createProducerCard(producerId));
@@ -89,9 +94,6 @@ export const ui = {
         card.appendChild(buyButton);
         return card;
     },
-
-    // --- MODIFICATION: Removed _createBuyMultiplierControls and _updateMultiplierButtonStyles ---
-    // The logic is now handled by the centralized js/core/buyMultiplierUI.js helper.
 
     updateDynamicElements() {
         if (!parentElementCache) return;

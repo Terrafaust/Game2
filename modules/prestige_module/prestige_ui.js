@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v3.1 - Centralized Multiplier UI)
+// /game/modules/prestige_module/prestige_ui.js (v3.2 - Corrected Multiplier Placement)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.1).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.2).");
     },
 
     renderMainContent(parentElement) {
@@ -23,13 +23,11 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        const tipBox = document.createElement('div');
-        tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center';
-        const tipText = document.createElement('p');
-        tipText.className = 'text-sm text-red-300 italic';
-        tipText.textContent = '"The end already ?"';
-        tipBox.appendChild(tipText);
-        container.appendChild(tipBox);
+        container.innerHTML = `
+            <div class="mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center">
+                <p class="text-sm text-red-300 italic">"The end already ?"</p>
+            </div>
+        `;
 
         const header = document.createElement('div');
         header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
@@ -57,18 +55,15 @@ export const ui = {
         
         container.appendChild(header);
 
-        // --- MODIFICATION: Use the centralized UI helper ---
-        if (coreSystemsRef.buyMultiplierUI) {
-            container.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
-        } else {
-            coreSystemsRef.loggingSystem.error("PrestigeUI", "buyMultiplierUI helper not found in core systems!");
-        }
-        // --- END MODIFICATION ---
+        // --- MODIFICATION: Create a dedicated section for producers that includes the multiplier ---
+        const producersSection = document.createElement('div');
+        producersSection.innerHTML = `<h3 class="text-xl font-semibold text-primary mt-6">Prestige Upgrades</h3>`;
 
-        const producersTitle = document.createElement('h3');
-        producersTitle.className = 'text-xl font-semibold text-primary mt-6';
-        producersTitle.textContent = 'Prestige Upgrades';
-        container.appendChild(producersTitle);
+        if (coreSystemsRef.buyMultiplierUI) {
+            producersSection.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+        } else {
+            coreSystemsRef.loggingSystem.error("PrestigeUI", "buyMultiplierUI helper not found!");
+        }
 
         const producersGrid = document.createElement('div');
         producersGrid.id = 'prestige-producers-grid';
@@ -78,15 +73,13 @@ export const ui = {
             const producerDef = prestigeData.producers[producerId];
             producersGrid.appendChild(this._createProducerCard(producerDef));
         }
+        producersSection.appendChild(producersGrid);
+        container.appendChild(producersSection);
+        // --- END MODIFICATION ---
 
-        container.appendChild(producersGrid);
         parentElement.appendChild(container);
-        
         this.updateDynamicElements();
     },
-
-    // --- MODIFICATION: Removed _createBuyMultiplierControls ---
-    // The logic is now handled by the centralized js/core/buyMultiplierUI.js helper.
 
     _createProducerCard(producerDef) {
         const { coreUIManager } = coreSystemsRef;
@@ -161,7 +154,6 @@ export const ui = {
         }
         
         const currentMultiplier = buyMultiplierManager.getMultiplier();
-        
         const postDocMultiplier = logic.getPostDocMultiplier();
 
         for (const producerId in prestigeData.producers) {
