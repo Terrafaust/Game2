@@ -1,8 +1,9 @@
-// js/modules/studies_module/studies_ui.js (v2.4 - Corrected Multiplier Placement)
+// js/modules/studies_module/studies_ui.js (v2.5 - Final Multiplier Placement)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
+ * v2.5: Placed multiplier controls on the same line as the section title for a cleaner layout.
  * v2.4: Adjusted placement of the buy multiplier controls to be directly above the producers list.
  * v2.3: Refactored to use the centralized buyMultiplierUI helper.
  */
@@ -17,7 +18,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.4).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.5).");
 
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
@@ -37,32 +38,42 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-4';
         
+        // This part remains, containing the main page title and tip
         container.innerHTML = `
-            <h2 class="text-2xl font-semibold text-primary mb-2">Studies Department</h2>
             <div class="p-3 bg-surface rounded-lg border border-primary/50 text-center">
                 <p class="text-sm text-accentOne italic">"Get 10 professors to unlock Market"</p>
             </div>
             <p class="text-textSecondary">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
         `;
 
-        // --- MODIFICATION: Create a dedicated section for producers that includes the multiplier ---
         const producersSection = document.createElement('div');
         
-        // Add the multiplier controls at the top of this section
+        // --- MODIFICATION: Create a header with flex layout for the title and controls ---
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'flex justify-between items-center mb-4';
+
+        const sectionTitle = document.createElement('h2');
+        sectionTitle.className = 'text-2xl font-semibold text-primary';
+        sectionTitle.textContent = 'Studies Department';
+        sectionHeader.appendChild(sectionTitle);
+
         if (coreSystemsRef.buyMultiplierUI) {
-            producersSection.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4'); // Remove default vertical margin for inline placement
+            sectionHeader.appendChild(multiplierControls);
         } else {
             coreSystemsRef.loggingSystem.error("StudiesUI", "buyMultiplierUI helper not found in core systems!");
         }
+        
+        producersSection.appendChild(sectionHeader);
+        // --- END MODIFICATION ---
 
-        // Add the grid for producer cards
         const producersContainer = document.createElement('div');
         producersContainer.id = 'studies-producers-container';
         producersContainer.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4';
         producersSection.appendChild(producersContainer);
 
         container.appendChild(producersSection);
-        // --- END MODIFICATION ---
 
         for (const producerId in staticModuleData.producers) {
             producersContainer.appendChild(this._createProducerCard(producerId));

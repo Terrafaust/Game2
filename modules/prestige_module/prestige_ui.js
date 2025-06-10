@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v3.2 - Corrected Multiplier Placement)
+// /game/modules/prestige_module/prestige_ui.js (v3.3 - Final Multiplier Placement)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.2).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.3).");
     },
 
     renderMainContent(parentElement) {
@@ -55,15 +55,26 @@ export const ui = {
         
         container.appendChild(header);
 
-        // --- MODIFICATION: Create a dedicated section for producers that includes the multiplier ---
         const producersSection = document.createElement('div');
-        producersSection.innerHTML = `<h3 class="text-xl font-semibold text-primary mt-6">Prestige Upgrades</h3>`;
+        
+        // --- MODIFICATION: Create a flex header for the title and controls ---
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'flex justify-between items-center mt-6 mb-4';
+        
+        const sectionTitle = document.createElement('h3');
+        sectionTitle.className = 'text-xl font-semibold text-primary';
+        sectionTitle.textContent = 'Prestige Upgrades';
+        sectionHeader.appendChild(sectionTitle);
 
         if (coreSystemsRef.buyMultiplierUI) {
-            producersSection.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4');
+            sectionHeader.appendChild(multiplierControls);
         } else {
             coreSystemsRef.loggingSystem.error("PrestigeUI", "buyMultiplierUI helper not found!");
         }
+        producersSection.appendChild(sectionHeader);
+        // --- END MODIFICATION ---
 
         const producersGrid = document.createElement('div');
         producersGrid.id = 'prestige-producers-grid';
@@ -75,7 +86,6 @@ export const ui = {
         }
         producersSection.appendChild(producersGrid);
         container.appendChild(producersSection);
-        // --- END MODIFICATION ---
 
         parentElement.appendChild(container);
         this.updateDynamicElements();

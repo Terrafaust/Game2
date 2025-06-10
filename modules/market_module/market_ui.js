@@ -1,10 +1,10 @@
-// modules/market_module/market_ui.js (v2.3 - Corrected Multiplier Placement)
+// modules/market_module/market_ui.js (v2.4 - Final Multiplier Placement)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v2.4: Placed multiplier controls on the same line as the section title.
  * v2.3: Moved buy multiplier controls to be directly above the items they affect.
- * v2.2: Refactored to use the centralized buyMultiplierUI helper.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -27,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.3).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.4).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -55,7 +55,7 @@ export const ui = {
         `;
         
         container.appendChild(this._createAutomationsSection());
-        container.appendChild(this._createScalableItemsSection()); // This will now include the multiplier
+        container.appendChild(this._createScalableItemsSection());
         container.appendChild(this._createUnlocksSection());
 
         parentElement.appendChild(container);
@@ -65,14 +65,24 @@ export const ui = {
     _createScalableItemsSection() {
         const section = document.createElement('section');
         section.className = 'space-y-4';
-        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Consumables</h3>`;
         
-        // --- MODIFICATION: Add multiplier controls here, as they only affect this section ---
+        // --- MODIFICATION: Create a flex header for the title and controls ---
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
+        
+        const sectionTitle = document.createElement('h3');
+        sectionTitle.className = 'text-xl font-medium text-secondary';
+        sectionTitle.textContent = 'Consumables';
+        sectionHeader.appendChild(sectionTitle);
+
         if (coreSystemsRef.buyMultiplierUI) {
-            section.appendChild(coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls());
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4');
+            sectionHeader.appendChild(multiplierControls);
         } else {
             coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplierUI helper not found!");
         }
+        section.appendChild(sectionHeader);
         // --- END MODIFICATION ---
 
         const itemsGrid = document.createElement('div');
