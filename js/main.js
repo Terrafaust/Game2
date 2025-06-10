@@ -1,11 +1,11 @@
-// js/main.js (v10.1 - Centralized Multiplier UI)
+// js/main.js (v10.2 - Path Fix)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v10.2: Corrected module loading paths to fix MIME type errors.
  * v10.1: Integrated the centralized buyMultiplierUI helper.
  * v10.0: Fixes hard reset modal not closing.
- * v9.9: Corrects theme initialization order and restores full original file content.
  */
 
 // --- Core System Imports ---
@@ -21,13 +21,13 @@ import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 import { buyMultiplierManager } from './core/buyMultiplierManager.js';
-import { buyMultiplierUI } from './core/buyMultiplierUI.js'; // <<< ADDED
+import { buyMultiplierUI } from './core/buyMultiplierUI.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v10.1).");
+    loggingSystem.info("Main", "Game initialization sequence started (v10.2).");
 
     // 2. Initialize Core Systems
     globalSettingsManager.initialize();
@@ -35,7 +35,7 @@ async function initializeGame() {
     coreResourceManager.initialize();
     coreUpgradeManager.initialize();
     coreUIManager.initialize();
-    buyMultiplierUI.initialize( { coreUIManager, buyMultiplierManager, loggingSystem } ); // <<< ADDED
+    buyMultiplierUI.initialize( { coreUIManager, buyMultiplierManager, loggingSystem } );
 
     // 3. Set up event listeners AFTER UI Manager is ready
     document.addEventListener('themeChanged', (event) => {
@@ -73,7 +73,7 @@ async function initializeGame() {
         globalSettingsManager,
         saveLoadSystem,
         buyMultiplierManager,
-        buyMultiplierUI // <<< ADDED
+        buyMultiplierUI
     );
 
     // 6. Define Core Data
@@ -104,25 +104,25 @@ async function initializeGame() {
     // 8. Load Modules
     try {
         loggingSystem.info('Main', 'Loading Core Gameplay Module...');
-        await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
+        await moduleLoader.loadModule('./modules/core_gameplay_module/core_gameplay_manifest.js');
         
         loggingSystem.info('Main', 'Loading Studies Module...');
-        await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
+        await moduleLoader.loadModule('./modules/studies_module/studies_manifest.js');
         
         loggingSystem.info('Main', 'Loading Market Module...');
-        await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
+        await moduleLoader.loadModule('./modules/market_module/market_manifest.js');
         
         loggingSystem.info('Main', 'Loading Skills Module...');
-        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
+        await moduleLoader.loadModule('./modules/skills_module/skills_manifest.js');
         
         loggingSystem.info('Main', 'Loading Achievements Module...');
-        await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
+        await moduleLoader.loadModule('./modules/achievements_module/achievements_manifest.js');
 
         loggingSystem.info('Main', 'Loading Prestige Module...');
-        await moduleLoader.loadModule('../../modules/prestige_module/prestige_manifest.js');
+        await moduleLoader.loadModule('./modules/prestige_module/prestige_manifest.js');
 
         loggingSystem.info('Main', 'Loading Settings UI Module...');
-        await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
+        await moduleLoader.loadModule('./modules/settings_ui_module/settings_ui_manifest.js');
     } catch (error) {
         loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
         coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
@@ -198,7 +198,7 @@ async function initializeGame() {
     if (devToolsButton) {
         devToolsButton.addEventListener('click', () => {
             loggingSystem.info("Main_DevTools", "Dev tools button clicked: Applying production multiplier.");
-            const boostFactor = decimalUtility.new(100000);
+            const boostFactor = decimalUtility.new(10000000);
             let changesMade = false;
             const allResources = coreResourceManager.getAllResources(); 
             for (const resourceId in allResources) {
