@@ -1,13 +1,13 @@
-// js/core/coreUIManager.js (v5.3 - Resource Bar Layout)
+// js/core/coreUIManager.js (v5.4 - Corrected Resource Visibility)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.4: Corrected resource bar logic to hide unlocked resources while maintaining static layout.
  * v5.3: Implemented static resource bar layout as per roadmap.
  * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
  * v5.1: Enhanced notification system with clickability and larger achievement notifications.
  * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
- * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -89,7 +89,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.3).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.4).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -218,11 +218,9 @@ export const coreUIManager = {
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
 
-        // --- ROADMAP 1.1 MODIFICATION START ---
-        // This function is rewritten to use a static layout, ensuring specific resources
-        // are always displayed in a consistent order, and conditionally showing others.
-
-        // Update prestige count from the prestige module if available, as it's a dynamic value not stored in resourceManager by default.
+        // --- ROADMAP 1.1 MODIFICATION (v2) ---
+        // This version maintains the static layout but correctly hides resources that are not yet unlocked.
+        
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
         if (prestigeModule) {
             const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
@@ -231,73 +229,67 @@ export const coreUIManager = {
         
         const allResources = coreResourceManager.getAllResources();
         
-        // Define the static layout of the resource bar for a 3x2 grid.
         const resourceLayout = [
-            { id: 'studyPoints', name: 'Study Points' },
-            { id: 'images', name: 'Images' },
-            { id: 'prestigeCount', name: 'Prestige count' },
-            { id: 'knowledge', name: 'Knowledge' },
-            { id: 'prestigePoints', name: 'Prestige points' },
+            { id: 'studyPoints', name: 'Study Points' }, { id: 'images', name: 'Images' }, { id: 'prestigeCount', name: 'Prestige count' },
+            { id: 'knowledge', name: 'Knowledge' }, { id: 'prestigePoints', name: 'Prestige points' },
         ];
+        // Add a placeholder to ensure the grid is always even if the last item is hidden.
+        resourceLayout.push({ id: 'placeholder', name: '' });
 
-        // Clear the container to rebuild it in the correct order.
         UIElements.resourcesDisplay.innerHTML = ''; 
 
         for (const item of resourceLayout) {
+             if (item.id === 'placeholder') {
+                const placeholder = document.createElement('div');
+                placeholder.className = 'resource-item-display';
+                placeholder.style.visibility = 'hidden';
+                UIElements.resourcesDisplay.appendChild(placeholder);
+                continue;
+            }
+
             const resourceId = item.id;
             const resource = allResources[resourceId];
             
-            // Handle conditional visibility for prestigeCount.
-            if (resourceId === 'prestigeCount') {
-                const prestigeCountAmount = resource ? resource.amount : decimalUtility.new(0);
-                if (decimalUtility.lte(prestigeCountAmount, 0)) {
-                    // It shouldn't be visible. Add an invisible placeholder to maintain grid alignment.
-                    const placeholder = document.createElement('div');
-                    placeholder.className = 'resource-item-display';
-                    placeholder.style.visibility = 'hidden';
-                    UIElements.resourcesDisplay.appendChild(placeholder);
-                    continue; // Skip rendering the actual element.
-                }
+            let shouldShow = false;
+            if (resource && resource.isUnlocked && resource.showInUI) {
+                shouldShow = true;
             }
-
-            // Create and populate the element.
+            
+            if (resourceId === 'prestigeCount' && (!resource || decimalUtility.lte(resource.amount, 0))) {
+                shouldShow = false;
+            }
+            
             const displayElement = document.createElement('div');
             displayElement.id = `resource-${resourceId}-display`;
             displayElement.className = 'resource-item-display';
 
-            const name = resource ? resource.name : item.name;
-            const amount = resource ? resource.amount : decimalUtility.new(0);
-            const totalProductionRate = resource ? resource.totalProductionRate : decimalUtility.new(0);
-            const hasProductionRate = resource ? (resource.hasProductionRate !== undefined ? resource.hasProductionRate : true) : false;
+            if (shouldShow) {
+                const name = resource.name;
+                const amount = resource.amount;
+                const totalProductionRate = resource.totalProductionRate;
+                const hasProductionRate = resource.hasProductionRate !== undefined ? resource.hasProductionRate : true;
 
-            const amountFormatted = decimalUtility.format(amount, 2);
-            const rateFormatted = decimalUtility.format(totalProductionRate, 2);
+                const amountFormatted = decimalUtility.format(amount, 2);
+                const rateFormatted = decimalUtility.format(totalProductionRate, 2);
 
-            let innerHTML;
-            if (resourceId === 'prestigeCount') {
-                // Special formatting without decimals or production rate.
-                innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(amount, 0)}</span>`;
-            } else {
-                let rateHTML = '';
-                if (hasProductionRate && decimalUtility.gt(totalProductionRate, 0)) {
-                    rateHTML = ` (<span id="resource-${resourceId}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                let innerHTML;
+                if (resourceId === 'prestigeCount') {
+                    innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(amount, 0)}</span>`;
+                } else {
+                    let rateHTML = '';
+                    if (hasProductionRate && decimalUtility.gt(totalProductionRate, 0)) {
+                        rateHTML = ` (<span id="resource-${resourceId}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                    }
+                    innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
                 }
-                innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+                displayElement.innerHTML = innerHTML;
+            } else {
+                displayElement.style.visibility = 'hidden';
+                displayElement.innerHTML = '&nbsp;';
             }
-
-            displayElement.innerHTML = innerHTML;
             UIElements.resourcesDisplay.appendChild(displayElement);
         }
-        
-        // Add a sixth invisible item if needed to ensure the grid has 2 full rows.
-        if (UIElements.resourcesDisplay.children.length % 3 !== 0) {
-             const placeholder = document.createElement('div');
-             placeholder.className = 'resource-item-display';
-             placeholder.style.visibility = 'hidden';
-             UIElements.resourcesDisplay.appendChild(placeholder);
-        }
-        
-        // --- ROADMAP 1.1 MODIFICATION END ---
+        // --- ROADMAP 1.1 MODIFICATION (v2) END ---
     },
     
     showModal(title, content, buttons) {
