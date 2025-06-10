@@ -1,11 +1,11 @@
-// modules/skills_module/skills_logic.js (v4.5 - Targeted Multiplier Fix)
+// modules/skills_module/skills_logic.js (v4.6 - Final Production Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v4.6: Corrected the valueProvider to restore original MULTIPLIER logic, fixing the zero-gain bug, while correctly applying exponential COST_REDUCTION_MULTIPLIER as per the roadmap.
  * v4.5: Reverted MULTIPLIER logic to original state and applied correct exponential formula for COST_REDUCTION_MULTIPLIER.
  * v4.4: Fixed critical bug in MULTIPLIER effect calculation that was reducing production to zero.
- * v4.3: Corrected cost reduction skills to apply exponentially per level as per roadmap.
  */
 
 import { staticModuleData } from './skills_data.js';
@@ -23,7 +23,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.5).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.6).");
         this.registerAllSkillEffects();
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             this.applySpecialSkillEffects(deltaTime);
@@ -218,16 +218,13 @@ export const moduleLogic = {
                         
                         let finalMultiplier;
                         if (effectDef.type === "MULTIPLIER") {
-                             // Reverted to original logic to avoid breaking production gain
                              finalMultiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
                                 ? decimalUtility.add(1, effectValue) 
                                 : effectValue;
                         } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-                             // Correctly implement exponential cost reduction as per roadmap
                              const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
                              finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
                         } else {
-                            // This handles ADDITIVE_BONUS / PERCENTAGE_BONUS
                             return effectValue;
                         }
 
@@ -360,7 +357,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.5).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.6).");
         Object.assign(moduleState, {
             ...getSkillsInitialState(),
             ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
