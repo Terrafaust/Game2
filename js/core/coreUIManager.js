@@ -214,20 +214,27 @@ export const coreUIManager = {
     isActiveTab(tabId) { return activeTabId === tabId; },
     clearMainContent() { if (UIElements.mainContent) UIElements.mainContent.innerHTML = ''; },
 
-    // --- BUG FIX: Reverted to original, stable logic and removed "no resources" message ---
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
         const allResources = coreResourceManager.getAllResources();
         
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
-        if (prestigeModule) {
+        if (prestigeModule && prestigeModule.logic) {
             const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
-            coreResourceManager.setAmount('prestigeCount', prestigeCount);
+            if (coreResourceManager.isResourceDefined('prestigeCount')) {
+                 coreResourceManager.setAmount('prestigeCount', prestigeCount);
+            }
         }
 
         Object.values(allResources).forEach(res => {
-            if (res.isUnlocked && res.showInUI) {
-                let displayElement = document.getElementById(`resource-${res.id}-display`);
+            let shouldShow = res.isUnlocked && res.showInUI;
+            if (res.id === 'prestigeCount' && decimalUtility.lte(res.amount, 0)) {
+                shouldShow = false;
+            }
+
+            let displayElement = document.getElementById(`resource-${res.id}-display`);
+
+            if (shouldShow) {
                 if (!displayElement) {
                     displayElement = document.createElement('div');
                     displayElement.id = `resource-${res.id}-display`;
@@ -237,21 +244,19 @@ export const coreUIManager = {
                 const amountFormatted = decimalUtility.format(res.amount, 2);
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
                 
-                let innerHTML;
-                if (res.id === 'prestigeCount') {
-                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(res.amount, 0)}</span>`;
-                } else {
-                     let rateHTML = '';
-                    if (res.hasProductionRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
-                        rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
-                    }
-                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+                let rateHTML = '';
+                if (res.hasProductionRate && decimalUtility.gt(res.totalProductionRate, 0)) {
+                    rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
                 }
-                displayElement.innerHTML = innerHTML;
+                if (res.id === 'prestigeCount') {
+                    rateHTML = '';
+                }
 
+                displayElement.innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
             } else {
-                let displayElement = document.getElementById(`resource-${res.id}-display`);
-                if (displayElement) displayElement.remove();
+                if (displayElement) {
+                    displayElement.remove();
+                }
             }
         });
     },
