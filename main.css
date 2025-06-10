@@ -40,7 +40,9 @@
     --animation-button-border: none;
     --animation-special-text: none;
     --background-image: none;
+    --color-success: #10B981; --color-success-dark: #059669;
 }
+:root .achievement-completed { background-color: var(--color-success); border-color: var(--color-success-dark); }
 
 /* 2. Modern Night Theme */
 html[data-theme="modern"][data-mode="night"] {
@@ -49,22 +51,27 @@ html[data-theme="modern"][data-mode="night"] {
     --color-background: #0F172A; --color-surface: #1E293B; --color-surface-dark: #334155;
     --color-text-primary: #E2E8F0; --color-text-secondary: #94A3B8;
     --color-border: #475569; --color-button-text: #F1F5F9;
+    --color-success: #34D399; --color-success-dark: #10B981;
 }
+html[data-theme="modern"][data-mode="night"] .achievement-completed { background-color: var(--color-success); border-color: var(--color-success-dark); }
+
 
 /* 3. CLASSIC THEME (WINDOWS XP/VISTA STYLE) */
 html[data-theme="classic"] { 
     --font-main: 'Tahoma', sans-serif; 
-    --background-image: none; /* Default to none */
+    --background-image: none;
 }
 html[data-theme="classic"][data-mode="day"] {
     --color-primary: #0058e1; --color-primary-lighter: #3a8cff;
     --color-secondary: #008000;
-    --color-background: #3A6EA5; /* Fallback color */
+    --color-background: #3A6EA5;
     --color-surface: #ece9d8; --color-surface-dark: #d4d0c8;
     --color-text-primary: #000000; --color-text-secondary: #4f4f4f;
     --color-border: #808080; --color-button-text: #000000;
     --background-image: url('assets/bliss.jpg');
 }
+html[data-theme="classic"][data-mode="day"] .achievement-completed { background-color: #d4edda; border-color: #c3e6cb; }
+
 html[data-theme="classic"][data-mode="night"] {
     --color-primary: #3a8cff; --color-primary-lighter: #79bbff;
     --color-secondary: #00a300;
@@ -72,6 +79,8 @@ html[data-theme="classic"][data-mode="night"] {
     --color-text-primary: #ffffff; --color-text-secondary: #c0c0c0;
     --color-border: #5a5a5a; --color-button-text: #ffffff;
 }
+html[data-theme="classic"][data-mode="night"] .achievement-completed { background-color: #1c4b27; border-color: #2c6b37; }
+
 
 /* 4. NEON THEME (Updated to Green) */
 html[data-theme="neon"][data-mode="day"] {
@@ -82,6 +91,8 @@ html[data-theme="neon"][data-mode="day"] {
     --color-border: #98FB98; --color-button-text: #003300;
     --animation-button-border: border-glow-neon 1.5s infinite alternate;
 }
+html[data-theme="neon"][data-mode="day"] .achievement-completed { background-color: var(--color-primary); border-color: var(--color-primary-lighter); }
+
 html[data-theme="neon"][data-mode="night"] {
     --color-primary: #39FF14; --color-primary-lighter: #7FFF00;
     --color-secondary: #00FFFF;
@@ -90,6 +101,8 @@ html[data-theme="neon"][data-mode="night"] {
     --color-border: #2E8B57; --color-button-text: #FFFFFF;
     --animation-button-border: border-glow-neon 1.5s infinite alternate;
 }
+html[data-theme="neon"][data-mode="night"] .achievement-completed { background-color: var(--color-primary); border-color: var(--color-primary-lighter); }
+
 
 /* 5. STEAMPUNK THEMES */
 html[data-theme="steampunk"][data-mode="day"] {
@@ -100,6 +113,8 @@ html[data-theme="steampunk"][data-mode="day"] {
     --color-border: #D2B48C; --color-button-text: #FFFFFF;
     --animation-special-text: steampunk-flicker 3s infinite;
 }
+html[data-theme="steampunk"][data-mode="day"] .achievement-completed { background-color: #6B8E23; border-color: #556B2F; } /* Olive Drab */
+
 html[data-theme="steampunk"][data-mode="night"] {
     --color-primary: #CD7F32; --color-primary-lighter: #D99058;
     --color-secondary: #B8860B;
@@ -108,6 +123,8 @@ html[data-theme="steampunk"][data-mode="night"] {
     --color-border: #805533; --color-button-text: #2C1E12;
     --animation-special-text: steampunk-flicker 2s infinite;
 }
+html[data-theme="steampunk"][data-mode="night"] .achievement-completed { background-color: var(--color-secondary); border-color: #DAA520; }
+
 
 /* 6. PINK THEMES */
 html[data-theme="pink"][data-mode="day"] {
@@ -117,6 +134,8 @@ html[data-theme="pink"][data-mode="day"] {
     --color-text-primary: #8B008B; --color-text-secondary: #9932CC;
     --color-border: #FFC0CB; --color-button-text: #FFFFFF;
 }
+html[data-theme="pink"][data-mode="day"] .achievement-completed { background-color: #98FB98; border-color: #90EE90; } /* Pale Green */
+
 html[data-theme="pink"][data-mode="night"] {
     --color-primary: #FF1493; --color-primary-lighter: #FF69B4;
     --color-secondary: #DB7093;
@@ -124,6 +143,8 @@ html[data-theme="pink"][data-mode="night"] {
     --color-text-primary: #FFE4E1; --color-text-secondary: #FFB6C1;
     --color-border: #8B008B; --color-button-text: #FFFFFF;
 }
+html[data-theme="pink"][data-mode="night"] .achievement-completed { background-color: #32CD32; border-color: #228B22; } /* Lime Green */
+
 
 /* 7. RED & YELLOW THEMES */
 html[data-theme="red_yellow"][data-mode="day"] {
@@ -133,6 +154,8 @@ html[data-theme="red_yellow"][data-mode="day"] {
     --color-text-primary: #991B1B; --color-text-secondary: #B91C1C;
     --color-border: #FCA5A5; --color-button-text: #FFFFFF;
 }
+html[data-theme="red_yellow"][data-mode="day"] .achievement-completed { background-color: #22C55E; border-color: #16A34A; } /* Green 500/600 */
+
 html[data-theme="red_yellow"][data-mode="night"] {
     --color-primary: #F87171; --color-primary-lighter: #FB923C;
     --color-secondary: #FBBF24; /* Golden Color */
@@ -141,6 +164,8 @@ html[data-theme="red_yellow"][data-mode="night"] {
     --color-border: #B91C1C; --color-button-text: #450A0A;
     --animation-special-text: glow-gold 2s infinite alternate;
 }
+html[data-theme="red_yellow"][data-mode="night"] .achievement-completed { background-color: var(--color-secondary); border-color: #F59E0B; }
+
 
 /* 8. RGB THEME (UPDATED) */
 html[data-theme="rgb"] {
@@ -158,6 +183,8 @@ html[data-theme="rgb"][data-mode="day"] {
     --color-border: #c0c0c0;
     --color-button-text: #000;
 }
+html[data-theme="rgb"] .achievement-completed { background-color: #22C55E; border-color: #16A34A; }
+
 html[data-theme="rgb"][data-mode="night"] {
     --color-secondary: #33ffff;
     --color-background: #111;
@@ -189,7 +216,7 @@ body {
     margin: 0; padding: 0;
     display: flex;
     position: relative;
-    overflow: hidden; /* Hide body overflow to contain everything */
+    overflow: hidden;
 }
 
 /* --- STEAMPUNK GEAR ANIMATION --- */
@@ -200,14 +227,14 @@ body {
     background-size: contain;
     z-index: 0;
     pointer-events: none;
-    display: none; /* Hidden by default */
+    display: none;
     opacity: 0.15;
 }
 html[data-theme="steampunk"] #game-container::before,
 html[data-theme="steampunk"] #game-container::after,
 html[data-theme="steampunk"] .content-wrapper::before,
 html[data-theme="steampunk"] .content-wrapper::after {
-    display: block; /* Only show for steampunk theme */
+    display: block;
     background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="%238B4513"><path d="M50,1 a49,49 0 0 1 0,98 a49,49 0 0 1 0,-98 M50,15 a35,35 0 0 1 0,70 a35,35 0 0 1 0,-70 M93.3,37.5 l-11.2,0 l5.6,-9.7 l5.6,9.7 M37.5,6.7 l0,11.2 l-9.7,-5.6 l9.7,-5.6 M6.7,62.5 l11.2,0 l-5.6,9.7 l-5.6,-9.7 M62.5,93.3 l0,-11.2 l9.7,5.6 l-9.7,5.6 M82.5,17.5 l-8,8 l-3.3,-5.7 l11.3,-2.3 M17.5,17.5 l8,8 l-5.7,3.3 l-2.3,-11.3 M17.5,82.5 l8,-8 l-5.7,-3.3 l-2.3,11.3 M82.5,82.5 l-8,-8 l3.3,5.7 l-11.3,2.3"/></svg>');
     animation: gear-rotate 20s linear infinite;
 }
@@ -230,13 +257,12 @@ body.menu-hidden #content-pusher { margin-left: 0; }
     width: 100%; max-width: 72rem; margin: auto; padding: 1.5rem; 
     display: flex; flex-direction: column; 
     z-index: 1; 
-    height: 100%; /* Make wrapper take full height */
+    height: 100%;
 }
 header#resource-bar { flex-shrink: 0; padding-bottom: 1rem; }
-main { flex-grow: 1; min-height: 0; position: relative; } /* Added position relative */
+main { flex-grow: 1; min-height: 0; position: relative; }
 footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top: 1rem; }
 
-/* FIX: This ensures the scrolling content is clipped by its container */
 #main-content {
     background-color: var(--color-surface); 
     border: 1px solid var(--color-border);
@@ -245,34 +271,31 @@ footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top:
     border-radius: 0.75rem; 
     padding: 1.5rem;
     position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0; /* Fill the parent <main> */
+    top: 0; left: 0; right: 0; bottom: 0;
 }
 
 /* --- Component Styling & Animations --- */
 #resources-display {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); /* Responsive grid */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     grid-auto-rows: min-content;
     gap: 1rem;
 }
 @media (min-width: 1024px) {
     #resources-display {
-        grid-template-columns: repeat(4, 1fr); /* 4 columns on large screens */
+        grid-template-columns: repeat(4, 1fr);
     }
 }
 
-/* Give more space to the primary resources to prevent numbers from wrapping */
 #resource-studyPoints-display,
 #resource-knowledge-display {
     grid-column: span 2;
 }
 
-/* Broad transitions for most elements */
 #game-container *, .modal-content, .tooltip {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, text-shadow 0.3s ease, font-family 0.3s ease;
 }
 
-/* Modern Button style (default) */
 .game-button { 
     background-color: var(--color-primary); 
     color: var(--color-button-text); 
@@ -283,14 +306,12 @@ footer { flex-shrink: 0; border-top: 1px solid var(--color-border); padding-top:
 .game-button:hover { filter: brightness(1.15); }
 .game-button:active { transform: scale(0.97); }
 
-/* RGB Theme Button Override */
 html[data-theme="rgb"] .game-button {
     background-image: var(--button-background-gradient);
     background-size: 200% 200%;
     animation: var(--animation-button-background);
 }
 
-/* Classic Theme Overrides */
 html[data-theme="classic"] #main-content {
     border-top: 2px solid #ffffff; border-left: 2px solid #ffffff;
     border-right: 2px solid #4f4f4f; border-bottom: 2px solid #4f4f4f;
@@ -313,7 +334,6 @@ html[data-theme="classic"] .game-button:active {
 
 .game-button:disabled { background-color: var(--color-text-secondary) !important; color: var(--color-surface-dark) !important; filter: grayscale(80%) opacity(0.7); cursor: not-allowed; animation: none !important; }
 
-/* Special Text Animations Application */
 html[data-theme="steampunk"] .resource-item-display {
     animation: var(--animation-special-text);
 }
@@ -325,31 +345,26 @@ html[data-theme="rgb"] h2, html[data-theme="rgb"] h3, html[data-theme="rgb"] .me
     animation: var(--animation-special-text);
 }
 
-/* --- MODIFICATION: Updated Menu Styling --- */
 #main-menu {
     position: fixed;
     top: 0;
     left: 0;
     width: 240px;
     height: 100vh;
-    /* Removed background and border */
     background-color: transparent;
     border-right: none;
-    /* Use flexbox to center the content */
     display: flex;
     flex-direction: column;
-    justify-content: center; /* Vertically center */
-    align-items: center; /* Horizontally center items in the container */
+    justify-content: center;
+    align-items: center;
     padding: 1.5rem 1rem;
     overflow-y: auto;
     z-index: 110;
     transition: transform 0.3s ease;
     transform: translateX(0);
-    /* Make it immune to clicks if it's just a container */
     pointer-events: none;
 }
 
-/* Make sure the list itself is centered and takes space */
 #menu-list {
     list-style: none;
     padding: 0;
@@ -369,7 +384,6 @@ body.menu-hidden #main-menu {
     display: block;
     width: 100%;
     padding: 0.75rem 1.25rem;
-    /* Center the text within the button */
     text-align: center;
     font-weight: 500;
     color: var(--color-text-secondary);
@@ -378,26 +392,22 @@ body.menu-hidden #main-menu {
     border-radius: 0.75rem;
     cursor: pointer;
     margin-bottom: 0.5rem;
-    /* Re-enable pointer events for the buttons themselves */
     pointer-events: auto;
 }
-/* --- END MODIFICATION --- */
 
 .menu-tab:hover { background-color: var(--color-surface-dark); color: var(--color-primary); }
 .menu-tab.active { background-color: var(--color-primary); color: var(--color-button-text); border-color: var(--color-primary-lighter); font-weight: 600; }
 
-/* --- CLASSIC THEME SIDE MENU OVERRIDES --- */
 html[data-theme="classic"] #main-menu { 
-    /* Still transparent, but we can add back a border if we want for this theme */
     border-right: 2px solid #4f4f4f;
 }
 html[data-theme="classic"] .menu-tab { 
     border-radius: 0; 
     border: 1px solid transparent; 
-    color: var(--color-text-primary); /* Use primary text for visibility on transparent bg */
+    color: var(--color-text-primary);
 }
 html[data-theme="classic"][data-mode="night"] .menu-tab {
-    color: var(--color-text-primary); /* White text on dark themes */
+    color: var(--color-text-primary);
 }
 
 html[data-theme="classic"] .menu-tab:hover {
@@ -411,117 +421,81 @@ html[data-theme="classic"] .menu-tab.active {
     border-color: var(--color-primary-lighter);
 }
 
-/*
-================================================================================
-===                        NEW: RESPONSIVE STYLES                            ===
-================================================================================
-*/
-
-/* --- Mobile Menu Toggle Button --- */
-.menu-toggle-button {
-    display: none; /* Hidden by default */
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 120; /* Must be on top of everything */
-    width: 50px;
-    height: 50px;
-    background-color: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    /* Flex center content */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 5px;
-}
-
-.menu-toggle-button .hamburger-line {
-    width: 24px;
-    height: 3px;
-    background-color: var(--color-text-primary);
-    border-radius: 3px;
-    transition: transform 0.3s ease, opacity 0.3s ease;
-}
-
-
-/* --- Menu Overlay for mobile --- */
-.menu-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 105; /* Between menu and content */
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-body.menu-visible .menu-overlay {
-    display: block;
-    opacity: 1;
-}
-
-/* Styles for screens 768px wide or less (tablets and phones) */
 @media (max-width: 768px) {
-    /* Show the toggle button */
     .menu-toggle-button {
         display: flex;
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        z-index: 120;
+        width: 50px;
+        height: 50px;
+        background-color: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 5px;
     }
 
-    /* Make main content take full width by removing the margin */
+    .menu-toggle-button .hamburger-line {
+        width: 24px;
+        height: 3px;
+        background-color: var(--color-text-primary);
+        border-radius: 3px;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+    }
+
+
+    .menu-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 105;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    body.menu-visible .menu-overlay {
+        display: block;
+        opacity: 1;
+    }
+
     #content-pusher {
         margin-left: 0;
     }
 
-    /* --- MODIFICATION: On mobile, give the menu a background so it's visible --- */
     #main-menu {
         transform: translateX(-100%);
         box-shadow: 5px 0 15px rgba(0,0,0,0.1);
-        /* Give it a background on mobile so it's not transparent */
         background-color: var(--color-surface);
         border-right: 1px solid var(--color-border);
-        /* Disable click-through on mobile */
         pointer-events: auto;
     }
     
-    /* The .menu-visible class on the BODY will now slide the menu in */
     body.menu-visible #main-menu {
         transform: translateX(0);
     }
 
-    /* Adjust padding for smaller screens */
     .content-wrapper {
         padding: 1rem;
     }
     header#resource-bar {
-        padding-top: 60px; /* Add padding to top of resource bar to not be overlapped by the hamburger button */
+        padding-top: 60px;
     }
 
-    /* Make primary resources stack instead of taking half the width */
     #resource-studyPoints-display,
     #resource-knowledge-display {
         grid-column: span 1;
     }
 }
-/* ========================================================================== */
-/* ==                     APPEND TO THE END OF main.css                    == */
-/* ========================================================================== */
-
-
-/*
-================================================================================
-===              NEW THEMED MODAL POPUP STYLES (v2)                        ===
-================================================================================
-*/
-
-/* The container that holds the modal and overlay.
-It's fixed to the viewport and uses flexbox to center the modal window. */
 #modal-container {
     position: fixed;
     top: 0;
@@ -531,44 +505,41 @@ It's fixed to the viewport and uses flexbox to center the modal window. */
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 2000; /* High z-index to be on top of everything */
-    pointer-events: none; /* Allows clicks to pass through the container itself to the game */
-    padding: 1rem; /* Add some padding so the modal doesn't touch screen edges */
+    z-index: 2000;
+    pointer-events: none;
+    padding: 1rem;
 }
 
-/* The dark background overlay */
 .modal-overlay {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(10, 10, 20, 0.7); /* Darker semi-transparent background */
-    backdrop-filter: blur(5px); /* Blur effect for the content underneath */
-    pointer-events: auto; /* It can be clicked (to close the modal) */
+    background-color: rgba(10, 10, 20, 0.7);
+    backdrop-filter: blur(5px);
+    pointer-events: auto;
     animation: fade-in 0.2s ease-out forwards;
 }
 
-/* The modal window itself */
 .modal {
     position: relative;
     width: 100%;
-    max-width: 650px; /* A good max-width for a "page-like" feel */
+    max-width: 650px;
     background-color: var(--color-surface);
     color: var(--color-text-primary);
-    border-radius: 1rem; /* Equivalent to Tailwind's rounded-2xl */
-    border: 2px solid var(--color-primary); /* The border the user requested, using the theme color */
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-border); /* A more prominent shadow and a subtle inner border */
-    z-index: 2001; /* Above the overlay */
-    pointer-events: auto; /* It can be interacted with */
-    max-height: 90vh; /* Prevent it from being too tall on short screens */
+    border-radius: 1rem;
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--color-border);
+    z-index: 2001;
+    pointer-events: auto;
+    max-height: 90vh;
     display: flex;
     flex-direction: column;
     animation: slide-up-and-fade-in 0.3s ease-out forwards;
-    overflow: hidden; /* Ensures the border-radius is respected by children */
+    overflow: hidden;
 }
 
-/* Override for the 'classic' theme to give it a sharp-edged, retro look */
 html[data-theme="classic"] .modal {
     border-radius: 0;
     border-top: 2px solid var(--color-surface-dark);
@@ -586,14 +557,13 @@ html[data-theme="classic"][data-mode="night"] .modal {
 }
 
 
-/* The inner content area of the modal */
 .modal-content {
     padding: 1.5rem;
-    overflow-y: auto; /* Add scrollbar if content is too long */
+    overflow-y: auto;
 }
 @media (min-width: 640px) {
     .modal-content {
-        padding: 1.5rem 2rem; /* More horizontal padding on larger screens */
+        padding: 1.5rem 2rem;
     }
 }
 
@@ -603,7 +573,6 @@ html[data-theme="classic"][data-mode="night"] .modal {
     color: var(--color-text-secondary);
 }
 
-/* --- Modal Animations --- */
 @keyframes fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -614,26 +583,21 @@ html[data-theme="classic"][data-mode="night"] .modal {
     to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* ========================================================================== */
-/* ==              NEW: ACHIEVEMENT NOTIFICATION STYLES                    == */
-/* ========================================================================== */
-
-/* Main container for the achievement notification */
 .achievement-notification {
-    background-color: var(--color-primary); /* Use primary theme color */
+    background-color: var(--color-primary);
     border: 2px solid var(--color-primary-lighter);
     color: var(--color-button-text);
-    padding: 1rem 1.5rem; /* Increased padding */
-    border-radius: 0.75rem; /* Rounded corners */
+    padding: 1rem 1.5rem;
+    border-radius: 0.75rem;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
     text-align: center;
-    font-size: 1.1rem; /* Slightly larger text */
+    font-size: 1.1rem;
     font-weight: 600;
-    cursor: pointer; /* Indicate it's clickable */
+    cursor: pointer;
     transition: all 0.2s ease-in-out;
     display: flex;
     align-items: center;
-    gap: 0.75rem; /* Space between icon and text */
+    gap: 0.75rem;
 }
 
 .achievement-notification:hover {
@@ -642,40 +606,14 @@ html[data-theme="classic"][data-mode="night"] .modal {
 }
 
 .achievement-notification .icon {
-    font-size: 1.8rem; /* Larger icon */
+    font-size: 1.8rem;
 }
-
-/* ========================================================================== */
-/* ==              NEW: ACHIEVEMENT CARD STYLING                           == */
-/* ========================================================================== */
 
 .achievement-card {
     border: 1px solid var(--color-border);
     transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.achievement-card.is-completed {
-    background-color: var(--color-accent-one); /* Use accent color for completed */
-    border-color: var(--color-accent-one);
-    box-shadow: 0 0 10px rgba(0,255,0,0.3); /* Subtle green glow */
-}
-
-.achievement-card:hover:not(.is-completed) {
+.achievement-card:hover:not(.achievement-completed) {
     background-color: var(--color-surface-dark);
-}
-
-/* Classic theme adaptation for achievement cards */
-html[data-theme="classic"] .achievement-card {
-    border-radius: 0;
-    border-top: 1px solid var(--color-surface-dark);
-    border-left: 1px solid var(--color-surface-dark);
-    border-right: 1px solid var(--color-text-primary);
-    border-bottom: 1px solid var(--color-text-primary);
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
-}
-
-html[data-theme="classic"] .achievement-card.is-completed {
-    background-color: #008000; /* Darker green for classic completed */
-    border-color: #008000;
-    box-shadow: 2px 2px 0px rgba(0,0,0,0.2);
 }
