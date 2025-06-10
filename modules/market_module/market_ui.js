@@ -177,12 +177,110 @@ export const ui = {
         return card;
     },
     
+    _createAutomationsSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-6';
+        section.innerHTML = `<h3 class="text-xl font-medium text-accentOne border-b border-gray-700 pb-2 mb-4">Automations</h3>`;
+        
+        const itemsGrid = document.createElement('div');
+        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+
+        for (const automatorId in staticModuleData.marketAutomations) {
+            const automatorDef = staticModuleData.marketAutomations[automatorId];
+            itemsGrid.appendChild(this._createAutomationCard(automatorDef));
+        }
+
+        section.appendChild(itemsGrid);
+        return section;
+    },
+
+    _createAutomationCard(automatorDef) {
+        const card = document.createElement('div');
+        card.id = `market-automator-${automatorDef.id}`;
+        card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
+        
+        const content = `
+            <div>
+                <h4 class="text-lg font-semibold text-accentOne mb-2">${automatorDef.name}</h4>
+                <p class="text-textSecondary text-sm mb-3" id="${card.id}-description">${automatorDef.description}</p>
+                <p id="${card.id}-level" class="text-sm text-blue-400 mb-2"></p>
+                <p id="${card.id}-effect" class="text-sm text-green-400 mb-2"></p>
+                <p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p>
+            </div>
+        `;
+        card.innerHTML = content;
+
+        const button = coreSystemsRef.coreUIManager.createButton(
+            'Upgrade', 
+            () => {
+                moduleLogicRef.purchaseAutomatorUpgrade(automatorDef.id);
+                this.updateDynamicElements();
+            }, 
+            ['w-full', 'mt-auto', 'bg-accentOne', 'hover:bg-accentOne-dark'], 
+            `${card.id}-button`
+        );
+        card.appendChild(button);
+        return card;
+    },
+
+    _updateAutomationCard(cardElement, automatorId, automatorDef) {
+        if (!cardElement || !automatorDef) return;
+        const { decimalUtility, coreResourceManager } = coreSystemsRef;
+        const info = moduleLogicRef.getAutomatorInfo(automatorId);
+
+        const levelDisplay = cardElement.querySelector(`#market-automator-${automatorId}-level`);
+        const effectDisplay = cardElement.querySelector(`#market-automator-${automatorId}-effect`);
+        const costDisplay = cardElement.querySelector(`#market-automator-${automatorId}-cost`);
+        const descDisplay = cardElement.querySelector(`#market-automator-${automatorId}-description`);
+        const button = cardElement.querySelector(`#market-automator-${automatorId}-button`);
+
+        levelDisplay.textContent = `Current Level: ${info.currentLevel} / ${info.maxLevel}`;
+
+        if (info.currentLevel > 0) {
+            const currentEffect = automatorDef.levels[info.currentLevel - 1];
+            effectDisplay.textContent = `Effect: ${decimalUtility.format(currentEffect.rate, 0)} Images/sec`;
+            effectDisplay.style.display = 'block';
+        } else {
+            effectDisplay.style.display = 'none';
+        }
+
+        if (info.nextLevelInfo) {
+            const cost = decimalUtility.new(info.nextLevelInfo.cost);
+            const costResource = coreResourceManager.getResource(automatorDef.costResource);
+            costDisplay.textContent = `Upgrade Cost: ${decimalUtility.format(cost, 2)} ${costResource.name}`;
+            descDisplay.textContent = info.nextLevelInfo.description;
+            button.textContent = `Upgrade to Level ${info.nextLevelInfo.level}`;
+            button.disabled = !coreResourceManager.canAfford(automatorDef.costResource, cost);
+            button.style.display = 'block';
+            costDisplay.style.display = 'block';
+        } else {
+            descDisplay.textContent = "This automator is fully upgraded.";
+            costDisplay.style.display = 'none';
+            button.textContent = "Max Level";
+            button.disabled = true;
+        }
+    },
+
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         
-        // This is now inefficient as it re-renders the whole thing,
-        // but it's the safest way to ensure the view is correct after the big restructure.
-        this.renderMainContent(parentElementCache);
+        for (const automatorId in staticModuleData.marketAutomations) {
+            const automatorDef = staticModuleData.marketAutomations[automatorId];
+            const cardElement = parentElementCache.querySelector(`#market-automator-${automatorId}`);
+            if (cardElement) this._updateAutomationCard(cardElement, automatorId, automatorDef);
+        }
+
+        for (const itemId in staticModuleData.marketItems) { 
+            const itemDef = staticModuleData.marketItems[itemId];
+            const cardElement = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
+            if (cardElement) this._updateScalableItemCard(cardElement, itemDef);
+        }
+
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
+            const unlockDef = staticModuleData.marketUnlocks[unlockKey];
+            const cardElement = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
+            if (cardElement) this._updateUnlockItemCard(cardElement, unlockKey, unlockDef);
+        }
     },
 
     _updateScalableItemCard(cardElement, itemDef) {

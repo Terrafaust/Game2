@@ -214,6 +214,82 @@ export const moduleLogic = {
         }
         return false;
     },
+    
+    getAutomatorLevel(automatorId) {
+        return moduleState.automatorLevels[automatorId] || 0;
+    },
+
+    getAutomatorInfo(automatorId) {
+        const automatorDef = staticModuleData.marketAutomations[automatorId];
+        if (!automatorDef) return null;
+
+        const currentLevel = this.getAutomatorLevel(automatorId);
+        const nextLevelInfo = automatorDef.levels[currentLevel];
+
+        return {
+            currentLevel: currentLevel,
+            maxLevel: automatorDef.levels.length,
+            nextLevelInfo: nextLevelInfo || null
+        };
+    },
+    
+    purchaseAutomatorUpgrade(automatorId) {
+        const { coreResourceManager, coreGameStateManager, decimalUtility, coreUIManager } = coreSystemsRef;
+        const automatorInfo = this.getAutomatorInfo(automatorId);
+
+        if (!automatorInfo || !automatorInfo.nextLevelInfo) {
+            coreUIManager.showNotification('Already at max level!', 'warning');
+            return false;
+        }
+
+        const cost = decimalUtility.new(automatorInfo.nextLevelInfo.cost);
+        const costResource = staticModuleData.marketAutomations[automatorId].costResource;
+
+        if (coreResourceManager.canAfford(costResource, cost)) {
+            coreResourceManager.spendAmount(costResource, cost);
+            moduleState.automatorLevels[automatorId]++;
+            coreGameStateManager.setModuleState('market', { ...moduleState });
+            
+            coreUIManager.showNotification(`${staticModuleData.marketAutomations[automatorId].name} upgraded to Level ${moduleState.automatorLevels[automatorId]}!`, 'success');
+            return true;
+        } else {
+            coreUIManager.showNotification(`Not enough ${coreResourceManager.getResource(costResource).name}.`, 'error');
+            return false;
+        }
+    },
+
+    processImageAutomation(deltaTimeSeconds) {
+        const { coreResourceManager, coreGameStateManager, decimalUtility } = coreSystemsRef;
+        const automatorInfo = this.getAutomatorInfo('imageAutomator');
+        
+        if (!automatorInfo || automatorInfo.currentLevel === 0) return;
+
+        const currentLevelDef = staticModuleData.marketAutomations.imageAutomator.levels[automatorInfo.currentLevel - 1];
+        const rate = decimalUtility.new(currentLevelDef.rate);
+        
+        const generatedThisTick = decimalUtility.multiply(rate, deltaTimeSeconds);
+        const currentProgress = decimalUtility.new(moduleState.automationProgress.imageAutomator || '0');
+        const newProgress = decimalUtility.add(currentProgress, generatedThisTick);
+
+        if (decimalUtility.gte(newProgress, 1)) {
+            const wholeImagesToBuy = decimalUtility.floor(newProgress);
+            
+            coreResourceManager.addAmount('images', wholeImagesToBuy);
+            
+            const currentPurchaseCount = decimalUtility.new(moduleState.purchaseCounts.images || "0");
+            moduleState.purchaseCounts.images = decimalUtility.add(currentPurchaseCount, wholeImagesToBuy).toString();
+
+            moduleState.automationProgress.imageAutomator = decimalUtility.subtract(newProgress, wholeImagesToBuy).toString();
+            
+            coreGameStateManager.setModuleState('market', { ...moduleState });
+            
+            const imagesRes = coreResourceManager.getResource('images');
+            if (imagesRes && !imagesRes.isUnlocked) coreResourceManager.unlockResource('images', true);
+            if (imagesRes && !imagesRes.showInUI) coreResourceManager.setResourceVisibility('images', true);
+        } else {
+            moduleState.automationProgress.imageAutomator = newProgress.toString();
+        }
+    },
 
     onGameLoad() {
         const { coreGameStateManager, coreResourceManager, decimalUtility } = coreSystemsRef;
