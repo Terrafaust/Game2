@@ -1,8 +1,9 @@
-// modules/market_module/market_data.js (v2.0 - Added Image Automator)
+// modules/market_module/market_data.js (v2.1 - Naming Cleanup)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v2.1: Cleaned up item names to be singular.
  * v2.0: Added tiered Image Automator upgrade.
  * v1.4: Added Prestige Skill Points resource and market item.
  */
@@ -15,9 +16,9 @@ export const staticModuleData = {
     },
 
     marketItems: {
-        buyImages: { id: 'buyImages', name: 'Acquire Images', description: 'Purchase decorative Images with your Study Points.', costResource: 'studyPoints', baseCost: '1000000', costGrowthFactor: '1.0005', benefitResource: 'images', benefitAmountPerPurchase: '1', },
-        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Points', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.2', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
-        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Points', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e7', costGrowthFactor: '1.2', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
+        buyImages: { id: 'buyImages', name: 'Acquire Image', description: 'Purchase decorative Images with your Study Points.', costResource: 'studyPoints', baseCost: '1000000', costGrowthFactor: '1.0005', benefitResource: 'images', benefitAmountPerPurchase: '1', },
+        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Point', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.2', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
+        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Point', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e7', costGrowthFactor: '1.2', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
     },
 
     marketUnlocks: {

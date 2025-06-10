@@ -1,8 +1,9 @@
-// modules/market_module/market_ui.js (v2.4 - Final Multiplier Placement)
+// modules/market_module/market_ui.js (v2.5 - Prestige Unlock Tooltip)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v2.5: Moved prestige unlock message to a conditional tooltip on the Image item.
  * v2.4: Placed multiplier controls on the same line as the section title.
  * v2.3: Moved buy multiplier controls to be directly above the items they affect.
  */
@@ -27,7 +28,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.4).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.5).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -49,9 +50,6 @@ export const ui = {
 
         container.innerHTML = `
             <h2 class="text-2xl font-semibold text-primary mb-2">Trade & Unlocks Market</h2>
-            <div class="mb-6 p-3 bg-surface rounded-lg border border-primary/50 text-center">
-                <p class="text-sm text-accentOne italic">"Get 1000 images to unlock Prestige"</p>
-            </div>
         `;
         
         container.appendChild(this._createAutomationsSection());
@@ -66,7 +64,6 @@ export const ui = {
         const section = document.createElement('section');
         section.className = 'space-y-4';
         
-        // --- MODIFICATION: Create a flex header for the title and controls ---
         const sectionHeader = document.createElement('div');
         sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
         
@@ -83,7 +80,6 @@ export const ui = {
             coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplierUI helper not found!");
         }
         section.appendChild(sectionHeader);
-        // --- END MODIFICATION ---
 
         const itemsGrid = document.createElement('div');
         itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
@@ -114,18 +110,43 @@ export const ui = {
         const card = document.createElement('div');
         card.id = isScalable ? `market-item-${domIdBase}` : `market-unlock-${domIdBase}`;
         card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
-        card.innerHTML = `<div><h4 class="text-lg font-semibold text-textPrimary mb-2">${nameText}</h4><p class="text-textSecondary text-sm mb-3">${descriptionText}</p><p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p></div>`;
+
+        // Add tooltip icon for the specific item
+        const tooltipHTML = itemKey === 'buyImages'
+            ? `<span id="${card.id}-tooltip" class="ml-2 text-accentOne cursor-pointer">&#9432;</span>`
+            : '';
+
+        card.innerHTML = `<div>
+                            <h4 class="text-lg font-semibold text-textPrimary mb-2">${nameText}</h4>
+                            <p class="text-textSecondary text-sm mb-3 flex items-center">${descriptionText}${tooltipHTML}</p>
+                            <p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p>
+                          </div>`;
+        
         const button = coreUIManager.createButton(initialButtonText, () => {
                 purchaseCallback();
                 this.updateDynamicElements();
             }, ['w-full', 'mt-auto'], `${card.id}-button`);
         card.appendChild(button);
+
+        // Add event listeners for the tooltip if it exists
+        if (itemKey === 'buyImages') {
+            const tooltipIcon = card.querySelector(`#${card.id}-tooltip`);
+            if (tooltipIcon) {
+                tooltipIcon.addEventListener('mouseenter', (event) => {
+                    coreUIManager.showTooltip('Get 1000 images to unlock Prestige', event.target);
+                });
+                tooltipIcon.addEventListener('mouseleave', () => {
+                    coreUIManager.hideTooltip();
+                });
+            }
+        }
+
         return card;
     },
 
     _updateScalableItemCard(cardElement, itemDef) {
         if (!cardElement || !itemDef) return;
-        const { decimalUtility, coreResourceManager, buyMultiplierManager } = coreSystemsRef;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager, coreGameStateManager } = coreSystemsRef;
         
         const costDisplay = cardElement.querySelector(`#market-item-${itemDef.id}-cost`);
         const button = cardElement.querySelector(`#market-item-${itemDef.id}-button`);
@@ -139,7 +160,9 @@ export const ui = {
 
         if (decimalUtility.gt(quantityToDisplay, 0)) {
             costDisplay.textContent = `Cost for ${decimalUtility.format(quantityToDisplay,0)}: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
-            button.textContent = `Acquire ${decimalUtility.format(quantityToDisplay,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
+            // Use singular name from market_data, and add 's' only if quantity > 1
+            const nameBase = itemDef.name.replace('Acquire ', '');
+            button.textContent = `Acquire ${decimalUtility.format(quantityToDisplay,0)} ${nameBase}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
         } else {
             const singleCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, 1);
             costDisplay.textContent = `Cost: ${decimalUtility.format(singleCost, 0)} ${itemDef.costResource}`;
@@ -148,6 +171,16 @@ export const ui = {
 
         const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
         button.disabled = !canAfford || decimalUtility.eq(quantityToBuy, 0);
+
+        // --- MODIFICATION: Control visibility of the prestige unlock tooltip ---
+        if (itemDef.id === 'buyImages') {
+            const tooltipIcon = cardElement.querySelector(`#market-item-${itemDef.id}-tooltip`);
+            if (tooltipIcon) {
+                const prestigeUnlocked = coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
+                tooltipIcon.style.display = prestigeUnlocked ? 'none' : 'inline-block';
+            }
+        }
+        // --- END MODIFICATION ---
     },
 
     _updateUnlockItemCard(cardElement, unlockKey, unlockDef) {
