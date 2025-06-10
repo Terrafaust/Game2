@@ -1,11 +1,10 @@
-// modules/market_module/market_ui.js (v2.5 - Prestige Unlock Tooltip)
+// modules/market_module/market_ui.js (v2.6 - Relocate Prestige Message)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v2.6: Relocated prestige unlock message from a tooltip to a permanent, conditional message on the card itself.
  * v2.5: Moved prestige unlock message to a conditional tooltip on the Image item.
- * v2.4: Placed multiplier controls on the same line as the section title.
- * v2.3: Moved buy multiplier controls to be directly above the items they affect.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -28,7 +27,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.5).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.6).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -111,35 +110,24 @@ export const ui = {
         card.id = isScalable ? `market-item-${domIdBase}` : `market-unlock-${domIdBase}`;
         card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
 
-        // Add tooltip icon for the specific item
-        const tooltipHTML = itemKey === 'buyImages'
-            ? `<span id="${card.id}-tooltip" class="ml-2 text-accentOne cursor-pointer">&#9432;</span>`
+        // --- MODIFICATION: Removed tooltip, added placeholder for prestige message ---
+        const prestigeUnlockMessageHTML = itemKey === 'buyImages'
+            ? `<p id="${card.id}-prestige-unlock-msg" class="text-xs text-accentOne italic mt-2"></p>`
             : '';
 
         card.innerHTML = `<div>
                             <h4 class="text-lg font-semibold text-textPrimary mb-2">${nameText}</h4>
-                            <p class="text-textSecondary text-sm mb-3 flex items-center">${descriptionText}${tooltipHTML}</p>
+                            <p class="text-textSecondary text-sm mb-3">${descriptionText}</p>
+                            ${prestigeUnlockMessageHTML}
                             <p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p>
                           </div>`;
+        // --- END MODIFICATION ---
         
         const button = coreUIManager.createButton(initialButtonText, () => {
                 purchaseCallback();
                 this.updateDynamicElements();
             }, ['w-full', 'mt-auto'], `${card.id}-button`);
         card.appendChild(button);
-
-        // Add event listeners for the tooltip if it exists
-        if (itemKey === 'buyImages') {
-            const tooltipIcon = card.querySelector(`#${card.id}-tooltip`);
-            if (tooltipIcon) {
-                tooltipIcon.addEventListener('mouseenter', (event) => {
-                    coreUIManager.showTooltip('Get 1000 images to unlock Prestige', event.target);
-                });
-                tooltipIcon.addEventListener('mouseleave', () => {
-                    coreUIManager.hideTooltip();
-                });
-            }
-        }
 
         return card;
     },
@@ -172,12 +160,18 @@ export const ui = {
         const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
         button.disabled = !canAfford || decimalUtility.eq(quantityToBuy, 0);
 
-        // --- MODIFICATION: Control visibility of the prestige unlock tooltip ---
+        // --- MODIFICATION: Control visibility of the new prestige unlock message text ---
         if (itemDef.id === 'buyImages') {
-            const tooltipIcon = cardElement.querySelector(`#market-item-${itemDef.id}-tooltip`);
-            if (tooltipIcon) {
+            const prestigeMsgElement = cardElement.querySelector(`#market-item-${itemDef.id}-prestige-unlock-msg`);
+            if (prestigeMsgElement) {
                 const prestigeUnlocked = coreGameStateManager.getGlobalFlag('prestigeUnlocked', false);
-                tooltipIcon.style.display = prestigeUnlocked ? 'none' : 'inline-block';
+                if (prestigeUnlocked) {
+                    prestigeMsgElement.textContent = '';
+                    prestigeMsgElement.style.display = 'none';
+                } else {
+                    prestigeMsgElement.textContent = 'Get 1,000 Images to unlock Prestige.';
+                    prestigeMsgElement.style.display = 'block';
+                }
             }
         }
         // --- END MODIFICATION ---
