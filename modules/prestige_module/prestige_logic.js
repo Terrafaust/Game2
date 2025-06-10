@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v7.2 - Enhanced Confirmation Modal)
+// /game/modules/prestige_module/prestige_logic.js (v7.3 - Explanatory Modal Logic)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -245,37 +245,52 @@ export const canPrestige = () => {
     return flagUnlocked && hasEnoughImages;
 };
 
+// --- ROADMAP 4.1: Modified function to return calculation details ---
 export const calculatePrestigeGain = () => {
     if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
-        return decimalUtility.new(0);
+        return { points: decimalUtility.new(0), explanation: "Prestige not unlocked." };
     }
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
+    
     const baseGain = decimalUtility.new(1);
     const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
     const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
     const formulaGain = decimalUtility.multiply(prestigeFactor, knowledgeFactor);
-    let totalGain = decimalUtility.add(baseGain, formulaGain);
+    let preBonusGain = decimalUtility.add(baseGain, formulaGain);
+    
     const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     const globalBonus = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-    totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
+    let totalGain = decimalUtility.multiply(preBonusGain, ppGainBonus);
     totalGain = decimalUtility.multiply(totalGain, globalBonus);
-    return totalGain.floor();
+
+    const explanation = `(1 + Prestige Factor * Knowledge Factor) * Bonuses = Gain<br>
+        <span class="text-xs"> (1 + ${decimalUtility.format(prestigeFactor, 2)} * ${decimalUtility.format(knowledgeFactor, 2)}) * ${decimalUtility.format(ppGainBonus, 2)}x * ${decimalUtility.format(globalBonus, 2)}x = ${decimalUtility.format(totalGain, 2)}</span>`;
+
+    return { points: totalGain.floor(), explanation: explanation };
 };
 
+// --- ROADMAP 4.1: Modified function to return calculation details ---
 export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = prestigeCountOverride !== null ? decimalUtility.new(prestigeCountOverride) : decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
+
     const prestigeBonus = decimalUtility.divide(prestigeCount, 6);
     const imageBonus = decimalUtility.divide(images, '1e13'); 
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
+
     let totalBonus = decimalUtility.add(1, decimalUtility.add(prestigeBonus, imageBonus));
     totalBonus = decimalUtility.multiply(totalBonus, prestigeBonusBonus);
-    return totalBonus;
+    
+    const explanation = `(1 + Prestige Bonus + Image Bonus) * Skill Bonus = Multiplier<br>
+        <span class="text-xs">(1 + ${decimalUtility.format(prestigeBonus, 2)} + ${decimalUtility.format(imageBonus, 2)}) * ${decimalUtility.format(prestigeBonusBonus, 2)}x = ${decimalUtility.format(totalBonus, 2)}x</span>`;
+
+    return { multiplier: totalBonus, explanation: explanation };
 };
 
+// --- ROADMAP 4.1: Modified function to use new calculation details in modal ---
 export const performPrestige = () => {
     const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
 
@@ -283,8 +298,8 @@ export const performPrestige = () => {
         coreUIManager.showNotification("Requires 1,000 Images to Prestige.", "error");
         return;
     }
-    const ppGains = calculatePrestigeGain();
-    if (decimalUtility.lte(ppGains, 0)) {
+    const gainInfo = calculatePrestigeGain();
+    if (decimalUtility.lte(gainInfo.points, 0)) {
         coreUIManager.showNotification("You would not gain any Prestige Points.", "warning");
         return;
     }
@@ -300,7 +315,6 @@ export const performPrestige = () => {
         startingProducers = skillsLogic.getStartingProducers();
     }
     
-    // --- MODIFICATION: Enhanced prestige confirmation message ---
     const currentPrestigeCount = getTotalPrestigeCount();
     const nextPrestigeNumber = currentPrestigeCount.add(1);
     
@@ -311,11 +325,11 @@ export const performPrestige = () => {
     };
     const prestigeOrdinal = getOrdinal(nextPrestigeNumber.toNumber());
 
-    const currentPrestigeBonus = getPrestigeBonusMultiplier();
-    const nextPrestigeBonus = getPrestigeBonusMultiplier(nextPrestigeNumber);
+    const currentBonusInfo = getPrestigeBonusMultiplier();
+    const nextBonusInfo = getPrestigeBonusMultiplier(nextPrestigeNumber);
 
-    let gainsMessage = `<li><span class="font-bold text-green-200">${decimalUtility.format(ppGains, 2, 0)}</span> Prestige Points</li>
-                        <li>All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(currentPrestigeBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(nextPrestigeBonus, 2)}x</span></li>`;
+    let gainsMessage = `<li><strong class="font-bold text-green-200">${decimalUtility.format(gainInfo.points, 2, 0)}</strong> Prestige points <br><span class="text-gray-400 text-xs">(${gainInfo.explanation})</span></li>
+                        <li>All production boosts: <strong class="font-bold text-yellow-300">${decimalUtility.format(currentBonusInfo.multiplier, 2)}x</strong> -> <strong class="font-bold text-green-200">${decimalUtility.format(nextBonusInfo.multiplier, 2)}x</strong> <br><span class="text-gray-400 text-xs">(${nextBonusInfo.explanation})</span></li>`;
 
     if (currentPrestigeCount.eq(0)) {
         gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
@@ -335,7 +349,7 @@ export const performPrestige = () => {
             <p>Are you sure you want to proceed with your ${prestigeOrdinal} prestige?</p>
             <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
                 <p class="font-semibold text-green-300">You will gain:</p>
-                <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
+                <ul class="list-disc list-inside text-sm mt-1 space-y-2 text-textSecondary">
                     ${gainsMessage}
                 </ul>
             </div>
@@ -359,9 +373,10 @@ export const performPrestige = () => {
 
     coreUIManager.showModal("Confirm Prestige", confirmationMessage, [
             {
-                label: `Prestige for ${decimalUtility.format(ppGains, 2, 0)} PP`,
+                label: `Prestige for ${decimalUtility.format(gainInfo.points, 2, 0)} PP`,
                 className: "bg-green-600 hover:bg-green-700",
                 callback: () => {
+                    const ppGains = gainInfo.points;
                     const newPrestigeCount = decimalUtility.add(moduleState.totalPrestigeCount || 0, 1);
                     const prestigeRecord = { count: newPrestigeCount.toString(), time: moduleState.currentPrestigeRunTime || 0, ppGained: ppGains.toString() };
                     const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])].slice(0, 10);
