@@ -1,13 +1,12 @@
-// js/core/coreUIManager.js (v5.3 - Notification Stacking)
+// js/core/coreUIManager.js (v5.4 - Roadmap UI Tweaks)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.4: Implemented roadmap tasks 1.1 and 1.2.
+ * - Hides "No resources to display yet."
+ * - Conditionally displays Prestige Count only after first prestige.
  * v5.3: Implemented notification stacking to prevent spam.
- * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
- * v5.1: Enhanced notification system with clickability and larger achievement notifications.
- * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
- * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -58,9 +57,17 @@ const UIElements = {
 let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
+// --- MODIFICATION: Added coreGameStateManager reference for flag checking ---
+let coreGameStateManagerRef = null; 
+// --- END MODIFICATION ---
 
 export const coreUIManager = {
-    initialize() {
+    // --- MODIFICATION: Accept coreGameStateManager during initialization ---
+    initialize(coreSystems) {
+        if(coreSystems && coreSystems.coreGameStateManager) {
+            coreGameStateManagerRef = coreSystems.coreGameStateManager;
+        }
+    // --- END MODIFICATION ---
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
         UIElements.mainMenu = document.getElementById('main-menu');
@@ -89,7 +96,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.3).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.4).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -229,6 +236,15 @@ export const coreUIManager = {
         Object.values(allResources).forEach(res => {
             const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
             if (res.isUnlocked && res.showInUI) {
+                // --- MODIFICATION: Check if it's the prestigeCount and if the flag is set ---
+                if (res.id === 'prestigeCount' && !(coreGameStateManagerRef && coreGameStateManagerRef.getGlobalFlag('hasPrestigedOnce'))) {
+                    // Do not show the prestige count if the flag isn't true
+                    let displayElement = document.getElementById(`resource-${res.id}-display`);
+                    if (displayElement) displayElement.remove();
+                    return; // Skip to the next resource
+                }
+                // --- END MODIFICATION ---
+
                 hasVisibleResources = true;
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
                 if (!displayElement) {
@@ -257,7 +273,12 @@ export const coreUIManager = {
                 if (displayElement) displayElement.remove();
             }
         });
-        if (!hasVisibleResources) UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full text-center py-2">No resources to display yet.</p>';
+
+        // --- MODIFICATION: Hide the "No resources..." message ---
+        if (!hasVisibleResources) {
+            UIElements.resourcesDisplay.innerHTML = '';
+        }
+        // --- END MODIFICATION ---
     },
     
     showModal(title, content, buttons) {
@@ -353,12 +374,10 @@ export const coreUIManager = {
     showNotification(message, type = 'info', duration = 3000, options = {}) {
         if (!UIElements.notificationArea) return;
 
-        // --- MODIFICATION START: Implement Notification Stacking ---
-        if (type !== 'achievement') { // Stacking doesn't apply to achievement popups
+        if (type !== 'achievement') { 
             const counterRegex = / \((\d+)\)$/;
             const baseMessage = message.replace(counterRegex, '').trim();
             
-            // Find existing notification with same base message
             const existingNotifications = UIElements.notificationArea.querySelectorAll('.notification-standard');
             let existingMatch = null;
             for (const notif of existingNotifications) {
@@ -374,17 +393,14 @@ export const coreUIManager = {
                 const currentCount = currentCountMatch ? parseInt(currentCountMatch[1], 10) : 1;
                 const newCount = currentCount + 1;
                 
-                // Update message with new count
                 message = `${baseMessage} (${newCount})`;
                 
-                // Remove the old notification to replace it
                 existingMatch.remove();
             }
         }
-        // --- MODIFICATION END ---
 
         const notification = document.createElement('div');
-        notification.dataset.baseMessage = message.replace(/ \(\d+\)$/, '').trim(); // Store base message for future checks
+        notification.dataset.baseMessage = message.replace(/ \(\d+\)$/, '').trim(); 
 
         let typeClasses = {
             info: 'bg-blue-600 border-blue-500',

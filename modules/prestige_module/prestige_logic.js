@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v8.1 - Bugfix and Refactor)
+// /game/modules/prestige_module/prestige_logic.js (v8.2 - Confirmed Flag)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -378,7 +378,9 @@ export const executePrestigeReset = (ppGains) => {
 
     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
     Object.assign(moduleState, prestigeModuleState);
+    // --- MODIFICATION: Set the global flag upon prestiging ---
     coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
+    // --- END MODIFICATION ---
     coreResourceManager.addAmount('prestigePoints', ppGains);
     coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
     
