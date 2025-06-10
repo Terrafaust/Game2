@@ -3,9 +3,8 @@
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
- * v3.1: Added back-compat properties (marketItems, marketUnlocks) to fix manifest loading issues.
+ * v3.1: Restructured data and ensured backward compatibility properties exist for manifest.
  * v3.0: Restructured data into categories (Consumables, Feature Unlocks, Skill Points) for UI overhaul.
- * Added new unlocks and updated conditions as per the roadmap.
  */
 
 const consumables = {
@@ -57,7 +56,7 @@ const featureUnlocks = {
         name: 'Unlock Buy Multipliers', 
         description: 'Unlock the ability to buy producers and items in bulk (x10, x100, Max).', 
         costResource: 'images', 
-        costAmount: '1000', // Cost updated
+        costAmount: '1000',
         flagToSet: 'buyMultiplesUnlocked', 
     },
     settingsTab: { 
@@ -118,10 +117,9 @@ export const staticModuleData = {
     skillPoints,
     featureUnlocks,
     
-    // --- FIX: Add old properties back for manifest compatibility ---
+    // Legacy properties for manifest compatibility
     marketItems: { ...consumables, ...skillPoints },
     marketUnlocks: { ...featureUnlocks },
-    // --- END FIX ---
 
     marketAutomations: {
         imageAutomator: {
@@ -137,7 +135,6 @@ export const staticModuleData = {
         }
     },
 
-    // --- FIX: Add UI property for manifest compatibility ---
     ui: {
         marketTabLabel: "Market"
     }

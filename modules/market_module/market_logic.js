@@ -12,7 +12,7 @@ import { moduleState, getInitialState } from './market_state.js';
 
 let coreSystemsRef = null;
 
-// Helper functions to find item definitions in the new data structure
+// Helper functions to find item definitions in the manifest-compatible structures
 const getScalableItemDef = (itemId) => {
     return staticModuleData.marketItems[itemId] || null;
 };
@@ -181,7 +181,7 @@ export const moduleLogic = {
     isUnlockVisible(unlockId) {
         const unlockDef = getUnlockDef(unlockId);
         if (!unlockDef) return false;
-        if (this.isUnlockPurchased(unlockId)) return false; // Don't show already purchased items in the main list
+        if (this.isUnlockPurchased(unlockId)) return false; 
         if (unlockDef.unlockCondition) {
             return unlockDef.unlockCondition(coreSystemsRef);
         }
