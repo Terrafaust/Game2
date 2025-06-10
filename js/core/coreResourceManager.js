@@ -1,9 +1,11 @@
-// js/core/coreResourceManager.js (v2.0 - Total Earned Tracking)
+// js/core/coreResourceManager.js (v2.2 - Enforced UI Order)
 
 /**
  * @file coreResourceManager.js
  * @description Manages all game resources (e.g., Study Points, Knowledge),
  * their current amounts, and their generation rates per second.
+ * v2.2: Modified getAllResources to enforce a specific UI display order.
+ * v2.1: Added getGridOrderedResources for fixed UI layouts.
  * v2.0: Added totalEarned tracking for detailed statistics.
  * v1.4: Added resetsOnPrestige flag and performPrestigeReset function for Ascension System.
  */
@@ -14,10 +16,24 @@ import { staticDataAggregator } from './staticDataAggregator.js';
 
 let resources = {};
 
+// --- NEW ---
+// Define the desired display order for resources. This will be used to order
+// the resources returned to the UI, ensuring a consistent layout.
+const resourceDisplayOrder = [
+    'studyPoints',
+    'studySkillsPoints',
+    'prestigeCount',
+    'knowledge',
+    'prestigeSkillsPoints',
+    'prestigePoints',
+    'images'
+];
+
+
 const coreResourceManager = {
     initialize() {
         resources = {}; 
-        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v2.0).");
+        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v2.2).");
     },
 
     defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true, resetsOnPrestige = true) {
@@ -45,14 +61,12 @@ const coreResourceManager = {
                 hasProductionRate: hasProductionRate,
                 resetsOnPrestige: resetsOnPrestige,
                 isInitialized: true,
-                // --- FEATURE: Add totalEarned property ---
                 totalEarned: decimalUtility.new(0)
             };
             loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) newly defined.`);
         }
     },
     
-    // --- FEATURE: New function to get total earned resources for stats ---
     getTotalEarned(resourceId) {
         const resource = resources[resourceId];
         if (resource) {
@@ -80,7 +94,6 @@ const coreResourceManager = {
         }
         
         resource.amount = decimalUtility.add(resource.amount, decAmountToAdd);
-        // --- FEATURE: Increment total earned whenever amount is added ---
         resource.totalEarned = decimalUtility.add(resource.totalEarned, decAmountToAdd);
         return true;
     },
@@ -91,7 +104,6 @@ const coreResourceManager = {
             const resource = resources[resourceId];
             if (resource.isUnlocked && resource.hasProductionRate && decimalUtility.gt(resource.totalProductionRate, 0)) {
                 const amountGenerated = decimalUtility.multiply(resource.totalProductionRate, decDeltaTime);
-                // Use addAmount to ensure totalEarned is also updated
                 this.addAmount(resourceId, amountGenerated);
             }
         }
@@ -106,7 +118,6 @@ const coreResourceManager = {
                 resources[resId].totalProductionRate = decimalUtility.new(0);
                 loggingSystem.debug('ResourceManager', `Reset resource: ${resId}`);
             }
-            // Note: totalEarned is intentionally NOT reset
         }
     },
 
@@ -123,7 +134,6 @@ const coreResourceManager = {
                     showInUI: res.showInUI,
                     hasProductionRate: res.hasProductionRate,
                     resetsOnPrestige: res.resetsOnPrestige,
-                    // --- FEATURE: Save totalEarned ---
                     totalEarned: res.totalEarned.toString(),
                     productionSources: {},
                 };
@@ -153,7 +163,6 @@ const coreResourceManager = {
             
             const resource = resources[resourceId];
             if (resource) {
-                // --- FEATURE: Load totalEarned from save data ---
                 resource.totalEarned = decimalUtility.new(savedRes.totalEarned || savedRes.amount || '0');
                 
                 if (savedRes.productionSources) {
@@ -167,7 +176,6 @@ const coreResourceManager = {
         }
     },
 
-    // --- UNCHANGED ORIGINAL FUNCTIONS ---
     isResourceDefined(resourceId) { return resources[resourceId] && resources[resourceId].isInitialized; },
     getResource(resourceId) {
         const resource = resources[resourceId];
@@ -245,21 +253,60 @@ const coreResourceManager = {
         const resource = resources[resourceId];
         if (resource) { resource.isUnlocked = unlockStatus; }
     },
+
     setResourceVisibility(resourceId, show) {
         const resource = resources[resourceId];
-        if (resource) { resource.showInUI = !!show; }
-    },
-    getAllResources() {
-        const resourcesCopy = {};
-        for (const resId in resources) {
-            const original = resources[resId];
-            if (original.isInitialized) { 
-                resourcesCopy[resId] = { ...original, amount: decimalUtility.new(original.amount), totalProductionRate: decimalUtility.new(original.totalProductionRate), productionSources: { ...original.productionSources }, };
-                for (const srcKey in resourcesCopy[resId].productionSources) { resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]); }
+        if (resource) {
+            resource.showInUI = !!show;
+
+            // Per user request, ensure prestigeCount becomes visible at the same time as prestigePoints.
+            // This links their visibility state without needing to modify other game logic files.
+            if (resourceId === 'prestigePoints' && show) {
+                if (resources['prestigeCount']) {
+                    resources['prestigeCount'].showInUI = true;
+                }
             }
         }
+    },
+    
+    getAllResources() {
+        const resourcesCopy = {};
+        const returnedIds = new Set();
+
+        // Helper function to copy resource data to avoid repetition.
+        const copyResource = (resId) => {
+            const original = resources[resId];
+            if (original && original.isInitialized) {
+                resourcesCopy[resId] = {
+                    ...original,
+                    amount: decimalUtility.new(original.amount),
+                    totalProductionRate: decimalUtility.new(original.totalProductionRate),
+                    productionSources: { ...original.productionSources },
+                };
+                for (const srcKey in resourcesCopy[resId].productionSources) {
+                    resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]);
+                }
+                returnedIds.add(resId);
+            }
+        };
+
+        // First, add resources in the specified display order.
+        // This ensures the UI renders them in a consistent, predictable order.
+        for (const resId of resourceDisplayOrder) {
+            copyResource(resId);
+        }
+
+        // Second, add any other resources that are not in the main display list.
+        // This ensures any new or temporary resources are still accessible to the game.
+        for (const resId in resources) {
+            if (!returnedIds.has(resId)) {
+                copyResource(resId);
+            }
+        }
+
         return resourcesCopy;
     },
+
     resetState() {
         const coreResourceDefinitions = staticDataAggregator.getData('core_resource_definitions') || {};
         const newResourcesState = {};
