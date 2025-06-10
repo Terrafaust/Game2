@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v3.0 - Production Display)
+// /game/modules/prestige_module/prestige_ui.js (v4.0 - Roadmap UI Tweaks)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.0).");
     },
 
     renderMainContent(parentElement) {
@@ -23,44 +23,41 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        const tipBox = document.createElement('div');
-        tipBox.className = 'mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center';
-        const tipText = document.createElement('p');
-        tipText.className = 'text-sm text-red-300 italic';
-        tipText.textContent = '"The end already ?"';
-        tipBox.appendChild(tipText);
-        container.appendChild(tipBox);
+        container.innerHTML = `
+            <div class="mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center">
+                 <p class="text-sm text-red-300 italic">"The end already ?"</p>
+            </div>
+        `;
 
         const header = document.createElement('div');
-        header.className = 'flex justify-between items-center bg-surface-dark p-4 rounded-lg';
+        header.className = 'text-center space-y-4 bg-surface-dark p-4 rounded-lg';
         
         const statsContainer = document.createElement('div');
         statsContainer.className = 'text-lg space-y-1';
-
-        const ppDisplay = document.createElement('div');
-        ppDisplay.id = 'pp-display';
-        ppDisplay.className = 'text-yellow-300 font-semibold';
-        statsContainer.appendChild(ppDisplay);
-
-        const prestigeCountDisplay = document.createElement('div');
-        prestigeCountDisplay.id = 'prestige-count-display';
-        prestigeCountDisplay.className = 'text-sm text-gray-400';
-        statsContainer.appendChild(prestigeCountDisplay);
-        
+        statsContainer.innerHTML = `
+            <div id="pp-display" class="text-yellow-300 font-semibold text-2xl"></div>
+            <div id="prestige-count-display" class="text-sm text-gray-400"></div>
+        `;
         header.appendChild(statsContainer);
-
-        const prestigeButtonContainer = document.createElement('div');
-        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
-        prestigeButton.id = 'prestige-button';
-        prestigeButtonContainer.appendChild(prestigeButton);
-        header.appendChild(prestigeButtonContainer);
         
+        // --- ROADMAP 4.2: Move buy multiplier controls between stats and button ---
+        const { coreGameStateManager } = coreSystemsRef;
+        if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
+             const studiesUI = coreSystemsRef.moduleLoader.getModule('studies')?.ui;
+             if (studiesUI && typeof studiesUI._createBuyMultiplierControls === 'function') {
+                const multiplierContainer = document.createElement('div');
+                multiplierContainer.className = 'flex justify-center items-center py-2';
+                const multiplierControls = studiesUI._createBuyMultiplierControls();
+                multiplierControls.classList.remove('mb-6');
+                multiplierContainer.appendChild(multiplierControls);
+                header.appendChild(multiplierContainer);
+            }
+        }
+        
+        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-3', 'px-6', 'text-lg', 'w-full', 'md:w-auto']);
+        prestigeButton.id = 'prestige-button';
+        header.appendChild(prestigeButton);
         container.appendChild(header);
-
-        const multiplierContainer = document.createElement('div');
-        multiplierContainer.className = 'flex justify-center items-center p-2 bg-surface-dark rounded-lg mt-4';
-        this._createBuyMultiplierControls(multiplierContainer);
-        container.appendChild(multiplierContainer);
 
         const producersTitle = document.createElement('h3');
         producersTitle.className = 'text-xl font-semibold text-primary mt-6';
@@ -81,66 +78,20 @@ export const ui = {
         
         this.updateDynamicElements();
     },
-
-    _createBuyMultiplierControls(container) {
-        const { coreUIManager, buyMultiplierManager } = coreSystemsRef;
-        const multipliers = [
-            { label: 'x1', value: 1 },
-            { label: 'x10', value: 10 },
-            { label: 'x100', value: 100 },
-            { label: 'Max', value: -1 }
-        ];
-
-        const buttonGroup = document.createElement('div');
-        buttonGroup.className = 'flex space-x-2';
-        buttonGroup.id = 'prestige-buy-multiplier-controls';
-
-        multipliers.forEach(m => {
-            const button = coreUIManager.createButton(
-                m.label,
-                () => buyMultiplierManager.setMultiplier(m.value),
-                ['px-4', 'py-1.5', 'text-sm', 'transition-colors', 'duration-200']
-            );
-            button.dataset.value = m.value;
-            buttonGroup.appendChild(button);
-        });
-
-        container.appendChild(buttonGroup);
-    },
-
+    
     _createProducerCard(producerDef) {
         const { coreUIManager } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `prestige-card-${producerDef.id}`;
         card.className = 'bg-surface p-4 rounded-lg shadow-md flex flex-col';
 
-        const name = document.createElement('h4');
-        name.className = 'text-md font-semibold text-textPrimary mb-1';
-        name.textContent = producerDef.name;
-        card.appendChild(name);
-
-        const description = document.createElement('p');
-        description.className = 'text-textSecondary text-xs mb-2 flex-grow';
-        description.textContent = producerDef.description;
-        card.appendChild(description);
-
-        const ownedDisplay = document.createElement('p');
-        ownedDisplay.id = `prestige-owned-${producerDef.id}`;
-        ownedDisplay.className = 'text-sm text-blue-400 mb-2';
-        card.appendChild(ownedDisplay);
-        
-        // --- MODIFICATION: Added production display element ---
-        if (producerDef.passiveProduction) {
-            const productionDisplay = document.createElement('div');
-            productionDisplay.id = `prestige-production-${producerDef.id}`;
-            productionDisplay.className = 'text-xs text-green-400 mb-2 space-y-1';
-            card.appendChild(productionDisplay);
-        }
-
-        const costDisplay = document.createElement('p');
-        costDisplay.id = `prestige-cost-${producerDef.id}`;
-        costDisplay.className = 'text-xs text-yellow-400 mb-3';
-        card.appendChild(costDisplay);
+        card.innerHTML = `
+            <h4 class="text-md font-semibold text-textPrimary mb-1">${producerDef.name}</h4>
+            <p class="text-textSecondary text-xs mb-2 flex-grow">${producerDef.description}</p>
+            <p id="prestige-owned-${producerDef.id}" class="text-sm text-blue-400 mb-2"></p>
+            <div id="prestige-production-${producerDef.id}" class="text-xs text-green-400 mb-2 space-y-1"></div>
+            <p id="prestige-cost-${producerDef.id}" class="text-xs text-yellow-400 mb-3"></p>
+        `;
         
         const purchaseButton = coreUIManager.createButton(
             'Buy', 
@@ -155,7 +106,7 @@ export const ui = {
 
     updateDynamicElements() {
         if (!parentElementCache || !coreSystemsRef) return;
-        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator } = coreSystemsRef;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator, coreGameStateManager } = coreSystemsRef;
 
         const ppDisplay = parentElementCache.querySelector('#pp-display');
         if (ppDisplay) {
@@ -166,7 +117,6 @@ export const ui = {
         const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
         if(prestigeCountDisplay) {
             const count = logic.getTotalPrestigeCount();
-            // This is now handled by coreUIManager.updateResourceDisplay, but we can keep it for faster updates
             prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
         }
 
@@ -175,24 +125,21 @@ export const ui = {
             const gain = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
             prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
-            if (canPrestige) {
+            if (canPrestige && decimalUtility.gt(gain, 0)) {
                 prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
+            } else if (canPrestige) {
+                 prestigeButton.textContent = 'Not enough gain to Prestige';
             } else {
                 prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
             }
         }
         
-        const currentMultiplier = buyMultiplierManager.getMultiplier();
-        const multiplierButtons = parentElementCache.querySelectorAll('#prestige-buy-multiplier-controls button');
-        multiplierButtons.forEach(btn => {
-            if (parseInt(btn.dataset.value, 10) === currentMultiplier) {
-                btn.classList.add('bg-primary-dark', 'text-white');
-                btn.classList.remove('bg-surface-light', 'text-textSecondary');
-            } else {
-                btn.classList.remove('bg-primary-dark', 'text-white');
-                btn.classList.add('bg-surface-light', 'text-textSecondary');
-            }
-        });
+        // This is now handled by the generic `_updateMultiplierButtonStyles` in studies_ui
+        const studiesUI = coreSystemsRef.moduleLoader.getModule('studies')?.ui;
+        const multiplierControls = parentElementCache.querySelector('.flex.space-x-2');
+        if (multiplierControls && studiesUI && typeof studiesUI._updateMultiplierButtonStyles === 'function') {
+            studiesUI._updateMultiplierButtonStyles(multiplierControls);
+        }
 
         const postDocMultiplier = logic.getPostDocMultiplier();
 
@@ -202,57 +149,57 @@ export const ui = {
                 const producerDef = prestigeData.producers[producerId];
                 const owned = logic.getOwnedPrestigeProducerCount(producerId);
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
-
-                // --- MODIFICATION: Update production display ---
+                
                 const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
                 if (productionDisplay) {
+                    let productionHtml = '';
                     if (producerDef.passiveProduction && decimalUtility.gt(owned, 0)) {
-                        let productionHtml = '';
                         producerDef.passiveProduction.forEach(p => {
                             const baseRate = decimalUtility.new(p.baseRate);
                             let finalRate = decimalUtility.multiply(baseRate, owned);
-                            // Apply Post-Doc multiplier
                             if(producerId !== 'postDoc') {
                                 finalRate = decimalUtility.multiply(finalRate, postDocMultiplier);
                             }
-
                             if (decimalUtility.gt(finalRate, 0)) {
                                 const studiesProducerData = staticDataAggregator.getData(`studies.producers.${p.producerId}`);
                                 const producerName = studiesProducerData ? studiesProducerData.name : p.producerId;
-                                productionHtml += `<div>Production: ${decimalUtility.format(finalRate, 2)} ${producerName}/s</div>`;
+                                productionHtml += `<div>+${decimalUtility.format(finalRate, 2)} ${producerName}/s</div>`;
                             }
                         });
-                        productionDisplay.innerHTML = productionHtml;
-                    } else {
-                        productionDisplay.innerHTML = ''; // Clear if not producing
                     }
+                     productionDisplay.innerHTML = productionHtml;
                 }
-                // --- END MODIFICATION ---
-
-                let quantityToBuy;
-                if (currentMultiplier === -1) {
-                    quantityToBuy = logic.calculateMaxBuyablePrestigeProducer(producerId);
-                } else {
-                    quantityToBuy = decimalUtility.new(currentMultiplier);
+                
+                let quantityToBuy = 1;
+                let buyMode = '1';
+                
+                if (coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked')) {
+                    const multiplier = buyMultiplierManager.getMultiplier();
+                    if (multiplier === -1) {
+                        quantityToBuy = logic.calculateMaxBuyablePrestigeProducer(producerId);
+                        buyMode = 'Max';
+                    } else {
+                        quantityToBuy = decimalUtility.new(multiplier);
+                        buyMode = multiplier;
+                    }
                 }
 
                 const cost = logic.calculatePrestigeProducerCost(producerId, quantityToBuy);
-                
                 card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} PP`;
                 
                 const button = card.querySelector(`#prestige-purchase-${producerId}`);
-                button.disabled = !coreResourceManager.canAfford('prestigePoints', cost) || quantityToBuy.lte(0);
+                button.disabled = !coreResourceManager.canAfford('prestigePoints', cost) || decimalUtility.lte(quantityToBuy, 0);
 
-                let buttonText = "Buy";
-                if(quantityToBuy.gt(0)) {
-                    buttonText += ` ${decimalUtility.format(quantityToBuy, 0)}`;
+                if (buyMode === 'Max') {
+                    button.textContent = `Buy ${decimalUtility.format(quantityToBuy, 0)} (Max)`;
+                } else {
+                     button.textContent = `Buy ${buyMode}`;
                 }
-                button.textContent = buttonText;
             }
         }
     },
     
     onShow() {
-        if(parentElementCache) this.updateDynamicElements();
+        if(parentElementCache) this.renderMainContent(parentElementCache);
     }
 };

@@ -1,8 +1,9 @@
-// modules/market_module/market_logic.js (v4.0 - Correct Cost Reduction)
+// modules/market_module/market_logic.js (v5.0 - Roadmap Restructure)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v5.0: Adapted logic to handle new data structure from roadmap (consumables, skillPoints, featureUnlocks).
  * v4.0: Corrected cost reduction logic to apply to base cost.
  * v3.0: Implemented cost reduction multipliers from achievements.
  */
@@ -12,15 +13,40 @@ import { moduleState, getInitialState } from './market_state.js';
 
 let coreSystemsRef = null;
 
+// --- HELPER FUNCTIONS for new data structure ---
+/**
+ * Finds a scalable item definition within the new data structure.
+ * @param {string} itemId - The ID of the item to find.
+ * @returns {object|null} The item definition or null if not found.
+ */
+function findScalableItemDef(itemId) {
+    const allScalableItems = {
+        ...(staticModuleData.consumables || {}),
+        ...(staticModuleData.skillPoints || {})
+    };
+    return allScalableItems[itemId] || null;
+}
+
+/**
+ * Finds a feature unlock definition.
+ * @param {string} unlockId - The ID of the unlock to find.
+ * @returns {object|null} The unlock definition or null if not found.
+ */
+function findUnlockDef(unlockId) {
+    return staticModuleData.featureUnlocks[unlockId] || null;
+}
+// --- END HELPER FUNCTIONS ---
+
+
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v4.0).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v5.0).");
     },
     
     calculateMaxBuyable(itemId) {
         const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = staticModuleData.marketItems[itemId];
+        const itemDef = findScalableItemDef(itemId); // Use helper
         if (!itemDef) return decimalUtility.ZERO;
 
         const purchaseCountKey = itemDef.benefitResource;
@@ -30,10 +56,8 @@ export const moduleLogic = {
         const availableCurrency = coreResourceManager.getAmount(costResource);
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
-        // --- MODIFICATION: Apply cost reduction to base cost ---
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
-        // --- END MODIFICATION ---
         
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
@@ -63,7 +87,7 @@ export const moduleLogic = {
 
     calculateScalableItemCost(itemId, quantity = 1) {
         const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = staticModuleData.marketItems[itemId];
+        const itemDef = findScalableItemDef(itemId); // Use helper
         if (!itemDef) return decimalUtility.new(Infinity);
         
         let n = decimalUtility.new(quantity);
@@ -74,10 +98,8 @@ export const moduleLogic = {
 
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
-        // --- MODIFICATION: Apply cost reduction to base cost ---
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
-        // --- END MODIFICATION ---
 
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
@@ -108,7 +130,7 @@ export const moduleLogic = {
 
     purchaseScalableItem(itemId) {
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
-        const itemDef = staticModuleData.marketItems[itemId];
+        const itemDef = findScalableItemDef(itemId); // Use helper
         if (!itemDef) return false;
         
         let quantity = buyMultiplierManager.getMultiplier();
@@ -161,21 +183,21 @@ export const moduleLogic = {
     
     canAffordUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        const unlockDef = staticModuleData.marketUnlocks[unlockId];
+        const unlockDef = findUnlockDef(unlockId); // Use helper
         if (!unlockDef) return false;
         return coreResourceManager.canAfford(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
     },
 
     isUnlockPurchased(unlockId) { 
         const { coreGameStateManager } = coreSystemsRef;
-        const unlockDef = staticModuleData.marketUnlocks[unlockId];
+        const unlockDef = findUnlockDef(unlockId); // Use helper
         if (!unlockDef) return true;
         return coreGameStateManager.getGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);
     },
 
     purchaseUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
-        const unlockDef = staticModuleData.marketUnlocks[unlockId];
+        const unlockDef = findUnlockDef(unlockId); // Use helper
         if (!unlockDef || this.isUnlockPurchased(unlockId)) return false;
         
         if (this.canAffordUnlock(unlockId)) { 
