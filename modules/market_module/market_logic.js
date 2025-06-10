@@ -1,11 +1,10 @@
-// modules/market_module/market_logic.js (v5.0 - UI Overhaul Logic)
+// modules/market_module/market_logic.js (v5.1 - UI Overhaul Logic)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
- * v5.0: Adapted logic to handle the new categorized data structure.
+ * v5.1: Adapted logic to handle the new categorized data structure from market_data v3.1.
  * v4.0: Corrected cost reduction logic to apply to base cost.
- * v3.0: Implemented cost reduction multipliers from achievements.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -13,26 +12,19 @@ import { moduleState, getInitialState } from './market_state.js';
 
 let coreSystemsRef = null;
 
-// --- MODIFICATION: Helper functions to find item definitions in the new data structure ---
+// Helper functions to find item definitions in the new data structure
 const getScalableItemDef = (itemId) => {
-    if (staticModuleData.consumables[itemId]) {
-        return staticModuleData.consumables[itemId];
-    }
-    if (staticModuleData.skillPoints[itemId]) {
-        return staticModuleData.skillPoints[itemId];
-    }
-    return null;
+    return staticModuleData.marketItems[itemId] || null;
 };
 
 const getUnlockDef = (unlockId) => {
-    return staticModuleData.featureUnlocks[unlockId] || null;
+    return staticModuleData.marketUnlocks[unlockId] || null;
 };
-// --- END MODIFICATION ---
 
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v5.0).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v5.1).");
     },
     
     calculateMaxBuyable(itemId) {
@@ -205,13 +197,11 @@ export const moduleLogic = {
             coreResourceManager.spendAmount(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
             coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, true);
             
-            // This is a bit of a legacy pattern, we'll keep it for now but the flag above is the main one
             coreGameStateManager.setGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, true); 
             
             coreUIManager.showNotification(`${unlockDef.name.replace('Unlock ','').replace(' Menu','')} Unlocked!`, 'success', 3000);
             coreUIManager.renderMenu();
             
-            // Manually re-render the market if it's active
             const marketModule = coreSystemsRef.moduleLoader.getModule('market');
             if (marketModule?.ui && coreUIManager.isActiveTab('market')) {
                 marketModule.ui.renderMainContent(document.getElementById('main-content'));
@@ -338,7 +328,6 @@ export const moduleLogic = {
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
         coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
         
-        // Reset all feature flags controlled by this module
         Object.values(staticModuleData.featureUnlocks).forEach(unlockDef => {
             coreGameStateManager.setGlobalFlag(unlockDef.flagToSet, false);
             coreGameStateManager.setGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);

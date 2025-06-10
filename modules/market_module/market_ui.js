@@ -1,10 +1,10 @@
-// modules/market_module/market_ui.js (v3.0 - UI Overhaul)
+// modules/market_module/market_ui.js (v3.1 - UI Overhaul & Fix)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v3.1: Renders new categorized layout based on market_data v3.1.
  * v3.0: Complete UI overhaul to support new categorized layout.
- * v2.4: Placed multiplier controls on the same line as the section title.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -17,7 +17,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.1).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -28,22 +28,25 @@ export const ui = {
 
     renderMainContent(parentElement) {
         parentElementCache = parentElement;
-        const { coreUIManager, buyMultiplierManager, coreGameStateManager, decimalUtility } = coreSystemsRef;
+        const { coreUIManager, buyMultiplierManager, coreGameStateManager } = coreSystemsRef;
         
-        parentElement.innerHTML = `
-            <div class="market-container space-y-8">
-                <!-- Sections will be injected here -->
-            </div>
-        `;
+        parentElement.innerHTML = `<div class="market-container space-y-8"></div>`;
         const container = parentElement.querySelector('.market-container');
 
-        // --- RENDER SECTIONS ---
+        // --- RENDER SECTIONS from new data structure ---
         this._renderSection(container, 'Consumables', staticModuleData.consumables, this._createScalableItemCard, 'consumable');
-        this._renderSection(container, 'Skill Points', staticModuleData.skillPoints, this._createScalableItemCard, 'skillpoint');
+        
+        const skillPointItems = {};
+        Object.entries(staticModuleData.skillPoints).forEach(([itemId, itemDef]) => {
+            if (!itemDef.unlockCondition || itemDef.unlockCondition(coreSystemsRef)) {
+                skillPointItems[itemId] = itemDef;
+            }
+        });
+        this._renderSection(container, 'Skill Points', skillPointItems, this._createScalableItemCard, 'skillpoint');
+
         this._renderSection(container, 'Feature Unlocks', staticModuleData.featureUnlocks, this._createUnlockItemCard, 'feature');
         this._renderSection(container, 'Already Unlocked', staticModuleData.featureUnlocks, this._createAlreadyUnlockedCard, 'unlocked-feature', 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4');
         
-        // --- RENDER AUTOMATOR (if unlocked) ---
         const automatorTabUnlocked = coreGameStateManager.getGlobalFlag('automatorTabUnlocked', false);
         if (automatorTabUnlocked) {
              this._renderSection(container, 'Automators', staticModuleData.marketAutomations, this._createAutomationCard, 'automator');
@@ -52,12 +55,20 @@ export const ui = {
         buyMultiplierManager.createControls(container, 'buy-multiples-market-top');
         const buyMultiplesUnlocked = coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked', false);
         buyMultiplierManager.toggleControlsVisibility(buyMultiplesUnlocked, 'buy-multiples-market-top');
+        
+        if (buyMultiplesUnlocked && container.querySelector('.market-section')) {
+            const firstSectionHeader = container.querySelector('.market-section .flex');
+            const controls = document.getElementById('buy-multiples-market-top');
+            if (firstSectionHeader && controls) {
+                 firstSectionHeader.appendChild(controls);
+            }
+        }
+
 
         this.updateDynamicElements();
     },
     
     _renderSection(container, title, items, cardCreator, type, sectionClasses = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4') {
-        const { coreUIManager } = coreSystemsRef;
         const sectionWrapper = document.createElement('div');
         sectionWrapper.className = 'market-section';
 
@@ -98,7 +109,7 @@ export const ui = {
     },
     
     _createScalableItemCard(itemId, itemDef) {
-        const { coreUIManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+        const { coreUIManager, coreResourceManager } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `market-item-${itemId}`;
         card.className = 'card-standard';
@@ -116,7 +127,7 @@ export const ui = {
                 <p class="card-description">${itemDef.description}</p>
             </div>
             <div class="card-content-row">
-                <span>Owned: <span id="market-owned-${itemId}" class="font-bold">0</span></span>
+                <span>Owned: <span id="market-owned-${itemDef.benefitResource}" class="font-bold">0</span></span>
             </div>
             <div class="card-footer">
                 <div id="market-cost-${itemId}" class="item-cost">
@@ -140,7 +151,7 @@ export const ui = {
     },
     
     _createUnlockItemCard(unlockId, unlockDef) {
-        const { coreUIManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `market-unlock-${unlockId}`;
         card.className = 'card-standard';
@@ -173,7 +184,6 @@ export const ui = {
     },
 
     _createAutomationCard(automatorId, automatorDef) {
-        // This function remains largely the same, just for creation
         const card = document.createElement('div');
         card.id = `market-automator-${automatorId}`;
         card.className = 'card-standard';
@@ -200,11 +210,12 @@ export const ui = {
     },
 
     _updateScalableItemCard(cardElement, itemDef) {
+        if (!cardElement) return;
         const { decimalUtility, coreResourceManager, buyMultiplierManager } = coreSystemsRef;
         const itemId = itemDef.id;
         
         const ownedCount = decimalUtility.new(moduleLogicRef.moduleState.purchaseCounts[itemDef.benefitResource] || "0");
-        cardElement.querySelector(`#market-owned-${itemId}`).textContent = decimalUtility.format(ownedCount, 0);
+        cardElement.querySelector(`#market-owned-${itemDef.benefitResource}`).textContent = decimalUtility.format(ownedCount, 0);
 
         const buyAmount = buyMultiplierManager.getMultiplier();
         const cost = moduleLogicRef.calculateScalableItemCost(itemId, buyAmount);
@@ -223,11 +234,13 @@ export const ui = {
     },
 
     _updateUnlockItemCard(cardElement, unlockId, unlockDef) {
+        if (!cardElement) return;
         const canAfford = moduleLogicRef.canAffordUnlock(unlockId);
         cardElement.querySelector('button').disabled = !canAfford;
     },
 
     _updateAutomationCard(cardElement, automatorId, automatorDef) {
+        if (!cardElement) return;
         const { decimalUtility, coreResourceManager } = coreSystemsRef;
         const automatorInfo = moduleLogicRef.getAutomatorInfo(automatorId);
         if (!automatorInfo) return;
@@ -251,7 +264,6 @@ export const ui = {
             button.disabled = !coreResourceManager.canAfford(automatorDef.costResource, cost);
             costDisplay.style.display = 'block';
             button.textContent = "Upgrade";
-            button.disabled = false;
         } else {
             costDisplay.style.display = 'none';
             button.textContent = "Max Level";
@@ -264,27 +276,23 @@ export const ui = {
         
         const automatorTabUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('automatorTabUnlocked', false);
         if (automatorTabUnlocked) {
-            for (const automatorId in staticModuleData.marketAutomations) {
-                const automatorDef = staticModuleData.marketAutomations[automatorId];
-                const cardElement = parentElementCache.querySelector(`#market-automator-${automatorId}`);
-                if (cardElement) this._updateAutomationCard(cardElement, automatorId, automatorDef);
-            }
+            Object.keys(staticModuleData.marketAutomations).forEach(automatorId => {
+                const card = parentElementCache.querySelector(`#market-automator-${automatorId}`);
+                if (card) this._updateAutomationCard(card, automatorId, staticModuleData.marketAutomations[automatorId]);
+            });
         }
         
-        const allScalableItems = { ...staticModuleData.consumables, ...staticModuleData.skillPoints };
-        for (const itemId in allScalableItems) { 
-            const itemDef = allScalableItems[itemId];
-            const cardElement = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
-            if (cardElement) this._updateScalableItemCard(cardElement, itemDef);
-        }
-
-        for (const unlockKey in staticModuleData.featureUnlocks) { 
-            if(moduleLogicRef.isUnlockVisible(unlockKey)) {
-                const unlockDef = staticModuleData.featureUnlocks[unlockKey];
-                const cardElement = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
-                if (cardElement) this._updateUnlockItemCard(cardElement, unlockKey, unlockDef);
+        Object.keys(staticModuleData.marketItems).forEach(itemId => {
+            const card = parentElementCache.querySelector(`#market-item-${itemId}`);
+            if (card) this._updateScalableItemCard(card, staticModuleData.marketItems[itemId]);
+        });
+        
+        Object.keys(staticModuleData.marketUnlocks).forEach(unlockId => {
+            if(moduleLogicRef.isUnlockVisible(unlockId)) {
+                const card = parentElementCache.querySelector(`#market-unlock-${unlockId}`);
+                if (card) this._updateUnlockItemCard(card, unlockId, staticModuleData.marketUnlocks[unlockId]);
             }
-        }
+        });
     },
 
     onShow() {
