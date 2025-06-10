@@ -1,10 +1,10 @@
-// modules/market_module/market_data.js (v3.1 - Restored Consumables)
+// modules/market_module/market_data.js (v3.2 - Adjusted Skill Point Cost)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v3.2: Adjusted costGrowthFactor for skill points to 1.05 as requested.
  * v3.1: Re-introduced the 'consumables' category to separate Images from Skill Points.
- * v3.0: Complete refactor for roadmap. Removed automations, added feature unlocks and skill points sections.
  */
 
 export const staticModuleData = {
@@ -14,7 +14,6 @@ export const staticModuleData = {
         prestigeSkillPoints: { id: 'prestigeSkillPoints', name: 'Prestige Skill Points', initialAmount: '0', isUnlocked: true, showInUI: false, hasProductionRate: false }
     },
     
-    // NEW: Section for items like Images.
     consumables: {
         buyImages: { 
             id: 'buyImages', 
@@ -88,7 +87,7 @@ export const staticModuleData = {
             description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', 
             costResource: 'studyPoints', 
             baseCost: '10000000', 
-            costGrowthFactor: '1.2', 
+            costGrowthFactor: '1.05', // --- MODIFICATION: Adjusted from 1.2
             benefitResource: 'studySkillPoints', 
             benefitAmountPerPurchase: '1', 
         },
@@ -98,7 +97,7 @@ export const staticModuleData = {
             description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', 
             costResource: 'knowledge', 
             baseCost: '1e7', 
-            costGrowthFactor: '1.2', 
+            costGrowthFactor: '1.05', // --- MODIFICATION: Adjusted from 1.2
             benefitResource: 'prestigeSkillPoints', 
             benefitAmountPerPurchase: '1',
             unlockCondition: { type: 'purchaseCount', id: 'studySkillPoints', value: 1 }

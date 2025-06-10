@@ -1,11 +1,10 @@
-// modules/settings_ui_module/settings_ui.js (v1.3 - Removed Placeholder)
+// modules/settings_ui_module/settings_ui.js (v1.4 - Conditional Sections)
 
 /**
  * @file settings_ui.js
  * @description Handles UI rendering for the Settings UI module.
+ * v1.4: Themes and Statistics sections are now only rendered if unlocked.
  * v1.3: Removed the 'Automation' placeholder section as per roadmap.
- * v1.2: Added detailed logging to _createDebugSection for log modal.
- * v1.1: Ensures onShow correctly re-renders content to the main-content div.
  */
 
 import { staticModuleData } from './settings_ui_data.js';
@@ -17,7 +16,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1.3).");
+        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1.4).");
     },
 
     renderMainContent(parentElement) {
@@ -41,12 +40,19 @@ export const ui = {
         title.textContent = 'Game Settings';
         container.appendChild(title);
 
-        container.appendChild(this._createThemeSection());
+        // --- MODIFICATION: Conditionally render themes and stats ---
+        if (moduleLogicRef.areThemesUnlocked()) {
+            container.appendChild(this._createThemeSection());
+        }
+        
         container.appendChild(this._createLanguageSection());
         container.appendChild(this._createGameActionsSection());
-        container.appendChild(this._createStatisticsSection());
-        // --- MODIFICATION: Removed the placeholder 'Automation' section ---
-        // container.appendChild(this._createPlaceholderSection(staticModuleData.ui.sections.automation));
+
+        if (moduleLogicRef.areStatsUnlocked()) {
+            container.appendChild(this._createStatisticsSection());
+        }
+        // --- END MODIFICATION ---
+        
         container.appendChild(this._createDebugSection());
 
         parentElement.appendChild(container);
