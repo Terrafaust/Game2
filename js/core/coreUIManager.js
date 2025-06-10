@@ -1,13 +1,11 @@
-// js/core/coreUIManager.js (v5.3 - Resource Bar & Notification Stacking)
+// js/core/coreUIManager.js (v5.4 - Resource Display Fix)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.4: Fixed resource display logic to correctly show/hide resources based on their unlock status.
  * v5.3: Implemented static resource bar layout and notification stacking as per roadmap.
  * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
- * v5.1: Enhanced notification system with clickability and larger achievement notifications.
- * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
- * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
@@ -78,7 +76,6 @@ export const coreUIManager = {
             return;
         }
         
-        // Ensure the resource display area is a grid container
         UIElements.resourcesDisplay.className = 'grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1';
 
         this.updateResourceDisplay();
@@ -92,7 +89,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.3).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.4).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -218,56 +215,58 @@ export const coreUIManager = {
     isActiveTab(tabId) { return activeTabId === tabId; },
     clearMainContent() { if (UIElements.mainContent) UIElements.mainContent.innerHTML = ''; },
 
+    // --- BUG FIX: Re-implement resource display logic to respect unlock conditions ---
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
 
-        // --- ROADMAP 1.1: Static Resource Layout ---
-        const resourceOrder = [
-            { id: 'studyPoints', name: 'Study Points' },
-            { id: 'images', name: 'Images' },
-            { id: 'prestigeCount', name: 'Prestige Count' },
-            { id: 'knowledge', name: 'Knowledge' },
-            { id: 'prestigePoints', name: 'Prestige Points' },
-        ];
+        const allResources = coreResourceManager.getAllResources();
+        
+        // This ensures the prestige count value is up-to-date before rendering
+        const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
+        if (prestigeModule && prestigeModule.logic) {
+            coreResourceManager.setAmount('prestigeCount', prestigeModule.logic.getTotalPrestigeCount());
+        }
 
-        resourceOrder.forEach(resInfo => {
-            const resource = coreResourceManager.getResource(resInfo.id);
-            if (!resource) return;
-
-            let displayElement = document.getElementById(`resource-${resInfo.id}-display`);
-            if (!displayElement) {
-                displayElement = document.createElement('div');
-                displayElement.id = `resource-${resInfo.id}-display`;
-                displayElement.className = 'resource-item-display';
-                UIElements.resourcesDisplay.appendChild(displayElement);
+        Object.values(allResources).forEach(res => {
+            let shouldShow = res.isUnlocked && res.showInUI;
+            
+            // Roadmap specific condition for prestigeCount
+            if (res.id === 'prestigeCount' && decimalUtility.lte(res.amount, 0)) {
+                shouldShow = false;
             }
 
-            // Conditionally hide prestigeCount if value is 0 or less
-            if (resInfo.id === 'prestigeCount') {
-                 const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
-                 if (prestigeModule) {
-                     const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
-                     if (decimalUtility.lte(prestigeCount, 0)) {
-                         displayElement.style.display = 'none';
-                         return; // Skip rendering this element
-                     } else {
-                         displayElement.style.display = 'block';
-                     }
-                 } else {
-                      displayElement.style.display = 'none';
-                      return;
-                 }
+            let displayElement = document.getElementById(`resource-${res.id}-display`);
+
+            if (shouldShow) {
+                if (!displayElement) {
+                    displayElement = document.createElement('div');
+                    displayElement.id = `resource-${res.id}-display`;
+                    displayElement.className = 'resource-item-display'; 
+                    UIElements.resourcesDisplay.appendChild(displayElement);
+                }
+
+                const amountFormatted = decimalUtility.format(res.amount, res.id === 'prestigeCount' ? 0 : 2);
+                const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
+                
+                let rateHTML = '';
+                // Show rate if it's positive and the resource is meant to show a rate
+                if (res.hasProductionRate && decimalUtility.gt(res.totalProductionRate, 0)) {
+                    rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                }
+
+                // Never show a rate for prestige count
+                if (res.id === 'prestigeCount') {
+                    rateHTML = '';
+                }
+
+                displayElement.innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+
+            } else {
+                // If it shouldn't be shown, remove it from the DOM
+                if (displayElement) {
+                    displayElement.remove();
+                }
             }
-
-            const amountFormatted = decimalUtility.format(resource.amount, resInfo.id === 'prestigeCount' ? 0 : 2);
-            const rateFormatted = decimalUtility.format(resource.totalProductionRate, 2);
-
-            let rateHTML = '';
-            if (resource.hasProductionRate && decimalUtility.gt(resource.totalProductionRate, 0)) {
-                rateHTML = ` (<span id="resource-${resInfo.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
-            }
-
-            displayElement.innerHTML = `<span class="font-semibold text-secondary">${resInfo.name}:</span> <span id="resource-${resInfo.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
         });
     },
     
@@ -364,7 +363,6 @@ export const coreUIManager = {
     showNotification(message, type = 'info', duration = 3000, options = {}) {
         if (!UIElements.notificationArea) return;
 
-        // --- ROADMAP 1.2: Notification Stacking ---
         const existingNotifications = Array.from(UIElements.notificationArea.childNodes);
         const counterRegex = /^(.*?)(?: \((\d+)\))?$/;
 
@@ -379,7 +377,6 @@ export const coreUIManager = {
                 break; 
             }
         }
-        // --- END ROADMAP 1.2 ---
         
         const notification = document.createElement('div');
         
