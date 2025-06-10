@@ -1,10 +1,10 @@
-// modules/market_module/market_ui.js (v3.2 - UI & Crash Fix)
+// modules/market_module/market_ui.js (v2.4 - Final Multiplier Placement)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
- * v3.2: Reverted to original UI structure to fix styling and crash issues.
- * v3.1: Renders new categorized layout based on market_data v3.1.
+ * v2.4: Placed multiplier controls on the same line as the section title.
+ * v2.3: Moved buy multiplier controls to be directly above the items they affect.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -13,23 +13,21 @@ let coreSystemsRef = null;
 let moduleLogicRef = null;
 let parentElementCache = null;
 
-// --- FIX: This function was in the original file and helps create clean button text. ---
-function getCleanUnlockButtonText(unlockDefName) {
+function getCleanUnlockButtonText(unlockDefName, loggingSystem) {
     let text = unlockDefName;
     if (typeof text === 'string') {
-        text = text.replace(/^unlock\s+/i, '').replace(/(\s+menu|\s+tab)$/i, '');
+        text = text.replace(/^unlock\s+/i, '').replace(/\s+menu$/i, '');
     } else {
         text = "Feature";
     }
     return `Unlock ${text}`;
 }
 
-
 export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.2).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v2.4).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
@@ -39,248 +37,220 @@ export const ui = {
     },
 
     renderMainContent(parentElement) {
+        if (!coreSystemsRef || !moduleLogicRef) {
+            parentElement.innerHTML = '<p class="text-red-500">Market UI not properly initialized.</p>';
+            return;
+        }
         parentElementCache = parentElement;
-        const { coreUIManager, buyMultiplierManager, coreGameStateManager } = coreSystemsRef;
-        
-        // --- FIX: Reverted to original, more stable layout structure. ---
-        parentElement.innerHTML = `
-            <div class="market-container p-4">
-                <div id="market-header-container" class="flex justify-between items-center mb-4">
-                    <h1 class="text-2xl font-bold text-primary">Market</h1>
-                    <!-- Buy multiplier controls will be inserted here -->
-                </div>
-                <div id="market-items-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <!-- Market items will be generated here -->
-                </div>
-                <div id="market-already-unlocked-container" class="mt-8">
-                    <!-- Already unlocked items will be listed here -->
-                </div>
+        parentElement.innerHTML = ''; 
+
+        const container = document.createElement('div');
+        container.className = 'p-4 space-y-8'; 
+
+        container.innerHTML = `
+            <h2 class="text-2xl font-semibold text-primary mb-2">Trade & Unlocks Market</h2>
+            <div class="mb-6 p-3 bg-surface rounded-lg border border-primary/50 text-center">
+                <p class="text-sm text-accentOne italic">"Get 1000 images to unlock Prestige"</p>
             </div>
         `;
-
-        const grid = parentElement.querySelector('#market-items-grid');
         
-        // --- FIX: Correctly handle buy multiplier controls placement and potential errors. ---
-        const buyMultiplesUnlocked = coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked', false);
-        if (buyMultiplesUnlocked && typeof buyMultiplierManager.createControls === 'function') {
-            const headerContainer = parentElement.querySelector('#market-header-container');
-            const controlsContainer = document.createElement('div');
-            controlsContainer.id = 'buy-multiples-market-top';
-            headerContainer.appendChild(controlsContainer);
-            buyMultiplierManager.createControls(controlsContainer);
-        } else if (buyMultiplesUnlocked) {
-            coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplesUnlocked is true, but buyMultiplierManager.createControls is not a function.");
-        }
+        container.appendChild(this._createAutomationsSection());
+        container.appendChild(this._createScalableItemsSection());
+        container.appendChild(this._createUnlocksSection());
 
-        const addItemsToGrid = (items) => {
-            Object.entries(items).forEach(([itemId, itemDef]) => {
-                if (!itemDef.unlockCondition || itemDef.unlockCondition(coreSystemsRef)) {
-                    if (moduleLogicRef.isUnlockVisible(itemId)) {
-                        const card = (itemDef.costGrowthFactor)
-                            ? this._createScalableItemCard(itemId, itemDef)
-                            : this._createUnlockItemCard(itemId, itemDef);
-                        if (card) grid.appendChild(card);
-                    }
-                }
-            });
-        };
-
-        // Add items in order from the new data structure
-        addItemsToGrid(staticModuleData.consumables);
-        addItemsToGrid(staticModuleData.skillPoints);
-        addItemsToGrid(staticModuleData.featureUnlocks);
-        
-        const automatorTabUnlocked = coreGameStateManager.getGlobalFlag('automatorTabUnlocked', false);
-        if (automatorTabUnlocked) {
-             Object.entries(staticModuleData.marketAutomations).forEach(([autoId, autoDef]) => {
-                const card = this._createAutomationCard(autoId, autoDef);
-                if(card) grid.appendChild(card);
-             });
-        }
-        
-        this._renderAlreadyUnlocked();
+        parentElement.appendChild(container);
         this.updateDynamicElements();
     },
 
-    _renderAlreadyUnlocked() {
-        if (!parentElementCache) return;
-        const unlockedContainer = parentElementCache.querySelector('#market-already-unlocked-container');
-        unlockedContainer.innerHTML = ''; 
-
-        const unlockedItems = Object.entries(staticModuleData.featureUnlocks).filter(([unlockId, unlockDef]) => 
-            moduleLogicRef.isUnlockPurchased(unlockId)
-        );
+    _createScalableItemsSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-4';
         
-        if (unlockedItems.length > 0) {
-            unlockedContainer.innerHTML = `<h2 class="text-xl font-bold text-primary mb-4 border-t border-surface-dark pt-4">Already Unlocked</h2>`;
-            const list = document.createElement('div');
-            list.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4';
-            unlockedItems.forEach(([unlockId, unlockDef]) => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'card-unlocked';
-                itemEl.innerHTML = `<span class="unlocked-icon">&#10004;</span> <span>${unlockDef.name}</span>`;
-                list.appendChild(itemEl);
-            });
-            unlockedContainer.appendChild(list);
+        // --- MODIFICATION: Create a flex header for the title and controls ---
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
+        
+        const sectionTitle = document.createElement('h3');
+        sectionTitle.className = 'text-xl font-medium text-secondary';
+        sectionTitle.textContent = 'Consumables';
+        sectionHeader.appendChild(sectionTitle);
+
+        if (coreSystemsRef.buyMultiplierUI) {
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4');
+            sectionHeader.appendChild(multiplierControls);
+        } else {
+            coreSystemsRef.loggingSystem.error("MarketUI", "buyMultiplierUI helper not found!");
         }
+        section.appendChild(sectionHeader);
+        // --- END MODIFICATION ---
+
+        const itemsGrid = document.createElement('div');
+        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        for (const itemId in staticModuleData.marketItems) {
+            const itemDef = staticModuleData.marketItems[itemId];
+            itemsGrid.appendChild(this._createMarketItemCard(itemDef.id, itemDef.name, itemDef.description, () => moduleLogicRef.purchaseScalableItem(itemId), '', true, itemId));
+        }
+        section.appendChild(itemsGrid);
+        return section;
+    },
+
+    _createUnlocksSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-6';
+        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Feature Unlocks</h3>`;
+        const unlocksGrid = document.createElement('div');
+        unlocksGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
+            const unlockDef = staticModuleData.marketUnlocks[unlockKey];
+            unlocksGrid.appendChild(this._createMarketItemCard(unlockDef.id, unlockDef.name, unlockDef.description, () => moduleLogicRef.purchaseUnlock(unlockKey), "Unlock", false, unlockKey));
+        }
+        section.appendChild(unlocksGrid);
+        return section;
     },
     
-    _createScalableItemCard(itemId, itemDef) {
-        const { coreUIManager, coreResourceManager } = coreSystemsRef;
+    _createMarketItemCard(domIdBase, nameText, descriptionText, purchaseCallback, initialButtonText, isScalable, itemKey) {
+        const { coreUIManager } = coreSystemsRef;
         const card = document.createElement('div');
-        card.id = `market-item-${itemId}`;
-        card.className = 'card-standard';
-        
-        let tooltipHtml = '';
-        if (itemDef.tooltip) {
-            tooltipHtml = `<span class="tooltip-trigger" data-tooltip-content="${itemDef.tooltip}">&#9432;</span>`;
-        }
-
-        const costResource = coreResourceManager.getResource(itemDef.costResource);
-
-        card.innerHTML = `
-            <div class="card-header">
-                <h3 class="card-title">${itemDef.name} ${tooltipHtml}</h3>
-                <p class="card-description">${itemDef.description}</p>
-            </div>
-            <div class="card-content-row">
-                <span>Owned: <span id="market-owned-${itemDef.benefitResource}" class="font-bold">0</span></span>
-            </div>
-            <div class="card-footer">
-                <div id="market-cost-${itemId}" class="item-cost">
-                    Cost: <span class="font-bold">...</span> ${costResource.name}
-                </div>
-                <button id="market-buy-${itemId}" class="game-button bg-primary">Buy</button>
-            </div>
-        `;
-
-        card.querySelector(`#market-buy-${itemId}`).addEventListener('click', () => {
-            if(moduleLogicRef.purchaseScalableItem(itemId)) {
-               this.updateDynamicElements();
-            }
-        });
-        
-        if(itemDef.tooltip) {
-             card.querySelector('.tooltip-trigger').addEventListener('mouseenter', (e) => coreUIManager.showTooltip(e.target.dataset.tooltipContent, e.target));
-             card.querySelector('.tooltip-trigger').addEventListener('mouseleave', () => coreUIManager.hideTooltip());
-        }
-
-        return card;
-    },
-    
-    _createUnlockItemCard(unlockId, unlockDef) {
-        const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        const card = document.createElement('div');
-        card.id = `market-unlock-${unlockId}`;
-        card.className = 'card-standard';
-
-        const costResource = coreResourceManager.getResource(unlockDef.costResource);
-        const buttonText = getCleanUnlockButtonText(unlockDef.name);
-
-        card.innerHTML = `
-             <div class="card-header">
-                <h3 class="card-title">${unlockDef.name}</h3>
-                <p class="card-description">${unlockDef.description}</p>
-            </div>
-            <div class="card-footer">
-                <div class="item-cost">
-                    Cost: <span class="font-bold">${decimalUtility.format(unlockDef.costAmount, 0)}</span> ${costResource.name}
-                </div>
-                <button id="market-buy-${unlockId}" class="game-button bg-primary">${buttonText}</button>
-            </div>
-        `;
-        card.querySelector(`#market-buy-${unlockId}`).addEventListener('click', () => {
-            if (moduleLogicRef.purchaseUnlock(unlockId)) {
-                card.remove(); // Remove the card from view after purchase
-                this._renderAlreadyUnlocked(); // Refresh the unlocked list
-            }
-        });
-        return card;
-    },
-
-    _createAutomationCard(automatorId, automatorDef) {
-        const card = document.createElement('div');
-        card.id = `market-automator-${automatorId}`;
-        card.className = 'card-standard';
-        card.innerHTML = `
-            <div class="card-header">
-                <h3 class="card-title">${automatorDef.name}</h3>
-                <p class="card-description">${automatorDef.description}</p>
-            </div>
-            <div class="card-content-row">
-                 <span>Level: <span id="automator-level-${automatorId}" class="font-bold">0</span></span>
-                 <span id="automator-effect-${automatorId}"></span>
-            </div>
-            <div class="card-footer">
-                <div id="automator-cost-${automatorId}" class="item-cost">Cost: ...</div>
-                <button id="automator-buy-${automatorId}" class="game-button bg-secondary">Upgrade</button>
-            </div>
-        `;
-        card.querySelector(`#automator-buy-${automatorId}`).addEventListener('click', () => {
-            if (moduleLogicRef.purchaseAutomatorUpgrade(automatorId)) {
-                this._updateAutomationCard(card, automatorId, automatorDef);
-            }
-        });
+        card.id = isScalable ? `market-item-${domIdBase}` : `market-unlock-${domIdBase}`;
+        card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
+        card.innerHTML = `<div><h4 class="text-lg font-semibold text-textPrimary mb-2">${nameText}</h4><p class="text-textSecondary text-sm mb-3">${descriptionText}</p><p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p></div>`;
+        const button = coreUIManager.createButton(initialButtonText, () => {
+                purchaseCallback();
+                this.updateDynamicElements();
+            }, ['w-full', 'mt-auto'], `${card.id}-button`);
+        card.appendChild(button);
         return card;
     },
 
     _updateScalableItemCard(cardElement, itemDef) {
-        if (!cardElement) return;
+        if (!cardElement || !itemDef) return;
         const { decimalUtility, coreResourceManager, buyMultiplierManager } = coreSystemsRef;
-        const itemId = itemDef.id;
         
-        const ownedCount = decimalUtility.new(moduleLogicRef.moduleState.purchaseCounts[itemDef.benefitResource] || "0");
-        cardElement.querySelector(`#market-owned-${itemDef.benefitResource}`).textContent = decimalUtility.format(ownedCount, 0);
+        const costDisplay = cardElement.querySelector(`#market-item-${itemDef.id}-cost`);
+        const button = cardElement.querySelector(`#market-item-${itemDef.id}-button`);
 
-        const buyAmount = buyMultiplierManager.getMultiplier();
-        const cost = moduleLogicRef.calculateScalableItemCost(itemId, buyAmount);
+        let quantity = buyMultiplierManager.getMultiplier();
+        let quantityToBuy = (quantity === -1) ? moduleLogicRef.calculateMaxBuyable(itemDef.id) : decimalUtility.new(quantity);
         
-        const costDisplay = cardElement.querySelector(`#market-cost-${itemId} span`);
-        const buyButton = cardElement.querySelector(`#market-buy-${itemId}`);
+        const currentCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, quantityToBuy);
+        
+        const quantityToDisplay = (quantity === -1) ? quantityToBuy : decimalUtility.new(quantity);
 
-        if (cost.isFinite()) {
-            costDisplay.textContent = decimalUtility.format(cost, 2);
-            const canAfford = coreResourceManager.canAfford(itemDef.costResource, cost);
-            buyButton.disabled = !canAfford;
+        if (decimalUtility.gt(quantityToDisplay, 0)) {
+            costDisplay.textContent = `Cost for ${decimalUtility.format(quantityToDisplay,0)}: ${decimalUtility.format(currentCost, 0)} ${itemDef.costResource}`;
+            button.textContent = `Acquire ${decimalUtility.format(quantityToDisplay,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
         } else {
-            costDisplay.textContent = "---";
-            buyButton.disabled = true;
+            const singleCost = moduleLogicRef.calculateScalableItemCost(itemDef.id, 1);
+            costDisplay.textContent = `Cost: ${decimalUtility.format(singleCost, 0)} ${itemDef.costResource}`;
+            button.textContent = `Acquire 1 ${itemDef.name.replace('Acquire ', '')}`;
+        }
+
+        const canAfford = coreResourceManager.canAfford(itemDef.costResource, currentCost);
+        button.disabled = !canAfford || decimalUtility.eq(quantityToBuy, 0);
+    },
+
+    _updateUnlockItemCard(cardElement, unlockKey, unlockDef) {
+        if (!cardElement || !unlockDef) return;
+        const { decimalUtility, loggingSystem, coreResourceManager } = coreSystemsRef;
+        const costDisplay = cardElement.querySelector(`#market-unlock-${unlockDef.id}-cost`);
+        const button = cardElement.querySelector(`#market-unlock-${unlockDef.id}-button`);
+        const isPurchased = moduleLogicRef.isUnlockPurchased(unlockKey);
+        
+        if (isPurchased) { 
+            costDisplay.textContent = "Already Unlocked!";
+            button.textContent = "Unlocked";
+            button.disabled = true;
+            button.classList.add('bg-green-600', 'cursor-default');
+            button.classList.remove('bg-primary');
+        } else {
+            const costAmount = decimalUtility.new(unlockDef.costAmount);
+            costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${unlockDef.costResource}`;
+            button.textContent = getCleanUnlockButtonText(unlockDef.name, loggingSystem);
+            button.disabled = !coreResourceManager.canAfford(unlockDef.costResource, costAmount);
+            button.classList.remove('bg-green-600');
+            button.classList.add('bg-primary');
         }
     },
 
-    _updateUnlockItemCard(cardElement, unlockId, unlockDef) {
-        if (!cardElement) return;
-        const canAfford = moduleLogicRef.canAffordUnlock(unlockId);
-        cardElement.querySelector('button').disabled = !canAfford;
+    _createAutomationsSection() {
+        const section = document.createElement('section');
+        section.className = 'space-y-6';
+        section.innerHTML = `<h3 class="text-xl font-medium text-accentOne border-b border-gray-700 pb-2 mb-4">Automations</h3>`;
+        
+        const itemsGrid = document.createElement('div');
+        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 gap-6';
+
+        for (const automatorId in staticModuleData.marketAutomations) {
+            const automatorDef = staticModuleData.marketAutomations[automatorId];
+            itemsGrid.appendChild(this._createAutomationCard(automatorDef));
+        }
+
+        section.appendChild(itemsGrid);
+        return section;
+    },
+
+    _createAutomationCard(automatorDef) {
+        const card = document.createElement('div');
+        card.id = `market-automator-${automatorDef.id}`;
+        card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between';
+        
+        const content = `
+            <div>
+                <h4 class="text-lg font-semibold text-accentOne mb-2">${automatorDef.name}</h4>
+                <p class="text-textSecondary text-sm mb-3" id="${card.id}-description">${automatorDef.description}</p>
+                <p id="${card.id}-level" class="text-sm text-blue-400 mb-2"></p>
+                <p id="${card.id}-effect" class="text-sm text-green-400 mb-2"></p>
+                <p id="${card.id}-cost" class="text-sm text-yellow-400 mb-4"></p>
+            </div>
+        `;
+        card.innerHTML = content;
+
+        const button = coreSystemsRef.coreUIManager.createButton(
+            'Upgrade', 
+            () => {
+                moduleLogicRef.purchaseAutomatorUpgrade(automatorDef.id);
+                this.updateDynamicElements();
+            }, 
+            ['w-full', 'mt-auto', 'bg-accentOne', 'hover:bg-accentOne-dark'], 
+            `${card.id}-button`
+        );
+        card.appendChild(button);
+        return card;
     },
 
     _updateAutomationCard(cardElement, automatorId, automatorDef) {
-        if (!cardElement) return;
+        if (!cardElement || !automatorDef) return;
         const { decimalUtility, coreResourceManager } = coreSystemsRef;
-        const automatorInfo = moduleLogicRef.getAutomatorInfo(automatorId);
-        if (!automatorInfo) return;
+        const info = moduleLogicRef.getAutomatorInfo(automatorId);
 
-        cardElement.querySelector(`#automator-level-${automatorId}`).textContent = automatorInfo.currentLevel;
-        const effectDisplay = cardElement.querySelector(`#automator-effect-${automatorId}`);
-        const costDisplay = cardElement.querySelector(`#automator-cost-${automatorId}`);
-        const button = cardElement.querySelector(`#automator-buy-${automatorId}`);
-        const costResource = coreResourceManager.getResource(automatorDef.costResource);
+        const levelDisplay = cardElement.querySelector(`#market-automator-${automatorId}-level`);
+        const effectDisplay = cardElement.querySelector(`#market-automator-${automatorId}-effect`);
+        const costDisplay = cardElement.querySelector(`#market-automator-${automatorId}-cost`);
+        const descDisplay = cardElement.querySelector(`#market-automator-${automatorId}-description`);
+        const button = cardElement.querySelector(`#market-automator-${automatorId}-button`);
 
-        if (automatorInfo.currentLevel > 0) {
-            const currentLevelDef = automatorDef.levels[automatorInfo.currentLevel - 1];
-            effectDisplay.textContent = `+${decimalUtility.format(currentLevelDef.rate, 0)}/s`;
+        levelDisplay.textContent = `Current Level: ${info.currentLevel} / ${info.maxLevel}`;
+
+        if (info.currentLevel > 0) {
+            const currentEffect = automatorDef.levels[info.currentLevel - 1];
+            effectDisplay.textContent = `Effect: ${decimalUtility.format(currentEffect.rate, 0)} Images/sec`;
+            effectDisplay.style.display = 'block';
         } else {
-            effectDisplay.textContent = 'Inactive';
+            effectDisplay.style.display = 'none';
         }
 
-        if (automatorInfo.nextLevelInfo) {
-            const cost = decimalUtility.new(automatorInfo.nextLevelInfo.cost);
-            costDisplay.innerHTML = `Cost: <span class="font-bold">${decimalUtility.format(cost, 0)}</span> ${costResource.name}`;
+        if (info.nextLevelInfo) {
+            const cost = decimalUtility.new(info.nextLevelInfo.cost);
+            const costResource = coreResourceManager.getResource(automatorDef.costResource);
+            costDisplay.textContent = `Upgrade Cost: ${decimalUtility.format(cost, 2)} ${costResource.name}`;
+            descDisplay.textContent = info.nextLevelInfo.description;
+            button.textContent = `Upgrade to Level ${info.nextLevelInfo.level}`;
             button.disabled = !coreResourceManager.canAfford(automatorDef.costResource, cost);
+            button.style.display = 'block';
             costDisplay.style.display = 'block';
-            button.textContent = "Upgrade";
-            button.disabled = false;
         } else {
+            descDisplay.textContent = "This automator is fully upgraded.";
             costDisplay.style.display = 'none';
             button.textContent = "Max Level";
             button.disabled = true;
@@ -290,25 +260,23 @@ export const ui = {
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         
-        const automatorTabUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('automatorTabUnlocked', false);
-        if (automatorTabUnlocked) {
-            Object.keys(staticModuleData.marketAutomations).forEach(automatorId => {
-                const card = parentElementCache.querySelector(`#market-automator-${automatorId}`);
-                if (card) this._updateAutomationCard(card, automatorId, staticModuleData.marketAutomations[automatorId]);
-            });
+        for (const automatorId in staticModuleData.marketAutomations) {
+            const automatorDef = staticModuleData.marketAutomations[automatorId];
+            const cardElement = parentElementCache.querySelector(`#market-automator-${automatorId}`);
+            if (cardElement) this._updateAutomationCard(cardElement, automatorId, automatorDef);
         }
-        
-        Object.keys(staticModuleData.marketItems).forEach(itemId => {
-            const card = parentElementCache.querySelector(`#market-item-${itemId}`);
-            if (card) this._updateScalableItemCard(card, staticModuleData.marketItems[itemId]);
-        });
-        
-        Object.keys(staticModuleData.marketUnlocks).forEach(unlockId => {
-            if(moduleLogicRef.isUnlockVisible(unlockId)) {
-                const card = parentElementCache.querySelector(`#market-unlock-${unlockId}`);
-                if (card) this._updateUnlockItemCard(card, unlockId, staticModuleData.marketUnlocks[unlockId]);
-            }
-        });
+
+        for (const itemId in staticModuleData.marketItems) { 
+            const itemDef = staticModuleData.marketItems[itemId];
+            const cardElement = parentElementCache.querySelector(`#market-item-${itemDef.id}`); 
+            if (cardElement) this._updateScalableItemCard(cardElement, itemDef);
+        }
+
+        for (const unlockKey in staticModuleData.marketUnlocks) { 
+            const unlockDef = staticModuleData.marketUnlocks[unlockKey];
+            const cardElement = parentElementCache.querySelector(`#market-unlock-${unlockDef.id}`); 
+            if (cardElement) this._updateUnlockItemCard(cardElement, unlockKey, unlockDef);
+        }
     },
 
     onShow() {
@@ -316,6 +284,6 @@ export const ui = {
     },
 
     onHide() {
-        parentElementCache = null;
-    },
+        coreSystemsRef.coreUIManager.hideTooltip();
+    }
 };
