@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v3.3 - Final Multiplier Placement)
+// /game/modules/prestige_module/prestige_ui.js (v4.0 - Refactored Modal)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.3).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.0).");
     },
 
     renderMainContent(parentElement) {
@@ -48,7 +48,7 @@ export const ui = {
         header.appendChild(statsContainer);
 
         const prestigeButtonContainer = document.createElement('div');
-        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
+        const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => this.showPrestigeConfirmationModal(), ['font-bold', 'py-2', 'px-4']);
         prestigeButton.id = 'prestige-button';
         prestigeButtonContainer.appendChild(prestigeButton);
         header.appendChild(prestigeButtonContainer);
@@ -57,7 +57,6 @@ export const ui = {
 
         const producersSection = document.createElement('div');
         
-        // --- MODIFICATION: Create a flex header for the title and controls ---
         const sectionHeader = document.createElement('div');
         sectionHeader.className = 'flex justify-between items-center mt-6 mb-4';
         
@@ -74,7 +73,6 @@ export const ui = {
             coreSystemsRef.loggingSystem.error("PrestigeUI", "buyMultiplierUI helper not found!");
         }
         producersSection.appendChild(sectionHeader);
-        // --- END MODIFICATION ---
 
         const producersGrid = document.createElement('div');
         producersGrid.id = 'prestige-producers-grid';
@@ -153,11 +151,11 @@ export const ui = {
 
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
-            const gain = logic.calculatePrestigeGain();
+            const gainInfo = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
-            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
+            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gainInfo.points, 0);
             if (canPrestige) {
-                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
+                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gainInfo.points, 2, 0)} PP`;
             } else {
                 prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
             }
@@ -217,6 +215,87 @@ export const ui = {
                 button.textContent = buttonText;
             }
         }
+    },
+
+    /**
+     * NEW: Creates and shows the prestige confirmation modal with detailed calculations.
+     */
+    showPrestigeConfirmationModal() {
+        const { coreUIManager, decimalUtility } = coreSystemsRef;
+        const details = logic.getPrestigeConfirmationDetails();
+
+        if (!details.canPrestige) {
+            coreUIManager.showNotification(details.reason, "warning");
+            return;
+        }
+
+        const getOrdinal = (nStr) => {
+            const n = parseInt(nStr.replace(/,/g, ''), 10);
+            const s = ["th", "st", "nd", "rd"];
+            const v = n % 100;
+            return n + (s[(v - 20) % 10] || s[v] || s[0]);
+        };
+        const prestigeOrdinal = getOrdinal(details.nextPrestigeNumber.toString());
+
+        let gainsMessage = `
+            <li>
+                <span class="font-bold text-green-200">${decimalUtility.format(details.ppGains, 2, 0)}</span> Prestige Points
+                <br><span class="text-xs text-gray-400 italic">${details.ppGainsExplanation}</span>
+            </li>
+            <li>
+                All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(details.currentBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(details.nextBonus, 2)}x</span>
+                <br><span class="text-xs text-gray-400 italic">${details.bonusExplanation}</span>
+            </li>`;
+
+        if (logic.getTotalPrestigeCount().eq(0)) {
+            gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
+        }
+
+        let keptResourcesMessage = '';
+        if (decimalUtility.gt(details.retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.retainedKnowledge, 2)}</span> Knowledge</li>`;
+        if (decimalUtility.gt(details.retainedSsp, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.retainedSsp, 0)}</span> Study Skill Points</li>`;
+        if (Object.keys(details.startingProducers).length > 0) {
+            for(const prodId in details.startingProducers) {
+                 keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.startingProducers[prodId], 0)}</span> starting ${prodId}s</li>`;
+            }
+        }
+
+        const confirmationMessage = `
+            <div class="space-y-3 text-left text-textPrimary">
+                <p>Are you sure you want to proceed with your ${prestigeOrdinal} prestige?</p>
+                <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
+                    <p class="font-semibold text-green-300">You will gain:</p>
+                    <ul class="list-disc list-inside text-sm mt-1 text-textSecondary space-y-2">${gainsMessage}</ul>
+                </div>
+                ${keptResourcesMessage ? `
+                <div class="p-3 bg-yellow-900 bg-opacity-50 rounded-lg border border-yellow-700">
+                    <p class="font-semibold text-yellow-300">You will keep (from Prestige Skills):</p>
+                    <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">${keptResourcesMessage}</ul>
+                </div>` : ''}
+                <div class="p-3 bg-red-900 bg-opacity-50 rounded-lg border border-red-700">
+                    <p class="font-semibold text-red-300">The following will be reset:</p>
+                    <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
+                        <li>Study Points, Knowledge, and Images</li>
+                        <li>All Study Producers (Students, Classrooms, etc.)</li>
+                        <li>Market Item costs and Automator Progress</li>
+                        <li>Regular Skill levels and their SSP cost</li>
+                    </ul>
+                </div>
+                 <p class="text-xs text-gray-400">Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.</p>
+            </div>
+        `;
+
+        coreUIManager.showModal("Confirm Prestige", confirmationMessage, [
+            {
+                label: `Prestige for ${decimalUtility.format(details.ppGains, 2, 0)} PP`,
+                className: "bg-green-600 hover:bg-green-700",
+                callback: () => {
+                    logic.executePrestigeReset(details.ppGains);
+                    coreUIManager.closeModal();
+                }
+            },
+            { label: "Not yet", className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
+        ]);
     },
     
     onShow() {

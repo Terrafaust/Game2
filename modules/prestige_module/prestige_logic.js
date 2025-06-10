@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v7.2 - Enhanced Confirmation Modal)
+// /game/modules/prestige_module/prestige_logic.js (v8.0 - Refactored for UI)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -245,50 +245,70 @@ export const canPrestige = () => {
     return flagUnlocked && hasEnoughImages;
 };
 
+/**
+ * MODIFIED: Returns an object with the calculated points and an explanation string.
+ */
 export const calculatePrestigeGain = () => {
-    if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
-        return decimalUtility.new(0);
+    const { coreUpgradeManager, coreResourceManager, decimalUtility, coreGameStateManager } = coreSystemsRef;
+
+    if (!coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
+        return { points: decimalUtility.new(0), explanation: "Prestige has not been unlocked yet." };
     }
-    const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
+
     const prestigeCount = decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
     const baseGain = decimalUtility.new(1);
+
     const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
     const knowledgeFactor = decimalUtility.divide(totalKnowledge, 1000);
     const formulaGain = decimalUtility.multiply(prestigeFactor, knowledgeFactor);
     let totalGain = decimalUtility.add(baseGain, formulaGain);
+
     const ppGainBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'ppGain');
     const globalBonus = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-    totalGain = decimalUtility.multiply(totalGain, ppGainBonus);
-    totalGain = decimalUtility.multiply(totalGain, globalBonus);
-    return totalGain.floor();
+
+    const finalGain = decimalUtility.multiply(decimalUtility.multiply(totalGain, ppGainBonus), globalBonus).floor();
+
+    const explanation = `(1 + P.Count/6 * Know./1k) * Bonuses = (1 + ${decimalUtility.format(prestigeFactor, 2)} * ${decimalUtility.format(knowledgeFactor,2)}) * ${decimalUtility.format(ppGainBonus, 2)}x * ${decimalUtility.format(globalBonus, 2)}x`;
+    
+    return { points: finalGain, explanation };
 };
 
+/**
+ * MODIFIED: Returns an object with the calculated bonus and an explanation string.
+ */
 export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = prestigeCountOverride !== null ? decimalUtility.new(prestigeCountOverride) : decimalUtility.new(moduleState.totalPrestigeCount || '0');
     const images = coreResourceManager.getAmount('images') || decimalUtility.new(0);
+
     const prestigeBonus = decimalUtility.divide(prestigeCount, 6);
     const imageBonus = decimalUtility.divide(images, '1e13'); 
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
+
     let totalBonus = decimalUtility.add(1, decimalUtility.add(prestigeBonus, imageBonus));
     totalBonus = decimalUtility.multiply(totalBonus, prestigeBonusBonus);
-    return totalBonus;
+    
+    const explanation = `(1 + Prestige Bonus + Image Bonus) * Multiplier = (1 + ${decimalUtility.format(prestigeBonus, 2)} + ${decimalUtility.format(imageBonus, 2)}) * ${decimalUtility.format(prestigeBonusBonus, 2)}x`;
+
+    return { bonus: totalBonus, explanation };
 };
 
-export const performPrestige = () => {
-    const { coreUIManager, coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
+/**
+ * NEW: Gathers all data needed for the prestige confirmation modal.
+ */
+export const getPrestigeConfirmationDetails = () => {
+    const { decimalUtility, moduleLoader, coreResourceManager } = coreSystemsRef;
 
     if (!canPrestige()) {
-        coreUIManager.showNotification("Requires 1,000 Images to Prestige.", "error");
-        return;
+        return { canPrestige: false, reason: "Requires 1,000 Images to Prestige." };
     }
-    const ppGains = calculatePrestigeGain();
-    if (decimalUtility.lte(ppGains, 0)) {
-        coreUIManager.showNotification("You would not gain any Prestige Points.", "warning");
-        return;
+    
+    const gainInfo = calculatePrestigeGain();
+    if (decimalUtility.lte(gainInfo.points, 0)) {
+        return { canPrestige: false, reason: "You would not gain any Prestige Points." };
     }
-
+    
     const skillsLogic = moduleLoader.getModule('skills')?.logic;
     let retainedKnowledge = decimalUtility.new(0);
     let retainedSsp = decimalUtility.new(0);
@@ -300,100 +320,68 @@ export const performPrestige = () => {
         startingProducers = skillsLogic.getStartingProducers();
     }
     
-    // --- MODIFICATION: Enhanced prestige confirmation message ---
     const currentPrestigeCount = getTotalPrestigeCount();
     const nextPrestigeNumber = currentPrestigeCount.add(1);
-    
-    const getOrdinal = (n) => {
-        const s = ["th", "st", "nd", "rd"];
-        const v = n % 100;
-        return n + (s[(v - 20) % 10] || s[v] || s[0]);
+
+    const currentBonusInfo = getPrestigeBonusMultiplier();
+    const nextBonusInfo = getPrestigeBonusMultiplier(nextPrestigeNumber);
+
+    return {
+        canPrestige: true,
+        ppGains: gainInfo.points,
+        ppGainsExplanation: gainInfo.explanation,
+        currentBonus: currentBonusInfo.bonus,
+        nextBonus: nextBonusInfo.bonus,
+        bonusExplanation: nextBonusInfo.explanation,
+        retainedKnowledge,
+        retainedSsp,
+        startingProducers,
+        nextPrestigeNumber
     };
-    const prestigeOrdinal = getOrdinal(nextPrestigeNumber.toNumber());
+};
 
-    const currentPrestigeBonus = getPrestigeBonusMultiplier();
-    const nextPrestigeBonus = getPrestigeBonusMultiplier(nextPrestigeNumber);
-
-    let gainsMessage = `<li><span class="font-bold text-green-200">${decimalUtility.format(ppGains, 2, 0)}</span> Prestige Points</li>
-                        <li>All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(currentPrestigeBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(nextPrestigeBonus, 2)}x</span></li>`;
-
-    if (currentPrestigeCount.eq(0)) {
-        gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
+/**
+ * NEW: Executes the actual prestige reset logic.
+ */
+export const executePrestigeReset = (ppGains) => {
+    const { coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility, loggingSystem } = coreSystemsRef;
+    
+    const skillsLogic = moduleLoader.getModule('skills')?.logic;
+    let retainedKnowledge = decimalUtility.new(0);
+    let retainedSsp = decimalUtility.new(0);
+    let startingProducers = {};
+    if (skillsLogic) {
+        retainedKnowledge = decimalUtility.multiply(coreResourceManager.getAmount('knowledge'), skillsLogic.getKnowledgeRetentionPercentage());
+        retainedSsp = decimalUtility.multiply(coreResourceManager.getAmount('studySkillPoints'), skillsLogic.getSspRetentionPercentage());
+        startingProducers = skillsLogic.getStartingProducers();
     }
 
-    let keptResourcesMessage = '';
-    if (decimalUtility.gt(retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedKnowledge, 2)}</span> Knowledge</li>`;
-    if (decimalUtility.gt(retainedSsp, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(retainedSsp, 0)}</span> Study Skill Points</li>`;
-    if (Object.keys(startingProducers).length > 0) {
-        for(const prodId in startingProducers) {
-             keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(startingProducers[prodId], 0)}</span> starting ${prodId}s</li>`;
-        }
-    }
+    const newPrestigeCount = decimalUtility.add(moduleState.totalPrestigeCount || 0, 1);
+    const prestigeRecord = { count: newPrestigeCount.toString(), time: moduleState.currentPrestigeRunTime || 0, ppGained: ppGains.toString() };
+    const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])].slice(0, 10);
+    
+    coreResourceManager.performPrestigeReset();
+    moduleLoader.broadcastLifecycleEvent('onPrestigeReset');
+    
+    const prestigeModuleState = coreGameStateManager.getModuleState('prestige') || getInitialState();
+    prestigeModuleState.totalPrestigeCount = newPrestigeCount.toString();
+    prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
+    prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
+    prestigeModuleState.lastTenPrestiges = newHistory;
+    prestigeModuleState.currentPrestigeRunTime = 0;
 
-    const confirmationMessage = `
-        <div class="space-y-3 text-left text-textPrimary">
-            <p>Are you sure you want to proceed with your ${prestigeOrdinal} prestige?</p>
-            <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
-                <p class="font-semibold text-green-300">You will gain:</p>
-                <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
-                    ${gainsMessage}
-                </ul>
-            </div>
-            ${keptResourcesMessage ? `
-            <div class="p-3 bg-yellow-900 bg-opacity-50 rounded-lg border border-yellow-700">
-                <p class="font-semibold text-yellow-300">You will keep (from Prestige Skills):</p>
-                <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">${keptResourcesMessage}</ul>
-            </div>` : ''}
-            <div class="p-3 bg-red-900 bg-opacity-50 rounded-lg border border-red-700">
-                <p class="font-semibold text-red-300">The following will be reset:</p>
-                <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
-                    <li>Study Points, Knowledge, and Images</li>
-                    <li>All Study Producers (Students, Classrooms, etc.)</li>
-                    <li>Market Item costs and Automator Progress</li>
-                    <li>Regular Skill levels and their SSP cost</li>
-                </ul>
-            </div>
-             <p class="text-xs text-gray-400">Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.</p>
-        </div>
-    `;
+    coreGameStateManager.setModuleState('prestige', prestigeModuleState);
+    Object.assign(moduleState, prestigeModuleState);
+    coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
+    coreResourceManager.addAmount('prestigePoints', ppGains);
+    coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
+    
+    if (decimalUtility.gt(retainedKnowledge, 0)) coreResourceManager.addAmount('knowledge', retainedKnowledge);
+    if (decimalUtility.gt(retainedSsp, 0)) coreResourceManager.addAmount('studySkillPoints', retainedSsp);
+    if (Object.keys(startingProducers).length > 0) moduleLoader.getModule('studies')?.logic.addProducers(startingProducers);
 
-    coreUIManager.showModal("Confirm Prestige", confirmationMessage, [
-            {
-                label: `Prestige for ${decimalUtility.format(ppGains, 2, 0)} PP`,
-                className: "bg-green-600 hover:bg-green-700",
-                callback: () => {
-                    const newPrestigeCount = decimalUtility.add(moduleState.totalPrestigeCount || 0, 1);
-                    const prestigeRecord = { count: newPrestigeCount.toString(), time: moduleState.currentPrestigeRunTime || 0, ppGained: ppGains.toString() };
-                    const newHistory = [prestigeRecord, ...(moduleState.lastTenPrestiges || [])].slice(0, 10);
-                    
-                    coreResourceManager.performPrestigeReset();
-                    moduleLoader.broadcastLifecycleEvent('onPrestigeReset');
-                    
-                    const prestigeModuleState = coreGameStateManager.getModuleState('prestige') || getInitialState();
-                    prestigeModuleState.totalPrestigeCount = newPrestigeCount.toString();
-                    prestigeModuleState.totalPrestigePointsEverEarned = decimalUtility.add(prestigeModuleState.totalPrestigePointsEverEarned || 0, ppGains).toString();
-                    prestigeModuleState.passiveProductionProgress = getInitialState().passiveProductionProgress;
-                    prestigeModuleState.lastTenPrestiges = newHistory;
-                    prestigeModuleState.currentPrestigeRunTime = 0;
-
-                    coreGameStateManager.setModuleState('prestige', prestigeModuleState);
-                    Object.assign(moduleState, prestigeModuleState);
-                    coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
-                    coreResourceManager.addAmount('prestigePoints', ppGains);
-                    coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
-                    
-                    if (decimalUtility.gt(retainedKnowledge, 0)) coreResourceManager.addAmount('knowledge', retainedKnowledge);
-                    if (decimalUtility.gt(retainedSsp, 0)) coreResourceManager.addAmount('studySkillPoints', retainedSsp);
-                    if (Object.keys(startingProducers).length > 0) moduleLoader.getModule('studies')?.logic.addProducers(startingProducers);
-
-                    coreResourceManager.setResourceVisibility('prestigePoints', true);
-                    updatePrestigeProducerEffects();
-                    coreUIManager.fullUIRefresh();
-                    coreUIManager.showNotification("You have Prestiged! Your progress has been reset for greater power.", "success", 5000);
-                    coreUIManager.closeModal();
-                }
-            },
-            { label: "Not yet", className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
-        ]
-    );
+    coreResourceManager.setResourceVisibility('prestigePoints', true);
+    updatePrestigeProducerEffects();
+    coreUIManager.fullUIRefresh();
+    coreUIManager.showNotification("You have Prestiged! Your progress has been reset for greater power.", "success", 5000);
 };
