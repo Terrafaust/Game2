@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_logic.js (v8.2 - Confirmed Flag)
+// /game/modules/prestige_module/prestige_logic.js (v8.2 - Correct Visibility)
 import { coreGameStateManager } from '../../js/core/coreGameStateManager.js';
 import { coreResourceManager } from '../../js/core/coreResourceManager.js';
 import { moduleLoader } from '../../js/core/moduleLoader.js';
@@ -245,11 +245,6 @@ export const canPrestige = () => {
     return flagUnlocked && hasEnoughImages;
 };
 
-/**
- * RESTORED: Calculates and returns the number of prestige points to be gained.
- * This is kept separate to ensure backward compatibility with other game modules.
- * @returns {Decimal} The amount of prestige points to be gained.
- */
 export const calculatePrestigeGain = () => {
     if (!coreSystemsRef.coreGameStateManager.getGlobalFlag('prestigeUnlocked', false)) {
         return decimalUtility.new(0);
@@ -269,12 +264,6 @@ export const calculatePrestigeGain = () => {
     return totalGain.floor();
 };
 
-/**
- * RESTORED: Calculates the total production bonus from prestiging.
- * This is kept separate to ensure backward compatibility.
- * @param {Decimal|null} prestigeCountOverride - An optional override for the prestige count.
- * @returns {Decimal} The total production bonus multiplier.
- */
 export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     const { coreUpgradeManager, coreResourceManager, decimalUtility } = coreSystemsRef;
     const prestigeCount = prestigeCountOverride !== null ? decimalUtility.new(prestigeCountOverride) : decimalUtility.new(moduleState.totalPrestigeCount || '0');
@@ -287,9 +276,6 @@ export const getPrestigeBonusMultiplier = (prestigeCountOverride = null) => {
     return totalBonus;
 };
 
-/**
- * NEW: Gathers all data needed for the prestige confirmation modal, including explanations.
- */
 export const getPrestigeConfirmationDetails = () => {
     const { decimalUtility, moduleLoader, coreResourceManager, coreUpgradeManager } = coreSystemsRef;
 
@@ -302,7 +288,6 @@ export const getPrestigeConfirmationDetails = () => {
         return { canPrestige: false, reason: "You would not gain any Prestige Points." };
     }
     
-    // --- Build Explanations ---
     const prestigeCount = getTotalPrestigeCount();
     const totalKnowledge = coreResourceManager.getAmount('knowledge');
     const prestigeFactor = decimalUtility.divide(prestigeCount, 6);
@@ -319,7 +304,6 @@ export const getPrestigeConfirmationDetails = () => {
     const imageBonus = decimalUtility.divide(images, '1e13');
     const prestigeBonusBonus = coreUpgradeManager.getProductionMultiplier('prestige_mechanics', 'prestigeBonus');
     const bonusExplanation = `(1 + P.Bonus + Img.Bonus) * Mult = (1 + ${decimalUtility.format(nextPrestigeBonusComp, 2)} + ${decimalUtility.format(imageBonus, 2)}) * ${decimalUtility.format(prestigeBonusBonus, 2)}x`;
-    // --- End Explanations ---
 
     const skillsLogic = moduleLoader.getModule('skills')?.logic;
     let retainedKnowledge = decimalUtility.new(0);
@@ -346,9 +330,6 @@ export const getPrestigeConfirmationDetails = () => {
     };
 };
 
-/**
- * NEW: Executes the actual prestige reset logic.
- */
 export const executePrestigeReset = (ppGains) => {
     const { coreResourceManager, moduleLoader, coreGameStateManager, decimalUtility } = coreSystemsRef;
     
@@ -378,9 +359,7 @@ export const executePrestigeReset = (ppGains) => {
 
     coreGameStateManager.setModuleState('prestige', prestigeModuleState);
     Object.assign(moduleState, prestigeModuleState);
-    // --- MODIFICATION: Set the global flag upon prestiging ---
     coreGameStateManager.setGlobalFlag('hasPrestigedOnce', true);
-    // --- END MODIFICATION ---
     coreResourceManager.addAmount('prestigePoints', ppGains);
     coreResourceManager.setAmount('prestigeCount', newPrestigeCount);
     
@@ -389,6 +368,9 @@ export const executePrestigeReset = (ppGains) => {
     if (Object.keys(startingProducers).length > 0) moduleLoader.getModule('studies')?.logic.addProducers(startingProducers);
 
     coreResourceManager.setResourceVisibility('prestigePoints', true);
+    // --- MODIFICATION: Make prestigeCount visible after the first prestige ---
+    coreResourceManager.setResourceVisibility('prestigeCount', true);
+    // --- END MODIFICATION ---
     updatePrestigeProducerEffects();
     coreUIManager.fullUIRefresh();
     coreUIManager.showNotification("You have Prestiged! Your progress has been reset for greater power.", "success", 5000);

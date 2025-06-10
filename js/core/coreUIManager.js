@@ -1,11 +1,9 @@
-// js/core/coreUIManager.js (v5.4 - Roadmap UI Tweaks)
+// js/core/coreUIManager.js (v5.4 - Cleaned up Resource Logic)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
- * v5.4: Implemented roadmap tasks 1.1 and 1.2.
- * - Hides "No resources to display yet."
- * - Conditionally displays Prestige Count only after first prestige.
+ * v5.4: Removed incorrect logic that set prestigeCount from the UI manager. This is now handled by the prestige module.
  * v5.3: Implemented notification stacking to prevent spam.
  */
 
@@ -57,17 +55,9 @@ const UIElements = {
 let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
-// --- MODIFICATION: Added coreGameStateManager reference for flag checking ---
-let coreGameStateManagerRef = null; 
-// --- END MODIFICATION ---
 
 export const coreUIManager = {
-    // --- MODIFICATION: Accept coreGameStateManager during initialization ---
-    initialize(coreSystems) {
-        if(coreSystems && coreSystems.coreGameStateManager) {
-            coreGameStateManagerRef = coreSystems.coreGameStateManager;
-        }
-    // --- END MODIFICATION ---
+    initialize() {
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
         UIElements.mainMenu = document.getElementById('main-menu');
@@ -227,24 +217,12 @@ export const coreUIManager = {
         const allResources = coreResourceManager.getAllResources();
         let hasVisibleResources = false;
         
-        const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
-        if (prestigeModule && prestigeModule.logic) {
-            const prestigeCount = prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : (prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : decimalUtility.new(0));
-            coreResourceManager.setAmount('prestigeCount', prestigeCount);
-        }
+        // --- MODIFICATION: Removed block that incorrectly set resource amounts from the UI manager. ---
+        // This logic is now correctly handled entirely within the prestige module.
 
         Object.values(allResources).forEach(res => {
             const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
             if (res.isUnlocked && res.showInUI) {
-                // --- MODIFICATION: Check if it's the prestigeCount and if the flag is set ---
-                if (res.id === 'prestigeCount' && !(coreGameStateManagerRef && coreGameStateManagerRef.getGlobalFlag('hasPrestigedOnce'))) {
-                    // Do not show the prestige count if the flag isn't true
-                    let displayElement = document.getElementById(`resource-${res.id}-display`);
-                    if (displayElement) displayElement.remove();
-                    return; // Skip to the next resource
-                }
-                // --- END MODIFICATION ---
-
                 hasVisibleResources = true;
                 let displayElement = document.getElementById(`resource-${res.id}-display`);
                 if (!displayElement) {
@@ -273,12 +251,10 @@ export const coreUIManager = {
                 if (displayElement) displayElement.remove();
             }
         });
-
-        // --- MODIFICATION: Hide the "No resources..." message ---
+        
         if (!hasVisibleResources) {
             UIElements.resourcesDisplay.innerHTML = '';
         }
-        // --- END MODIFICATION ---
     },
     
     showModal(title, content, buttons) {
