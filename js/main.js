@@ -21,7 +21,7 @@ import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 import { buyMultiplierManager } from './core/buyMultiplierManager.js';
-import { buyMultiplierUI } from './core/BuyMultiplierUI.js';
+import { buyMultiplierUI } from './core/buyMultiplierUI.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
@@ -104,25 +104,25 @@ async function initializeGame() {
     // 8. Load Modules
     try {
         loggingSystem.info('Main', 'Loading Core Gameplay Module...');
-        await moduleLoader.loadModule('./modules/core_gameplay_module/core_gameplay_manifest.js');
+        await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
         
         loggingSystem.info('Main', 'Loading Studies Module...');
-        await moduleLoader.loadModule('./modules/studies_module/studies_manifest.js');
+        await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
         
         loggingSystem.info('Main', 'Loading Market Module...');
-        await moduleLoader.loadModule('./modules/market_module/market_manifest.js');
+        await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
         
         loggingSystem.info('Main', 'Loading Skills Module...');
-        await moduleLoader.loadModule('./modules/skills_module/skills_manifest.js');
+        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
         
         loggingSystem.info('Main', 'Loading Achievements Module...');
-        await moduleLoader.loadModule('./modules/achievements_module/achievements_manifest.js');
+        await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
 
         loggingSystem.info('Main', 'Loading Prestige Module...');
-        await moduleLoader.loadModule('./modules/prestige_module/prestige_manifest.js');
+        await moduleLoader.loadModule('../../modules/prestige_module/prestige_manifest.js');
 
         loggingSystem.info('Main', 'Loading Settings UI Module...');
-        await moduleLoader.loadModule('./modules/settings_ui_module/settings_ui_manifest.js');
+        await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
     } catch (error) {
         loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
         coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
