@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v5.2 - Menu Duplication Fix)
+// js/core/coreUIManager.js (v5.3 - Notification Stacking)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.3: Implemented notification stacking to prevent spam.
  * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
  * v5.1: Enhanced notification system with clickability and larger achievement notifications.
  * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
@@ -88,7 +89,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.2).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.3).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -101,7 +102,6 @@ export const coreUIManager = {
             return;
         }
         
-        // --- MODIFICATION: Add a warning if a tab is being re-registered ---
         if (registeredMenuTabs[moduleId]) {
             loggingSystem.warn("CoreUIManager_RegisterTab", `Module ID '${moduleId}' is being re-registered. This may indicate an initialization issue.`);
         }
@@ -126,11 +126,10 @@ export const coreUIManager = {
             return;
         }
 
-        // --- MODIFICATION: Filter for unique tabs to prevent duplication from race conditions ---
         const unlockedTabDefs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
         const unlockedTabs = [...new Map(unlockedTabDefs.map(item => [item.id, item])).values()];
         
-        UIElements.menuList.innerHTML = ''; // Clear existing menu items before re-rendering
+        UIElements.menuList.innerHTML = ''; 
 
         if (unlockedTabs.length <= 1 && window.innerWidth > 768) { 
             UIElements.body.classList.add('menu-hidden'); 
@@ -141,7 +140,7 @@ export const coreUIManager = {
         let hasActiveTabBeenSetOrRemainsValid = false;
         unlockedTabs.forEach(tab => {
             const listItem = document.createElement('li');
-            const button = document.createElement('button'); // Use button for better accessibility
+            const button = document.createElement('button');
             button.className = 'menu-tab';
             button.textContent = tab.label;
             button.dataset.tabTarget = tab.id;
@@ -221,13 +220,11 @@ export const coreUIManager = {
         const allResources = coreResourceManager.getAllResources();
         let hasVisibleResources = false;
         
-        // --- MODIFICATION: Update Prestige Count resource specifically ---
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
-        if (prestigeModule) {
-            const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
+        if (prestigeModule && prestigeModule.logic) {
+            const prestigeCount = prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : (prestigeModule.logic.getTotalPrestigeCount ? prestigeModule.logic.getTotalPrestigeCount() : decimalUtility.new(0));
             coreResourceManager.setAmount('prestigeCount', prestigeCount);
         }
-        // --- END MODIFICATION ---
 
         Object.values(allResources).forEach(res => {
             const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
@@ -244,7 +241,6 @@ export const coreUIManager = {
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
                 
                 let innerHTML;
-                // Special case for prestige count to not show "/s"
                 if (res.id === 'prestigeCount') {
                     innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(res.amount, 0)}</span>`;
                 } else {
@@ -356,8 +352,40 @@ export const coreUIManager = {
 
     showNotification(message, type = 'info', duration = 3000, options = {}) {
         if (!UIElements.notificationArea) return;
+
+        // --- MODIFICATION START: Implement Notification Stacking ---
+        if (type !== 'achievement') { // Stacking doesn't apply to achievement popups
+            const counterRegex = / \((\d+)\)$/;
+            const baseMessage = message.replace(counterRegex, '').trim();
+            
+            // Find existing notification with same base message
+            const existingNotifications = UIElements.notificationArea.querySelectorAll('.notification-standard');
+            let existingMatch = null;
+            for (const notif of existingNotifications) {
+                const existingBase = (notif.dataset.baseMessage || notif.textContent).replace(counterRegex, '').trim();
+                if (existingBase === baseMessage) {
+                    existingMatch = notif;
+                    break;
+                }
+            }
+
+            if (existingMatch) {
+                const currentCountMatch = existingMatch.textContent.match(counterRegex);
+                const currentCount = currentCountMatch ? parseInt(currentCountMatch[1], 10) : 1;
+                const newCount = currentCount + 1;
+                
+                // Update message with new count
+                message = `${baseMessage} (${newCount})`;
+                
+                // Remove the old notification to replace it
+                existingMatch.remove();
+            }
+        }
+        // --- MODIFICATION END ---
+
         const notification = document.createElement('div');
-        
+        notification.dataset.baseMessage = message.replace(/ \(\d+\)$/, '').trim(); // Store base message for future checks
+
         let typeClasses = {
             info: 'bg-blue-600 border-blue-500',
             success: 'bg-green-600 border-green-500',
@@ -385,7 +413,7 @@ export const coreUIManager = {
             }
             duration = duration > 0 ? duration : 4000;
         } else {
-            notification.className = `p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
+            notification.className = `notification-standard p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out ${typeClasses[type] || typeClasses.info}`;
             notification.textContent = message;
         }
 
