@@ -1,9 +1,9 @@
-// modules/skills_module/skills_logic.js (v4.7 - Definitive Production Fix)
+// modules/skills_module/skills_logic.js (v4.8 - Final Targeted Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
- * v4.7: Reverted all production multiplier logic to its original state to fix zero-gain bug, and correctly implemented the exponential cost reduction formula from the roadmap. This is the definitive fix.
+ * v4.8: Restored original production multiplier logic to fix zero-gain bug. Correctly applied exponential cost reduction formula as per the roadmap.
  * v4.2: Added guard clause to getFormattedSkillEffect to prevent UI render crash.
  * v4.1: Fixed TypeError crash by safely handling skill effect definitions.
  * v4.0: Implemented and corrected logic for all special and standard skill effects based on detailed review.
@@ -25,7 +25,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.7).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.8).");
         this.registerAllSkillEffects();
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
@@ -217,36 +217,26 @@ export const moduleLogic = {
                         if (level === 0) return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
 
                         const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-                        let finalValue;
+                        let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
                         
-                        // THIS BLOCK CONTAINS THE CRITICAL FIX
-                        switch(effectDef.type) {
-                            case 'MULTIPLIER':
-                                const totalBonus = decimalUtility.multiply(baseValuePerLevel, level);
-                                finalValue = decimalUtility.add(1, totalBonus); // ALWAYS add 1 to the bonus for a multiplier effect
-                                break;
-                            case 'COST_REDUCTION_MULTIPLIER':
-                                // This implements the exponential reduction from the roadmap
-                                const reductionPerLevel = decimalUtility.subtract(1, baseValuePerLevel);
-                                finalValue = decimalUtility.power(reductionPerLevel, level);
-                                break;
-                            case 'ADDITIVE_BONUS':
-                            case 'PERCENTAGE_BONUS':
-                                finalValue = decimalUtility.multiply(baseValuePerLevel, level);
-                                break;
-                            default:
-                                finalValue = decimalUtility.new(1); // Default to a safe value
+                        let finalMultiplier;
+                        if (effectDef.type === "MULTIPLIER") {
+                             finalMultiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
+                                ? decimalUtility.add(1, effectValue) 
+                                : effectValue;
+                        } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+                             // This is the single targeted change from the roadmap
+                             const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
+                             finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
+                        } else {
+                            return effectValue; // For ADDITIVE_BONUS
                         }
 
-                        if (!isPrestigeFlag && finalValue.gt(0)) {
+                        if (!isPrestigeFlag && finalMultiplier.gt(0)) {
                             const power = this.getSingularityPower();
-                            if (power > 1) {
-                                if(effectDef.type === 'MULTIPLIER') {
-                                    finalValue = decimalUtility.power(finalValue, power);
-                                }
-                            }
+                            if (power > 1) finalMultiplier = decimalUtility.power(finalMultiplier, power);
                         }
-                        return finalValue;
+                        return finalMultiplier;
                     };
                     const sourceKey = `${isPrestigeFlag ? 'p_' : 's_'}${skillId}_${effectDef.targetSystem}_${effectDef.targetId || 'ALL'}`;
                     coreUpgradeManager.registerEffectSource('skills', sourceKey, effectDef.targetSystem, effectDef.targetId, effectDef.type, valueProvider);
@@ -340,20 +330,22 @@ export const moduleLogic = {
         if (!REGISTERABLE_EFFECT_TYPES.includes(effectDef.type)) return effectDef.description || "Special Effect";
         if (level === 0) return "Not active"; 
 
+        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
+
         if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-            const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
             const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
             const finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
             const reductionPercent = decimalUtility.multiply(decimalUtility.subtract(1, finalMultiplier), 100);
             return `-${decimalUtility.format(reductionPercent, 2)}% Cost`;
         }
-        
-        if (effectDef.type === "MULTIPLIER") {
-            const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-            const totalBonus = decimalUtility.multiply(baseValuePerLevel, level);
-            let multiplier = decimalUtility.add(1, totalBonus);
 
-            if (!isPrestige) {
+        let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
+
+        if (effectDef.type === "MULTIPLIER") {
+             let multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
+                                ? decimalUtility.add(1, currentEffectValue) 
+                                : currentEffectValue;
+             if (!isPrestige) {
                 const power = this.getSingularityPower();
                 if (power > 1) multiplier = decimalUtility.power(multiplier, power);
             }
@@ -361,8 +353,6 @@ export const moduleLogic = {
         }
         
         if(effectDef.type === "ADDITIVE_BONUS" || effectDef.type === "PERCENTAGE_BONUS") {
-            const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-            const currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
             return `+${decimalUtility.format(currentEffectValue, 2)}`;
         }
 
@@ -370,7 +360,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.6).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.7).");
         Object.assign(moduleState, {
             ...getSkillsInitialState(),
             ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
