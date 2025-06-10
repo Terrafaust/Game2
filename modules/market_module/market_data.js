@@ -1,11 +1,10 @@
-// modules/market_module/market_data.js (v2.1 - Naming Cleanup)
+// modules/market_module/market_data.js (v3.0 - Roadmap Refactor)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v3.0: Complete refactor for roadmap. Removed automations, added feature unlocks and skill points sections.
  * v2.1: Cleaned up item names to be singular.
- * v2.0: Added tiered Image Automator upgrade.
- * v1.4: Added Prestige Skill Points resource and market item.
  */
 
 export const staticModuleData = {
@@ -15,32 +14,85 @@ export const staticModuleData = {
         prestigeSkillPoints: { id: 'prestigeSkillPoints', name: 'Prestige Skill Points', initialAmount: '0', isUnlocked: true, showInUI: false, hasProductionRate: false }
     },
 
-    marketItems: {
-        buyImages: { id: 'buyImages', name: 'Acquire Image', description: 'Purchase decorative Images with your Study Points.', costResource: 'studyPoints', baseCost: '1000000', costGrowthFactor: '1.0005', benefitResource: 'images', benefitAmountPerPurchase: '1', },
-        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Point', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.2', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
-        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Point', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e7', costGrowthFactor: '1.2', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
-    },
-
-    marketUnlocks: {
-        settingsTab: { id: 'unlockSettingsTab', name: 'Unlock Settings Menu', description: 'Gain access to game settings and customization options.', costResource: 'images', costAmount: '100', flagToSet: 'settingsTabUnlocked', },
-        achievementsTab: {  id: 'unlockAchievementsTab', name: 'Unlock Achievements Menu', description: 'Track your accomplishments and earn rewards.', costResource: 'images', costAmount: '100', flagToSet: 'achievementsTabUnlocked', }
-    },
-
-    // --- FEATURE: Added definition for Image Automator ---
-    marketAutomations: {
-        imageAutomator: {
-            id: 'imageAutomator',
-            name: 'Image Purchase Automator',
-            description: 'Automatically purchases Images for you.',
-            costResource: 'prestigePoints',
-            levels: [
-                { level: 1, cost: '1e5',  rate: 10,   description: 'Automatically buys 10 Images per second.' },
-                { level: 2, cost: '1e10', rate: 100,  description: 'Upgrades to 100 Images per second.' },
-                { level: 3, cost: '1e15', rate: 1000, description: 'Upgrades to 1000 Images per second.' },
-            ]
+    // NEW STRUCTURE: Replaces marketItems and marketUnlocks
+    featureUnlocks: {
+        settingsTab: { 
+            id: 'unlockSettingsTab', 
+            name: 'Unlock Settings Menu', 
+            description: 'Gain access to game settings and customization options.', 
+            costResource: 'images', 
+            costAmount: '200', // As per roadmap
+            flagToSet: 'settingsTabUnlocked' 
+        },
+        achievementsTab: {  
+            id: 'unlockAchievementsTab', 
+            name: 'Unlock Achievements Menu', 
+            description: 'Track your accomplishments and earn rewards.', 
+            costResource: 'images', 
+            costAmount: '100', // Original value, can be adjusted
+            flagToSet: 'achievementsTabUnlocked'
+        },
+        themes: {
+            id: 'unlockThemes',
+            name: 'Unlock Themes',
+            description: 'Unlock additional visual themes in the Settings menu.',
+            costResource: 'images',
+            costAmount: '200',
+            flagToSet: 'themesUnlocked'
+        },
+        statistics: {
+            id: 'unlockStatistics',
+            name: 'Unlock Game Statistics',
+            description: 'View detailed game statistics in the Settings menu.',
+            costResource: 'images',
+            costAmount: '500',
+            flagToSet: 'gameStatsUnlocked'
+        },
+        automation: {
+            id: 'unlockAutomation',
+            name: 'Unlock Automation Menu',
+            description: 'Unlock the Automation menu to purchase powerful automators.',
+            costResource: 'images',
+            costAmount: '1e7',
+            flagToSet: 'automationTabUnlocked',
+            unlockCondition: { type: 'prestigeCount', value: 3 } // Appears after 3rd prestige
+        },
+        modifiedUI: {
+            id: 'unlockModifiedUI',
+            name: 'Unlock Modified UI',
+            description: 'A future update will modify the UI.',
+            costResource: 'images',
+            costAmount: '1e12', // Placeholder high cost
+            flagToSet: 'modifiedUIUnlocked',
+            isFuture: true // Flag to indicate this is not yet implemented
         }
     },
-    // --- END FEATURE ---
+
+    skillPoints: {
+        buyStudySkillPoints: { 
+            id: 'buyStudySkillPoints', 
+            name: 'Acquire Study Skill Point', 
+            description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', 
+            costResource: 'studyPoints', 
+            baseCost: '10000000', 
+            costGrowthFactor: '1.2', 
+            benefitResource: 'studySkillPoints', 
+            benefitAmountPerPurchase: '1', 
+        },
+        buyPrestigeSkillPoints: { 
+            id: 'buyPrestigeSkillPoints', 
+            name: 'Acquire Prestige Skill Point', 
+            description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', 
+            costResource: 'knowledge', 
+            baseCost: '1e7', 
+            costGrowthFactor: '1.2', 
+            benefitResource: 'prestigeSkillPoints', 
+            benefitAmountPerPurchase: '1',
+            unlockCondition: { type: 'purchaseCount', id: 'studySkillPoints', value: 1 } // Appears after 1st SSP purchase
+        }
+    },
+
+    // REMOVED: marketItems, marketUnlocks, and marketAutomations are now obsolete.
 
     ui: {
         marketTabLabel: "Market",
