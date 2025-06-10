@@ -106,7 +106,8 @@ export const coreUIManager = {
                 buyMultiplierManager.getMultiplierLabel(multiplier),
                 () => buyMultiplierManager.setMultiplier(multiplier),
                 ['px-3', 'py-1', 'text-xs', 'rounded-full'],
-                `buy-multiplier-${multiplier}-${Math.random().toString(36).substring(7)}`
+                // Add random suffix to ID to ensure it's unique if multiple are rendered
+                `buy-multiplier-${multiplier}-${Math.random().toString(36).substring(7)}` 
             );
             button.dataset.multiplierValue = multiplier;
             controlWrapper.appendChild(button);
