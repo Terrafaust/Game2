@@ -157,7 +157,7 @@ export const ui = {
             if (card) {
                 const producerDef = prestigeData.producers[producerId];
                 const owned = logic.getOwnedPrestigeProducerCount(producerId);
-                card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
+                card.querySelector(`#prestige-owned-${producerDef.id}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
                 
                 const productionDisplay = card.querySelector(`#prestige-production-${producerDef.id}`);
                 if (productionDisplay) {
