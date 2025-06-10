@@ -71,47 +71,56 @@ export const moduleLogic = {
     },
 
     calculateScalableItemCost(itemId, quantity = 1) {
-        const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = _getScalableItemDef(itemId);
-        if (!itemDef) return decimalUtility.new(Infinity);
+    const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
+    const itemDef = _getScalableItemDef(itemId);
+    if (!itemDef) return decimalUtility.new(Infinity);
+    
+    let n = decimalUtility.new(quantity);
+    if (quantity === -1) {
+        n = this.calculateMaxBuyable(itemId);
+        if (decimalUtility.eq(n, 0)) return decimalUtility.new(Infinity);
+    }
+
+    const baseCost = decimalUtility.new(itemDef.baseCost);
+    const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
+    const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+
+    let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
+    const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
+    
+    // --- START CORRECTION ---
+    // A growthReduction of 1 means no reduction. We only apply it if it's less than 1 (and greater than 0).
+    if(decimalUtility.gt(growthReduction, 0) && decimalUtility.lt(growthReduction, 1)) {
+        const growthPart = decimalUtility.subtract(costGrowthFactor, 1); // e.g., 1.05 -> 0.05
+        const reducedGrowthPart = decimalUtility.multiply(growthPart, decimalUtility.subtract(1, growthReduction)); // Apply reduction
+        costGrowthFactor = decimalUtility.add(1, reducedGrowthPart);
+    }
+    // --- END CORRECTION ---
+    
+    const purchaseCountKey = itemDef.benefitResource;
+    const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
+    let totalCost;
+
+    if (decimalUtility.eq(costGrowthFactor, 1)) {
+        totalCost = decimalUtility.multiply(effectiveBaseCost, n);
+    } else {
+        const R_pow_n = decimalUtility.power(costGrowthFactor, n);
+        const numerator = decimalUtility.subtract(R_pow_n, 1);
+        const denominator = decimalUtility.subtract(costGrowthFactor, 1);
+        // This is the sum of a geometric series for n items
+        const costFor_n_Items = decimalUtility.multiply(effectiveBaseCost, decimalUtility.divide(numerator, denominator));
         
-        let n = decimalUtility.new(quantity);
-        if (quantity === -1) {
-            n = this.calculateMaxBuyable(itemId);
-            if (decimalUtility.eq(n, 0)) return decimalUtility.new(Infinity);
-        }
-
-        const baseCost = decimalUtility.new(itemDef.baseCost);
-        
-        const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
-        const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
-
-        let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
-        const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
-        if(decimalUtility.lt(growthReduction, 1)) {
-            const growthPart = decimalUtility.subtract(costGrowthFactor, 1);
-            const reducedGrowthPart = decimalUtility.multiply(growthPart, growthReduction);
-            costGrowthFactor = decimalUtility.add(1, reducedGrowthPart);
-        }
-        
-        const purchaseCountKey = itemDef.benefitResource;
-        const ownedCount = decimalUtility.new(moduleState.purchaseCounts[purchaseCountKey] || "0");
-        let totalCost;
-
-        if (decimalUtility.eq(costGrowthFactor, 1)) {
-            totalCost = decimalUtility.multiply(effectiveBaseCost, n);
-        } else {
-            const R_pow_n = decimalUtility.power(costGrowthFactor, n);
-            const numerator = decimalUtility.subtract(R_pow_n, 1);
-            const denominator = decimalUtility.subtract(costGrowthFactor, 1);
-            totalCost = decimalUtility.multiply(effectiveBaseCost, decimalUtility.divide(numerator, denominator));
-        }
-
+        // We must then multiply this entire sum by the cost increase from items already owned.
         const priceIncreaseFromOwned = decimalUtility.power(costGrowthFactor, ownedCount);
-        totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
+        totalCost = decimalUtility.multiply(costFor_n_Items, priceIncreaseFromOwned);
+    }
 
-        return totalCost;
-    },
+    // The original logic had this price increase calculated differently.
+    // The line below is what was causing the issue, I've moved it into the else block.
+    // totalCost = decimalUtility.multiply(totalCost, priceIncreaseFromOwned);
+
+    return totalCost;
+},
 
     purchaseScalableItem(itemId) {
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
