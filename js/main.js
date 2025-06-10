@@ -1,8 +1,9 @@
-// js/main.js (v10.0 - Hard Reset Fix)
+// js/main.js (v10.1 - Centralized Multiplier UI)
 
 /**
  * @file main.js
  * @description Main entry point for the incremental game.
+ * v10.1: Integrated the centralized buyMultiplierUI helper.
  * v10.0: Fixes hard reset modal not closing.
  * v9.9: Corrects theme initialization order and restores full original file content.
  */
@@ -20,12 +21,13 @@ import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 import { buyMultiplierManager } from './core/buyMultiplierManager.js';
+import { buyMultiplierUI } from './core/buyMultiplierUI.js'; // <<< ADDED
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
     // 1. Initialize Logging System
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v10.0).");
+    loggingSystem.info("Main", "Game initialization sequence started (v10.1).");
 
     // 2. Initialize Core Systems
     globalSettingsManager.initialize();
@@ -33,6 +35,7 @@ async function initializeGame() {
     coreResourceManager.initialize();
     coreUpgradeManager.initialize();
     coreUIManager.initialize();
+    buyMultiplierUI.initialize( { coreUIManager, buyMultiplierManager, loggingSystem } ); // <<< ADDED
 
     // 3. Set up event listeners AFTER UI Manager is ready
     document.addEventListener('themeChanged', (event) => {
@@ -69,7 +72,8 @@ async function initializeGame() {
         coreUpgradeManager,
         globalSettingsManager,
         saveLoadSystem,
-        buyMultiplierManager
+        buyMultiplierManager,
+        buyMultiplierUI // <<< ADDED
     );
 
     // 6. Define Core Data
@@ -164,7 +168,6 @@ async function initializeGame() {
             coreUIManager.showModal("Hard Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
                 [
                     { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
-                        // --- FIX: Close the modal BEFORE performing the reset ---
                         coreUIManager.closeModal();
                         
                         const wasRunning = gameLoop.isRunning();

@@ -1,17 +1,17 @@
-// js/core/coreUIManager.js (v5.5 - Centralized Multiplier Controls)
+// js/core/coreUIManager.js (v5.2 - Menu Duplication Fix)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
- * v5.5: Centralized the creation and management of buy multiplier controls.
- * v5.4: Corrected resource bar logic to hide unlocked resources while maintaining static layout.
- * v5.3: Implemented static resource bar layout as per roadmap.
+ * v5.2: Added guards to renderMenu() to prevent duplication bug on unlock.
+ * v5.1: Enhanced notification system with clickability and larger achievement notifications.
+ * v5.0: Complete overhaul of the modal system for a better look and feel, with full theme integration.
+ * v4.8: Added swipe-to-toggle functionality for mobile menu.
  */
 
 import { loggingSystem } from './loggingSystem.js';
 import { coreResourceManager } from './coreResourceManager.js';
 import { decimalUtility } from './decimalUtility.js';
-import { buyMultiplierManager } from './buyMultiplierManager.js'; // Import buyMultiplierManager
 
 function initializeSwipeMenu() {
     const body = document.body;
@@ -60,7 +60,6 @@ let currentTooltipTarget = null;
 
 export const coreUIManager = {
     initialize() {
-        // Cache UI elements
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
         UIElements.mainMenu = document.getElementById('main-menu');
@@ -89,58 +88,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        
-        // --- NEW: Global listener for buy multiplier changes ---
-        document.addEventListener('buyMultiplierChanged', this._updateAllMultiplierButtonStyles.bind(this));
-
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.5).");
-    },
-    
-    // --- NEW: Function to create the multiplier controls ---
-    createBuyMultiplierControls() {
-        const controlWrapper = document.createElement('div');
-        controlWrapper.className = 'buy-multiplier-controls flex justify-center items-center space-x-2 bg-surface-dark rounded-full p-1';
-        
-        buyMultiplierManager.getAvailableMultipliers().forEach(multiplier => {
-            const button = this.createButton(
-                buyMultiplierManager.getMultiplierLabel(multiplier),
-                () => buyMultiplierManager.setMultiplier(multiplier),
-                ['px-3', 'py-1', 'text-xs', 'rounded-full'],
-                // Add random suffix to ID to ensure it's unique if multiple are rendered
-                `buy-multiplier-${multiplier}-${Math.random().toString(36).substring(7)}` 
-            );
-            button.dataset.multiplierValue = multiplier;
-            controlWrapper.appendChild(button);
-        });
-        
-        this._updateAllMultiplierButtonStyles(); // Set initial state
-        return controlWrapper;
-    },
-    
-    // --- NEW: Global function to update styles of all controls ---
-    _updateAllMultiplierButtonStyles() {
-        const currentMultiplier = buyMultiplierManager.getMultiplier();
-        const allControlWrappers = document.querySelectorAll('.buy-multiplier-controls');
-
-        allControlWrappers.forEach(wrapper => {
-            const buttons = wrapper.querySelectorAll('button');
-            buttons.forEach(button => {
-                const buttonMultiplier = parseInt(button.dataset.multiplierValue, 10);
-                if (isNaN(buttonMultiplier)) return;
-                
-                if (buttonMultiplier === currentMultiplier) {
-                    button.classList.add('bg-accentOne', 'text-white', 'opacity-100');
-                    button.classList.remove('opacity-60', 'hover:bg-primary-dark', 'bg-primary');
-                } else {
-                    button.classList.remove('bg-accentOne', 'text-white', 'opacity-100');
-                    button.classList.add('opacity-60', 'hover:bg-primary-dark');
-                    // Ensure it has a base color if not active
-                    if(!button.classList.contains('bg-primary')) {
-                        button.classList.add('bg-primary');
-                    }
-                }
-            });
-        });
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.2).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -153,6 +101,7 @@ export const coreUIManager = {
             return;
         }
         
+        // --- MODIFICATION: Add a warning if a tab is being re-registered ---
         if (registeredMenuTabs[moduleId]) {
             loggingSystem.warn("CoreUIManager_RegisterTab", `Module ID '${moduleId}' is being re-registered. This may indicate an initialization issue.`);
         }
@@ -177,10 +126,11 @@ export const coreUIManager = {
             return;
         }
 
+        // --- MODIFICATION: Filter for unique tabs to prevent duplication from race conditions ---
         const unlockedTabDefs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
         const unlockedTabs = [...new Map(unlockedTabDefs.map(item => [item.id, item])).values()];
         
-        UIElements.menuList.innerHTML = ''; 
+        UIElements.menuList.innerHTML = ''; // Clear existing menu items before re-rendering
 
         if (unlockedTabs.length <= 1 && window.innerWidth > 768) { 
             UIElements.body.classList.add('menu-hidden'); 
@@ -191,7 +141,7 @@ export const coreUIManager = {
         let hasActiveTabBeenSetOrRemainsValid = false;
         unlockedTabs.forEach(tab => {
             const listItem = document.createElement('li');
-            const button = document.createElement('button');
+            const button = document.createElement('button'); // Use button for better accessibility
             button.className = 'menu-tab';
             button.textContent = tab.label;
             button.dataset.tabTarget = tab.id;
@@ -268,74 +218,50 @@ export const coreUIManager = {
 
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
+        const allResources = coreResourceManager.getAllResources();
+        let hasVisibleResources = false;
         
+        // --- MODIFICATION: Update Prestige Count resource specifically ---
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
         if (prestigeModule) {
             const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
             coreResourceManager.setAmount('prestigeCount', prestigeCount);
         }
-        
-        const allResources = coreResourceManager.getAllResources();
-        
-        const resourceLayout = [
-            { id: 'studyPoints', name: 'Study Points' }, { id: 'images', name: 'Images' }, { id: 'prestigeCount', name: 'Prestige count' },
-            { id: 'knowledge', name: 'Knowledge' }, { id: 'prestigePoints', name: 'Prestige points' },
-        ];
-        resourceLayout.push({ id: 'placeholder', name: '' });
+        // --- END MODIFICATION ---
 
-        UIElements.resourcesDisplay.innerHTML = ''; 
-
-        for (const item of resourceLayout) {
-             if (item.id === 'placeholder') {
-                const placeholder = document.createElement('div');
-                placeholder.className = 'resource-item-display';
-                placeholder.style.visibility = 'hidden';
-                UIElements.resourcesDisplay.appendChild(placeholder);
-                continue;
-            }
-
-            const resourceId = item.id;
-            const resource = allResources[resourceId];
-            
-            let shouldShow = false;
-            if (resource && resource.isUnlocked && resource.showInUI) {
-                shouldShow = true;
-            }
-            
-            if (resourceId === 'prestigeCount' && (!resource || decimalUtility.lte(resource.amount, 0))) {
-                shouldShow = false;
-            }
-            
-            const displayElement = document.createElement('div');
-            displayElement.id = `resource-${resourceId}-display`;
-            displayElement.className = 'resource-item-display';
-
-            if (shouldShow) {
-                const name = resource.name;
-                const amount = resource.amount;
-                const totalProductionRate = resource.totalProductionRate;
-                const hasProductionRate = resource.hasProductionRate !== undefined ? resource.hasProductionRate : true;
-
-                const amountFormatted = decimalUtility.format(amount, 2);
-                const rateFormatted = decimalUtility.format(totalProductionRate, 2);
-
+        Object.values(allResources).forEach(res => {
+            const showRate = res.hasProductionRate !== undefined ? res.hasProductionRate : true;
+            if (res.isUnlocked && res.showInUI) {
+                hasVisibleResources = true;
+                let displayElement = document.getElementById(`resource-${res.id}-display`);
+                if (!displayElement) {
+                    displayElement = document.createElement('div');
+                    displayElement.id = `resource-${res.id}-display`;
+                    displayElement.className = 'resource-item-display'; 
+                    UIElements.resourcesDisplay.appendChild(displayElement);
+                }
+                const amountFormatted = decimalUtility.format(res.amount, 2);
+                const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
+                
                 let innerHTML;
-                if (resourceId === 'prestigeCount') {
-                    innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(amount, 0)}</span>`;
+                // Special case for prestige count to not show "/s"
+                if (res.id === 'prestigeCount') {
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(res.amount, 0)}</span>`;
                 } else {
-                    let rateHTML = '';
-                    if (hasProductionRate && decimalUtility.gt(totalProductionRate, 0)) {
-                        rateHTML = ` (<span id="resource-${resourceId}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                     let rateHTML = '';
+                    if (showRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
+                        rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
                     }
-                    innerHTML = `<span class="font-semibold text-secondary">${name}:</span> <span id="resource-${resourceId}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
                 }
                 displayElement.innerHTML = innerHTML;
+
             } else {
-                displayElement.style.visibility = 'hidden';
-                displayElement.innerHTML = '&nbsp;';
+                let displayElement = document.getElementById(`resource-${res.id}-display`);
+                if (displayElement) displayElement.remove();
             }
-            UIElements.resourcesDisplay.appendChild(displayElement);
-        }
+        });
+        if (!hasVisibleResources) UIElements.resourcesDisplay.innerHTML = '<p class="text-textSecondary italic col-span-full text-center py-2">No resources to display yet.</p>';
     },
     
     showModal(title, content, buttons) {

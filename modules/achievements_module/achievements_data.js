@@ -9,8 +9,8 @@
 
 // --- Helper functions for generating achievement sets ---
 
-const producerAchTierCounts = [10, 25, 50, 100, 250, 500, 750, 1000, 1500, 2500, 10000, 1e7, 1e9, 1e12, 1e15];
-const producerAchTierRewards = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.10, 0.12, 0.15, 0.15, 0.18, 0.20, 0.20, 0.25];
+const producerAchTierCounts = [10, 25, 50, 100, 250, 500, 750, 1000, 1500, 2500];
+const producerAchTierRewards = [0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.10, 0.12, 0.15];
 
 const resourceAchTierCounts = {
     studyPoints: ["1e3", "1e4", "1e5", "1e6", "1e7", "1e8", "1e9", "1e10", "1e11", "1e12","1e13", "1e14", "1e15"],
@@ -18,8 +18,8 @@ const resourceAchTierCounts = {
 };
 const resourceAchTierRewards = [0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.03, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08];
 
-const clickAchTierCounts = [50, 100, 500, 1000, 1500, 2000, 2500, 3000, 4000, 5000];
-const clickAchTierRewards = [0.40, 0.60, 0.90, 1.10, 1.20, 1.30, 1.50, 2.00, 2.00, 3.00];
+const clickAchTierCounts = [10, 50, 100, 500, 1000, 5000, 10000, 25000, 50000, 100000];
+const clickAchTierRewards = [0.50, 0.70, 1.00, 1.20, 1.50, 1.80, 2.00, 2.20, 2.50, 3.00];
 
 // --- MODIFICATION: Reworked SSP rewards ---
 const sspAchTierCounts = [1, 5, 10, 20, 30, 40, 50, 75, 100, 125, 150, 200, 250, 300];
@@ -155,6 +155,7 @@ const createPrestigeProducerAchievements = (producerId, producerName, icon) => {
 };
 
 const totalAchievementMilestones = {
+    ach_total_1:   { count: 1,   reward: { type: 'MULTIPLIER', targetSystem: 'core_gameplay_click', targetId: 'studyPoints', value: '0.10', description: "+10% Manual Click Power" } },
     ach_total_5:   { count: 5,   reward: { type: 'MULTIPLIER', targetSystem: 'global_resource_production', targetId: 'studyPoints', value: '0.05', description: "+5% Global SP Production" } },
     ach_total_10:  { count: 10,  reward: { type: 'MULTIPLIER', targetSystem: 'global_resource_production', targetId: 'studyPoints', value: '0.05', description: "+5% Global SP Production" } },
     ach_total_15:  { count: 15,  reward: { type: 'MULTIPLIER', targetSystem: 'studies_producers', targetId: 'student', value: '0.25', description: "+25% Student Production" } },

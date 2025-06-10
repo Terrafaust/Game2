@@ -1,8 +1,9 @@
-// js/core/moduleLoader.js (v2.4.0 - Add buyMultiplierManager)
+// js/core/moduleLoader.js (v2.5.0 - Add buyMultiplierUI)
 
 /**
  * @file moduleLoader.js
  * @description Handles loading, initializing, and managing game feature modules.
+ * v2.5.0: Accepts and passes buyMultiplierUI helper.
  * v2.4.0: Accepts and passes buyMultiplierManager.
  * v2.3.2: Accepts and passes saveLoadSystem.
  */
@@ -21,7 +22,8 @@ let coreSystemsBase = {
     coreUpgradeManager: null,
     globalSettingsManager: null,
     saveLoadSystem: null,
-    buyMultiplierManager: null, // <<< ADDED
+    buyMultiplierManager: null,
+    buyMultiplierUI: null, // <<< ADDED
     // moduleLoader: null // This will be added dynamically in loadModule
 };
 
@@ -41,7 +43,8 @@ const moduleLoader = {
         coreUpgradeManagerRef,
         globalSettingsManagerRef,
         saveLoadSystemRef,
-        buyMultiplierManagerRef // <<< ADDED
+        buyMultiplierManagerRef,
+        buyMultiplierUIRef // <<< ADDED
     ) {
         coreSystemsBase.staticDataAggregator = staticDataAggregatorRef;
         coreSystemsBase.coreGameStateManager = coreGameStateManagerRef;
@@ -53,7 +56,8 @@ const moduleLoader = {
         coreSystemsBase.coreUpgradeManager = coreUpgradeManagerRef;
         coreSystemsBase.globalSettingsManager = globalSettingsManagerRef;
         coreSystemsBase.saveLoadSystem = saveLoadSystemRef;
-        coreSystemsBase.buyMultiplierManager = buyMultiplierManagerRef; // <<< ADDED
+        coreSystemsBase.buyMultiplierManager = buyMultiplierManagerRef;
+        coreSystemsBase.buyMultiplierUI = buyMultiplierUIRef; // <<< ADDED
 
         if (typeof decimalUtilityRef === 'undefined') {
             loggingSystem.error("ModuleLoader_Critical", "decimalUtilityRef received in initialize is undefined.");
@@ -71,7 +75,7 @@ const moduleLoader = {
             loggingSystem.info("ModuleLoader", "saveLoadSystemRef received successfully in initialize.");
         }
 
-        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.4.0).");
+        loggingSystem.info("ModuleLoader", "Module Loader initialized with core systems (v2.5.0).");
     },
 
     async loadModule(manifestPath) {
@@ -109,6 +113,10 @@ const moduleLoader = {
             if (!systemsForModule.saveLoadSystem) {
                 loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `saveLoadSystem is MISSING in systemsForModule for module '${manifest.id}'!`);
             }
+            if (!systemsForModule.buyMultiplierUI) {
+                loggingSystem.error("ModuleLoader_LoadModule_CRITICAL", `buyMultiplierUI is MISSING in systemsForModule for module '${manifest.id}'!`);
+            }
+
 
             const moduleInstance = await manifest.initialize(systemsForModule);
 
