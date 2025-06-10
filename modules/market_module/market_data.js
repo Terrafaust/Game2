@@ -1,9 +1,8 @@
-// modules/market_module/market_data.js (v3.0 - UI Restructure)
+// modules/market_module/market_data.js (v2.0 - Added Image Automator)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
- * v3.0: Restructured data for new UI categories (Consumables, Feature Unlocks, Skill Points).
  * v2.0: Added tiered Image Automator upgrade.
  * v1.4: Added Prestige Skill Points resource and market item.
  */
@@ -15,90 +14,18 @@ export const staticModuleData = {
         prestigeSkillPoints: { id: 'prestigeSkillPoints', name: 'Prestige Skill Points', initialAmount: '0', isUnlocked: true, showInUI: false, hasProductionRate: false }
     },
 
-    // --- ROADMAP 3.1: Data Restructure ---
-    consumables: {
-        buyImage: { 
-            id: 'buyImage', 
-            name: 'Acquire Image', 
-            description: 'Purchase a decorative Image with your Study Points.', 
-            costResource: 'studyPoints', 
-            baseCost: '1000000', 
-            costGrowthFactor: '1.005', 
-            benefitResource: 'images', 
-            benefitAmountPerPurchase: '1', 
-        },
+    marketItems: {
+        buyImages: { id: 'buyImages', name: 'Acquire Images', description: 'Purchase decorative Images with your Study Points.', costResource: 'studyPoints', baseCost: '1000000', costGrowthFactor: '1.0005', benefitResource: 'images', benefitAmountPerPurchase: '1', },
+        buyStudySkillPoints: { id: 'buyStudySkillPoints', name: 'Acquire Study Skill Points', description: 'Convert Study Points into valuable Study Skill Points to enhance your abilities.', costResource: 'studyPoints', baseCost: '10000000', costGrowthFactor: '1.2', benefitResource: 'studySkillPoints', benefitAmountPerPurchase: '1', },
+        buyPrestigeSkillPoints: { id: 'buyPrestigeSkillPoints', name: 'Acquire Prestige Skill Points', description: 'Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.', costResource: 'knowledge', baseCost: '1e7', costGrowthFactor: '1.2', benefitResource: 'prestigeSkillPoints', benefitAmountPerPurchase: '1',}
     },
 
-    featureUnlocks: {
-        settingsTab: { 
-            id: 'unlockSettingsTab', 
-            name: 'Unlock Settings Menu', 
-            description: 'Gain access to game settings and customization options.', 
-            costResource: 'images', 
-            costAmount: '100', 
-            flagToSet: 'settingsTabUnlocked', 
-        },
-        achievementsTab: {  
-            id: 'unlockAchievementsTab', 
-            name: 'Unlock Achievements Menu', 
-            description: 'Track your accomplishments and earn rewards.', 
-            costResource: 'images', 
-            costAmount: '100', 
-            flagToSet: 'achievementsTabUnlocked', 
-        },
-        buyMultiples: {
-            id: 'unlockBuyMultiples',
-            name: 'Unlock Buy Multipliers',
-            description: 'Unlock the ability to buy items in multiples (x10, x100, Max).',
-            costResource: 'images',
-            costAmount: '1000',
-            flagToSet: 'buyMultiplesUnlocked',
-        },
-        automatorMenu: {
-            id: 'unlockAutomatorMenu',
-            name: 'Unlock Automator Menu',
-            description: 'Gain access to the automation sub-tab in the Market.',
-            costResource: 'images',
-            costAmount: '5000', // Example cost
-            flagToSet: 'automatorMenuUnlocked',
-            unlockCondition: { type: 'prestigeCount', count: 3 }
-        },
-        modifiedUI: {
-            id: 'unlockModifiedUI',
-            name: 'Unlock Modified UI',
-            description: 'Unlock a special, modified user interface theme.',
-            costResource: 'images',
-            costAmount: '10000', // Example cost
-            flagToSet: 'modifiedUIUnlocked',
-            unlockCondition: { type: 'prestigeCount', count: 3 }
-        }
+    marketUnlocks: {
+        settingsTab: { id: 'unlockSettingsTab', name: 'Unlock Settings Menu', description: 'Gain access to game settings and customization options.', costResource: 'images', costAmount: '100', flagToSet: 'settingsTabUnlocked', },
+        achievementsTab: {  id: 'unlockAchievementsTab', name: 'Unlock Achievements Menu', description: 'Track your accomplishments and earn rewards.', costResource: 'images', costAmount: '100', flagToSet: 'achievementsTabUnlocked', }
     },
 
-    skillPoints: {
-        buyStudySkillPoint: { 
-            id: 'buyStudySkillPoint', 
-            name: 'Acquire Study Skill Point', 
-            description: 'Convert Study Points into a valuable Study Skill Point to enhance your abilities.', 
-            costResource: 'studyPoints', 
-            baseCost: '10000000', 
-            costGrowthFactor: '1.2', 
-            benefitResource: 'studySkillPoints', 
-            benefitAmountPerPurchase: '1', 
-        },
-        buyPrestigeSkillPoint: { 
-            id: 'buyPrestigeSkillPoint', 
-            name: 'Acquire Prestige Skill Point', 
-            description: 'Convert Knowledge into a powerful Prestige Skill Point to unlock permanent upgrades.', 
-            costResource: 'knowledge', 
-            baseCost: '1e7', 
-            costGrowthFactor: '1.2', 
-            benefitResource: 'prestigeSkillPoints', 
-            benefitAmountPerPurchase: '1',
-            unlockCondition: { type: 'prestigeCount', count: 1 }
-        }
-    },
-    // --- END ROADMAP 3.1 ---
-
+    // --- FEATURE: Added definition for Image Automator ---
     marketAutomations: {
         imageAutomator: {
             id: 'imageAutomator',
@@ -112,6 +39,7 @@ export const staticModuleData = {
             ]
         }
     },
+    // --- END FEATURE ---
 
     ui: {
         marketTabLabel: "Market",

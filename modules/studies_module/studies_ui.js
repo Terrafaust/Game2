@@ -1,9 +1,8 @@
-// js/modules/studies_module/studies_ui.js (v2.3 - UI Layout Polish)
+// js/modules/studies_module/studies_ui.js (v2.2 - Bug Fix for toNumber)
 
 /**
  * @file studies_ui.js
  * @description Handles the UI rendering and interactions for the Studies module.
- * v2.3: Moved buy multiplier controls inline with the main title.
  * v2.2: Fixes a crash related to an incorrect .toNumber() call.
  * v2.1: Adds 'Buy Max' button and logic to multiplier controls.
  */
@@ -18,7 +17,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.3).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v2.2).");
 
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('studies')) {
@@ -38,28 +37,17 @@ export const ui = {
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
-        // --- ROADMAP 4.2: Create flex container for title and controls ---
-        const titleContainer = document.createElement('div');
-        titleContainer.className = 'flex justify-between items-center mb-4';
-        
-        const title = document.createElement('h2');
-        title.className = 'text-2xl font-semibold text-primary';
-        title.textContent = 'Studies Department';
-        titleContainer.appendChild(title);
-        
-        const buyMultiplesUnlocked = coreSystemsRef.coreGameStateManager.getGlobalFlag('buyMultiplesUnlocked');
-        if (buyMultiplesUnlocked) {
-            titleContainer.appendChild(this._createBuyMultiplierControls());
-        }
-        container.appendChild(titleContainer);
-        // --- END ROADMAP 4.2 ---
-
-        container.innerHTML += `
+        // --- MODIFICATION: Added Tip ---
+        container.innerHTML = `
+            <h2 class="text-2xl font-semibold text-primary mb-2">Studies Department</h2>
             <div class="p-3 bg-surface rounded-lg border border-primary/50 text-center">
                 <p class="text-sm text-accentOne italic">"Get 10 professors to unlock Market"</p>
             </div>
             <p class="text-textSecondary mb-6">Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.</p>
         `;
+        // --- END MODIFICATION ---
+
+        container.appendChild(this._createBuyMultiplierControls());
 
         const producersContainer = document.createElement('div');
         producersContainer.id = 'studies-producers-container';
@@ -100,8 +88,7 @@ export const ui = {
     _createBuyMultiplierControls() {
         const { coreUIManager, buyMultiplierManager } = coreSystemsRef;
         const controlWrapper = document.createElement('div');
-        // --- ROADMAP 4.2: Removed margin and background for inline style ---
-        controlWrapper.className = 'flex items-center space-x-2'; 
+        controlWrapper.className = 'flex justify-center items-center space-x-2 mb-6 p-2 bg-surface-dark rounded-full';
         
         buyMultiplierManager.getAvailableMultipliers().forEach(multiplier => {
             const button = coreUIManager.createButton(
@@ -158,22 +145,23 @@ export const ui = {
                 const ownedCount = moduleLogicRef.getOwnedProducerCount(producerId);
                 const totalProduction = coreResourceManager.getProductionFromSource(producerDef.resourceId, `studies_module_${producerId}`);
                 
-                ownedDisplay.textContent = `Owned: ${decimalUtility.format(ownedCount, 0)}`;
-                prodDisplay.textContent = `Production: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
+                ownedDisplay.textContent = `Possédés : ${decimalUtility.format(ownedCount, 0)}`;
+                prodDisplay.textContent = `Production : ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
 
                 let quantity = buyMultiplierManager.getMultiplier();
                 let quantityToBuy = (quantity === -1) ? moduleLogicRef.calculateMaxBuyable(producerId) : quantity;
                 
+                // *** THIS IS THE FIX: Pass quantityToBuy directly, without .toNumber() ***
                 const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy);
                 
                 const quantityToDisplay = (quantity === -1) ? quantityToBuy : quantity;
 
                 if (decimalUtility.gt(quantityToDisplay, 0)) {
-                    costDisplay.textContent = `Cost for ${decimalUtility.format(quantityToDisplay, 0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
-                    buyButton.textContent = `Buy ${decimalUtility.format(quantityToDisplay, 0)} ${producerDef.name}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
+                    costDisplay.textContent = `Coût pour ${decimalUtility.format(quantityToDisplay, 0)}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
+                    buyButton.textContent = `Acheter ${decimalUtility.format(quantityToDisplay, 0)} ${producerDef.name}${decimalUtility.gt(quantityToDisplay, 1) ? 's' : ''}`;
                 } else {
-                    costDisplay.textContent = `Cost: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
-                    buyButton.textContent = `Buy 1 ${producerDef.name}`;
+                    costDisplay.textContent = `Coût : ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
+                    buyButton.textContent = `Acheter 1 ${producerDef.name}`;
                 }
                 
                 const canAfford = coreResourceManager.canAfford(producerDef.costResource, costForBatch);
@@ -182,23 +170,23 @@ export const ui = {
             } else {
                 card.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
                 buyButton.disabled = true;
-                buyButton.textContent = "Locked";
-                ownedDisplay.textContent = "Owned: 0";
-                prodDisplay.textContent = `Production: 0/s`;
-                costDisplay.textContent = `Cost: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
+                buyButton.textContent = "Verrouillé";
+                ownedDisplay.textContent = "Possédés : 0";
+                prodDisplay.textContent = `Production : 0/s`;
+                costDisplay.textContent = `Coût : ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
             }
         }
     },
     
     _getUnlockTooltipContent(condition) {
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        let content = '<p class="font-semibold text-primary mb-1">Unlock Condition:</p>';
+        let content = '<p class="font-semibold text-primary mb-1">Condition de déverrouillage:</p>';
         switch (condition.type) {
             case "resource":
-                content += `<p>Reach ${decimalUtility.format(condition.amount, 0)} ${coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId}.</p>`;
+                content += `<p>Atteindre ${decimalUtility.format(condition.amount, 0)} ${coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId}.</p>`;
                 break;
             case "producerOwned":
-                content += `<p>Own ${condition.count} ${staticModuleData.producers[condition.producerId].name}.</p>`;
+                content += `<p>Posséder ${condition.count} ${staticModuleData.producers[condition.producerId].name}.</p>`;
                 break;
         }
         return content;

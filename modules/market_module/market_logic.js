@@ -1,9 +1,8 @@
-// modules/market_module/market_logic.js (v4.1 - UI Restructure)
+// modules/market_module/market_logic.js (v4.0 - Correct Cost Reduction)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
- * v4.1: Adapted logic to support new data structure from market_data.js v3.0.
  * v4.0: Corrected cost reduction logic to apply to base cost.
  * v3.0: Implemented cost reduction multipliers from achievements.
  */
@@ -13,20 +12,15 @@ import { moduleState, getInitialState } from './market_state.js';
 
 let coreSystemsRef = null;
 
-// Helper to get scalable item definitions from the new data structure
-function getScalableItemDef(itemId) {
-    return staticModuleData.consumables[itemId] || staticModuleData.skillPoints[itemId] || null;
-}
-
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v4.1).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v4.0).");
     },
     
     calculateMaxBuyable(itemId) {
         const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = getScalableItemDef(itemId);
+        const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return decimalUtility.ZERO;
 
         const purchaseCountKey = itemDef.benefitResource;
@@ -36,8 +30,10 @@ export const moduleLogic = {
         const availableCurrency = coreResourceManager.getAmount(costResource);
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
+        // --- MODIFICATION: Apply cost reduction to base cost ---
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
         
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
@@ -67,7 +63,7 @@ export const moduleLogic = {
 
     calculateScalableItemCost(itemId, quantity = 1) {
         const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = getScalableItemDef(itemId);
+        const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return decimalUtility.new(Infinity);
         
         let n = decimalUtility.new(quantity);
@@ -78,8 +74,10 @@ export const moduleLogic = {
 
         const baseCost = decimalUtility.new(itemDef.baseCost);
         
+        // --- MODIFICATION: Apply cost reduction to base cost ---
         const costReductionMultiplier = coreUpgradeManager.getCostReductionMultiplier('market_items', itemId);
         const effectiveBaseCost = decimalUtility.multiply(baseCost, costReductionMultiplier);
+        // --- END MODIFICATION ---
 
         let costGrowthFactor = decimalUtility.new(itemDef.costGrowthFactor);
         const growthReduction = coreUpgradeManager.getAggregatedModifiers('market_items', itemId, 'COST_GROWTH_REDUCTION');
@@ -110,7 +108,7 @@ export const moduleLogic = {
 
     purchaseScalableItem(itemId) {
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
-        const itemDef = getScalableItemDef(itemId);
+        const itemDef = staticModuleData.marketItems[itemId];
         if (!itemDef) return false;
         
         let quantity = buyMultiplierManager.getMultiplier();
@@ -163,39 +161,21 @@ export const moduleLogic = {
     
     canAffordUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
-        const unlockDef = staticModuleData.featureUnlocks[unlockId];
+        const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return false;
         return coreResourceManager.canAfford(unlockDef.costResource, decimalUtility.new(unlockDef.costAmount));
     },
 
     isUnlockPurchased(unlockId) { 
         const { coreGameStateManager } = coreSystemsRef;
-        const unlockDef = staticModuleData.featureUnlocks[unlockId];
+        const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef) return true;
         return coreGameStateManager.getGlobalFlag(`marketUnlock_${unlockDef.flagToSet}_purchased`, false);
     },
 
-    isUnlockVisible(unlockId) {
-        const unlockDef = staticModuleData.featureUnlocks[unlockId] || staticModuleData.skillPoints[unlockId];
-        if (!unlockDef || !unlockDef.unlockCondition) {
-            return true;
-        }
-
-        const { type, count } = unlockDef.unlockCondition;
-        if (type === 'prestigeCount') {
-            const prestigeModule = coreSystemsRef.moduleLoader.getModule('prestige');
-            if (prestigeModule && prestigeModule.logic) {
-                const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
-                return coreSystemsRef.decimalUtility.gte(prestigeCount, count);
-            }
-            return false;
-        }
-        return true;
-    },
-
     purchaseUnlock(unlockId) { 
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager } = coreSystemsRef;
-        const unlockDef = staticModuleData.featureUnlocks[unlockId];
+        const unlockDef = staticModuleData.marketUnlocks[unlockId];
         if (!unlockDef || this.isUnlockPurchased(unlockId)) return false;
         
         if (this.canAffordUnlock(unlockId)) { 
@@ -325,12 +305,8 @@ export const moduleLogic = {
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
         coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
-        
-        // Reset all feature unlock flags
-        Object.values(staticModuleData.featureUnlocks).forEach(unlock => {
-             coreGameStateManager.setGlobalFlag(`marketUnlock_${unlock.flagToSet}_purchased`, false);
-             coreGameStateManager.setGlobalFlag(unlock.flagToSet, false);
-        });
+        coreGameStateManager.setGlobalFlag(`marketUnlock_settingsTabUnlocked_purchased`, false);
+        coreGameStateManager.setGlobalFlag(`marketUnlock_achievementsTabUnlocked_purchased`, false);
         
         const imagesDef = staticModuleData.resources.images;
         if (imagesDef) {

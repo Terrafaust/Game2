@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v3.1 - UI Layout Polish)
+// /game/modules/prestige_module/prestige_ui.js (v3.0 - Production Display)
 import * as logic from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
@@ -13,7 +13,7 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.1).");
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v3.0).");
     },
 
     renderMainContent(parentElement) {
@@ -49,12 +49,6 @@ export const ui = {
         
         header.appendChild(statsContainer);
 
-        // --- ROADMAP 4.2: Move buy multiplier controls into the header ---
-        const multiplierContainer = document.createElement('div');
-        this._createBuyMultiplierControls(multiplierContainer);
-        header.appendChild(multiplierContainer);
-        // --- END ROADMAP 4.2 ---
-
         const prestigeButtonContainer = document.createElement('div');
         const prestigeButton = coreSystemsRef.coreUIManager.createButton('', () => logic.performPrestige(), ['font-bold', 'py-2', 'px-4']);
         prestigeButton.id = 'prestige-button';
@@ -62,6 +56,11 @@ export const ui = {
         header.appendChild(prestigeButtonContainer);
         
         container.appendChild(header);
+
+        const multiplierContainer = document.createElement('div');
+        multiplierContainer.className = 'flex justify-center items-center p-2 bg-surface-dark rounded-lg mt-4';
+        this._createBuyMultiplierControls(multiplierContainer);
+        container.appendChild(multiplierContainer);
 
         const producersTitle = document.createElement('h3');
         producersTitle.className = 'text-xl font-semibold text-primary mt-6';
@@ -130,6 +129,7 @@ export const ui = {
         ownedDisplay.className = 'text-sm text-blue-400 mb-2';
         card.appendChild(ownedDisplay);
         
+        // --- MODIFICATION: Added production display element ---
         if (producerDef.passiveProduction) {
             const productionDisplay = document.createElement('div');
             productionDisplay.id = `prestige-production-${producerDef.id}`;
@@ -166,17 +166,17 @@ export const ui = {
         const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
         if(prestigeCountDisplay) {
             const count = logic.getTotalPrestigeCount();
+            // This is now handled by coreUIManager.updateResourceDisplay, but we can keep it for faster updates
             prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
         }
 
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
-            // Now gets the info object, but we only need the points for the button text
-            const gainInfo = logic.calculatePrestigeGain();
+            const gain = logic.calculatePrestigeGain();
             const canPrestige = logic.canPrestige();
-            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gainInfo.points, 0);
+            prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
-                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gainInfo.points, 2, 0)} PP`;
+                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
             } else {
                 prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
             }
@@ -200,9 +200,10 @@ export const ui = {
             const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
             if (card) {
                 const producerDef = prestigeData.producers[producerId];
-                const owned = logic.getOwnedPrestigeCount(producerId);
+                const owned = logic.getOwnedPrestigeProducerCount(producerId);
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
 
+                // --- MODIFICATION: Update production display ---
                 const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
                 if (productionDisplay) {
                     if (producerDef.passiveProduction && decimalUtility.gt(owned, 0)) {
@@ -210,6 +211,7 @@ export const ui = {
                         producerDef.passiveProduction.forEach(p => {
                             const baseRate = decimalUtility.new(p.baseRate);
                             let finalRate = decimalUtility.multiply(baseRate, owned);
+                            // Apply Post-Doc multiplier
                             if(producerId !== 'postDoc') {
                                 finalRate = decimalUtility.multiply(finalRate, postDocMultiplier);
                             }
@@ -222,9 +224,10 @@ export const ui = {
                         });
                         productionDisplay.innerHTML = productionHtml;
                     } else {
-                        productionDisplay.innerHTML = '';
+                        productionDisplay.innerHTML = ''; // Clear if not producing
                     }
                 }
+                // --- END MODIFICATION ---
 
                 let quantityToBuy;
                 if (currentMultiplier === -1) {

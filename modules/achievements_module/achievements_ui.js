@@ -1,9 +1,8 @@
-// modules/achievements_module/achievements_ui.js (v1.4 - CSS Class for Completion)
+// modules/achievements_module/achievements_ui.js (v1.3 - Themed Achievement Cards)
 
 /**
  * @file achievements_ui.js
  * @description Handles UI rendering for the Achievements module.
- * v1.4: Changed completed achievement styling to use `achievement-completed` CSS class.
  * v1.3: Ensured achievement card colors match the active theme using CSS variables.
  * v1.2: Added theme-adaptive styling for achievement cards and scrolling to specific achievements.
  * v1.1: Switched tooltips to use the new themed modal system.
@@ -19,7 +18,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.4).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.3).");
     },
 
     renderMainContent(parentElement) {
@@ -38,6 +37,7 @@ export const ui = {
         title.textContent = 'Achievements';
         container.appendChild(title);
         
+        // --- MODIFICATION: Added Achievements Tip and Stats Box ---
         const summaryBox = document.createElement('div');
         summaryBox.id = 'achievements-summary-box';
         summaryBox.className = 'bg-surface-dark p-4 rounded-lg text-center space-y-2';
@@ -53,6 +53,7 @@ export const ui = {
         summaryBox.appendChild(statsText);
         
         container.appendChild(summaryBox);
+        // --- END MODIFICATION ---
 
         const achievementsGrid = document.createElement('div');
         achievementsGrid.id = 'achievements-grid';
@@ -68,13 +69,15 @@ export const ui = {
         const achievementsGrid = parentElementCache.querySelector('#achievements-grid');
         if (!achievementsGrid) return;
         
+        // --- MODIFICATION: Update stats display ---
         const statsDisplay = parentElementCache.querySelector('#achievements-stats-display');
         if (statsDisplay) {
             const completedCount = moduleLogicRef.getCompletedAchievementCount();
             const totalAchievements = Object.keys(staticModuleData.achievements).length;
-            const bonusPercentage = completedCount; 
+            const bonusPercentage = completedCount; // Each achievement is 1%
             statsDisplay.textContent = `Completed: ${completedCount} / ${totalAchievements} | Total Bonus: ${bonusPercentage}%`;
         }
+        // --- END MODIFICATION ---
 
         achievementsGrid.innerHTML = '';
 
@@ -91,19 +94,14 @@ export const ui = {
         
         const card = document.createElement('div');
         card.id = `achievement-card-${achievementDef.id}`; 
-        
-        // --- ROADMAP 4.2: Use `achievement-completed` class for styling ---
-        card.className = 'achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer';
-        if (isCompleted) {
-            card.classList.add('achievement-completed');
-        } else {
-            card.classList.add('bg-surface-dark');
-        }
-        // --- END ROADMAP 4.2 ---
+        // --- MODIFICATION: Removed hardcoded Tailwind classes for completed state ---
+        card.className = `achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
+            isCompleted ? 'is-completed' : 'bg-surface-dark'
+        }`;
         
         const icon = document.createElement('div');
         icon.className = 'text-4xl mb-2';
-        icon.textContent = achievementDef.icon || '🏆';
+        icon.textContent = achievementDef.icon || '�';
         card.appendChild(icon);
 
         const name = document.createElement('h4');
@@ -151,19 +149,26 @@ export const ui = {
                 const resDef = staticDataAggregator.getData(`core_resource_definitions.${condition.resourceId}`) || staticDataAggregator.getData(`studies.resources.${condition.resourceId}`) || { name: condition.resourceId };
                 return `Have ${decimalUtility.format(decimalUtility.new(condition.amount),0)} ${resDef.name}.`;
             default:
+                // Provide a more descriptive fallback for unhandled types
                 return `Meet a specific in-game criteria. (Type: ${condition.type})`;
         }
     },
 
+    /**
+     * Scrolls the achievement grid to make a specific achievement card visible.
+     * @param {string} achievementId - The ID of the achievement to scroll to.
+     */
     scrollToAchievement(achievementId) {
         const targetCard = document.getElementById(`achievement-card-${achievementId}`);
         if (targetCard && parentElementCache) {
+            // Find the main content area which has the scrollbar
             const mainContent = parentElementCache.closest('#main-content');
             if (mainContent) {
+                // Calculate position relative to the scrollable container
                 const cardRect = targetCard.getBoundingClientRect();
                 const mainContentRect = mainContent.getBoundingClientRect();
 
-                const scrollPosition = cardRect.top - mainContentRect.top + mainContent.scrollTop - (mainContentRect.height / 3);
+                const scrollPosition = cardRect.top - mainContentRect.top + mainContent.scrollTop - (mainContentRect.height / 3); // Center it roughly
 
                 mainContent.scrollTo({
                     top: scrollPosition,
@@ -186,6 +191,6 @@ export const ui = {
 
     onHide() {
         coreSystemsRef.loggingSystem.debug("AchievementsUI", "Achievements tab hidden.");
-        coreSystemsRef.coreUIManager.hideTooltip();
+        coreSystemsRef.coreUIManager.hideTooltip(); // Keep this to clear any old tooltips that might be stuck
     }
 };

@@ -1,9 +1,8 @@
-// modules/skills_module/skills_logic.js (v4.8 - Final Targeted Fix)
+// modules/skills_module/skills_logic.js (v4.2 - UI Crash Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
- * v4.8: Restored original production multiplier logic to fix zero-gain bug. Correctly applied exponential cost reduction formula as per the roadmap.
  * v4.2: Added guard clause to getFormattedSkillEffect to prevent UI render crash.
  * v4.1: Fixed TypeError crash by safely handling skill effect definitions.
  * v4.0: Implemented and corrected logic for all special and standard skill effects based on detailed review.
@@ -25,7 +24,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.8).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.2).");
         this.registerAllSkillEffects();
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
@@ -225,9 +224,7 @@ export const moduleLogic = {
                                 ? decimalUtility.add(1, effectValue) 
                                 : effectValue;
                         } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-                             // This is the single targeted change from the roadmap
-                             const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
-                             finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
+                             finalMultiplier = decimalUtility.subtract(1, effectValue);
                         } else {
                             return effectValue; // For ADDITIVE_BONUS
                         }
@@ -317,6 +314,7 @@ export const moduleLogic = {
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillDef = skillsCollection[skillId];
 
+        // --- FIX: Add a guard clause to prevent crash if skill definition is missing ---
         if (!skillDef) {
             loggingSystem.warn("SkillsLogic_getFormattedSkillEffect", `Could not find skill definition for ID: ${skillId}.`);
             return "Invalid Skill";
@@ -331,36 +329,32 @@ export const moduleLogic = {
         if (level === 0) return "Not active"; 
 
         const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-
-        if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-            const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
-            const finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
-            const reductionPercent = decimalUtility.multiply(decimalUtility.subtract(1, finalMultiplier), 100);
-            return `-${decimalUtility.format(reductionPercent, 2)}% Cost`;
-        }
-
         let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
-
-        if (effectDef.type === "MULTIPLIER") {
-             let multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
-                                ? decimalUtility.add(1, currentEffectValue) 
-                                : currentEffectValue;
-             if (!isPrestige) {
-                const power = this.getSingularityPower();
-                if (power > 1) multiplier = decimalUtility.power(multiplier, power);
-            }
-            return `x${decimalUtility.format(multiplier, 2)}`;
-        }
         
-        if(effectDef.type === "ADDITIVE_BONUS" || effectDef.type === "PERCENTAGE_BONUS") {
-            return `+${decimalUtility.format(currentEffectValue, 2)}`;
+        let multiplier;
+        if (effectDef.type === "MULTIPLIER") {
+            multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" ? decimalUtility.add(1, currentEffectValue) : currentEffectValue;
+        } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+            multiplier = decimalUtility.subtract(1, currentEffectValue);
+        } else {
+             return `+${decimalUtility.format(currentEffectValue, 2)}`;
         }
 
+        if (!isPrestige) {
+            const power = this.getSingularityPower();
+            if (power > 1) multiplier = decimalUtility.power(multiplier, power);
+        }
+
+        if (effectDef.type === "MULTIPLIER") return `x${decimalUtility.format(multiplier, 2)}`;
+        if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
+            const reduction = decimalUtility.subtract(1, multiplier);
+            return `-${decimalUtility.format(decimalUtility.multiply(reduction, 100), 2)}% Cost`;
+        }
         return "Effect";
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.7).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.2).");
         Object.assign(moduleState, {
             ...getSkillsInitialState(),
             ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
@@ -379,7 +373,7 @@ export const moduleLogic = {
 
     onResetState() {
         coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered. Resetting ALL skills and flags.");
-        Object.assign(moduleState, getInitialState());
+        Object.assign(moduleState, getSkillsInitialState());
         this.registerAllSkillEffects();
         
         coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'knowledgeIsPower_special', 'global_resource_production', 'studyPoints', 'MULTIPLIER');
