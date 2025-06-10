@@ -1,9 +1,8 @@
-// modules/skills_module/skills_logic.js (v4.4 - Multiplicative Cost Reduction Fix)
+// modules/skills_module/skills_logic.js (v4.3 - Implement Transcendence & Clarify Special Effects)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
- * v4.4: Corrected COST_REDUCTION_MULTIPLIER to be multiplicative (geometric) instead of additive (arithmetic).
  * v4.3: Implemented Transcendence skill effect and added comments for clarity on special effects.
  * v4.2: Added guard clause to getFormattedSkillEffect to prevent UI render crash.
  * v4.1: Fixed TypeError crash by safely handling skill effect definitions.
@@ -26,7 +25,7 @@ const REGISTERABLE_EFFECT_TYPES = [
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.4).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.3).");
         this.registerAllSkillEffects();
         // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
@@ -218,23 +217,17 @@ export const moduleLogic = {
                         if (level === 0) return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
 
                         const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
+                        let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
                         
                         let finalMultiplier;
                         if (effectDef.type === "MULTIPLIER") {
-                             let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
                              finalMultiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
                                 ? decimalUtility.add(1, effectValue) 
                                 : effectValue;
                         } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-                            // --- MODIFICATION: Changed from arithmetic to geometric/multiplicative scaling ---
-                            // Old logic: finalMultiplier = decimalUtility.subtract(1, effectValue);
-                            // New logic: (1 - reduction_per_level) ^ level
-                            const reductionBase = decimalUtility.subtract(1, baseValuePerLevel);
-                            finalMultiplier = decimalUtility.power(reductionBase, level);
+                             finalMultiplier = decimalUtility.subtract(1, effectValue);
                         } else {
-                            // For ADDITIVE_BONUS
-                            let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
-                            return effectValue; 
+                            return effectValue; // For ADDITIVE_BONUS
                         }
 
                         if (!isPrestigeFlag && finalMultiplier.gt(0)) {
@@ -299,12 +292,16 @@ export const moduleLogic = {
                             coreUpgradeManager.registerEffectSource('skills', 'ppOverdrive_special', 'global_production', 'all', 'MULTIPLIER', () => globalBonus);
                             break;
 
-                        case "MANUAL_CLICK_KNOWLEDGE_GAIN": 
-                        case "SQUARE_STUDY_SKILL_MULTIPLIERS": 
-                        case "MANUAL": 
+                        // --- MODIFICATION: Clarify that these effects are handled elsewhere ---
+                        case "MANUAL_CLICK_KNOWLEDGE_GAIN": // Handled by getManualKnowledgeGainPercent() at the point of click
+                        case "SQUARE_STUDY_SKILL_MULTIPLIERS": // Handled by getSingularityPower() within registerAllSkillEffects
+                        case "MANUAL": // Handled by specific getter functions (e.g., getStartingProducers) called at specific events (e.g., on prestige)
                             break;
                         
+                        // --- MODIFICATION: Implement UNLOCK_SECRET_MECHANIC ---
                         case "UNLOCK_SECRET_MECHANIC":
+                            // If the skill is purchased (level > 0), set a global flag.
+                            // Another module would be responsible for checking this flag and enabling the feature.
                             coreGameStateManager.setGlobalFlag('secretMechanicUnlocked', true);
                             loggingSystem.info("SkillsLogic", "Secret mechanic flag set due to Transcendence skill.");
                             break;
@@ -326,6 +323,7 @@ export const moduleLogic = {
         const skillsCollection = isPrestige ? staticModuleData.prestigeSkills : staticModuleData.skills;
         const skillDef = skillsCollection[skillId];
 
+        // --- FIX: Add a guard clause to prevent crash if skill definition is missing ---
         if (!skillDef) {
             loggingSystem.warn("SkillsLogic_getFormattedSkillEffect", `Could not find skill definition for ID: ${skillId}.`);
             return "Invalid Skill";
@@ -340,17 +338,14 @@ export const moduleLogic = {
         if (level === 0) return "Not active"; 
 
         const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
+        let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
         
         let multiplier;
         if (effectDef.type === "MULTIPLIER") {
-             let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
             multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" ? decimalUtility.add(1, currentEffectValue) : currentEffectValue;
         } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-            // --- MODIFICATION: Calculate effect based on new geometric logic ---
-            const reductionBase = decimalUtility.subtract(1, baseValuePerLevel);
-            multiplier = decimalUtility.power(reductionBase, level);
+            multiplier = decimalUtility.subtract(1, currentEffectValue);
         } else {
-             let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
              return `+${decimalUtility.format(currentEffectValue, 2)}`;
         }
 
@@ -368,7 +363,7 @@ export const moduleLogic = {
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.4).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.3).");
         Object.assign(moduleState, {
             ...getSkillsInitialState(),
             ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
