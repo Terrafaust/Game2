@@ -1,11 +1,10 @@
-// modules/market_module/market_ui.js (v3.0 - Roadmap UI Refactor)
+// modules/market_module/market_ui.js (v3.1 - Restored Consumables Section)
 
 /**
  * @file market_ui.js
  * @description Handles the UI rendering and interactions for the Market module.
+ * v3.1: Restored the Consumables section for purchasing Images.
  * v3.0: Complete UI overhaul for the new roadmap structure.
- * - Implemented Feature Unlocks, Skill Points, and Already Unlocked sections.
- * - Removed all legacy UI functions for automations and old item structures.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -18,9 +17,8 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.1).");
         
-        // Listen for changes to the buy multiplier to update costs dynamically
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
                 this.updateDynamicElements();
@@ -41,16 +39,16 @@ export const ui = {
 
         container.innerHTML = `<h2 class="text-2xl font-semibold text-primary mb-2">Market</h2>`;
         
-        // Append the new sections based on the roadmap
+        // Append the new and restored sections
         container.appendChild(this._createFeatureUnlocksSection());
+        container.appendChild(this._createConsumablesSection()); // Restored
         container.appendChild(this._createSkillPointsSection());
         container.appendChild(this._createAlreadyUnlockedSection());
 
         parentElement.appendChild(container);
-        this.updateDynamicElements(); // Initial update
+        this.updateDynamicElements();
     },
     
-    // Creates the section for one-time feature unlocks
     _createFeatureUnlocksSection() {
         const section = document.createElement('section');
         section.id = 'market-feature-unlocks-section';
@@ -62,10 +60,9 @@ export const ui = {
         itemsGrid.id = 'market-feature-unlocks-grid';
         itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
         
-        // Create a placeholder card for each potential unlock. updateDynamicElements will handle visibility.
         for (const unlockId in staticModuleData.featureUnlocks) {
             const unlockDef = staticModuleData.featureUnlocks[unlockId];
-            if (unlockDef.isFuture) continue; // Skip features marked for the future
+            if (unlockDef.isFuture) continue;
             itemsGrid.appendChild(this._createCard(
                 unlockId, 
                 unlockDef,
@@ -76,7 +73,39 @@ export const ui = {
         return section;
     },
 
-    // Creates the section for purchasing skill points
+    // NEW: Function to create the Consumables section
+    _createConsumablesSection() {
+        const section = document.createElement('section');
+        section.id = 'market-consumables-section';
+        section.className = 'space-y-4';
+        
+        const sectionHeader = document.createElement('div');
+        sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
+        sectionHeader.innerHTML = `<h3 class="text-xl font-medium text-secondary">Consumables</h3>`;
+
+        if (coreSystemsRef.buyMultiplierUI) {
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4');
+            sectionHeader.appendChild(multiplierControls);
+        }
+        section.appendChild(sectionHeader);
+
+        const itemsGrid = document.createElement('div');
+        itemsGrid.id = 'market-consumables-grid';
+        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+
+        for (const itemId in staticModuleData.consumables) {
+            const itemDef = staticModuleData.consumables[itemId];
+            itemsGrid.appendChild(this._createCard(
+                itemId, 
+                itemDef,
+                () => moduleLogicRef.purchaseScalableItem(itemId)
+            ));
+        }
+        section.appendChild(itemsGrid);
+        return section;
+    },
+
     _createSkillPointsSection() {
         const section = document.createElement('section');
         section.id = 'market-skill-points-section';
@@ -86,7 +115,6 @@ export const ui = {
         sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
         sectionHeader.innerHTML = `<h3 class="text-xl font-medium text-secondary">Skill Points</h3>`;
 
-        // Add buy multiplier controls
         if (coreSystemsRef.buyMultiplierUI) {
             const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
             multiplierControls.classList.remove('my-4');
@@ -98,37 +126,34 @@ export const ui = {
         itemsGrid.id = 'market-skill-points-grid';
         itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
 
-        // Create placeholder cards for skill points
         for (const itemId in staticModuleData.skillPoints) {
             const itemDef = staticModuleData.skillPoints[itemId];
             itemsGrid.appendChild(this._createCard(
                 itemId, 
                 itemDef,
-                () => moduleLogicRef.purchaseSkillPoint(itemId)
+                () => moduleLogicRef.purchaseScalableItem(itemId)
             ));
         }
         section.appendChild(itemsGrid);
         return section;
     },
 
-    // Creates the section for displaying already purchased unlocks
     _createAlreadyUnlockedSection() {
         const section = document.createElement('section');
         section.id = 'market-already-unlocked-section';
         section.className = 'space-y-4';
-        section.style.display = 'none'; // Initially hidden
+        section.style.display = 'none';
 
         section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Already Unlocked</h3>`;
         
         const unlockedGrid = document.createElement('div');
         unlockedGrid.id = 'market-already-unlocked-grid';
-        unlockedGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4'; // 4x3 layout
+        unlockedGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4';
         section.appendChild(unlockedGrid);
         
         return section;
     },
 
-    // A generic card generator for both unlocks and skill points
     _createCard(id, def, purchaseCallback) {
         const { coreUIManager } = coreSystemsRef;
         const card = document.createElement('div');
@@ -147,7 +172,7 @@ export const ui = {
             'Purchase', 
             () => {
                 purchaseCallback();
-                this.updateDynamicElements(); // Re-check state after purchase attempt
+                this.updateDynamicElements();
             }, 
             ['w-full', 'mt-auto'], 
             `market-card-button-${id}`
@@ -157,25 +182,24 @@ export const ui = {
         return card;
     },
 
-    // The main update loop for the entire Market UI
     updateDynamicElements() {
         if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
         
-        // Update Feature Unlock cards
-        for (const unlockId in staticModuleData.featureUnlocks) {
-            this._updateFeatureUnlockCard(unlockId);
-        }
-
-        // Update Skill Point cards
-        for (const itemId in staticModuleData.skillPoints) {
-            this._updateSkillPointCard(itemId);
-        }
+        // Update all categories of cards
+        this._updateCardSet(staticModuleData.featureUnlocks, this._updateFeatureUnlockCard);
+        this._updateCardSet(staticModuleData.consumables, this._updateScalableItemCard);
+        this._updateCardSet(staticModuleData.skillPoints, this._updateScalableItemCard);
         
-        // Update the "Already Unlocked" grid
         this._updateAlreadyUnlockedGrid();
     },
 
-    // Updates a single feature unlock card
+    // Generic helper to update a set of cards
+    _updateCardSet(dataSet, updateFunction) {
+        for (const id in dataSet) {
+            updateFunction.call(this, id);
+        }
+    },
+
     _updateFeatureUnlockCard(unlockId) {
         const unlockDef = staticModuleData.featureUnlocks[unlockId];
         if (unlockDef.isFuture) return;
@@ -198,13 +222,12 @@ export const ui = {
         }
     },
     
-    // Updates a single skill point card
-    _updateSkillPointCard(itemId) {
-        const itemDef = staticModuleData.skillPoints[itemId];
+    _updateScalableItemCard(itemId) {
+        const itemDef = staticModuleData.consumables[itemId] || staticModuleData.skillPoints[itemId];
         const cardElement = parentElementCache.querySelector(`#market-card-${itemId}`);
         if (!cardElement) return;
 
-        const isVisible = moduleLogicRef.isSkillPointVisible(itemId);
+        const isVisible = moduleLogicRef.isItemVisible(itemId);
         cardElement.style.display = isVisible ? 'flex' : 'none';
 
         if (isVisible) {
@@ -223,7 +246,6 @@ export const ui = {
         }
     },
 
-    // Populates the grid of already unlocked features
     _updateAlreadyUnlockedGrid() {
         const unlockedGrid = parentElementCache.querySelector('#market-already-unlocked-grid');
         const unlockedSection = parentElementCache.querySelector('#market-already-unlocked-section');

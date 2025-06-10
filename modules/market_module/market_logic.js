@@ -1,10 +1,10 @@
-// modules/market_module/market_logic.js (v5.0 - Roadmap Refactor)
+// modules/market_module/market_logic.js (v5.1 - Restored Consumables Logic)
 
 /**
  * @file market_logic.js
  * @description Business logic for the Market module.
+ * v5.1: Generalized purchase logic to handle both consumables and skill points.
  * v5.0: Complete refactor for roadmap. Automation logic removed, unlock/purchase logic updated.
- * v4.0: Corrected cost reduction logic to apply to base cost.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -12,15 +12,26 @@ import { moduleState, getInitialState } from './market_state.js';
 
 let coreSystemsRef = null;
 
+// Helper to find a scalable item definition in either consumables or skillPoints
+function _getScalableItemDef(itemId) {
+    if (staticModuleData.consumables && staticModuleData.consumables[itemId]) {
+        return staticModuleData.consumables[itemId];
+    }
+    if (staticModuleData.skillPoints && staticModuleData.skillPoints[itemId]) {
+        return staticModuleData.skillPoints[itemId];
+    }
+    return null;
+}
+
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v5.0).");
+        coreSystemsRef.loggingSystem.info("MarketLogic", "Logic initialized (v5.1).");
     },
     
     calculateMaxBuyable(itemId) {
         const { coreResourceManager, decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = staticModuleData.skillPoints[itemId];
+        const itemDef = _getScalableItemDef(itemId);
         if (!itemDef) return decimalUtility.ZERO;
 
         const purchaseCountKey = itemDef.benefitResource;
@@ -61,7 +72,7 @@ export const moduleLogic = {
 
     calculateScalableItemCost(itemId, quantity = 1) {
         const { decimalUtility, coreUpgradeManager } = coreSystemsRef;
-        const itemDef = staticModuleData.skillPoints[itemId];
+        const itemDef = _getScalableItemDef(itemId);
         if (!itemDef) return decimalUtility.new(Infinity);
         
         let n = decimalUtility.new(quantity);
@@ -102,9 +113,9 @@ export const moduleLogic = {
         return totalCost;
     },
 
-    purchaseSkillPoint(itemId) {
+    purchaseScalableItem(itemId) {
         const { coreResourceManager, decimalUtility, coreGameStateManager, coreUIManager, buyMultiplierManager, moduleLoader } = coreSystemsRef;
-        const itemDef = staticModuleData.skillPoints[itemId];
+        const itemDef = _getScalableItemDef(itemId);
         if (!itemDef) return false;
         
         let quantity = buyMultiplierManager.getMultiplier();
@@ -124,6 +135,11 @@ export const moduleLogic = {
         if (coreResourceManager.canAfford(costResource, cost)) {
             coreResourceManager.spendAmount(costResource, cost);
             
+            // Unlock resource if it's the first time acquiring it
+            const benefitResource = coreResourceManager.getResource(itemDef.benefitResource);
+            if (benefitResource && !benefitResource.isUnlocked) coreResourceManager.unlockResource(itemDef.benefitResource, true);
+            if (benefitResource && !benefitResource.showInUI) coreResourceManager.setResourceVisibility(itemDef.benefitResource, true);
+
             const benefitAmount = decimalUtility.multiply(itemDef.benefitAmountPerPurchase, quantity);
             coreResourceManager.addAmount(itemDef.benefitResource, benefitAmount);
             
@@ -134,11 +150,14 @@ export const moduleLogic = {
             
             coreUIManager.showNotification(`Acquired ${decimalUtility.format(benefitAmount,0)} ${itemDef.name.replace('Acquire ', '')}${decimalUtility.gt(quantity,1) ? 's' : ''}!`, 'success', 2000);
             
-            const skillsModule = moduleLoader.getModule('skills');
-            if (skillsModule?.logic?.isSkillsTabUnlocked) {
-                 skillsModule.logic.isSkillsTabUnlocked(); 
-            } else {
-                 coreUIManager.renderMenu();
+            // If it was a skill point, check if the skills tab should now be unlocked
+            if (itemDef.benefitResource.toLowerCase().includes('skillpoint')) {
+                const skillsModule = moduleLoader.getModule('skills');
+                if (skillsModule?.logic?.isSkillsTabUnlocked) {
+                     skillsModule.logic.isSkillsTabUnlocked(); 
+                } else {
+                     coreUIManager.renderMenu();
+                }
             }
             return true;
         } else {
@@ -181,9 +200,9 @@ export const moduleLogic = {
         return true;
     },
 
-    isSkillPointVisible(itemId) {
-        const { coreGameStateManager, decimalUtility } = coreSystemsRef;
-        const itemDef = staticModuleData.skillPoints[itemId];
+    isItemVisible(itemId) {
+        const { decimalUtility } = coreSystemsRef;
+        const itemDef = _getScalableItemDef(itemId);
         if (!itemDef) return false;
 
         if (itemDef.unlockCondition) {
@@ -245,13 +264,11 @@ export const moduleLogic = {
         Object.assign(moduleState, initialState); 
         coreGameStateManager.setModuleState('market', { ...moduleState }); 
         
-        // Resetting global flags related to market unlocks
         coreGameStateManager.setGlobalFlag('marketTabPermanentlyUnlocked', false);
         Object.values(staticModuleData.featureUnlocks).forEach(unlock => {
             coreGameStateManager.setGlobalFlag(unlock.flagToSet, false);
         });
         
-        // Redefine resources to their initial state
         const imagesDef = staticModuleData.resources.images;
         if (imagesDef) {
             coreResourceManager.defineResource(imagesDef.id, imagesDef.name, decimalUtility.new(imagesDef.initialAmount), false, false, imagesDef.hasProductionRate);

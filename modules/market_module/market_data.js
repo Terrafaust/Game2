@@ -1,10 +1,10 @@
-// modules/market_module/market_data.js (v3.0 - Roadmap Refactor)
+// modules/market_module/market_data.js (v3.1 - Restored Consumables)
 
 /**
  * @file market_data.js
  * @description Static data definitions for the Market module.
+ * v3.1: Re-introduced the 'consumables' category to separate Images from Skill Points.
  * v3.0: Complete refactor for roadmap. Removed automations, added feature unlocks and skill points sections.
- * v2.1: Cleaned up item names to be singular.
  */
 
 export const staticModuleData = {
@@ -13,15 +13,28 @@ export const staticModuleData = {
         studySkillPoints: { id: 'studySkillPoints', name: "Study Skill Points", initialAmount: "0", isUnlocked: true, showInUI: false, hasProductionRate: false },
         prestigeSkillPoints: { id: 'prestigeSkillPoints', name: 'Prestige Skill Points', initialAmount: '0', isUnlocked: true, showInUI: false, hasProductionRate: false }
     },
+    
+    // NEW: Section for items like Images.
+    consumables: {
+        buyImages: { 
+            id: 'buyImages', 
+            name: 'Acquire Image', 
+            description: 'Purchase decorative Images with your Study Points. Get 1,000 to unlock Prestige.', 
+            costResource: 'studyPoints', 
+            baseCost: '1000000', 
+            costGrowthFactor: '1.0005', 
+            benefitResource: 'images', 
+            benefitAmountPerPurchase: '1', 
+        },
+    },
 
-    // NEW STRUCTURE: Replaces marketItems and marketUnlocks
     featureUnlocks: {
         settingsTab: { 
             id: 'unlockSettingsTab', 
             name: 'Unlock Settings Menu', 
             description: 'Gain access to game settings and customization options.', 
             costResource: 'images', 
-            costAmount: '200', // As per roadmap
+            costAmount: '200',
             flagToSet: 'settingsTabUnlocked' 
         },
         achievementsTab: {  
@@ -29,7 +42,7 @@ export const staticModuleData = {
             name: 'Unlock Achievements Menu', 
             description: 'Track your accomplishments and earn rewards.', 
             costResource: 'images', 
-            costAmount: '100', // Original value, can be adjusted
+            costAmount: '100',
             flagToSet: 'achievementsTabUnlocked'
         },
         themes: {
@@ -55,16 +68,16 @@ export const staticModuleData = {
             costResource: 'images',
             costAmount: '1e7',
             flagToSet: 'automationTabUnlocked',
-            unlockCondition: { type: 'prestigeCount', value: 3 } // Appears after 3rd prestige
+            unlockCondition: { type: 'prestigeCount', value: 3 }
         },
         modifiedUI: {
             id: 'unlockModifiedUI',
             name: 'Unlock Modified UI',
             description: 'A future update will modify the UI.',
             costResource: 'images',
-            costAmount: '1e12', // Placeholder high cost
+            costAmount: '1e12',
             flagToSet: 'modifiedUIUnlocked',
-            isFuture: true // Flag to indicate this is not yet implemented
+            isFuture: true
         }
     },
 
@@ -88,11 +101,9 @@ export const staticModuleData = {
             costGrowthFactor: '1.2', 
             benefitResource: 'prestigeSkillPoints', 
             benefitAmountPerPurchase: '1',
-            unlockCondition: { type: 'purchaseCount', id: 'studySkillPoints', value: 1 } // Appears after 1st SSP purchase
+            unlockCondition: { type: 'purchaseCount', id: 'studySkillPoints', value: 1 }
         }
     },
-
-    // REMOVED: marketItems, marketUnlocks, and marketAutomations are now obsolete.
 
     ui: {
         marketTabLabel: "Market",
