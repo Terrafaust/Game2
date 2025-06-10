@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v5.5 - Robust Resource Display)
+// js/core/coreUIManager.js (v5.6 - Reverted and Fixed Resource Display)
 
 /**
  * @file coreUIManager.js
  * @description Manages the main UI structure.
+ * v5.6: Reverted updateResourceDisplay to original logic and removed "no resources" message to fix visibility and update bugs.
  * v5.5: Implemented a more robust resource display logic to fix visibility and update bugs.
  * v5.4: Fixed resource display logic to correctly show/hide resources based on their unlock status.
  * v5.3: Implemented static resource bar layout and notification stacking as per roadmap.
@@ -56,7 +57,6 @@ const UIElements = {
 let registeredMenuTabs = {};
 let activeTabId = null;
 let currentTooltipTarget = null;
-let resourceElementsInitialized = false;
 
 export const coreUIManager = {
     initialize() {
@@ -76,8 +76,6 @@ export const coreUIManager = {
             loggingSystem.error("CoreUIManager_Init", "One or more critical UI elements not found. Initialization failed.");
             return;
         }
-        
-        UIElements.resourcesDisplay.className = 'grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1';
 
         this.updateResourceDisplay();
         this.renderMenu();
@@ -90,7 +88,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.5).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v5.6).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -216,57 +214,44 @@ export const coreUIManager = {
     isActiveTab(tabId) { return activeTabId === tabId; },
     clearMainContent() { if (UIElements.mainContent) UIElements.mainContent.innerHTML = ''; },
 
-    // --- BUG FIX v5.5: More robust resource display logic ---
+    // --- BUG FIX: Reverted to original, stable logic and removed "no resources" message ---
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay) return;
-
         const allResources = coreResourceManager.getAllResources();
-
-        // This ensures the prestige count value is up-to-date before rendering
+        
         const prestigeModule = window.game?.moduleLoader?.getModule('prestige');
-        if (prestigeModule && prestigeModule.logic) {
+        if (prestigeModule) {
             const prestigeCount = prestigeModule.logic.getTotalPrestigeCount();
-            if (coreResourceManager.isResourceDefined('prestigeCount')) {
-                 coreResourceManager.setAmount('prestigeCount', prestigeCount);
-            }
+            coreResourceManager.setAmount('prestigeCount', prestigeCount);
         }
 
-        // On first run, create all potential resource elements
-        if (!resourceElementsInitialized) {
-            UIElements.resourcesDisplay.innerHTML = ''; // Clear any placeholders
-            Object.values(allResources).forEach(res => {
-                const displayElement = document.createElement('div');
-                displayElement.id = `resource-${res.id}-display`;
-                displayElement.className = 'resource-item-display';
-                displayElement.style.display = 'none'; // Initially hidden
-                UIElements.resourcesDisplay.appendChild(displayElement);
-            });
-            resourceElementsInitialized = true;
-        }
-
-        // On every update, toggle visibility and update content
         Object.values(allResources).forEach(res => {
-            const displayElement = document.getElementById(`resource-${res.id}-display`);
-            if (!displayElement) return;
-
-            let shouldShow = res.isUnlocked && res.showInUI;
-            if (res.id === 'prestigeCount' && decimalUtility.lte(res.amount, 0)) {
-                shouldShow = false;
-            }
-
-            if (shouldShow) {
-                const amountFormatted = decimalUtility.format(res.amount, res.id === 'prestigeCount' ? 0 : 2);
+            if (res.isUnlocked && res.showInUI) {
+                let displayElement = document.getElementById(`resource-${res.id}-display`);
+                if (!displayElement) {
+                    displayElement = document.createElement('div');
+                    displayElement.id = `resource-${res.id}-display`;
+                    displayElement.className = 'resource-item-display'; 
+                    UIElements.resourcesDisplay.appendChild(displayElement);
+                }
+                const amountFormatted = decimalUtility.format(res.amount, 2);
                 const rateFormatted = decimalUtility.format(res.totalProductionRate, 2);
                 
-                let rateHTML = '';
-                if (res.hasProductionRate && decimalUtility.gt(res.totalProductionRate, 0) && res.id !== 'prestigeCount') {
-                    rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                let innerHTML;
+                if (res.id === 'prestigeCount') {
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${decimalUtility.format(res.amount, 0)}</span>`;
+                } else {
+                     let rateHTML = '';
+                    if (res.hasProductionRate && (decimalUtility.gt(res.totalProductionRate, 0) || (res.productionSources && Object.keys(res.productionSources).length > 0) )) {
+                        rateHTML = ` (<span id="resource-${res.id}-rate" class="text-green-400">${rateFormatted}</span>/s)`;
+                    }
+                    innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
                 }
+                displayElement.innerHTML = innerHTML;
 
-                displayElement.innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span id="resource-${res.id}-amount" class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
-                displayElement.style.display = 'block';
             } else {
-                displayElement.style.display = 'none';
+                let displayElement = document.getElementById(`resource-${res.id}-display`);
+                if (displayElement) displayElement.remove();
             }
         });
     },

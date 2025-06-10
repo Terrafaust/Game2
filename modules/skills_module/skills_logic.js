@@ -1,12 +1,11 @@
-// modules/skills_module/skills_logic.js (v4.3 - Exponential Cost Reduction)
+// modules/skills_module/skills_logic.js (v4.4 - Production Multiplier Fix)
 
 /**
  * @file skills_logic.js
  * @description Business logic for the Skills module.
+ * v4.4: Fixed critical bug in MULTIPLIER effect calculation that was reducing production to zero.
  * v4.3: Corrected cost reduction skills to apply exponentially per level as per roadmap.
  * v4.2: Added guard clause to getFormattedSkillEffect to prevent UI render crash.
- * v4.1: Fixed TypeError crash by safely handling skill effect definitions.
- * v4.0: Implemented and corrected logic for all special and standard skill effects based on detailed review.
  */
 
 import { staticModuleData } from './skills_data.js';
@@ -14,20 +13,18 @@ import { moduleState, getInitialState as getSkillsInitialState } from './skills_
 
 let coreSystemsRef = null;
 
-// Define effect types that can be registered with CoreUpgradeManager
 const REGISTERABLE_EFFECT_TYPES = [
     "MULTIPLIER",
     "ADDITIVE_BONUS",
-    "PERCENTAGE_BONUS", // Legacy, functionally same as ADDITIVE_BONUS
+    "PERCENTAGE_BONUS",
     "COST_REDUCTION_MULTIPLIER"
 ];
 
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.3).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "Logic initialized (v4.4).");
         this.registerAllSkillEffects();
-        // Register the update callback for special effects that need continuous evaluation
         coreSystemsRef.gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
             this.applySpecialSkillEffects(deltaTime);
         });
@@ -217,28 +214,43 @@ export const moduleLogic = {
                         if (level === 0) return effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
 
                         const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-                        
-                        let finalMultiplier;
-                        if (effectDef.type === "MULTIPLIER") {
-                             let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
-                             finalMultiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" 
-                                ? decimalUtility.add(1, effectValue) 
-                                : effectValue;
-                        } else if (effectDef.type === "COST_REDUCTION_MULTIPLIER") {
-                             // --- ROADMAP 2.1: Implement exponential cost reduction ---
-                             const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
-                             finalMultiplier = decimalUtility.power(baseReductionMultiplier, level);
-                             // --- END ROADMAP 2.1 ---
-                        } else { // ADDITIVE_BONUS
-                            let effectValue = decimalUtility.multiply(baseValuePerLevel, level);
-                            return effectValue;
+                        let finalValue;
+
+                        switch (effectDef.type) {
+                            case "MULTIPLIER": {
+                                // --- BUG FIX v4.4: Correctly calculate multiplier as 1 + bonus ---
+                                // This assumes skill bonuses are additive with themselves per level.
+                                // e.g., A skill with +5% per level gives +15% at level 3, so a 1.15x multiplier.
+                                const totalBonus = decimalUtility.multiply(baseValuePerLevel, level);
+                                finalValue = decimalUtility.add(1, totalBonus);
+                                break;
+                            }
+                            case "COST_REDUCTION_MULTIPLIER": {
+                                // This assumes cost reductions are multiplicative with themselves per level.
+                                // e.g., A skill with 2% reduction is 0.98x. At level 3, it's 0.98^3.
+                                const baseReductionMultiplier = decimalUtility.subtract(1, baseValuePerLevel);
+                                finalValue = decimalUtility.power(baseReductionMultiplier, level);
+                                break;
+                            }
+                            case "ADDITIVE_BONUS":
+                            case "PERCENTAGE_BONUS": {
+                                finalValue = decimalUtility.multiply(baseValuePerLevel, level);
+                                break;
+                            }
+                            default: {
+                                finalValue = effectDef.type.includes("MULTIPLIER") ? decimalUtility.new(1) : decimalUtility.new(0);
+                                break;
+                            }
                         }
 
-                        if (!isPrestigeFlag && finalMultiplier.gt(0)) {
+                        if (!isPrestigeFlag && effectDef.type.includes("MULTIPLIER") && finalValue.gt(0)) {
                             const power = this.getSingularityPower();
-                            if (power > 1) finalMultiplier = decimalUtility.power(finalMultiplier, power);
+                            if (power > 1) {
+                                finalValue = decimalUtility.power(finalValue, power);
+                            }
                         }
-                        return finalMultiplier;
+                        
+                        return finalValue;
                     };
                     const sourceKey = `${isPrestigeFlag ? 'p_' : 's_'}${skillId}_${effectDef.targetSystem}_${effectDef.targetId || 'ALL'}`;
                     coreUpgradeManager.registerEffectSource('skills', sourceKey, effectDef.targetSystem, effectDef.targetId, effectDef.type, valueProvider);
@@ -340,28 +352,29 @@ export const moduleLogic = {
             return `-${decimalUtility.format(reductionPercent, 2)}% Cost`;
         }
 
-        const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
-        let currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
-        
-        let multiplier;
         if (effectDef.type === "MULTIPLIER") {
-            multiplier = effectDef.aggregation === "ADDITIVE_TO_BASE_FOR_MULTIPLIER" ? decimalUtility.add(1, currentEffectValue) : currentEffectValue;
-        } else { // ADDITIVE_BONUS
-             return `+${decimalUtility.format(currentEffectValue, 2)}`;
-        }
+            const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
+            const totalBonus = decimalUtility.multiply(baseValuePerLevel, level);
+            let multiplier = decimalUtility.add(1, totalBonus);
 
-        if (!isPrestige) {
-            const power = this.getSingularityPower();
-            if (power > 1) multiplier = decimalUtility.power(multiplier, power);
+            if (!isPrestige) {
+                const power = this.getSingularityPower();
+                if (power > 1) multiplier = decimalUtility.power(multiplier, power);
+            }
+            return `x${decimalUtility.format(multiplier, 2)}`;
         }
-
-        if (effectDef.type === "MULTIPLIER") return `x${decimalUtility.format(multiplier, 2)}`;
         
+        if(effectDef.type === "ADDITIVE_BONUS" || effectDef.type === "PERCENTAGE_BONUS") {
+            const baseValuePerLevel = decimalUtility.new(effectDef.valuePerLevel || 0);
+            const currentEffectValue = decimalUtility.multiply(baseValuePerLevel, level);
+            return `+${decimalUtility.format(currentEffectValue, 2)}`;
+        }
+
         return "Effect";
     },
 
     onGameLoad() {
-        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.3).");
+        coreSystemsRef.loggingSystem.info("SkillsLogic", "onGameLoad triggered for Skills module (v4.4).");
         Object.assign(moduleState, {
             ...getSkillsInitialState(),
             ...coreSystemsRef.coreGameStateManager.getModuleState('skills'),
@@ -380,7 +393,7 @@ export const moduleLogic = {
 
     onResetState() {
         coreSystemsRef.loggingSystem.info("SkillsLogic", "onResetState triggered. Resetting ALL skills and flags.");
-        Object.assign(moduleState, getSkillsInitialState());
+        Object.assign(moduleState, getInitialState());
         this.registerAllSkillEffects();
         
         coreSystemsRef.coreUpgradeManager.unregisterEffectSource('skills', 'knowledgeIsPower_special', 'global_resource_production', 'studyPoints', 'MULTIPLIER');
