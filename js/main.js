@@ -20,8 +20,8 @@ import { saveLoadSystem } from './core/saveLoadSystem.js';
 import { gameLoop } from './core/gameLoop.js';
 import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
-import { buyMultiplierManager } from './core/BuyMultiplierManager.js';
-import { buyMultiplierUI } from './core/buyMultiplierUI.js';
+import { buyMultiplierManager } from './core/buyMultiplierManager.js';
+import { buyMultiplierUI } from './core/BuyMultiplierUI.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
