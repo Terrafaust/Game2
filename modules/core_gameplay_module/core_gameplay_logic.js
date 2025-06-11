@@ -2,7 +2,8 @@
 // Now delegates all calculation logic to the new productionManager.
 
 import { moduleState } from './core_gameplay_state.js';
-import { RESOURCES, MODULES } from '../../core/constants.js';
+// FIXED: Corrected the import path to include the 'js' directory.
+import { RESOURCES, MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null; 
 
