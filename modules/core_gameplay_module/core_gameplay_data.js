@@ -1,7 +1,8 @@
 // js/modules/core_gameplay_module/core_gameplay_data.js (v2 - Refactored)
 // Now defines the studyPoints resource it introduces.
 
-import { RESOURCES } from '../../core/constants.js';
+// FIXED: Corrected the path to include the 'js' directory.
+import { RESOURCES } from '../../js/core/constants.js';
 
 export const staticModuleData = {
     resources: {
