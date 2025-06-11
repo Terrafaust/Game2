@@ -1,4 +1,4 @@
-// js/lang/en.js (v4.2 - Fully comprehensive)
+// js/lang/en.js (v4.0 - Complete)
 // English language pack with all required keys for the refactored UI.
 
 export default {
@@ -52,26 +52,8 @@ export default {
     "studies.ui.title": "Studies Department",
     "studies.ui.tip": "\"Get 10 professors to unlock Market\"",
     "studies.ui.description": "Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.",
-    "studies.ui.owned": "Owned: {value}",
-    "studies.ui.production": "Production: {value}/s",
     "studies.ui.cost_for": "Cost for {quantity}",
     "studies.ui.buy_X": "Buy {quantity} {name}",
-    "studies.producers.student.name": "Student",
-    "studies.producers.student.description": "A diligent student, generating basic Study Points.",
-    "studies.producers.classroom.name": "Classroom",
-    "studies.producers.classroom.description": "A dedicated space for learning, boosting Study Point generation.",
-    "studies.producers.kindergarten.name": "Kindergarten",
-    "studies.producers.kindergarten.description": "Early education, laying the groundwork for future knowledge.",
-    "studies.producers.elementarySchool.name": "Elementary School",
-    "studies.producers.elementarySchool.description": "Foundational learning, expanding your academic reach.",
-    "studies.producers.middleSchool.name": "Middle School",
-    "studies.producers.middleSchool.description": "Developing deeper understanding and critical thinking.",
-    "studies.producers.highSchool.name": "High School",
-    "studies.producers.highSchool.description": "Advanced studies, preparing for higher education.",
-    "studies.producers.university.name": "University",
-    "studies.producers.university.description": "The pinnacle of academic institutions, generating vast Study Points.",
-    "studies.producers.professor.name": "Professor",
-    "studies.producers.professor.description": "A wise mentor, producing valuable Knowledge.",
 
     // Skills Module
     "skills.ui.tab_label": "Skills",
@@ -90,20 +72,6 @@ export default {
     "market.ui.skill_points_title": "Skill Points",
     "market.ui.already_unlocked_title": "Already Unlocked",
     "market.ui.acquire_X": "Acquire {quantity} {name}",
-    "market.items.unlockSettings.name": "Unlock Settings Menu",
-    "market.items.unlockSettings.description": "Gain access to game settings and customization options.",
-    "market.items.unlockAchievements.name": "Unlock Achievements Menu",
-    "market.items.unlockAchievements.description": "Track your accomplishments and earn rewards.",
-    "market.items.unlockThemes.name": "Unlock Themes",
-    "market.items.unlockThemes.description": "Unlock additional visual themes in the Settings menu.",
-    "market.items.unlockStats.name": "Unlock Game Statistics",
-    "market.items.unlockStats.description": "View detailed game statistics in the Settings menu.",
-    "market.items.acquireImage.name": "Acquire Image",
-    "market.items.acquireImage.description": "Purchase decorative Images with your Study Points. Get 1,000 to unlock Prestige.",
-    "market.items.acquireSSP.name": "Acquire Study Skill Point",
-    "market.items.acquireSSP.description": "Convert Study Points into valuable Study Skill Points to enhance your abilities.",
-    "market.items.acquirePSP.name": "Acquire Prestige Skill Point",
-    "market.items.acquirePSP.description": "Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.",
 
     // Prestige Module
     "prestige.ui.tab_label": "Prestige",
@@ -118,7 +86,7 @@ export default {
     "prestige.ui.modal.gain_header": "You will gain:",
     "prestige.ui.modal.keep_header": "You will keep (from Prestige Skills):",
     "prestige.ui.modal.reset_header": "The following will be reset:",
-    "prestige.ui.modal.reset_list": "Study Points, Knowledge, and Images; all Study Producers; costs of Market items; levels of normal skills and their SSP cost.",
+    "prestige.ui.modal.reset_list": "Study Points, Knowledge, and Images; All Study Producers; Market Item costs; Regular Skill levels and their SSP cost.",
     "prestige.ui.modal.permanent_note": "Achievements, Unlocked Tabs, Prestige producers, and Prestige Skills are kept.",
     "prestige.ui.gain_pp": "{value} Prestige Points",
     "prestige.ui.gain_bonus": "All Production Boost: {current}x -> {next}x",
