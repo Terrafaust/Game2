@@ -3,7 +3,8 @@
 
 import { staticModuleData } from './achievements_data.js';
 import { moduleState } from './achievements_state.js';
-import { RESOURCES, MODULES, GLOBAL_FLAGS, EFFECT_TYPES } from '../../core/constants.js';
+// FIXED: Corrected the import path to include the 'js' directory.
+import { RESOURCES, MODULES, GLOBAL_FLAGS, EFFECT_TYPES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 
