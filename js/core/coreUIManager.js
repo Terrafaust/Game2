@@ -1,8 +1,9 @@
-// js/core/coreUIManager.js (v7.0 - Translation Integrated & Complete)
+// js/core/coreUIManager.js (v8.0 - Bugfix & Complete)
+// showNotification is now robust and won't fail if called before full initialization.
 
 import { loggingSystem } from './loggingSystem.js';
-// Note: Other core systems are passed in initialize, not imported directly, to avoid circular dependencies.
 
+// --- (initializeSwipeMenu function remains unchanged) ---
 function initializeSwipeMenu() {
     const body = document.body;
     let touchStartX = 0, touchStartY = 0;
@@ -34,6 +35,7 @@ function initializeSwipeMenu() {
     });
 }
 
+
 const UIElements = {
     resourceBar: null, resourcesDisplay: null, mainMenu: null, menuList: null, mainContent: null,
     modalContainer: null, tooltipContainer: null, gameContainer: null, body: null, htmlElement: null,
@@ -47,7 +49,9 @@ let coreSystemsRef = null;
 
 export const coreUIManager = {
     initialize(systems) {
+        // THIS IS THE FIX: Set coreSystemsRef immediately.
         coreSystemsRef = systems;
+
         UIElements.resourceBar = document.getElementById('resource-bar');
         UIElements.resourcesDisplay = document.getElementById('resources-display');
         UIElements.mainMenu = document.getElementById('main-menu');
@@ -71,7 +75,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v7.0).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.0).");
     },
 
     registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -80,7 +84,7 @@ export const coreUIManager = {
             return;
         }
         registeredMenuTabs[moduleId] = { id: moduleId, label, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
-        if (isDefaultTab && !activeTabId) {
+        if (isDefaultTab && !activeTabId && isUnlockedCheck()) {
             this.setActiveTab(moduleId, true);
         }
     },
@@ -121,7 +125,7 @@ export const coreUIManager = {
     },
 
     setActiveTab(tabId, forceRender = false) {
-        if (!registeredMenuTabs[tabId] || !registeredMenuTabs[tabId].isUnlocked()) return;
+        if (!registeredMenuTabs[tabId]?.isUnlocked()) return;
         if (activeTabId === tabId && !forceRender) return;
 
         if (activeTabId && registeredMenuTabs[activeTabId]?.onHideCallback) {
@@ -142,7 +146,7 @@ export const coreUIManager = {
     clearMainContent() { if (UIElements.mainContent) UIElements.mainContent.innerHTML = ''; },
 
     updateResourceDisplay() {
-        if (!UIElements.resourcesDisplay) return;
+        if (!UIElements.resourcesDisplay || !coreSystemsRef) return;
         const { coreResourceManager, decimalUtility } = coreSystemsRef;
         const allResources = coreResourceManager.getAllResources();
         
@@ -167,38 +171,37 @@ export const coreUIManager = {
     },
     
     showModal(title, content, buttons = []) {
-        if (!UIElements.modalContainer) return;
+        if (!UIElements.modalContainer || !coreSystemsRef) return;
         this.closeModal(); 
-
+        
+        const { translationManager } = coreSystemsRef;
         const modalOverlay = document.createElement('div');
         modalOverlay.className = 'modal-overlay';
         modalOverlay.addEventListener('click', () => this.closeModal()); 
 
         const modalElement = document.createElement('div');
         modalElement.className = 'modal'; 
-        modalElement.id = 'active-modal';
-
-        const modalContentDiv = document.createElement('div');
-        modalContentDiv.className = 'modal-content';
         
         const headerDiv = document.createElement('div');
         headerDiv.className = 'flex justify-between items-start mb-4';
         headerDiv.innerHTML = `<h3 class="text-2xl font-bold text-primary">${title}</h3>`;
         const closeButton = this.createButton('&times;', () => this.closeModal(), ['text-3xl', 'leading-none', 'font-bold', 'p-0', 'w-8', 'h-8', 'flex', 'items-center', 'justify-center', 'bg-transparent', 'hover:bg-surface-dark']);
         headerDiv.appendChild(closeButton);
-        modalContentDiv.appendChild(headerDiv);
         
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'modal-body';
         bodyDiv.innerHTML = typeof content === 'string' ? content : '';
         if (content instanceof HTMLElement) bodyDiv.appendChild(content);
-        modalContentDiv.appendChild(bodyDiv);
+
+        const modalContentDiv = document.createElement('div');
+        modalContentDiv.className = 'modal-content';
+        modalContentDiv.append(headerDiv, bodyDiv);
 
         if (buttons.length > 0) {
             const buttonsDiv = document.createElement('div');
             buttonsDiv.className = 'mt-6 flex justify-end items-center gap-4';
             buttons.forEach(btnInfo => {
-                const label = coreSystemsRef.translationManager.get(btnInfo.label);
+                const label = translationManager.get(btnInfo.label);
                 const button = this.createButton(label, btnInfo.callback, btnInfo.className);
                 buttonsDiv.appendChild(button);
             });
@@ -235,8 +238,8 @@ export const coreUIManager = {
         if (left < 10) left = 10;
         if (left + tooltipRect.width > window.innerWidth - 10) left = window.innerWidth - tooltipRect.width - 10;
         if (top + tooltipRect.height > window.innerHeight - 10) top = targetRect.top - tooltipRect.height - 5;
-        UIElements.tooltipContainer.style.left = `${left}px`;
         UIElements.tooltipContainer.style.top = `${top}px`;
+        UIElements.tooltipContainer.style.left = `${left}px`;
     },
 
     _handleTooltipPosition(event) {
@@ -244,18 +247,21 @@ export const coreUIManager = {
     },
 
     showNotification(messageKey, type = 'info', duration = 3000, options = {}) {
-        if (!UIElements.notificationArea) return;
+        // THIS IS THE FIX: Check for both UIElements and coreSystemsRef before proceeding.
+        if (!UIElements.notificationArea || !coreSystemsRef) {
+            console.error("UIManager.showNotification called before it was fully initialized.");
+            return;
+        }
         
-        // Use raw HTML if specified (for achievements), otherwise translate the key
         const message = options.isRawHtml ? messageKey : coreSystemsRef.translationManager.get(messageKey, options.replacements);
 
         const notification = document.createElement('div');
-        notification.className = 'p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out';
+        const typeClasses = { info: 'bg-blue-600 border-blue-500', success: 'bg-green-600 border-green-500', warning: 'bg-yellow-600 border-yellow-500', error: 'bg-red-600 border-red-500', achievement: 'achievement-notification' };
         
-        const typeClasses = { info: 'bg-blue-600 border-blue-500', success: 'bg-green-600 border-green-500', warning: 'bg-yellow-600 border-yellow-500', error: 'bg-red-600 border-red-500' };
+        notification.className = 'p-4 rounded-lg shadow-lg text-white text-sm border-l-4 transform transition-all duration-300 ease-out';
         notification.classList.add(...(typeClasses[type] || typeClasses.info).split(' '));
+        
         notification.innerHTML = message;
-
         notification.style.transform = 'translateX(100%)'; 
         notification.style.opacity = '0';
         UIElements.notificationArea.appendChild(notification);
@@ -269,6 +275,27 @@ export const coreUIManager = {
                 notification.addEventListener('transitionend', () => notification.remove());
             }, duration);
         }
+    },
+    
+    showAchievementNotification(achievementName, achievementIcon, achievementId, duration = 4000) {
+        if (!coreSystemsRef) return;
+        const translatedText = coreSystemsRef.translationManager.get('ui.notifications.achievement_unlocked');
+        const messageHtml = `<span class="icon">${achievementIcon}</span> <span>${translatedText}: ${achievementName}!</span>`;
+        this.showNotification(messageHtml, 'achievement', duration, { isRawHtml: true });
+        
+        const notifElement = UIElements.notificationArea.lastChild;
+        if(notifElement) {
+            notifElement.addEventListener('click', () => {
+                this.setActiveTab('achievements', true);
+                setTimeout(() => coreSystemsRef.moduleLoader.getModule('achievements')?.ui.scrollToAchievement(achievementId), 100);
+            });
+        }
+    },
+
+    applyTheme(themeName, mode) {
+        if (!UIElements.htmlElement) return;
+        UIElements.htmlElement.dataset.theme = themeName; 
+        UIElements.htmlElement.dataset.mode = mode;
     },
 
     createButton(text, onClickCallback, additionalClasses = [], id) {

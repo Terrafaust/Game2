@@ -1,12 +1,5 @@
-// js/main.js (v10.2 - Path Fix)
-
-/**
- * @file main.js
- * @description Main entry point for the incremental game.
- * v10.2: Corrected module loading paths to fix MIME type errors.
- * v10.1: Integrated the centralized buyMultiplierUI helper.
- * v10.0: Fixes hard reset modal not closing.
- */
+// js/main.js (v12.0 - Bugfix & Final Refactor)
+// Corrects initialization order and theme application logic.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -22,211 +15,96 @@ import { moduleLoader } from './core/moduleLoader.js';
 import { coreUpgradeManager } from './core/coreUpgradeManager.js';
 import { buyMultiplierManager } from './core/buyMultiplierManager.js';
 import { buyMultiplierUI } from './core/buyMultiplierUI.js';
+import { productionManager } from './core/productionManager.js';
+import { translationManager } from './core/translationManager.js';
+import { MODULES, RESOURCES } from './core/constants.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
-    // 1. Initialize Logging System
+    // 1. Initialize systems that have no dependencies on the `coreSystems` object yet.
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
-    loggingSystem.info("Main", "Game initialization sequence started (v10.2).");
-
-    // 2. Initialize Core Systems
     globalSettingsManager.initialize();
-    buyMultiplierManager.initialize();
+    await translationManager.initialize(); 
+    coreGameStateManager.initialize();
     coreResourceManager.initialize();
     coreUpgradeManager.initialize();
-    coreUIManager.initialize();
-    buyMultiplierUI.initialize( { coreUIManager, buyMultiplierManager, loggingSystem } );
+    buyMultiplierManager.initialize();
+    
+    // 2. Create the single `coreSystems` object to pass as a dependency.
+    const coreSystems = {
+        loggingSystem, decimalUtility, globalSettingsManager, translationManager,
+        coreGameStateManager, staticDataAggregator, coreResourceManager,
+        coreUIManager, saveLoadSystem, gameLoop, moduleLoader,
+        coreUpgradeManager, buyMultiplierManager, buyMultiplierUI, productionManager
+    };
 
-    // 3. Set up event listeners AFTER UI Manager is ready
+    // 3. Initialize systems that depend on the `coreSystems` object.
+    productionManager.initialize(coreSystems);
+    coreUIManager.initialize(coreSystems); // This is now initialized and has its reference to other systems.
+    buyMultiplierUI.initialize(coreSystems);
+    moduleLoader.initialize(coreSystems);
+
+    // 4. Set up the theme event listener and apply the initial theme. THIS IS THE FIX.
+    // This must happen AFTER coreUIManager is initialized.
     document.addEventListener('themeChanged', (event) => {
-        loggingSystem.debug("Main_ThemeListener", "themeChanged event received", event.detail);
-        if (event.detail && event.detail.name && event.detail.mode) {
+        if (event.detail?.name && event.detail?.mode) {
             coreUIManager.applyTheme(event.detail.name, event.detail.mode);
-        } else {
-            loggingSystem.warn("Main_ThemeListener", "themeChanged event received with invalid detail:", event.detail);
         }
     });
-    
-    // 4. Explicitly apply the initial theme
     const initialTheme = globalSettingsManager.getSetting('theme');
-    if (initialTheme && initialTheme.name && initialTheme.mode) {
-        loggingSystem.debug("Main_InitTheme", `Applying initial theme directly: ${initialTheme.name}, ${initialTheme.mode}`);
+    if (initialTheme?.name && initialTheme?.mode) {
         coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
-    } else {
-        loggingSystem.warn("Main_InitTheme", "No initial theme found in settings to apply directly.");
     }
-
-    document.addEventListener('languageChanged', (event) => {
-        coreUIManager.showNotification(`Language setting changed to: ${event.detail}. (Localization TBD)`, 'info');
-    });
-
-    // 5. Initialize Module Loader
-    moduleLoader.initialize(
-        staticDataAggregator,
-        coreGameStateManager,
-        coreResourceManager,
-        coreUIManager,
-        decimalUtility,
-        loggingSystem,
-        gameLoop,
-        coreUpgradeManager,
-        globalSettingsManager,
-        saveLoadSystem,
-        buyMultiplierManager,
-        buyMultiplierUI
-    );
-
-    // 6. Define Core Data
-    const coreResourceDefinitions = {
-        studyPoints: { id: 'studyPoints', name: "Study Points", initialAmount: "0", isUnlocked: true, showInUI: true, hasProductionRate: true },
-        knowledge: { id: 'knowledge', name: "Knowledge", initialAmount: "0", isUnlocked: false, showInUI: false, hasProductionRate: true },
-    };
-    staticDataAggregator.registerStaticData('core_resource_definitions', coreResourceDefinitions);
-    loggingSystem.debug("Main_Init", "Registered core_resource_definitions", coreResourceDefinitions);
-
-    for (const resId in coreResourceDefinitions) {
-        const resDef = coreResourceDefinitions[resId];
-        coreResourceManager.defineResource(
-            resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount),
-            resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate
-        );
-    }
-
-    // 7. Load Game or Start New
+    
+    // 5. Load Game or Start a New Game
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
         loggingSystem.info("Main", "No save game found. Starting a new game.");
-        coreGameStateManager.setGameVersion("0.5.8");
+        coreGameStateManager.setGameVersion("3.0.0");
     } else {
         loggingSystem.info("Main", "Save game loaded.");
     }
-
-    // 8. Load Modules
-    try {
-        loggingSystem.info('Main', 'Loading Core Gameplay Module...');
-        await moduleLoader.loadModule('../../modules/core_gameplay_module/core_gameplay_manifest.js');
-        
-        loggingSystem.info('Main', 'Loading Studies Module...');
-        await moduleLoader.loadModule('../../modules/studies_module/studies_manifest.js');
-        
-        loggingSystem.info('Main', 'Loading Market Module...');
-        await moduleLoader.loadModule('../../modules/market_module/market_manifest.js');
-        
-        loggingSystem.info('Main', 'Loading Skills Module...');
-        await moduleLoader.loadModule('../../modules/skills_module/skills_manifest.js');
-        
-        loggingSystem.info('Main', 'Loading Achievements Module...');
-        await moduleLoader.loadModule('../../modules/achievements_module/achievements_manifest.js');
-
-        loggingSystem.info('Main', 'Loading Prestige Module...');
-        await moduleLoader.loadModule('../../modules/prestige_module/prestige_manifest.js');
-
-        loggingSystem.info('Main', 'Loading Settings UI Module...');
-        await moduleLoader.loadModule('../../modules/settings_ui_module/settings_ui_manifest.js');
-    } catch (error) {
-        loggingSystem.error("Main", "Unhandled error during module loading attempts:", error, error.stack);
-        coreUIManager.showNotification("Critical Error: A module failed to load.", "error", 0);
-    }
     
-    // 9. Final UI Refresh
+    // 6. Load all feature modules.
+    try {
+        await moduleLoader.loadModule(`../../modules/${MODULES.CORE_GAMEPLAY}/core_gameplay_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.STUDIES}/studies_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.MARKET}/market_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.SKILLS}/skills_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.ACHIEVEMENTS}/achievements_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.PRESTIGE}/prestige_manifest.js`);
+        await moduleLoader.loadModule(`../../modules/${MODULES.SETTINGS}/settings_ui_manifest.js`);
+    } catch (error) {
+        loggingSystem.error("Main", "Critical error during module loading:", error);
+        coreUIManager.showNotification("A module failed to load. The game cannot start.", "error", 0);
+        return;
+    }
+
+    // 7. Perform final UI refresh and attach footer button listeners.
     coreUIManager.fullUIRefresh();
 
-    // 10. Setup Footer Buttons
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
     const devToolsButton = document.getElementById('dev-tools-button');
 
     if (saveButton) saveButton.addEventListener('click', () => saveLoadSystem.saveGame());
-    
-    if (loadButton) {
-        loadButton.addEventListener('click', () => {
-            coreUIManager.showModal( "Load Game?", "Loading will overwrite your current unsaved progress. Are you sure?",
-                [
-                    { label: "Load Game", className: "bg-blue-600 hover:bg-blue-700", callback: () => {
-                        const wasRunning = gameLoop.isRunning();
-                        if (wasRunning) gameLoop.stop();
-                        
-                        if (saveLoadSystem.loadGame()) {
-                            // After loading, all modules need to process their new state
-                            moduleLoader.notifyAllModulesOfLoad(); 
-                            coreUIManager.fullUIRefresh();
-                        } else {
-                            coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
-                        }
-                        if (wasRunning || !gameLoop.isRunning()) setTimeout(() => gameLoop.start(), 100);
-                        coreUIManager.closeModal();
-                    }},
-                    { label: "Cancel", callback: () => coreUIManager.closeModal() }
-                ]
-            );
-        });
-    }
-
-    if (resetButton) {
-        resetButton.addEventListener('click', () => {
-            coreUIManager.showModal("Hard Reset Game?", "All progress will be lost permanently. This cannot be undone. Are you sure?",
-                [
-                    { label: "Reset Game", className: "bg-red-600 hover:bg-red-700", callback: () => {
-                        coreUIManager.closeModal();
-                        
-                        const wasRunning = gameLoop.isRunning();
-                        if (wasRunning) gameLoop.stop();
-                        
-                        saveLoadSystem.resetGameData(); 
-
-                        for (const resId in coreResourceDefinitions) {
-                            const resDef = coreResourceDefinitions[resId];
-                            coreResourceManager.defineResource(resDef.id, resDef.name, decimalUtility.new(resDef.initialAmount), resDef.showInUI, resDef.isUnlocked, resDef.hasProductionRate);
-                        }
-                        
-                        coreGameStateManager.setGameVersion("1.1.0");
-                        
-                        const defaultTheme = globalSettingsManager.defaultSettings.theme;
-                        globalSettingsManager.resetToDefaults();
-                        coreUIManager.applyTheme(defaultTheme.name, defaultTheme.mode);
-
-                        coreUIManager.fullUIRefresh();
-                        if (wasRunning || !gameLoop.isRunning()) setTimeout(() => gameLoop.start(), 100);
-                    }},
-                    { label: "Cancel", className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
-                ]
-            );
-        });
-    }
-
+    if (loadButton) loadButton.addEventListener('click', () => saveLoadSystem.loadGame());
+    if (resetButton) resetButton.addEventListener('click', () => saveLoadSystem.resetGameData());
     if (devToolsButton) {
         devToolsButton.addEventListener('click', () => {
-            loggingSystem.info("Main_DevTools", "Dev tools button clicked: Applying production multiplier.");
-            const boostFactor = decimalUtility.new(10000000);
-            let changesMade = false;
-            const allResources = coreResourceManager.getAllResources(); 
-            for (const resourceId in allResources) {
-                const liveResourceData = coreResourceManager.getResource(resourceId); 
-                if (liveResourceData && liveResourceData.productionSources && liveResourceData.hasProductionRate) {
-                    for (const sourceKey in liveResourceData.productionSources) {
-                        const currentProd = coreResourceManager.getProductionFromSource(resourceId, sourceKey);
-                        if (decimalUtility.neq(currentProd, 0)) {
-                            const boostedProd = decimalUtility.multiply(currentProd, boostFactor);
-                            coreResourceManager.setProductionPerSecond(resourceId, sourceKey, boostedProd);
-                            changesMade = true;
-                        }
-                    }
-                }
-            }
-            if (changesMade) {
-                coreUIManager.showNotification(`Developer Boost: All active productions x${boostFactor.toString()}!`, "warning", 5000);
-                coreUIManager.updateResourceDisplay(); 
-            } else {
-                coreUIManager.showNotification("Developer Boost: No active productions found to multiply.", "info", 3000);
-            }
+            loggingSystem.info("Main_DevTools", "Dev tools button clicked.");
+            const boostFactor = decimalUtility.new('1e9');
+            coreResourceManager.addAmount(RESOURCES.STUDY_POINTS, boostFactor);
+            coreResourceManager.addAmount(RESOURCES.KNOWLEDGE, boostFactor.div(100));
+            coreUIManager.showNotification('Developer Boost: Added resources!', "warning", 5000);
         });
-    } else {
-        loggingSystem.warn("Main_DevTools_Setup", "devToolsButton not found in the DOM.");
     }
-
-    // 11. Start Game Loop
-    if (!gameLoop.isRunning()) gameLoop.start();
+    
+    // 8. Start the game loop.
+    if (!gameLoop.isRunning()) {
+        gameLoop.start();
+    }
     loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
 }
 
@@ -234,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeGame().catch(error => {
         loggingSystem.error("Main_DOMContentLoaded", "Unhandled error during game initialization:", error, error.stack);
         try {
+            // This check now correctly handles the case where coreUIManager might not be ready.
             if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
                  coreUIManager.showNotification("A critical error occurred during game startup. Check console & try refreshing.", "error", 0);
             } else {
