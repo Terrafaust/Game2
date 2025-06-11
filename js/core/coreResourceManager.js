@@ -98,6 +98,20 @@ const coreResourceManager = {
         return (resource && resource.isUnlocked) ? decimalUtility.new(resource.amount) : decimalUtility.ZERO;
     },
 
+    // FIXED: Added the missing getResource function.
+    // It returns a copy of the resource's state object.
+    getResource(resourceId) {
+        const resource = resources[resourceId];
+        if (!resource) return null;
+
+        // Return a copy to prevent direct mutation from outside the manager
+        const resourceCopy = { ...resource };
+        resourceCopy.amount = decimalUtility.new(resource.amount);
+        resourceCopy.totalProductionRate = decimalUtility.new(resource.totalProductionRate);
+        resourceCopy.totalEarned = decimalUtility.new(resource.totalEarned);
+        return resourceCopy;
+    },
+
     setAmount(resourceId, newAmount) {
         const resource = resources[resourceId];
         if(resource) {

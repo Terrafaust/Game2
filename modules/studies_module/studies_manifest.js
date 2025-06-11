@@ -84,13 +84,16 @@ const studiesManifest = {
                  }
             }
         });
+
+        // FIXED: Removed call to the non-existent function 'moduleLogic.updateAllProducerProductions()'.
+        // The productionManager and gameLoop handle this now. The UI update is still needed.
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
              if (coreUIManager.isActiveTab(this.id) || Object.values(staticModuleData.producers).some(p => decimalUtility.gt(moduleState.ownedProducers[p.id] || "0", 0))) {
-                moduleLogic.updateAllProducerProductions(); 
                 ui.updateDynamicElements(); 
             }
         });
         
+        // This call is what was triggering the error on load.
         moduleLogic.onGameLoad();
 
         loggingSystem.info(this.name, `${this.name} initialized successfully.`);
@@ -134,7 +137,8 @@ const studiesManifest = {
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(this.id, initialState);
-                moduleLogic.updateAllProducerProductions(); // This will effectively set production to 0
+                // Call onPrestigeReset from logic to handle production updates
+                moduleLogic.onPrestigeReset(); 
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 }

@@ -1,13 +1,18 @@
 // /game/modules/prestige_module/prestige_ui.js (v4.1 - Bugfix)
-import * as logic from './prestige_logic.js';
+// FIXED: Changed import to get the exported moduleLogic object directly.
+import { moduleLogic } from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
 
 let coreSystemsRef = null;
 let parentElementCache = null;
+// FIXED: A reference to the logic object passed during initialization.
+let logicRef = null;
 
 export const ui = {
-    initialize(coreSystems) {
+    // FIXED: Accept the logic reference during initialization.
+    initialize(coreSystems, logic) {
         coreSystemsRef = coreSystems;
+        logicRef = logic; // Store the reference
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef && coreSystemsRef.coreUIManager.isActiveTab('prestige')) {
                 this.updateDynamicElements();
@@ -124,7 +129,8 @@ export const ui = {
         
         const purchaseButton = coreUIManager.createButton(
             'Buy', 
-            () => logic.purchasePrestigeProducer(producerDef.id), 
+            // FIXED: Correctly call the function on the stored logic reference.
+            () => logicRef.purchasePrestigeProducer(producerDef.id), 
             ['w-full', 'text-sm', 'py-1.5', 'mt-auto'], 
             `prestige-purchase-${producerDef.id}`
         );
@@ -134,7 +140,7 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        if (!parentElementCache || !coreSystemsRef) return;
+        if (!parentElementCache || !coreSystemsRef || !logicRef) return; // Guard against missing logicRef
         const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator } = coreSystemsRef;
 
         const ppDisplay = parentElementCache.querySelector('#pp-display');
@@ -145,16 +151,16 @@ export const ui = {
         
         const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
         if(prestigeCountDisplay) {
-            const count = logic.getTotalPrestigeCount();
+            // FIXED: Correctly call the function on the stored logic reference.
+            const count = logicRef.getTotalPrestigeCount();
             prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
         }
 
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
-            // FIX: Call the original calculatePrestigeGain which returns a Decimal, not an object.
-            const gain = logic.calculatePrestigeGain();
-            const canPrestige = logic.canPrestige();
-            // FIX: Use the Decimal 'gain' directly.
+            // FIXED: Correctly call the functions on the stored logic reference.
+            const gain = logicRef.calculatePrestigeGain();
+            const canPrestige = logicRef.canPrestige();
             prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
                 prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
@@ -164,13 +170,15 @@ export const ui = {
         }
         
         const currentMultiplier = buyMultiplierManager.getMultiplier();
-        const postDocMultiplier = logic.getPostDocMultiplier();
+        // FIXED: Correctly call the function on the stored logic reference.
+        const postDocMultiplier = logicRef.getPostDocMultiplier();
 
         for (const producerId in prestigeData.producers) {
             const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
             if (card) {
                 const producerDef = prestigeData.producers[producerId];
-                const owned = logic.getOwnedPrestigeProducerCount(producerId);
+                // FIXED: Correctly call the functions on the stored logic reference.
+                const owned = logicRef.getOwnedPrestigeProducerCount(producerId);
                 card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
 
                 const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
@@ -198,12 +206,14 @@ export const ui = {
 
                 let quantityToBuy;
                 if (currentMultiplier === -1) {
-                    quantityToBuy = logic.calculateMaxBuyablePrestigeProducer(producerId);
+                    // FIXED: Correctly call the function on the stored logic reference.
+                    quantityToBuy = logicRef.calculateMaxBuyablePrestigeProducer(producerId);
                 } else {
                     quantityToBuy = decimalUtility.new(currentMultiplier);
                 }
 
-                const cost = logic.calculatePrestigeProducerCost(producerId, quantityToBuy);
+                // FIXED: Correctly call the function on the stored logic reference.
+                const cost = logicRef.calculatePrestigeProducerCost(producerId, quantityToBuy);
                 
                 card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} PP`;
                 
@@ -221,7 +231,8 @@ export const ui = {
 
     showPrestigeConfirmationModal() {
         const { coreUIManager, decimalUtility } = coreSystemsRef;
-        const details = logic.getPrestigeConfirmationDetails();
+        // FIXED: Correctly call the function on the stored logic reference.
+        const details = logicRef.getPrestigeConfirmationDetails();
 
         if (!details.canPrestige) {
             coreUIManager.showNotification(details.reason, "warning");
@@ -246,7 +257,8 @@ export const ui = {
                 <br><span class="text-xs text-gray-400 italic">${details.bonusExplanation}</span>
             </li>`;
 
-        if (logic.getTotalPrestigeCount().eq(0)) {
+        // FIXED: Correctly call the function on the stored logic reference.
+        if (logicRef.getTotalPrestigeCount().eq(0)) {
             gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
         }
 
@@ -289,7 +301,8 @@ export const ui = {
                 label: `Prestige for ${decimalUtility.format(details.ppGains, 2, 0)} PP`,
                 className: "bg-green-600 hover:bg-green-700",
                 callback: () => {
-                    logic.executePrestigeReset(details.ppGains);
+                    // FIXED: Correctly call the function on the stored logic reference.
+                    logicRef.executePrestigeReset(details.ppGains);
                     coreUIManager.closeModal();
                 }
             },

@@ -2,7 +2,8 @@
 // Fully integrated with translationManager.
 
 import { staticModuleData } from './market_data.js';
-import { MODULES } from '../../core/constants.js';
+// FIXED: Corrected the import path for constants.
+import { MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;
@@ -154,7 +155,8 @@ export const ui = {
             const costDisplay = card.querySelector(`#market-card-cost-${unlockId}`);
             const button = card.querySelector(`#market-card-button-${unlockId}`);
             const cost = decimalUtility.new(unlockDef.costAmount);
-            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 0)} ${coreResourceManager.getResource(unlockDef.costResource).name}`;
+            const resource = coreResourceManager.getResource(unlockDef.costResource);
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 0)} ${resource ? resource.name : unlockDef.costResource}`;
             button.textContent = translationManager.get('ui.buttons.unlock');
             button.disabled = !moduleLogicRef.canAffordUnlock(unlockId);
         }
@@ -179,7 +181,8 @@ export const ui = {
 
             const nameBase = itemDef.name.replace('Acquire ', '');
             button.textContent = translationManager.get('market.ui.acquire_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: nameBase + (decimalUtility.gt(quantityToBuy, 1) ? 's' : '')});
-            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(totalCost, 2)} ${coreResourceManager.getResource(itemDef.costResource).name}`;
+            const resource = coreResourceManager.getResource(itemDef.costResource);
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(totalCost, 2)} ${resource ? resource.name : itemDef.costResource}`;
             button.disabled = !coreResourceManager.canAfford(itemDef.costResource, totalCost) || decimalUtility.lte(quantityToBuy, 0);
         }
     },

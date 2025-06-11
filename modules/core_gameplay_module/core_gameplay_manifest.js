@@ -5,7 +5,8 @@ import { staticModuleData } from './core_gameplay_data.js';
 import { getInitialState, moduleState } from './core_gameplay_state.js';
 import { moduleLogic } from './core_gameplay_logic.js';
 import { ui } from './core_gameplay_ui.js';
-import { RESOURCES, MODULES } from '../js/core/constants.js';
+// FIXED: Corrected the import path to be two levels up.
+import { RESOURCES, MODULES } from '../../js/core/constants.js';
 
 const coreGameplayManifest = {
     id: MODULES.CORE_GAMEPLAY,

@@ -1,7 +1,8 @@
 // /game/modules/prestige_module/prestige_manifest.js (v2.0 - Hard Reset & UI Fix)
 import { prestigeData } from './prestige_data.js';
 import { getInitialState, moduleState } from './prestige_state.js';
-import * as prestigeLogic from './prestige_logic.js';
+// FIXED: Changed import to get the exported moduleLogic object directly.
+import { moduleLogic } from './prestige_logic.js';
 import { ui } from './prestige_ui.js';
 
 export const manifest = {
@@ -16,7 +17,8 @@ export const manifest = {
 
         loggingSystem.info('PrestigeManifest', `Initializing ${manifest.name} v${manifest.version}...`);
         
-        prestigeLogic.initialize(coreSystems);
+        // FIXED: Correctly call the initialize function on the imported logic object.
+        moduleLogic.initialize(coreSystems);
 
         staticDataAggregator.registerStaticData(manifest.id, prestigeData);
 
@@ -55,10 +57,12 @@ export const manifest = {
 
         coreUpgradeManager.registerEffectSource(
             manifest.id, 'global_bonus_from_prestige', 'global_production', 'all', 'MULTIPLIER',
-            () => prestigeLogic.getPrestigeBonusMultiplier()
+            // FIXED: Correctly call the function on the imported logic object.
+            () => moduleLogic.getPrestigeBonusMultiplier()
         );
         
-        prestigeLogic.updatePrestigeProducerEffects();
+        // FIXED: Correctly call the function on the imported logic object.
+        moduleLogic.updatePrestigeProducerEffects();
 
 
         coreUIManager.registerMenuTab(
@@ -73,16 +77,19 @@ export const manifest = {
         );
         
         gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
-            prestigeLogic.processPassiveProducerGeneration(deltaTime);
+            // FIXED: Correctly call the function on the imported logic object.
+            moduleLogic.processPassiveProducerGeneration(deltaTime);
         });
 
-        ui.initialize(coreSystems, prestigeLogic);
+        // FIXED: Pass the logic object itself, not the module namespace.
+        ui.initialize(coreSystems, moduleLogic);
 
         loggingSystem.info('PrestigeManifest', `${manifest.name} initialized successfully.`);
 
         return {
             id: manifest.id,
-            logic: prestigeLogic,
+            // FIXED: Return the actual logic object.
+            logic: moduleLogic,
             ui: ui,
             onPrestigeReset: () => {
                 loggingSystem.info(manifest.name, `onPrestigeReset called for ${manifest.name}. Keeping producers.`);
@@ -90,7 +97,7 @@ export const manifest = {
                 currentState.passiveProductionProgress = getInitialState().passiveProductionProgress;
                 Object.assign(moduleState, currentState);
                 coreGameStateManager.setModuleState(manifest.id, currentState);
-                prestigeLogic.updatePrestigeProducerEffects();
+                moduleLogic.updatePrestigeProducerEffects();
             },
             onGameLoad: () => {
                 loggingSystem.info(manifest.name, `onGameLoad called for ${manifest.name}. Re-evaluating effects.`);
@@ -109,7 +116,7 @@ export const manifest = {
                 }
 
                 Object.assign(moduleState, loadedState);
-                prestigeLogic.updatePrestigeProducerEffects();
+                moduleLogic.updatePrestigeProducerEffects();
             },
             // --- MODIFICATION: Added to handle a full wipe ---
             onResetState: () => {
@@ -117,7 +124,7 @@ export const manifest = {
                 const initialState = getInitialState();
                 Object.assign(moduleState, initialState);
                 coreGameStateManager.setModuleState(manifest.id, initialState);
-                prestigeLogic.updatePrestigeProducerEffects(); 
+                moduleLogic.updatePrestigeProducerEffects(); 
             }
         };
     }

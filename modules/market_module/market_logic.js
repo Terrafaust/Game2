@@ -3,7 +3,8 @@
 
 import { staticModuleData } from './market_data.js';
 import { moduleState, getInitialState } from './market_state.js';
-import { RESOURCES, GLOBAL_FLAGS, UPGRADE_TARGETS, MODULES } from '../../core/constants.js';
+// FIXED: Corrected the import path for constants.
+import { RESOURCES, GLOBAL_FLAGS, UPGRADE_TARGETS, MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 
