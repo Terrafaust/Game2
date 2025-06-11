@@ -1,12 +1,5 @@
-// modules/achievements_module/achievements_ui.js (v1.3 - Themed Achievement Cards)
-
-/**
- * @file achievements_ui.js
- * @description Handles UI rendering for the Achievements module.
- * v1.3: Ensured achievement card colors match the active theme using CSS variables.
- * v1.2: Added theme-adaptive styling for achievement cards and scrolling to specific achievements.
- * v1.1: Switched tooltips to use the new themed modal system.
- */
+// modules/achievements_module/achievements_ui.js (v2.0 - Complete & Refactored)
+// Now uses translationManager for all UI text.
 
 import { staticModuleData } from './achievements_data.js';
 
@@ -18,42 +11,42 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v1.3).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v2.0).");
+        document.addEventListener('languagePackChanged', () => {
+             if (coreSystemsRef.coreUIManager.isActiveTab('achievements')) {
+                this.renderMainContent(parentElementCache);
+            }
+        });
     },
 
     renderMainContent(parentElement) {
-        if (!coreSystemsRef || !moduleLogicRef) {
-            parentElement.innerHTML = '<p class="text-red-500">Achievements UI not properly initialized.</p>';
-            return;
-        }
+        if (!parentElement || !coreSystemsRef || !moduleLogicRef) return;
         parentElementCache = parentElement;
         parentElement.innerHTML = ''; 
 
+        const { translationManager } = coreSystemsRef;
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
 
         const title = document.createElement('h2');
         title.className = 'text-2xl font-semibold text-primary mb-2';
-        title.textContent = 'Achievements';
+        title.textContent = translationManager.get('achievements.ui.title');
         container.appendChild(title);
         
-        // --- MODIFICATION: Added Achievements Tip and Stats Box ---
         const summaryBox = document.createElement('div');
         summaryBox.id = 'achievements-summary-box';
         summaryBox.className = 'bg-surface-dark p-4 rounded-lg text-center space-y-2';
         
         const tipText = document.createElement('p');
         tipText.className = 'text-sm text-textSecondary italic';
-        tipText.textContent = 'Every achievement also gives you a 1% production bonus.';
+        tipText.textContent = translationManager.get('achievements.ui.bonus_tip');
         summaryBox.appendChild(tipText);
         
         const statsText = document.createElement('p');
         statsText.id = 'achievements-stats-display';
         statsText.className = 'text-md font-semibold text-accentOne';
         summaryBox.appendChild(statsText);
-        
         container.appendChild(summaryBox);
-        // --- END MODIFICATION ---
 
         const achievementsGrid = document.createElement('div');
         achievementsGrid.id = 'achievements-grid';
@@ -69,18 +62,19 @@ export const ui = {
         const achievementsGrid = parentElementCache.querySelector('#achievements-grid');
         if (!achievementsGrid) return;
         
-        // --- MODIFICATION: Update stats display ---
+        const { translationManager } = coreSystemsRef;
         const statsDisplay = parentElementCache.querySelector('#achievements-stats-display');
         if (statsDisplay) {
             const completedCount = moduleLogicRef.getCompletedAchievementCount();
             const totalAchievements = Object.keys(staticModuleData.achievements).length;
-            const bonusPercentage = completedCount; // Each achievement is 1%
-            statsDisplay.textContent = `Completed: ${completedCount} / ${totalAchievements} | Total Bonus: ${bonusPercentage}%`;
+            statsDisplay.textContent = translationManager.get('achievements.ui.summary', {
+                completed: completedCount,
+                total: totalAchievements,
+                bonus: completedCount // 1% per achievement
+            });
         }
-        // --- END MODIFICATION ---
 
         achievementsGrid.innerHTML = '';
-
         for (const achievementId in staticModuleData.achievements) {
             const achievementDef = staticModuleData.achievements[achievementId];
             const card = this._createAchievementCard(achievementDef);
@@ -89,108 +83,58 @@ export const ui = {
     },
 
     _createAchievementCard(achievementDef) {
-        const { coreUIManager, decimalUtility } = coreSystemsRef;
+        const { translationManager } = coreSystemsRef;
         const isCompleted = moduleLogicRef.isAchievementCompleted(achievementDef.id);
         
         const card = document.createElement('div');
         card.id = `achievement-card-${achievementDef.id}`; 
-        // --- MODIFICATION: Removed hardcoded Tailwind classes for completed state ---
-        card.className = `achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${
-            isCompleted ? 'is-completed' : 'bg-surface-dark'
-        }`;
+        card.className = `achievement-card p-4 rounded-lg shadow-md flex flex-col items-center text-center transition-all duration-300 cursor-pointer ${isCompleted ? 'achievement-completed' : 'bg-surface-dark'}`;
         
-        const icon = document.createElement('div');
-        icon.className = 'text-4xl mb-2';
-        icon.textContent = achievementDef.icon || '�';
-        card.appendChild(icon);
+        card.innerHTML = `
+            <div class="text-4xl mb-2">${achievementDef.icon || '🏆'}</div>
+            <h4 class="text-md font-semibold text-textPrimary mb-1">${achievementDef.name}</h4>
+            <p class="text-xs text-textSecondary mb-2 flex-grow">${achievementDef.description}</p>
+            <p class="text-xs font-medium text-yellow-400 mb-2">${translationManager.get('achievements.ui.reward', { description: achievementDef.reward.description })}</p>
+            <p class="text-sm font-bold ${isCompleted ? 'text-green-300' : 'text-gray-400'}">${isCompleted ? translationManager.get('ui.status.completed') : translationManager.get('ui.status.locked')}</p>
+        `;
 
-        const name = document.createElement('h4');
-        name.className = 'text-md font-semibold text-textPrimary mb-1';
-        name.textContent = achievementDef.name;
-        card.appendChild(name);
-
-        const description = document.createElement('p');
-        description.className = 'text-xs text-textSecondary mb-2 flex-grow';
-        description.textContent = achievementDef.description;
-        card.appendChild(description);
-        
-        const rewardDescription = document.createElement('p');
-        rewardDescription.className = 'text-xs font-medium text-yellow-400 mb-2';
-        rewardDescription.textContent = `Reward: ${achievementDef.reward.description}`;
-        card.appendChild(rewardDescription);
-
-        const status = document.createElement('p');
-        status.className = `text-sm font-bold ${isCompleted ? 'text-green-300' : 'text-gray-400'}`;
-        status.textContent = isCompleted ? staticModuleData.ui.completedText : staticModuleData.ui.lockedText;
-        card.appendChild(status);
-
-        card.addEventListener('click', () => {
-            let modalContent = `<div class="space-y-2">`;
-            modalContent += `<p class='text-base text-textPrimary'>${achievementDef.description}</p><hr class='my-2 border-gray-600'>`;
-            modalContent += `<p class class='text-sm'><span class="font-semibold text-yellow-400">Reward:</span> ${achievementDef.reward.description}</p>`;
-            if (!isCompleted) {
-                modalContent += `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">Condition:</span> ${this._getConditionText(achievementDef.condition)}</p>`;
-            }
-             modalContent += `</div>`;
-            coreUIManager.showModal(`${achievementDef.icon} ${achievementDef.name}`, modalContent, [{label: "Close", callback: () => coreUIManager.closeModal()}]);
-        });
-        
+        card.addEventListener('click', () => this.showAchievementModal(achievementDef));
         return card;
     },
 
+    showAchievementModal(achievementDef) {
+        const { coreUIManager, translationManager } = coreSystemsRef;
+        const isCompleted = moduleLogicRef.isAchievementCompleted(achievementDef.id);
+        let modalContent = `<div class="space-y-2">
+            <p class='text-base text-textPrimary'>${achievementDef.description}</p>
+            <hr class='my-2 border-gray-600'>
+            <p class='text-sm'><span class="font-semibold text-yellow-400">${translationManager.get('achievements.ui.reward', {description: ''})}</span> ${achievementDef.reward.description}</p>
+            ${!isCompleted ? `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">${translationManager.get('achievements.ui.condition', {text: ''})}</span> ${this._getConditionText(achievementDef.condition)}</p>` : ''}
+        </div>`;
+        coreUIManager.showModal(`${achievementDef.icon} ${achievementDef.name}`, modalContent, [{label: "ui.buttons.close", callback: () => coreUIManager.closeModal()}]);
+    },
+
     _getConditionText(condition) {
+        // This function builds a string, so it doesn't need direct translation.
         const { decimalUtility, staticDataAggregator } = coreSystemsRef;
         switch (condition.type) {
             case "producerOwned":
-                const studiesData = staticDataAggregator.getData("studies.producers");
-                const producerName = studiesData?.[condition.producerId]?.name || condition.producerId;
+                const producerName = staticDataAggregator.getData(`studies.producers.${condition.producerId}`)?.name || condition.producerId;
                 return `Own ${condition.count} ${producerName}.`;
             case "resourceAmount":
-                const resDef = staticDataAggregator.getData(`core_resource_definitions.${condition.resourceId}`) || staticDataAggregator.getData(`studies.resources.${condition.resourceId}`) || { name: condition.resourceId };
-                return `Have ${decimalUtility.format(decimalUtility.new(condition.amount),0)} ${resDef.name}.`;
+                const resName = coreSystemsRef.coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId;
+                return `Have ${decimalUtility.format(condition.amount,0)} ${resName}.`;
             default:
-                // Provide a more descriptive fallback for unhandled types
-                return `Meet a specific in-game criteria. (Type: ${condition.type})`;
-        }
-    },
-
-    /**
-     * Scrolls the achievement grid to make a specific achievement card visible.
-     * @param {string} achievementId - The ID of the achievement to scroll to.
-     */
-    scrollToAchievement(achievementId) {
-        const targetCard = document.getElementById(`achievement-card-${achievementId}`);
-        if (targetCard && parentElementCache) {
-            // Find the main content area which has the scrollbar
-            const mainContent = parentElementCache.closest('#main-content');
-            if (mainContent) {
-                // Calculate position relative to the scrollable container
-                const cardRect = targetCard.getBoundingClientRect();
-                const mainContentRect = mainContent.getBoundingClientRect();
-
-                const scrollPosition = cardRect.top - mainContentRect.top + mainContent.scrollTop - (mainContentRect.height / 3); // Center it roughly
-
-                mainContent.scrollTo({
-                    top: scrollPosition,
-                    behavior: 'smooth'
-                });
-                coreSystemsRef.loggingSystem.info("AchievementsUI", `Scrolled to achievement: ${achievementId}`);
-            } else {
-                coreSystemsRef.loggingSystem.warn("AchievementsUI", `Could not find #main-content to scroll to achievement ${achievementId}.`);
-            }
-        } else {
-            coreSystemsRef.loggingSystem.warn("AchievementsUI", `Achievement card ${achievementId} not found for scrolling.`);
+                return `Meet a specific in-game criteria.`;
         }
     },
 
     onShow() {
-        coreSystemsRef.loggingSystem.debug("AchievementsUI", "Achievements tab shown.");
         moduleLogicRef.checkAndCompleteAchievements();
         this.updateDynamicElements();
     },
 
     onHide() {
-        coreSystemsRef.loggingSystem.debug("AchievementsUI", "Achievements tab hidden.");
-        coreSystemsRef.coreUIManager.hideTooltip(); // Keep this to clear any old tooltips that might be stuck
+        coreSystemsRef.coreUIManager.hideTooltip();
     }
 };

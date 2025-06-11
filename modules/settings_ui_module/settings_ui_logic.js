@@ -1,10 +1,10 @@
-// modules/settings_ui_module/settings_ui_logic.js (v2.1 - Complete Statistics)
+// modules/settings_ui_module/settings_ui_logic.js (v2.2 - Conditional Unlock Checks)
 
 /**
  * @file settings_ui_logic.js
  * @description Business logic for the Settings UI module.
+ * v2.2: Added functions to check if Themes and Statistics are unlocked.
  * v2.1: Restored original statistics sections and merged with new ones for a complete view.
- * v2.0: Adds Notification Log unlock logic, massively expanded statistics, and prestige history.
  */
 
 let coreSystemsRef = null;
@@ -12,7 +12,7 @@ let coreSystemsRef = null;
 export const moduleLogic = {
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v2.1).");
+        coreSystemsRef.loggingSystem.info("SettingsUILogic", "Logic initialized (v2.2).");
     },
 
     isSettingsTabUnlocked() {
@@ -33,6 +33,18 @@ export const moduleLogic = {
             return true;
         }
         return false;
+    },
+    
+    // --- NEW: Function to check if themes are unlocked ---
+    areThemesUnlocked() {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) return false;
+        return coreSystemsRef.coreGameStateManager.getGlobalFlag('themesUnlocked', false);
+    },
+
+    // --- NEW: Function to check if stats are unlocked ---
+    areStatsUnlocked() {
+        if (!coreSystemsRef || !coreSystemsRef.coreGameStateManager) return false;
+        return coreSystemsRef.coreGameStateManager.getGlobalFlag('gameStatsUnlocked', false);
     },
 
     applyTheme(themeId, modeId) {
@@ -269,6 +281,10 @@ export const moduleLogic = {
         if (coreSystemsRef.coreGameStateManager) {
             coreSystemsRef.coreGameStateManager.setGlobalFlag('settingsTabPermanentlyUnlocked', false);
             coreSystemsRef.coreGameStateManager.setGlobalFlag('notificationLogUnlocked', false);
+            // --- NEW: Reset new flags on hard reset ---
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('themesUnlocked', false);
+            coreSystemsRef.coreGameStateManager.setGlobalFlag('gameStatsUnlocked', false);
+            // --- END NEW ---
             coreSystemsRef.loggingSystem.info("SettingsUILogic", "Relevant flags cleared.");
         }
     }

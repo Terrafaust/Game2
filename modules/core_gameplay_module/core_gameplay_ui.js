@@ -1,8 +1,9 @@
-// js/modules/core_gameplay_module/core_gameplay_ui.js (v2.1 - Click Gain Display)
+// js/modules/core_gameplay_module/core_gameplay_ui.js (v2.2 - Dynamic Gain Display)
 
 /**
  * @file core_gameplay_ui.js
  * @description Handles the UI rendering and interactions for the Core Gameplay module.
+ * v2.2: Updates gain display to show both SP and Knowledge when applicable.
  * v2.1: Adds display for SP gained per click.
  */
 
@@ -17,7 +18,7 @@ export const ui = {
     initialize(coreSystems, initialStateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("CoreGameplayUI", "UI initialized (v2.1).");
+        coreSystemsRef.loggingSystem.debug("CoreGameplayUI", "UI initialized (v2.2).");
     },
 
     renderMainContent(parentElement) {
@@ -31,7 +32,7 @@ export const ui = {
         const { coreUIManager, decimalUtility } = coreSystemsRef;
 
         const container = document.createElement('div');
-        container.className = 'p-4 space-y-6 flex flex-col items-center'; // Centered content
+        container.className = 'p-4 space-y-6 flex flex-col items-center';
 
         const title = document.createElement('h2');
         title.className = 'text-2xl font-semibold text-primary mb-4';
@@ -43,7 +44,6 @@ export const ui = {
         description.textContent = 'Click the button below to gain Study Points. This is the beginning of your academic journey!';
         container.appendChild(description);
         
-        // --- MODIFICATION: Added Tip ---
         const tipBox = document.createElement('div');
         tipBox.className = 'mt-4 p-3 bg-surface rounded-lg border border-primary/50';
         const tipText = document.createElement('p');
@@ -51,9 +51,7 @@ export const ui = {
         tipText.textContent = '"Get 10 study points to unlock Studies"';
         tipBox.appendChild(tipText);
         container.appendChild(tipBox);
-        // --- END MODIFICATION ---
 
-        // --- NEW: Wrapper for button and gain display ---
         const buttonWrapper = document.createElement('div');
         buttonWrapper.className = 'flex flex-col items-center w-full max-w-xs space-y-2 mt-4';
 
@@ -73,10 +71,10 @@ export const ui = {
         );
         buttonWrapper.appendChild(studyButton);
         
-        // --- NEW: Click Gain Display Element ---
-        const clickGainDisplay = document.createElement('p');
+        const clickGainDisplay = document.createElement('div');
         clickGainDisplay.id = 'core-gameplay-gain-display';
-        clickGainDisplay.className = 'text-sm text-textSecondary h-5'; // Set height to prevent layout shift
+        // --- MODIFICATION: Allow for multiple lines ---
+        clickGainDisplay.className = 'text-sm text-textSecondary text-center h-10'; // Increased height for two lines
         buttonWrapper.appendChild(clickGainDisplay);
         
         container.appendChild(buttonWrapper);
@@ -100,7 +98,7 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        if (!parentElementCache) return;
+        if (!parentElementCache || !moduleLogicRef) return;
         const { decimalUtility } = coreSystemsRef;
 
         const clicksDisplay = parentElementCache.querySelector('#core-gameplay-clicks-display');
@@ -108,11 +106,17 @@ export const ui = {
             clicksDisplay.textContent = `Total manual study sessions: ${moduleLogicRef.getTotalClicks()}`;
         }
         
-        // --- NEW: Update the click gain display ---
+        // --- MODIFICATION: Update gain display to handle both SP and Knowledge ---
         const clickGainDisplay = parentElementCache.querySelector('#core-gameplay-gain-display');
         if(clickGainDisplay) {
-            const gainAmount = moduleLogicRef.calculateManualStudyGain();
-            clickGainDisplay.textContent = `(Gain ${decimalUtility.format(gainAmount, 2)} SP)`;
+            const gain = moduleLogicRef.calculateManualStudyGain();
+            let gainText = `(Gain ${decimalUtility.format(gain.studyPointsGain, 2)} SP)`;
+            
+            if (gain.knowledgeGain && decimalUtility.gt(gain.knowledgeGain, 0)) {
+                gainText += `<br>(Gain ${decimalUtility.format(gain.knowledgeGain, 2)} Knowledge)`;
+            }
+            
+            clickGainDisplay.innerHTML = gainText;
         }
     },
     

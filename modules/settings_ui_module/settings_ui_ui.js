@@ -1,10 +1,10 @@
-// modules/settings_ui_module/settings_ui_ui.js (v1.2 - Log Modal Debugging)
+// modules/settings_ui_module/settings_ui.js (v1.4 - Conditional Sections)
 
 /**
- * @file settings_ui_ui.js
+ * @file settings_ui.js
  * @description Handles UI rendering for the Settings UI module.
- * v1.2: Added detailed logging to _createDebugSection for log modal.
- * v1.1: Ensures onShow correctly re-renders content to the main-content div.
+ * v1.4: Themes and Statistics sections are now only rendered if unlocked.
+ * v1.3: Removed the 'Automation' placeholder section as per roadmap.
  */
 
 import { staticModuleData } from './settings_ui_data.js';
@@ -16,7 +16,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1.2).");
+        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v1.4).");
     },
 
     renderMainContent(parentElement) {
@@ -40,12 +40,20 @@ export const ui = {
         title.textContent = 'Game Settings';
         container.appendChild(title);
 
-        container.appendChild(this._createThemeSection());
+        // --- MODIFICATION: Conditionally render themes and stats ---
+        if (moduleLogicRef.areThemesUnlocked()) {
+            container.appendChild(this._createThemeSection());
+        }
+        
         container.appendChild(this._createLanguageSection());
         container.appendChild(this._createGameActionsSection());
-        container.appendChild(this._createStatisticsSection());
-        container.appendChild(this._createPlaceholderSection(staticModuleData.ui.sections.automation));
-        container.appendChild(this._createDebugSection()); // Added this line
+
+        if (moduleLogicRef.areStatsUnlocked()) {
+            container.appendChild(this._createStatisticsSection());
+        }
+        // --- END MODIFICATION ---
+        
+        container.appendChild(this._createDebugSection());
 
         parentElement.appendChild(container);
     },
@@ -62,7 +70,7 @@ export const ui = {
     },
 
     _createThemeSection() {
-        const { globalSettingsManager, coreUIManager, loggingSystem } = coreSystemsRef; // Added loggingSystem
+        const { globalSettingsManager, coreUIManager, loggingSystem } = coreSystemsRef;
         const section = this._createSectionContainer(staticModuleData.ui.sections.display);
         section.id = 'settings-section-display'; 
         
@@ -88,21 +96,19 @@ export const ui = {
                     () => {
                         loggingSystem.debug("SettingsUI_ThemeSection", `Theme button clicked: ${theme.id}, ${modeId}`);
                         moduleLogicRef.applyTheme(theme.id, modeId);
-                        // Re-rendering the entire settings page to update button highlights
-                        // This is a bit heavy-handed but ensures consistency.
                         const mainContentDiv = document.getElementById('main-content');
                         if (mainContentDiv && coreUIManager.isActiveTab('settings_ui')) {
-                             this.renderMainContent(mainContentDiv); // Re-render to update active button style
+                             this.renderMainContent(mainContentDiv);
                         }
                     },
                     ['flex-1', 'py-1.5', 'text-sm']
                 );
                 if (currentThemeSettings.name === theme.id && currentThemeSettings.mode === modeId) {
                     button.classList.add('bg-accentOne', 'text-white'); 
-                    button.classList.remove('bg-primary'); // Ensure default primary is removed if active
+                    button.classList.remove('bg-primary');
                 } else {
                     button.classList.add('bg-primary');
-                     button.classList.remove('bg-accentOne', 'text-white'); // Ensure active style is removed if not
+                     button.classList.remove('bg-accentOne', 'text-white');
                 }
                 modesContainer.appendChild(button);
             });
@@ -138,7 +144,7 @@ export const ui = {
             moduleLogicRef.applyLanguage(e.target.value);
             const mainContentDiv = document.getElementById('main-content');
             if (mainContentDiv && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
-                 this.renderMainContent(mainContentDiv); // Re-render to update selected option if UI depends on it
+                 this.renderMainContent(mainContentDiv);
             }
         });
         section.appendChild(select);
@@ -146,7 +152,7 @@ export const ui = {
     },
 
     _createGameActionsSection() {
-        const { saveLoadSystem, coreUIManager, gameLoop, moduleLoader } = coreSystemsRef; // Added gameLoop, moduleLoader
+        const { saveLoadSystem, coreUIManager, gameLoop, moduleLoader } = coreSystemsRef;
         const section = this._createSectionContainer(staticModuleData.ui.sections.gameActions);
         const actionsContainer = document.createElement('div');
         actionsContainer.className = 'flex flex-wrap gap-2';
@@ -158,8 +164,7 @@ export const ui = {
                     { label: "Load Game", className: "bg-blue-600 hover:bg-blue-700", callback: () => {
                         const wasRunning = gameLoop.isRunning();
                         if (wasRunning) gameLoop.stop();
-                        if (saveLoadSystem.loadGame()) { // loadGame now also calls moduleLoader.notifyAllModulesOfLoad()
-                            // coreUIManager.showNotification("Game Loaded!", "success", 2000); // Done by saveLoadSystem
+                        if (saveLoadSystem.loadGame()) {
                             coreUIManager.fullUIRefresh();
                         } else {
                             coreUIManager.showNotification("Failed to load game or no save data found.", "error", 3000);
@@ -181,7 +186,6 @@ export const ui = {
                         
                         saveLoadSystem.resetGameData(); 
                         
-                        // Re-define core resources (from main.js logic)
                         const coreResourceDefinitions = coreSystemsRef.staticDataAggregator.getData('core_resource_definitions') || {};
                         for (const resId in coreResourceDefinitions) {
                             const resDef = coreResourceDefinitions[resId];
@@ -197,10 +201,9 @@ export const ui = {
                         coreSystemsRef.globalSettingsManager.resetToDefaults(); 
                         coreUIManager.applyTheme(defaultSettings.theme.name, defaultSettings.theme.mode);
 
-                        coreSystemsRef.coreGameStateManager.setGameVersion("0.5.8"); // Set current version for new game
+                        coreSystemsRef.coreGameStateManager.setGameVersion("0.5.8");
                         
                         coreUIManager.fullUIRefresh(); 
-                        // coreUIManager.showNotification("Game Reset to Defaults.", "warning", 3000); // Done by saveLoadSystem
                         if (wasRunning || !gameLoop.isRunning()) { setTimeout(() => gameLoop.start(), 100); }
                         coreUIManager.closeModal();
                     }},
@@ -255,16 +258,16 @@ export const ui = {
                     const messages = log.messages.map(m => 
                         String(m).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
                     ).join(' ');
-                    let color = "text-gray-400"; // Default
+                    let color = "text-gray-400";
                     if (log.level && log.level.includes("ERROR")) color = "text-red-400";
                     else if (log.level && log.level.includes("WARN")) color = "text-yellow-400";
-                    else if (log.level && log.level.includes("INFO")) { // More specific INFO coloring
+                    else if (log.level && log.level.includes("INFO")) {
                         if (log.tag && (log.tag.includes("Logic") || log.tag.includes("UI") || log.tag.includes("Manifest") || log.tag.includes("Main") )) {
-                             color = "text-blue-400"; // Module/System Infos
+                             color = "text-blue-400";
                         } else if (log.tag && log.tag.includes("DevTools")) {
-                            color = "text-purple-400"; // DevTools
+                            color = "text-purple-400";
                         } else {
-                            color = "text-sky-400"; // Other Infos
+                            color = "text-sky-400";
                         }
                     } else if (log.level && log.level.includes("DEBUG")) {
                         color = "text-teal-400";
@@ -292,18 +295,12 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        // This method is called on UI updates if the tab is active.
-        // For statistics, they are generated fresh when renderMainContent is called (e.g., onShow)
-        // If other dynamic elements were in settings that change frequently, they'd be updated here.
-        // For now, the main concern is ensuring statistics are up-to-date when the tab is viewed.
-        // The onShow -> renderMainContent -> _createStatisticsSection handles this.
         const mainContentDiv = document.getElementById('main-content');
         if (mainContentDiv && coreSystemsRef && coreSystemsRef.coreUIManager && coreSystemsRef.coreUIManager.isActiveTab('settings_ui')) {
             const statsContent = mainContentDiv.querySelector('#game-statistics-content');
             if (statsContent && moduleLogicRef && typeof moduleLogicRef.getGameStatistics === 'function') {
-                 // To avoid re-rendering the whole section, just update innerHTML
                 const newStatsHTML = moduleLogicRef.getGameStatistics();
-                if (statsContent.innerHTML !== newStatsHTML) { // Only update if content changed
+                if (statsContent.innerHTML !== newStatsHTML) {
                     statsContent.innerHTML = newStatsHTML;
                 }
             }
@@ -318,7 +315,7 @@ export const ui = {
         coreSystemsRef.loggingSystem.debug("SettingsUI_UI", "Settings tab shown.");
         const mainContentDiv = document.getElementById('main-content');
         if (mainContentDiv) {
-            this.renderMainContent(mainContentDiv); // Re-render the whole settings page
+            this.renderMainContent(mainContentDiv);
         } else {
             coreSystemsRef.loggingSystem.error("SettingsUI_UI", "onShow: main-content element not found!");
         }

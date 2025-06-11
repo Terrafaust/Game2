@@ -1,88 +1,130 @@
-// js/core/coreResourceManager.js (v2.0 - Total Earned Tracking)
-
-/**
- * @file coreResourceManager.js
- * @description Manages all game resources (e.g., Study Points, Knowledge),
- * their current amounts, and their generation rates per second.
- * v2.0: Added totalEarned tracking for detailed statistics.
- * v1.4: Added resetsOnPrestige flag and performPrestigeReset function for Ascension System.
- */
+// js/core/coreResourceManager.js (v3.0 - Complete & Refactored)
+// Now includes a simple setter for total production rate, used by productionManager.
+// ProductionSources are no longer stored here as productionManager is the source of truth for rates.
 
 import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js';
-import { staticDataAggregator } from './staticDataAggregator.js';
 
 let resources = {};
+
+const resourceDisplayOrder = [
+    'studyPoints',
+    'studySkillPoints',
+    'prestigeCount',
+    'knowledge',
+    'prestigeSkillPoints',
+    'prestigePoints',
+    'images'
+];
 
 const coreResourceManager = {
     initialize() {
         resources = {}; 
-        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v2.0).");
+        loggingSystem.info("CoreResourceManager", "Resource Manager initialized (v3.0).");
     },
 
-    defineResource(resourceId, name, initialAmount = decimalUtility.new(0), showInUI = true, isUnlocked = true, hasProductionRate = true, resetsOnPrestige = true) {
+    defineResource(resourceId, name, initialAmount = "0", showInUI = true, isUnlocked = true, hasProductionRate = true, resetsOnPrestige = true) {
         if (typeof resourceId !== 'string' || resourceId.trim() === '') {
             loggingSystem.warn("CoreResourceManager_Define", "resourceId must be a non-empty string.");
             return;
         }
-        const newAmountDec = decimalUtility.isDecimal(initialAmount) ? initialAmount : decimalUtility.new(initialAmount);
-
-        if (resources[resourceId] && resources[resourceId].isInitialized) {
+        if (resources[resourceId]) {
+             // If resource exists, update properties but preserve amount unless it's a reset.
             resources[resourceId].name = name || resources[resourceId].name;
             resources[resourceId].isUnlocked = isUnlocked;
-            resources[resourceId].showInUI = showInUI;    
+            resources[resourceId].showInUI = showInUI;
             resources[resourceId].hasProductionRate = hasProductionRate;
             resources[resourceId].resetsOnPrestige = resetsOnPrestige;
         } else {
+            // If it doesn't exist, create it.
             resources[resourceId] = {
                 id: resourceId,
                 name: name || "Unnamed Resource",
-                amount: newAmountDec,
-                productionSources: {},
+                amount: decimalUtility.new(initialAmount),
                 totalProductionRate: decimalUtility.new(0),
                 isUnlocked: isUnlocked,
                 showInUI: showInUI,
                 hasProductionRate: hasProductionRate,
                 resetsOnPrestige: resetsOnPrestige,
-                isInitialized: true,
-                // --- FEATURE: Add totalEarned property ---
-                totalEarned: decimalUtility.new(0)
+                totalEarned: decimalUtility.new(0) // Tracked for stats
             };
             loggingSystem.info("CoreResourceManager_Define", `Resource '${name}' (${resourceId}) newly defined.`);
         }
     },
     
-    // --- FEATURE: New function to get total earned resources for stats ---
     getTotalEarned(resourceId) {
         const resource = resources[resourceId];
-        if (resource) {
-            return resource.totalEarned;
-        }
-        return decimalUtility.new(0);
+        return resource ? resource.totalEarned : decimalUtility.ZERO;
     },
     
-
     addAmount(resourceId, amountToAdd) {
         const resource = resources[resourceId];
-        const decAmountToAdd = decimalUtility.new(amountToAdd);
-
-        if (!resource || !resource.isInitialized) {
-            loggingSystem.error("CoreResourceManager_AddAmount", `CRITICAL_ERROR: Resource '${resourceId}' is not defined. Cannot add amount.`);
+        if (!resource || !resource.isUnlocked) {
+            loggingSystem.warn("CoreResourceManager_AddAmount", `Attempted to add to non-existent or locked resource: '${resourceId}'.`);
             return false;
         }
         
-        if (!resource.isUnlocked) {
-            return false; 
-        }
-
+        const decAmountToAdd = decimalUtility.new(amountToAdd);
         if (decimalUtility.lt(decAmountToAdd, 0)) {
+            loggingSystem.warn("CoreResourceManager_AddAmount", `Attempted to add negative amount to resource: '${resourceId}'.`);
             return false;
         }
         
         resource.amount = decimalUtility.add(resource.amount, decAmountToAdd);
-        // --- FEATURE: Increment total earned whenever amount is added ---
         resource.totalEarned = decimalUtility.add(resource.totalEarned, decAmountToAdd);
         return true;
+    },
+
+    spendAmount(resourceId, amountToSpend) {
+        const resource = resources[resourceId];
+        if (!resource || !resource.isUnlocked) return false;
+
+        const decAmountToSpend = decimalUtility.new(amountToSpend);
+        if (this.canAfford(resourceId, decAmountToSpend)) {
+            resource.amount = decimalUtility.subtract(resource.amount, decAmountToSpend);
+            return true;
+        }
+        return false;
+    },
+
+    canAfford(resourceId, amountToSpend) {
+        const resource = resources[resourceId];
+        if (!resource || !resource.isUnlocked) return false;
+        return decimalUtility.gte(resource.amount, amountToSpend);
+    },
+
+    getAmount(resourceId) {
+        const resource = resources[resourceId];
+        return (resource && resource.isUnlocked) ? decimalUtility.new(resource.amount) : decimalUtility.ZERO;
+    },
+
+    setAmount(resourceId, newAmount) {
+        const resource = resources[resourceId];
+        if(resource) {
+            resource.amount = decimalUtility.new(newAmount);
+        }
+    },
+    
+    unlockResource(resourceId, unlockStatus = true) {
+        const resource = resources[resourceId];
+        if(resource) resource.isUnlocked = unlockStatus;
+    },
+
+    setResourceVisibility(resourceId, show) {
+        const resource = resources[resourceId];
+        if(resource) resource.showInUI = !!show;
+    },
+
+    setTotalProductionRate(resourceId, newRate) {
+        const resource = resources[resourceId];
+        if (resource) {
+            resource.totalProductionRate = decimalUtility.new(newRate);
+        }
+    },
+
+    getTotalProductionRate(resourceId) {
+        const resource = resources[resourceId];
+        return (resource && resource.isUnlocked) ? decimalUtility.new(resource.totalProductionRate) : decimalUtility.ZERO;
     },
 
     updateResourceProduction(deltaTimeSeconds) {
@@ -91,7 +133,6 @@ const coreResourceManager = {
             const resource = resources[resourceId];
             if (resource.isUnlocked && resource.hasProductionRate && decimalUtility.gt(resource.totalProductionRate, 0)) {
                 const amountGenerated = decimalUtility.multiply(resource.totalProductionRate, decDeltaTime);
-                // Use addAmount to ensure totalEarned is also updated
                 this.addAmount(resourceId, amountGenerated);
             }
         }
@@ -101,12 +142,10 @@ const coreResourceManager = {
         loggingSystem.info('ResourceManager', 'Performing prestige reset on resources...');
         for (const resId in resources) {
             if (resources[resId].resetsOnPrestige === true) {
-                resources[resId].amount = decimalUtility.new(0);
-                resources[resId].productionSources = {};
-                resources[resId].totalProductionRate = decimalUtility.new(0);
+                resources[resId].amount = decimalUtility.ZERO;
+                resources[resId].totalProductionRate = decimalUtility.ZERO;
                 loggingSystem.debug('ResourceManager', `Reset resource: ${resId}`);
             }
-            // Note: totalEarned is intentionally NOT reset
         }
     },
 
@@ -114,160 +153,64 @@ const coreResourceManager = {
         const saveData = {};
         for (const resourceId in resources) {
             const res = resources[resourceId];
-            if (res.isInitialized) {
-                saveData[resourceId] = {
-                    id: res.id,
-                    name: res.name,
-                    amount: res.amount.toString(),
-                    isUnlocked: res.isUnlocked,
-                    showInUI: res.showInUI,
-                    hasProductionRate: res.hasProductionRate,
-                    resetsOnPrestige: res.resetsOnPrestige,
-                    // --- FEATURE: Save totalEarned ---
-                    totalEarned: res.totalEarned.toString(),
-                    productionSources: {},
-                };
-                for (const srcKey in res.productionSources) {
-                    saveData[resourceId].productionSources[srcKey] = res.productionSources[srcKey].toString();
-                }
-            }
+            saveData[resourceId] = {
+                amount: res.amount.toString(),
+                isUnlocked: res.isUnlocked,
+                showInUI: res.showInUI,
+                totalEarned: res.totalEarned.toString(),
+            };
         }
         return saveData;
     },
 
     loadSaveData(saveData) {
-        if (!saveData) {
-            return;
-        }
+        if (!saveData) return;
         for (const resourceId in saveData) {
             const savedRes = saveData[resourceId];
-            this.defineResource(
-                resourceId,
-                savedRes.name || resourceId,
-                decimalUtility.new(savedRes.amount),
-                savedRes.showInUI,
-                savedRes.isUnlocked,
-                savedRes.hasProductionRate !== undefined ? savedRes.hasProductionRate : true,
-                savedRes.resetsOnPrestige !== undefined ? savedRes.resetsOnPrestige : true
-            );
-            
-            const resource = resources[resourceId];
-            if (resource) {
-                // --- FEATURE: Load totalEarned from save data ---
-                resource.totalEarned = decimalUtility.new(savedRes.totalEarned || savedRes.amount || '0');
-                
-                if (savedRes.productionSources) {
-                     resource.productionSources = {};
-                     for (const srcKey in savedRes.productionSources) {
-                        resource.productionSources[srcKey] = decimalUtility.new(savedRes.productionSources[srcKey]);
-                    }
-                    this._recalculateTotalProductionRate(resourceId);
-                }
+            if (resources[resourceId]) {
+                resources[resourceId].amount = decimalUtility.new(savedRes.amount || '0');
+                resources[resourceId].isUnlocked = savedRes.isUnlocked;
+                resources[resourceId].showInUI = savedRes.showInUI;
+                resources[resourceId].totalEarned = decimalUtility.new(savedRes.totalEarned || savedRes.amount || '0');
             }
         }
     },
-
-    // --- UNCHANGED ORIGINAL FUNCTIONS ---
-    isResourceDefined(resourceId) { return resources[resourceId] && resources[resourceId].isInitialized; },
-    getResource(resourceId) {
-        const resource = resources[resourceId];
-        if (resource && resource.isInitialized) {
-            const resourceCopy = { ...resource, amount: decimalUtility.new(resource.amount), totalProductionRate: decimalUtility.new(resource.totalProductionRate), productionSources: { ...resource.productionSources }, };
-            for (const srcKey in resourceCopy.productionSources) { resourceCopy.productionSources[srcKey] = decimalUtility.new(resource.productionSources[srcKey]); }
-            return resourceCopy;
-        }
-        return null;
-    },
-    getAmount(resourceId) {
-        const resource = resources[resourceId];
-        if (resource && resource.isUnlocked) { return decimalUtility.new(resource.amount); }
-        return decimalUtility.new(0);
-    },
-    setAmount(resourceId, newAmount) {
-        const resource = resources[resourceId];
-        if (resource && resource.isInitialized) { 
-            const amountToSet = decimalUtility.new(newAmount);
-            resource.amount = decimalUtility.lt(amountToSet, 0) ? decimalUtility.new(0) : amountToSet;
-            return true;
-        }
-        return false;
-    },
-    canAfford(resourceId, amountToSpend) {
-        const resource = resources[resourceId];
-        const decAmountToSpend = decimalUtility.new(amountToSpend);
-        if (decimalUtility.lt(decAmountToSpend, 0)) return true; 
-        if (resource && resource.isUnlocked) { return decimalUtility.gte(resource.amount, decAmountToSpend); }
-        return false;
-    },
-    spendAmount(resourceId, amountToSpend, allowNegative = false) {
-        const resource = resources[resourceId];
-        const decAmountToSpend = decimalUtility.new(amountToSpend);
-        if (!resource || !resource.isInitialized || !resource.isUnlocked || decimalUtility.lt(decAmountToSpend, 0)) {
-            return false;
-        }
-        if (decimalUtility.gte(resource.amount, decAmountToSpend) || allowNegative) {
-            resource.amount = decimalUtility.subtract(resource.amount, decAmountToSpend);
-            if (!allowNegative && decimalUtility.lt(resource.amount, 0)) {
-                resource.amount = decimalUtility.new(0);
-            }
-            return true;
-        }
-        return false;
-    },
-    setProductionPerSecond(resourceId, sourceKey, productionPerSecond) {
-        const resource = resources[resourceId];
-        if (!resource || typeof sourceKey !== 'string' || sourceKey.trim() === '') { return; }
-        resource.productionSources[sourceKey] = decimalUtility.new(productionPerSecond);
-        this._recalculateTotalProductionRate(resourceId);
-    },
-    getProductionFromSource(resourceId, sourceKey) {
-        const resource = resources[resourceId];
-        if (resource && resource.productionSources && Object.prototype.hasOwnProperty.call(resource.productionSources, sourceKey)) {
-            return decimalUtility.new(resource.productionSources[sourceKey]);
-        }
-        return decimalUtility.new(0);
-    },
-    _recalculateTotalProductionRate(resourceId) {
-        const resource = resources[resourceId];
-        if (!resource) return;
-        let totalRate = decimalUtility.new(0);
-        for (const sourceKey in resource.productionSources) {
-            totalRate = decimalUtility.add(totalRate, resource.productionSources[sourceKey]);
-        }
-        resource.totalProductionRate = totalRate;
-    },
-    getTotalProductionRate(resourceId) {
-        const resource = resources[resourceId];
-        if (resource && resource.isUnlocked) { return decimalUtility.new(resource.totalProductionRate); }
-        return decimalUtility.new(0);
-    },
-    unlockResource(resourceId, unlockStatus = true) { 
-        const resource = resources[resourceId];
-        if (resource) { resource.isUnlocked = unlockStatus; }
-    },
-    setResourceVisibility(resourceId, show) {
-        const resource = resources[resourceId];
-        if (resource) { resource.showInUI = !!show; }
-    },
+    
     getAllResources() {
         const resourcesCopy = {};
-        for (const resId in resources) {
+        const returnedIds = new Set();
+        const prestigePointsVisible = (resources['prestigePoints'] && resources['prestigePoints'].showInUI);
+    
+        const copyResource = (resId) => {
             const original = resources[resId];
-            if (original.isInitialized) { 
-                resourcesCopy[resId] = { ...original, amount: decimalUtility.new(original.amount), totalProductionRate: decimalUtility.new(original.totalProductionRate), productionSources: { ...original.productionSources }, };
-                for (const srcKey in resourcesCopy[resId].productionSources) { resourcesCopy[resId].productionSources[srcKey] = decimalUtility.new(original.productionSources[srcKey]); }
+            if (original) {
+                const newCopy = JSON.parse(JSON.stringify(original)); // Deep copy
+                newCopy.amount = decimalUtility.new(original.amount);
+                newCopy.totalProductionRate = decimalUtility.new(original.totalProductionRate);
+                if (resId === 'prestigeCount') {
+                    newCopy.showInUI = prestigePointsVisible;
+                }
+                resourcesCopy[resId] = newCopy;
+                returnedIds.add(resId);
             }
+        };
+    
+        for (const resId of resourceDisplayOrder) {
+            if (resources[resId]) copyResource(resId);
         }
+    
+        for (const resId in resources) {
+            if (!returnedIds.has(resId)) copyResource(resId);
+        }
+    
         return resourcesCopy;
     },
+
     resetState() {
-        const coreResourceDefinitions = staticDataAggregator.getData('core_resource_definitions') || {};
-        const newResourcesState = {};
-        for (const resId in coreResourceDefinitions) {
-            const resDef = coreResourceDefinitions[resId];
-            newResourcesState[resId] = { id: resDef.id, name: resDef.name, amount: decimalUtility.new(resDef.initialAmount), productionSources: {}, totalProductionRate: decimalUtility.new(0), isUnlocked: resDef.isUnlocked, showInUI: resDef.showInUI, hasProductionRate: resDef.hasProductionRate, resetsOnPrestige: true, isInitialized: true, };
-        }
-        resources = newResourcesState;
+        // This function is now simpler. It just clears the resources.
+        // The manifests of each module are responsible for re-defining them on reset.
+        resources = {};
+        loggingSystem.info("CoreResourceManager", "All resources cleared for hard reset.");
     }
 };
 

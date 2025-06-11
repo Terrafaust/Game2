@@ -1,10 +1,10 @@
-// modules/market_module/market_manifest.js (v2.1 - Persistent Automator on Prestige)
+// modules/market_module/market_manifest.js (v3.0 - Roadmap Refactor)
 
 /**
  * @file market_manifest.js
  * @description Manifest file for the Market Module.
+ * v3.0: Refactored for roadmap. Removed all automation logic and dependencies.
  * v2.1: Automator state now persists through prestige resets.
- * v2.0: Hooks the automation processing logic into the game loop.
  */
 
 import { staticModuleData } from './market_data.js';
@@ -15,8 +15,8 @@ import { ui } from './market_ui.js';
 const marketManifest = {
     id: "market",
     name: "Market",
-    version: "2.1.0", 
-    description: "Trade resources, unlock features, and manage automations.",
+    version: "3.0.0", 
+    description: "Trade resources and unlock game features.",
     dependencies: ["studies"], 
 
     async initialize(coreSystems) {
@@ -24,15 +24,15 @@ const marketManifest = {
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
+        // Register new data structure
         staticDataAggregator.registerStaticData(this.id, {
             resources: staticModuleData.resources, 
-            marketItems: staticModuleData.marketItems,
-            marketUnlocks: staticModuleData.marketUnlocks,
-            marketAutomations: staticModuleData.marketAutomations,
+            featureUnlocks: staticModuleData.featureUnlocks,
+            skillPoints: staticModuleData.skillPoints,
             ui: staticModuleData.ui
         });
 
-        loggingSystem.debug(this.name, "Defining/Redefining resources from market_data.js for Market module.");
+        loggingSystem.debug(this.name, "Defining/Redefining resources for Market module.");
         for (const resourceKey in staticModuleData.resources) {
             const resDef = staticModuleData.resources[resourceKey];
             coreResourceManager.defineResource(
@@ -47,13 +47,7 @@ const marketManifest = {
 
         const initialState = getInitialState();
         let currentModuleState = coreGameStateManager.getModuleState(this.id) || initialState;
-
-        const finalState = {
-            purchaseCounts: { ...initialState.purchaseCounts, ...(currentModuleState.purchaseCounts || {}) },
-            automatorLevels: { ...initialState.automatorLevels, ...(currentModuleState.automatorLevels || {}) },
-            automationProgress: { ...initialState.automationProgress, ...(currentModuleState.automationProgress || {}) }
-        };
-        Object.assign(moduleState, finalState); 
+        Object.assign(moduleState, currentModuleState); 
         coreGameStateManager.setModuleState(this.id, { ...moduleState }); 
 
         moduleLogic.initialize(coreSystems);
@@ -67,10 +61,8 @@ const marketManifest = {
             () => ui.onShow(),
             () => ui.onHide()
         );
-
-        gameLoop.registerUpdateCallback('generalLogic', (deltaTime) => {
-            moduleLogic.processImageAutomation(deltaTime);
-        });
+        
+        // No more automation logic to register in the game loop.
         
         gameLoop.registerUpdateCallback('uiUpdate', (deltaTime) => {
             if (coreUIManager.isActiveTab(this.id)) {
@@ -101,31 +93,18 @@ const marketManifest = {
                 }
             },
             onPrestigeReset: () => {
-                // --- MODIFICATION: Preserve automator levels on prestige ---
+                // Now, on prestige, we only need to reset the purchase counts.
                 loggingSystem.info(this.name, `onPrestigeReset called for ${this.name}.`);
                 
-                // Get a fresh initial state, which has reset purchase counts
                 const initialState = getInitialState();
-
-                // Create a new state object for prestige reset
-                const stateOnPrestige = {
-                    // Reset purchase counts
-                    purchaseCounts: initialState.purchaseCounts,
-                    // Keep the current automator levels and progress
-                    automatorLevels: moduleState.automatorLevels,
-                    automationProgress: moduleState.automationProgress
-                };
-
-                // Apply the new selective state
-                Object.assign(moduleState, stateOnPrestige);
-                coreGameStateManager.setModuleState(this.id, stateOnPrestige);
+                Object.assign(moduleState, initialState);
+                coreGameStateManager.setModuleState(this.id, { ...moduleState });
                 
-                loggingSystem.info(this.name, `Market state partially reset for prestige. Automators preserved.`, stateOnPrestige);
+                loggingSystem.info(this.name, `Market state reset for prestige.`);
 
                 if (coreUIManager.isActiveTab(this.id)) {
                     ui.renderMainContent(document.getElementById('main-content'));
                 }
-                // --- END MODIFICATION ---
             }
         };
     }

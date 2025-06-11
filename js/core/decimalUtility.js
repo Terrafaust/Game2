@@ -1,204 +1,101 @@
-// js/core/decimalUtility.js
+// js/core/decimalUtility.js (v2 - Calculation Utilities)
+// Adds generic calculation functions to avoid code duplication.
 
-/**
- * @file decimalUtility.js
- * @description Provides a wrapper for Decimal.js (or a similar big number library like break_infinity.js)
- * to ensure consistent usage and to simplify common operations throughout the game.
- * All game logic involving numbers that can grow large (currencies, costs, production rates, etc.)
- * MUST use this utility.
- */
-
-// Ensure Decimal is available (from break_infinity.js or similar)
 if (typeof Decimal === 'undefined') {
-    throw new Error("Decimal library (break_infinity.js or similar) is not loaded. Ensure it's included before decimalUtility.js.");
+    throw new Error("Decimal library (break_infinity.js or similar) is not loaded.");
 }
 
 const decimalUtility = {
-    /**
-     * Creates a new Decimal instance from a value.
-     * @param {number|string|Decimal} value - The value to convert to a Decimal.
-     * @returns {Decimal} A new Decimal object.
-     */
+    // --- Existing Functions ---
     new(value) {
-        try {
-            return new Decimal(value);
-        } catch (error) {
-            console.error(`Error creating Decimal from value: ${value}`, error);
-            return new Decimal(0); // Return a safe default
-        }
+        try { return new Decimal(value); } catch (error) { console.error(`Error creating Decimal from value: ${value}`, error); return new Decimal(0); }
     },
-
-    /**
-     * Checks if a value is a Decimal instance.
-     * @param {*} value - The value to check.
-     * @returns {boolean} True if the value is a Decimal instance, false otherwise.
-     */
-    isDecimal(value) {
-        return value instanceof Decimal;
-    },
-
-    /**
-     * Adds two Decimal values.
-     * @param {Decimal|number|string} a - The first value.
-     * @param {Decimal|number|string} b - The second value.
-     * @returns {Decimal} The sum of a and b.
-     */
-    add(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return decA.add(decB);
-    },
-
-    /**
-     * Subtracts the second Decimal value from the first.
-     * @param {Decimal|number|string} a - The value to subtract from.
-     * @param {Decimal|number|string} b - The value to subtract.
-     * @returns {Decimal} The difference of a and b.
-     */
-    subtract(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return decA.sub(decB);
-    },
-
-    /**
-     * Multiplies two Decimal values.
-     * @param {Decimal|number|string} a - The first value.
-     * @param {Decimal|number|string} b - The second value.
-     * @returns {Decimal} The product of a and b.
-     */
-    multiply(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return decA.mul(decB);
-    },
-
-    /**
-     * Divides the first Decimal value by the second.
-     * @param {Decimal|number|string} a - The dividend.
-     * @param {Decimal|number|string} b - The divisor.
-     * @returns {Decimal} The quotient of a and b. Returns Decimal(0) if divisor is 0.
-     */
-    divide(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        if (decB.eq(0)) {
-            return this.new(0);
-        }
-        return decA.div(decB);
-    },
-
-    /**
-     * Raises the first Decimal value to the power of the second.
-     * @param {Decimal|number|string} base - The base value.
-     * @param {Decimal|number|string|number} exponent - The exponent value.
-     * @returns {Decimal} The result of base raised to the power of exponent.
-     */
-    power(base, exponent) {
-        const decBase = this.isDecimal(base) ? base : this.new(base);
-        const numExponent = this.isDecimal(exponent) ? exponent.toNumber() : parseFloat(exponent);
-        if (isNaN(numExponent)) {
-            console.error(`decimalUtility.power: Invalid exponent: ${exponent}. Using 1.`);
-            return decBase.pow(1);
-        }
-        return decBase.pow(numExponent);
-    },
-
-    /**
-     * Compares two Decimal values.
-     * @param {Decimal|number|string} a - The first value.
-     * @param {Decimal|number|string} b - The second value.
-     * @returns {number} -1 if a < b, 0 if a == b, 1 if a > b.
-     */
-    compare(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return decA.cmp(decB);
-    },
-
+    isDecimal(value) { return value instanceof Decimal; },
+    add(a, b) { return this.new(a).add(this.new(b)); },
+    subtract(a, b) { return this.new(a).sub(this.new(b)); },
+    multiply(a, b) { return this.new(a).mul(this.new(b)); },
+    divide(a, b) { const decB = this.new(b); if (decB.eq(0)) return this.new(0); return this.new(a).div(decB); },
+    power(base, exponent) { const numExponent = this.isDecimal(exponent) ? exponent.toNumber() : parseFloat(exponent); if (isNaN(numExponent)) { console.error(`decimalUtility.power: Invalid exponent: ${exponent}.`); return this.new(base); } return this.new(base).pow(numExponent); },
+    compare(a, b) { return this.new(a).cmp(this.new(b)); },
     lt(a, b) { return this.compare(a, b) < 0; },
     lte(a, b) { return this.compare(a, b) <= 0; },
     gt(a, b) { return this.compare(a, b) > 0; },
     gte(a, b) { return this.compare(a, b) >= 0; },
     eq(a, b) { return this.compare(a, b) === 0; },
     neq(a, b) { return this.compare(a, b) !== 0; },
-    
-    abs(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.abs();
-    },
-
-    floor(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.floor();
-    },
-
-    ceil(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.ceil();
-    },
-
-    round(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.round();
-    },
-
-    ln(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.ln();
-    },
-
-    log10(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.log10();
-    },
-
-    log2(value) {
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        return decValue.log2();
-    },
-
-    /**
-     * NEW: Returns the larger of two Decimal values.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {Decimal}
-     */
-    max(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return Decimal.max(decA, decB);
-    },
-
-    /**
-     * NEW: Returns the smaller of two Decimal values.
-     * @param {Decimal|number|string} a
-     * @param {Decimal|number|string} b
-     * @returns {Decimal}
-     */
-    min(a, b) {
-        const decA = this.isDecimal(a) ? a : this.new(a);
-        const decB = this.isDecimal(b) ? b : this.new(b);
-        return Decimal.min(decA, decB);
-    },
-
-    format(value, places = 2, mantissaPlaces = 2) {
-        // ... (Formatting logic is unchanged)
-        const decValue = this.isDecimal(value) ? value : this.new(value);
-        if (decValue.isNan || decValue.isInfinite) { return decValue.toString(); }
-        if (decValue.abs().lt(1e-6) && decValue.neq(0)) { return decValue.toExponential(mantissaPlaces); }
-        if (decValue.abs().gte(1e9)) { return decValue.toExponential(mantissaPlaces); }
-        if (decValue.abs().lt(0.01) && decValue.neq(0)) { return decValue.toFixed(places + 2); }
-        if (decValue.lt(1000) && decValue.gt(-1000)) {
-            if (decValue.neq(decValue.floor())) { return decValue.toFixed(places); }
-            else { return decValue.toFixed(0); }
-        }
-        return decValue.toPrecision(mantissaPlaces + (decValue.exponent || 0).toString().length);
-    },
-
+    abs(value) { return this.new(value).abs(); },
+    floor(value) { return this.new(value).floor(); },
+    ceil(value) { return this.new(value).ceil(); },
+    round(value) { return this.new(value).round(); },
+    ln(value) { return this.new(value).ln(); },
+    log10(value) { return this.new(value).log10(); },
+    log2(value) { return this.new(value).log2(); },
+    max(a, b) { return Decimal.max(this.new(a), this.new(b)); },
+    min(a, b) { return Decimal.min(this.new(a), this.new(b)); },
+    format(value, places = 2, mantissaPlaces = 2) { const decValue = this.new(value); if (decValue.isNan || decValue.isInfinite) { return decValue.toString(); } if (decValue.abs().lt(1e-6) && decValue.neq(0)) { return decValue.toExponential(mantissaPlaces); } if (decValue.abs().gte(1e9)) { return decValue.toExponential(mantissaPlaces); } if (decValue.abs().lt(0.01) && decValue.neq(0)) { return decValue.toFixed(places + 2); } if (decValue.lt(1000) && decValue.gt(-1000)) { if (decValue.neq(decValue.floor())) { return decValue.toFixed(places); } else { return decValue.toFixed(0); } } return decValue.toPrecision(mantissaPlaces + (decValue.exponent || 0).toString().length); },
     ZERO: new Decimal(0),
     ONE: new Decimal(1),
     TEN: new Decimal(10),
+
+    // --- NEW FUNCTIONS START ---
+
+    /**
+     * Calculates the total cost for N items in a geometric series.
+     * C_total = C_base * ( (R^N - 1) / (R - 1) ) * R^owned
+     * @param {Decimal} baseCost - The cost of the first item.
+     * @param {Decimal} growthFactor - The cost multiplier per item (e.g., 1.05).
+     * @param {Decimal} ownedCount - How many items are already owned.
+     * @param {Decimal} quantity - How many items to purchase.
+     * @returns {Decimal} The total cost for the batch.
+     */
+    getGeometricSeriesCost(baseCost, growthFactor, ownedCount, quantity) {
+        if (this.eq(growthFactor, 1)) {
+            return this.multiply(baseCost, quantity);
+        }
+        
+        const R_pow_n = this.power(growthFactor, quantity);
+        const numerator = this.subtract(R_pow_n, 1);
+        const denominator = this.subtract(growthFactor, 1);
+        const costFor_n_Items = this.multiply(baseCost, this.divide(numerator, denominator));
+        
+        const priceIncreaseFromOwned = this.power(growthFactor, ownedCount);
+        return this.multiply(costFor_n_Items, priceIncreaseFromOwned);
+    },
+
+    /**
+     * Calculates the maximum buyable quantity of an item with a geometric cost.
+     * N = floor( log_R( (Available * (R-1)) / (C_base * R^owned) + 1 ) )
+     * @param {Decimal} availableCurrency - The amount of currency the player has.
+     * @param {Decimal} baseCost - The cost of the first item.
+     * @param {Decimal} growthFactor - The cost multiplier per item (e.g., 1.05).
+     * @param {Decimal} ownedCount - How many items are already owned.
+     * @returns {Decimal} The maximum number of items that can be purchased.
+     */
+    getMaxBuyableGeometric(availableCurrency, baseCost, growthFactor, ownedCount) {
+        if (this.lte(availableCurrency, 0) || this.lte(baseCost, 0)) return this.ZERO;
+
+        const costOfNext = this.multiply(baseCost, this.power(growthFactor, ownedCount));
+        if (this.gt(costOfNext, availableCurrency)) return this.ZERO;
+        
+        if (this.eq(growthFactor, 1)) {
+            return this.floor(this.divide(availableCurrency, baseCost));
+        }
+
+        const R = growthFactor;
+        const R_minus_1 = this.subtract(R, 1);
+
+        const term = this.divide(this.multiply(availableCurrency, R_minus_1), costOfNext);
+        const LHS = this.add(term, 1);
+        if (this.lte(LHS, 1)) return this.ZERO;
+
+        const log_LHS = this.ln(LHS);
+        const log_R = this.ln(R);
+        if (this.lte(log_R, 0)) return this.ZERO;
+        
+        const max_n = this.floor(this.divide(log_LHS, log_R));
+        return this.max(max_n, 0);
+    }
+    // --- NEW FUNCTIONS END ---
 };
 
 export { decimalUtility };

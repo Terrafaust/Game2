@@ -1,51 +1,21 @@
-// modules/core_gameplay_module/core_gameplay_logic.js (v2.3 - Global Bonus Integration)
+// modules/core_gameplay_module/core_gameplay_logic.js (v4.0 - Refactored)
+// Now delegates all calculation logic to the new productionManager.
 
-/**
- * @file core_gameplay_logic.js
- * @description Contains the business logic for the Core Gameplay module.
- * v2.3: Manual click gain now benefits from all production multipliers.
- * v2.2: Added calculateManualStudyGain to expose click value to UI.
- */
-
-import { staticModuleData } from './core_gameplay_data.js';
 import { moduleState } from './core_gameplay_state.js';
+import { RESOURCES, MODULES } from '../../core/constants.js';
 
 let coreSystemsRef = null; 
 
 export const moduleLogic = {
-    initialize(coreSystems, initialStateRef) { 
+    initialize(coreSystems) { 
         coreSystemsRef = coreSystems;
-        coreSystemsRef.loggingSystem.info("CoreGameplayLogic", "Logic initialized (v2.3).");
+        coreSystemsRef.loggingSystem.info("CoreGameplayLogic", "Logic initialized (v4.0).");
     },
 
+    // REFACTORED: This is now a simple wrapper around the productionManager
     calculateManualStudyGain() {
-        if (!coreSystemsRef) return new (self.Decimal || Decimal)(0);
-        const { coreResourceManager, coreUpgradeManager, decimalUtility } = coreSystemsRef;
-        
-        let baseAmountGained = decimalUtility.new(staticModuleData.clickAmount);
-        
-        // Bonus from SPS
-        const currentSps = coreResourceManager.getTotalProductionRate('studyPoints');
-        const bonusPercentage = decimalUtility.new(0.10); 
-        const spsBonus = decimalUtility.multiply(currentSps, bonusPercentage);
-        
-        let totalGain = decimalUtility.add(baseAmountGained, spsBonus);
-
-        // --- MODIFICATION: Apply all relevant multipliers to the click gain ---
-        // 1. Specific click multiplier (from achievements, etc.)
-        const clickMultiplier = coreUpgradeManager.getProductionMultiplier('core_gameplay_click', 'studyPoints');
-        totalGain = decimalUtility.multiply(totalGain, clickMultiplier);
-
-        // 2. Global multiplier for the resource being generated (Study Points)
-        const globalResourceMultiplier = coreUpgradeManager.getProductionMultiplier('global_resource_production', 'studyPoints');
-        totalGain = decimalUtility.multiply(totalGain, globalResourceMultiplier);
-
-        // 3. Global multiplier for ALL production
-        const globalAllMultiplier = coreUpgradeManager.getProductionMultiplier('global_production', 'all');
-        totalGain = decimalUtility.multiply(totalGain, globalAllMultiplier);
-        // --- END MODIFICATION ---
-
-        return totalGain;
+        if (!coreSystemsRef) return { [RESOURCES.STUDY_POINTS]: new Decimal(0), [RESOURCES.KNOWLEDGE]: new Decimal(0) };
+        return coreSystemsRef.productionManager.getManualClickGain();
     },
 
     performManualStudy() {
@@ -55,17 +25,25 @@ export const moduleLogic = {
         }
         const { coreResourceManager, decimalUtility, loggingSystem, coreGameStateManager } = coreSystemsRef;
         
-        const totalAmountGained = this.calculateManualStudyGain();
+        const gains = this.calculateManualStudyGain();
+        const studyPointsGain = gains[RESOURCES.STUDY_POINTS];
+        const knowledgeGain = gains[RESOURCES.KNOWLEDGE];
         
-        coreResourceManager.addAmount(staticModuleData.resourceId, totalAmountGained);
-        moduleState.totalManualClicks++;
-        coreGameStateManager.setModuleState('core_gameplay', { ...moduleState });
+        if (decimalUtility.gt(studyPointsGain, 0)) {
+            coreResourceManager.addAmount(RESOURCES.STUDY_POINTS, studyPointsGain);
+        }
+        if (decimalUtility.gt(knowledgeGain, 0)) {
+            coreResourceManager.addAmount(RESOURCES.KNOWLEDGE, knowledgeGain);
+        }
 
-        loggingSystem.debug("CoreGameplayLogic", `Manually studied. Total Gained: ${totalAmountGained} ${staticModuleData.resourceId}. Total clicks: ${moduleState.totalManualClicks}`);
+        moduleState.totalManualClicks++;
+        coreGameStateManager.setModuleState(MODULES.CORE_GAMEPLAY, { ...moduleState });
+
+        loggingSystem.debug("CoreGameplayLogic", `Manually studied. Gained: ${studyPointsGain} SP, ${knowledgeGain} Knowledge. Total clicks: ${moduleState.totalManualClicks}`);
         
         return {
-            amountGained: totalAmountGained, 
-            newTotal: coreResourceManager.getAmount(staticModuleData.resourceId)
+            amountGained: studyPointsGain,
+            newTotal: coreResourceManager.getAmount(RESOURCES.STUDY_POINTS)
         };
     },
 
