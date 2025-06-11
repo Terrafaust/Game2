@@ -4,7 +4,7 @@
 
 import { staticModuleData } from './studies_data.js';
 import { moduleState } from './studies_state.js';
-import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS } from '../../core/constants.js';
+import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS } from '../../js/core/constants.js';
 
 let coreSystemsRef = null; 
 

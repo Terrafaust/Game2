@@ -2,7 +2,7 @@
 
 import { staticModuleData } from './skills_data.js';
 import { moduleState, getInitialState as getSkillsInitialState } from './skills_state.js';
-import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS, EFFECT_TYPES, MODULES } from '../../core/constants.js';
+import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS, EFFECT_TYPES, MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 

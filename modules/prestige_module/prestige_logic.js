@@ -3,7 +3,7 @@
 
 import { prestigeData } from './prestige_data.js';
 import { moduleState, getInitialState } from './prestige_state.js';
-import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS, MODULES } from '../../core/constants.js';
+import { RESOURCES, UPGRADE_TARGETS, GLOBAL_FLAGS, MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef;
 

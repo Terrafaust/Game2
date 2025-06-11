@@ -2,7 +2,7 @@
 // Fully integrated with translationManager.
 
 import { staticModuleData } from './settings_ui_data.js';
-import { MODULES } from '../../core/constants.js';
+import { MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;

@@ -2,7 +2,7 @@
 // Fully integrated with translationManager and new core systems.
 
 import { staticModuleData } from './studies_data.js';
-import { MODULES } from '../../core/constants.js';
+import { MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;

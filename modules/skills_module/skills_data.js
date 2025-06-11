@@ -1,7 +1,7 @@
 // modules/skills_module/skills_data.js (v7.0 - Complete & Refactored)
 // Uses constants and has all skill definitions written out explicitly.
 
-import { RESOURCES, UPGRADE_TARGETS, EFFECT_TYPES } from '../../core/constants.js';
+import { RESOURCES, UPGRADE_TARGETS, EFFECT_TYPES } from '../../js/core/constants.js';
 
 const skillCostsPerLevelByTier = { 1: "1", 2: "2", 3: "3", 4: "5", 5: "8", 6: "15", 7: "50", 8: "100" };
 const createSkillLevelCosts = (tier, maxLevel) => Array(maxLevel).fill(skillCostsPerLevelByTier[tier]);
