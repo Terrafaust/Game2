@@ -1,5 +1,5 @@
-// js/core/moduleLoader.js (v3.1 - Bugfix)
-// Corrects the notification message to use the manifest filename on error.
+// js/core/moduleLoader.js (v3.2 - Path Correction)
+// No changes needed here, but provided for completeness.
 
 import { loggingSystem } from './loggingSystem.js';
 
@@ -19,8 +19,9 @@ export const moduleLoader = {
             const manifest = manifestModule.default;
 
             if (!manifest || !manifest.id || !manifest.initialize) {
-                loggingSystem.error("ModuleLoader", `Manifest for ${manifestPath} is invalid or missing required fields.`);
-                coreSystemsBase.coreUIManager.showNotification(`Invalid manifest: ${manifestPath.split('/').pop()}.`, "error", 10000);
+                const errorMsg = `Invalid manifest: ${manifestPath.split('/').pop()}`;
+                loggingSystem.error("ModuleLoader", errorMsg);
+                coreSystemsBase.coreUIManager.showNotification(errorMsg, "error", 10000);
                 return false;
             }
 
@@ -44,11 +45,11 @@ export const moduleLoader = {
             return true;
 
         } catch (error) {
-            loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error, error.stack);
+            const filename = manifestPath.split('/').pop();
+            const errorMsg = `Error loading module: ${filename}.`;
+            loggingSystem.error("ModuleLoader", errorMsg, error, error.stack);
             if(coreSystemsBase.coreUIManager?.showNotification) {
-                // THIS IS THE FIX: Ensure the translation key exists or provide a fallback.
-                const filename = manifestPath.split('/').pop();
-                coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${filename}.`, "error", 10000);
+                coreSystemsBase.coreUIManager.showNotification(errorMsg, "error", 10000);
             }
             return false;
         }

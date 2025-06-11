@@ -1,5 +1,5 @@
-// js/core/translationManager.js (v2.0 - Bugfix)
-// Corrects the initialize function to be async to handle await for language packs.
+// js/core/translationManager.js (v2.1 - Path Correction)
+// Corrects the dynamic import path to go up one level from /core/ to /js/.
 
 import { globalSettingsManager } from './globalSettingsManager.js';
 import { loggingSystem } from './loggingSystem.js';
@@ -10,6 +10,7 @@ let currentLanguage = 'en';
 const translationManager = {
     async loadLanguagePack(lang = 'en') {
         try {
+            // THIS IS THE FIX: Path is now relative to this file's location in /core/
             const packModule = await import(`../lang/${lang}.js`);
             if (packModule.default) {
                 languagePacks[lang] = packModule.default;
@@ -19,14 +20,12 @@ const translationManager = {
             }
         } catch (error) {
             loggingSystem.error("TranslationManager", `Failed to load language pack for '${lang}'. Defaulting to 'en'.`, error);
-            if (lang !== 'en') await this.loadLanguagePack('en'); // Fallback to English
+            if (lang !== 'en') await this.loadLanguagePack('en');
         }
     },
 
-    // THIS IS THE FIX: The initialize function must be async.
     async initialize() {
         const savedLang = globalSettingsManager.getSetting('language', 'en');
-        // We must await the setLanguage function to ensure the initial pack is loaded before the game continues.
         await this.setLanguage(savedLang); 
         
         document.addEventListener('languageChanged', (event) => {
@@ -48,7 +47,7 @@ const translationManager = {
 
         if (text === undefined) {
             loggingSystem.warn("TranslationManager", `Translation key not found: '${key}' for language '${currentLanguage}'.`);
-            return `{${key}}`; // Return the key itself as a fallback
+            return `{${key}}`;
         }
 
         for (const placeholder in replacements) {
