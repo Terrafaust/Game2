@@ -1,13 +1,8 @@
-// modules/market_module/market_ui.js (v3.1 - Restored Consumables Section)
-
-/**
- * @file market_ui.js
- * @description Handles the UI rendering and interactions for the Market module.
- * v3.1: Restored the Consumables section for purchasing Images.
- * v3.0: Complete UI overhaul for the new roadmap structure.
- */
+// modules/market_module/market_ui.js (v4.0 - Final Refactor)
+// Fully integrated with translationManager.
 
 import { staticModuleData } from './market_data.js';
+import { MODULES } from '../../core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;
@@ -17,31 +12,29 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v3.1).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v4.0).");
         
         document.addEventListener('buyMultiplierChanged', () => {
-            if (coreSystemsRef.coreUIManager.isActiveTab('market')) {
-                this.updateDynamicElements();
-            }
+            if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.MARKET)) this.updateDynamicElements();
+        });
+        document.addEventListener('languagePackChanged', () => {
+            if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.MARKET)) this.renderMainContent(parentElementCache);
         });
     },
 
     renderMainContent(parentElement) {
-        if (!coreSystemsRef || !moduleLogicRef) {
-            parentElement.innerHTML = '<p class="text-red-500">Market UI not properly initialized.</p>';
-            return;
-        }
+        if (!parentElement || !coreSystemsRef || !moduleLogicRef) return;
         parentElementCache = parentElement;
         parentElement.innerHTML = ''; 
 
+        const { translationManager } = coreSystemsRef;
         const container = document.createElement('div');
         container.className = 'p-4 space-y-8'; 
 
-        container.innerHTML = `<h2 class="text-2xl font-semibold text-primary mb-2">Market</h2>`;
+        container.innerHTML = `<h2 class="text-2xl font-semibold text-primary mb-2">${translationManager.get('market.ui.title')}</h2>`;
         
-        // Append the new and restored sections
         container.appendChild(this._createFeatureUnlocksSection());
-        container.appendChild(this._createConsumablesSection()); // Restored
+        container.appendChild(this._createConsumablesSection());
         container.appendChild(this._createSkillPointsSection());
         container.appendChild(this._createAlreadyUnlockedSection());
 
@@ -49,108 +42,63 @@ export const ui = {
         this.updateDynamicElements();
     },
     
-    _createFeatureUnlocksSection() {
+    _createSection(id, titleKey, addMultiplierControls = false) {
+        const { translationManager } = coreSystemsRef;
         const section = document.createElement('section');
-        section.id = 'market-feature-unlocks-section';
+        section.id = `market-${id}-section`;
         section.className = 'space-y-4';
         
-        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Feature Unlocks</h3>`;
+        const header = document.createElement('div');
+        header.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
+        header.innerHTML = `<h3 class="text-xl font-medium text-secondary">${translationManager.get(titleKey)}</h3>`;
 
-        const itemsGrid = document.createElement('div');
-        itemsGrid.id = 'market-feature-unlocks-grid';
-        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-        
-        for (const unlockId in staticModuleData.featureUnlocks) {
-            const unlockDef = staticModuleData.featureUnlocks[unlockId];
-            if (unlockDef.isFuture) continue;
-            itemsGrid.appendChild(this._createCard(
-                unlockId, 
-                unlockDef,
-                () => moduleLogicRef.purchaseUnlock(unlockId)
-            ));
+        if (addMultiplierControls && coreSystemsRef.buyMultiplierUI) {
+            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
+            multiplierControls.classList.remove('my-4');
+            header.appendChild(multiplierControls);
         }
-        section.appendChild(itemsGrid);
+        section.appendChild(header);
+
+        const grid = document.createElement('div');
+        grid.id = `market-${id}-grid`;
+        grid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
+        section.appendChild(grid);
+        
         return section;
     },
 
-    // NEW: Function to create the Consumables section
+    _createFeatureUnlocksSection() {
+        const section = this._createSection('feature-unlocks', 'market.ui.feature_unlocks_title');
+        const grid = section.querySelector('#market-feature-unlocks-grid');
+        for (const unlockId in staticModuleData.featureUnlocks) {
+            const unlockDef = staticModuleData.featureUnlocks[unlockId];
+            if (unlockDef.isFuture) continue;
+            grid.appendChild(this._createCard(unlockId, unlockDef, () => moduleLogicRef.purchaseUnlock(unlockId)));
+        }
+        return section;
+    },
+
     _createConsumablesSection() {
-        const section = document.createElement('section');
-        section.id = 'market-consumables-section';
-        section.className = 'space-y-4';
-        
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
-        sectionHeader.innerHTML = `<h3 class="text-xl font-medium text-secondary">Consumables</h3>`;
-
-        if (coreSystemsRef.buyMultiplierUI) {
-            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
-            multiplierControls.classList.remove('my-4');
-            sectionHeader.appendChild(multiplierControls);
-        }
-        section.appendChild(sectionHeader);
-
-        const itemsGrid = document.createElement('div');
-        itemsGrid.id = 'market-consumables-grid';
-        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-
+        const section = this._createSection('consumables', 'market.ui.consumables_title', true);
+        const grid = section.querySelector('#market-consumables-grid');
         for (const itemId in staticModuleData.consumables) {
-            const itemDef = staticModuleData.consumables[itemId];
-            itemsGrid.appendChild(this._createCard(
-                itemId, 
-                itemDef,
-                () => moduleLogicRef.purchaseScalableItem(itemId)
-            ));
+            grid.appendChild(this._createCard(itemId, staticModuleData.consumables[itemId], () => moduleLogicRef.purchaseScalableItem(itemId)));
         }
-        section.appendChild(itemsGrid);
         return section;
     },
 
     _createSkillPointsSection() {
-        const section = document.createElement('section');
-        section.id = 'market-skill-points-section';
-        section.className = 'space-y-4';
-        
-        const sectionHeader = document.createElement('div');
-        sectionHeader.className = 'flex justify-between items-center border-b border-gray-700 pb-2 mb-4';
-        sectionHeader.innerHTML = `<h3 class="text-xl font-medium text-secondary">Skill Points</h3>`;
-
-        if (coreSystemsRef.buyMultiplierUI) {
-            const multiplierControls = coreSystemsRef.buyMultiplierUI.createBuyMultiplierControls();
-            multiplierControls.classList.remove('my-4');
-            sectionHeader.appendChild(multiplierControls);
-        }
-        section.appendChild(sectionHeader);
-
-        const itemsGrid = document.createElement('div');
-        itemsGrid.id = 'market-skill-points-grid';
-        itemsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6';
-
+        const section = this._createSection('skill-points', 'market.ui.skill_points_title', true);
+        const grid = section.querySelector('#market-skill-points-grid');
         for (const itemId in staticModuleData.skillPoints) {
-            const itemDef = staticModuleData.skillPoints[itemId];
-            itemsGrid.appendChild(this._createCard(
-                itemId, 
-                itemDef,
-                () => moduleLogicRef.purchaseScalableItem(itemId)
-            ));
+            grid.appendChild(this._createCard(itemId, staticModuleData.skillPoints[itemId], () => moduleLogicRef.purchaseScalableItem(itemId)));
         }
-        section.appendChild(itemsGrid);
         return section;
     },
 
     _createAlreadyUnlockedSection() {
-        const section = document.createElement('section');
-        section.id = 'market-already-unlocked-section';
-        section.className = 'space-y-4';
+        const section = this._createSection('already-unlocked', 'market.ui.already_unlocked_title');
         section.style.display = 'none';
-
-        section.innerHTML = `<h3 class="text-xl font-medium text-secondary border-b border-gray-700 pb-2 mb-4">Already Unlocked</h3>`;
-        
-        const unlockedGrid = document.createElement('div');
-        unlockedGrid.id = 'market-already-unlocked-grid';
-        unlockedGrid.className = 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-4';
-        section.appendChild(unlockedGrid);
-        
         return section;
     },
 
@@ -168,80 +116,70 @@ export const ui = {
             </div>
         `;
         
-        const button = coreUIManager.createButton(
-            'Purchase', 
-            () => {
-                purchaseCallback();
-                this.updateDynamicElements();
-            }, 
-            ['w-full', 'mt-auto'], 
-            `market-card-button-${id}`
-        );
+        const button = coreUIManager.createButton('', () => {
+            purchaseCallback();
+            this.updateDynamicElements();
+        }, ['w-full', 'mt-auto'], `market-card-button-${id}`);
         card.appendChild(button);
 
         return card;
     },
 
     updateDynamicElements() {
-        if (!parentElementCache || !moduleLogicRef || !coreSystemsRef) return;
-        
-        // Update all categories of cards
+        if (!parentElementCache) return;
         this._updateCardSet(staticModuleData.featureUnlocks, this._updateFeatureUnlockCard);
         this._updateCardSet(staticModuleData.consumables, this._updateScalableItemCard);
         this._updateCardSet(staticModuleData.skillPoints, this._updateScalableItemCard);
-        
         this._updateAlreadyUnlockedGrid();
     },
 
-    // Generic helper to update a set of cards
     _updateCardSet(dataSet, updateFunction) {
         for (const id in dataSet) {
-            updateFunction.call(this, id);
+            if (parentElementCache.querySelector(`#market-card-${id}`)) {
+                updateFunction.call(this, id);
+            }
         }
     },
 
     _updateFeatureUnlockCard(unlockId) {
         const unlockDef = staticModuleData.featureUnlocks[unlockId];
-        if (unlockDef.isFuture) return;
+        const card = parentElementCache.querySelector(`#market-card-${unlockId}`);
+        if (!card || unlockDef.isFuture) return;
 
-        const cardElement = parentElementCache.querySelector(`#market-card-${unlockId}`);
-        if (!cardElement) return;
-
+        const { decimalUtility, coreResourceManager, translationManager } = coreSystemsRef;
         const isVisible = moduleLogicRef.isUnlockVisible(unlockId);
-        cardElement.style.display = isVisible ? 'flex' : 'none';
+        card.style.display = isVisible ? 'flex' : 'none';
 
         if (isVisible) {
-            const { decimalUtility, coreResourceManager } = coreSystemsRef;
-            const costDisplay = cardElement.querySelector(`#market-card-cost-${unlockId}`);
-            const button = cardElement.querySelector(`#market-card-button-${unlockId}`);
-            
-            const costAmount = decimalUtility.new(unlockDef.costAmount);
-            costDisplay.textContent = `Cost: ${decimalUtility.format(costAmount, 0)} ${coreResourceManager.getResource(unlockDef.costResource).name}`;
-            button.textContent = `Unlock`;
+            const costDisplay = card.querySelector(`#market-card-cost-${unlockId}`);
+            const button = card.querySelector(`#market-card-button-${unlockId}`);
+            const cost = decimalUtility.new(unlockDef.costAmount);
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 0)} ${coreResourceManager.getResource(unlockDef.costResource).name}`;
+            button.textContent = translationManager.get('ui.buttons.unlock');
             button.disabled = !moduleLogicRef.canAffordUnlock(unlockId);
         }
     },
     
     _updateScalableItemCard(itemId) {
         const itemDef = staticModuleData.consumables[itemId] || staticModuleData.skillPoints[itemId];
-        const cardElement = parentElementCache.querySelector(`#market-card-${itemId}`);
-        if (!cardElement) return;
+        const card = parentElementCache.querySelector(`#market-card-${itemId}`);
+        if (!card) return;
 
+        const { decimalUtility, buyMultiplierManager, coreResourceManager, translationManager } = coreSystemsRef;
         const isVisible = moduleLogicRef.isItemVisible(itemId);
-        cardElement.style.display = isVisible ? 'flex' : 'none';
+        card.style.display = isVisible ? 'flex' : 'none';
 
         if (isVisible) {
-            const { decimalUtility, buyMultiplierManager, coreResourceManager } = coreSystemsRef;
-            const costDisplay = cardElement.querySelector(`#market-card-cost-${itemId}`);
-            const button = cardElement.querySelector(`#market-card-button-${itemId}`);
+            const costDisplay = card.querySelector(`#market-card-cost-${itemId}`);
+            const button = card.querySelector(`#market-card-button-${itemId}`);
 
             const multiplier = buyMultiplierManager.getMultiplier();
             const quantityToBuy = (multiplier === -1) ? moduleLogicRef.calculateMaxBuyable(itemId) : decimalUtility.new(multiplier);
             const totalCost = moduleLogicRef.calculateScalableItemCost(itemId, quantityToBuy);
 
             const nameBase = itemDef.name.replace('Acquire ', '');
-            button.textContent = `Acquire ${decimalUtility.format(quantityToBuy, 0)} ${nameBase}${decimalUtility.gt(quantityToBuy, 1) ? 's' : ''}`;
-            costDisplay.textContent = `Cost: ${decimalUtility.format(totalCost, 2)} ${coreResourceManager.getResource(itemDef.costResource).name}`;
+            button.textContent = translationManager.get('market.ui.acquire_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: nameBase + (decimalUtility.gt(quantityToBuy, 1) ? 's' : '')});
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(totalCost, 2)} ${coreResourceManager.getResource(itemDef.costResource).name}`;
             button.disabled = !coreResourceManager.canAfford(itemDef.costResource, totalCost) || decimalUtility.lte(quantityToBuy, 0);
         }
     },
@@ -257,24 +195,18 @@ export const ui = {
         for (const unlockId in staticModuleData.featureUnlocks) {
             if (moduleLogicRef.isUnlockPurchased(unlockId)) {
                 unlockedCount++;
-                const unlockDef = staticModuleData.featureUnlocks[unlockId];
                 const item = document.createElement('div');
                 item.className = 'text-textSecondary flex items-center';
-                item.innerHTML = `<span class="text-green-400 mr-2">✓</span> ${unlockDef.name}`;
+                item.innerHTML = `<span class="text-green-400 mr-2">✓</span> ${staticModuleData.featureUnlocks[unlockId].name}`;
                 unlockedGrid.appendChild(item);
             }
         }
-
         unlockedSection.style.display = unlockedCount > 0 ? 'block' : 'none';
     },
 
     onShow() {
-        if (parentElementCache) {
-            this.renderMainContent(parentElementCache); 
-        }
+        if (parentElementCache) this.renderMainContent(parentElementCache);
     },
 
-    onHide() {
-        // Cleanup if needed when tab is hidden
-    }
+    onHide() {}
 };
