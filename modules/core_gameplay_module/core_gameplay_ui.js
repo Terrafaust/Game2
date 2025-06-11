@@ -2,7 +2,8 @@
 // Fully integrated with translationManager.
 
 import { moduleState } from './core_gameplay_state.js';
-import { MODULES, RESOURCES } from '../../core/constants.js';
+// FIXED: Corrected the import path to include the 'js' directory.
+import { MODULES, RESOURCES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;
