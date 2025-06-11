@@ -66,15 +66,15 @@ async function initializeGame() {
     }
     
     // 6. Load all feature modules with corrected paths.
-    // THIS IS THE FIX: The paths now correctly point from `/js/` to `/js/modules/`
+    // THIS IS THE FIX: The paths now correctly point from `/js/` to `/modules`
     try {
-        await moduleLoader.loadModule(`../modules/${MODULES.CORE_GAMEPLAY}_module/core_gameplay_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.STUDIES}_module/studies_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.MARKET}_module/market_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.SKILLS}_module/skills_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.ACHIEVEMENTS}_module/achievements_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.PRESTIGE}_module/prestige_manifest.js`);
-        await moduleLoader.loadModule(`../modules/${MODULES.SETTINGS}_module/settings_ui_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.CORE_GAMEPLAY}_module/core_gameplay_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.STUDIES}_module/studies_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.MARKET}_module/market_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.SKILLS}_module/skills_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.ACHIEVEMENTS}_module/achievements_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.PRESTIGE}_module/prestige_manifest.js`);
+        await moduleLoader.loadModule(`../.../modules/${MODULES.SETTINGS}_module/settings_ui_manifest.js`);
     } catch (error) {
         loggingSystem.error("Main", "Critical error during module loading:", error);
         coreUIManager.showNotification("A module failed to load. The game cannot start.", "error", 0);
