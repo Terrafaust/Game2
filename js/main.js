@@ -1,5 +1,6 @@
-// js/main.js (v12.0 - Bugfix & Final Refactor)
-// Corrects initialization order and theme application logic.
+// js/main.js (v12.1 - Path & Bugfix)
+// Corrects all module loading paths to match the directory structure.
+// Fixes initialization order to prevent race conditions.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -40,12 +41,11 @@ async function initializeGame() {
 
     // 3. Initialize systems that depend on the `coreSystems` object.
     productionManager.initialize(coreSystems);
-    coreUIManager.initialize(coreSystems); // This is now initialized and has its reference to other systems.
+    coreUIManager.initialize(coreSystems);
     buyMultiplierUI.initialize(coreSystems);
     moduleLoader.initialize(coreSystems);
 
-    // 4. Set up the theme event listener and apply the initial theme. THIS IS THE FIX.
-    // This must happen AFTER coreUIManager is initialized.
+    // 4. Set up the theme event listener and apply the initial theme.
     document.addEventListener('themeChanged', (event) => {
         if (event.detail?.name && event.detail?.mode) {
             coreUIManager.applyTheme(event.detail.name, event.detail.mode);
@@ -59,21 +59,22 @@ async function initializeGame() {
     // 5. Load Game or Start a New Game
     const gameLoaded = saveLoadSystem.loadGame();
     if (!gameLoaded) {
-        loggingSystem.info("Main", "No save game found. Starting a new game.");
+        loggingSystem.info("Main", "No save data found. Starting a new game.");
         coreGameStateManager.setGameVersion("3.0.0");
     } else {
         loggingSystem.info("Main", "Save game loaded.");
     }
     
-    // 6. Load all feature modules.
+    // 6. Load all feature modules with corrected paths.
+    // THIS IS THE FIX: The paths now correctly point from `/js/` to `/js/modules/`
     try {
-        await moduleLoader.loadModule(`../../modules/${MODULES.CORE_GAMEPLAY}/core_gameplay_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.STUDIES}/studies_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.MARKET}/market_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.SKILLS}/skills_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.ACHIEVEMENTS}/achievements_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.PRESTIGE}/prestige_manifest.js`);
-        await moduleLoader.loadModule(`../../modules/${MODULES.SETTINGS}/settings_ui_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.CORE_GAMEPLAY}_module/core_gameplay_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.STUDIES}_module/studies_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.MARKET}_module/market_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.SKILLS}_module/skills_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.ACHIEVEMENTS}_module/achievements_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.PRESTIGE}_module/prestige_manifest.js`);
+        await moduleLoader.loadModule(`./modules/${MODULES.SETTINGS}_module/settings_ui_manifest.js`);
     } catch (error) {
         loggingSystem.error("Main", "Critical error during module loading:", error);
         coreUIManager.showNotification("A module failed to load. The game cannot start.", "error", 0);
@@ -112,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeGame().catch(error => {
         loggingSystem.error("Main_DOMContentLoaded", "Unhandled error during game initialization:", error, error.stack);
         try {
-            // This check now correctly handles the case where coreUIManager might not be ready.
             if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
                  coreUIManager.showNotification("A critical error occurred during game startup. Check console & try refreshing.", "error", 0);
             } else {

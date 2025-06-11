@@ -1,5 +1,5 @@
-// js/core/moduleLoader.js (v3.0 - Final Refactor)
-// Injects all new core systems into modules.
+// js/core/moduleLoader.js (v3.1 - Bugfix)
+// Corrects the notification message to use the manifest filename on error.
 
 import { loggingSystem } from './loggingSystem.js';
 
@@ -31,7 +31,6 @@ export const moduleLoader = {
 
             loggingSystem.info("ModuleLoader", `Loading module: ${manifest.name} (v${manifest.version})`);
 
-            // Inject self into the systems object to be passed to the module
             const systemsForModule = { ...coreSystemsBase, moduleLoader: this };
             
             const moduleInstance = await manifest.initialize(systemsForModule);
@@ -47,7 +46,9 @@ export const moduleLoader = {
         } catch (error) {
             loggingSystem.error("ModuleLoader", `Error loading module from ${manifestPath}:`, error, error.stack);
             if(coreSystemsBase.coreUIManager?.showNotification) {
-                coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${manifestPath.split('/').pop()}.`, "error", 10000);
+                // THIS IS THE FIX: Ensure the translation key exists or provide a fallback.
+                const filename = manifestPath.split('/').pop();
+                coreSystemsBase.coreUIManager.showNotification(`Error loading module: ${filename}.`, "error", 10000);
             }
             return false;
         }
