@@ -1,8 +1,7 @@
-// js/main.js (v12.7 - The "Reveal" Pattern)
-// The most robust fix for the translation race condition.
-// The game content is hidden by default via CSS. This script removes the "hidden"
-// class at the very end of initialization, after all data, modules, and translations
-// are guaranteed to be loaded and rendered.
+// js/main.js (v12.8 - Correct Lifecycle Order)
+// Fixes the module loading lifecycle by notifying modules of a game load
+// *after* all modules have been loaded, not before. This ensures they can
+// correctly initialize their state from the save data before the UI is drawn.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -24,7 +23,7 @@ import { MODULES, RESOURCES } from './core/constants.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
-    // 1. Initialize systems that have NO dependency on other systems yet.
+    // 1. Initialize core systems that don't depend on others.
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
     globalSettingsManager.initialize();
     coreGameStateManager.initialize();
@@ -32,7 +31,7 @@ async function initializeGame() {
     coreUpgradeManager.initialize();
     buyMultiplierManager.initialize();
 
-    // 2. Create the single `coreSystems` object to pass to all dependent systems.
+    // 2. Create the `coreSystems` object to pass to all dependent systems.
     const coreSystems = {
         loggingSystem, decimalUtility, globalSettingsManager, translationManager,
         coreGameStateManager, staticDataAggregator, coreResourceManager,
@@ -40,26 +39,26 @@ async function initializeGame() {
         coreUpgradeManager, buyMultiplierManager, buyMultiplierUI, productionManager
     };
 
-    // 3. Initialize the remaining systems that depend on the `coreSystems` object.
+    // 3. Initialize the remaining systems.
     productionManager.initialize(coreSystems);
     coreUIManager.initialize(coreSystems);
     buyMultiplierUI.initialize(coreSystems);
     moduleLoader.initialize(coreSystems);
     saveLoadSystem.initialize(coreSystems);
 
-    // 4. Load save data.
+    // 4. Load save data into the state managers.
     const gameLoaded = saveLoadSystem.loadGame();
     if (gameLoaded) {
-        loggingSystem.info("Main", "Save game loaded successfully.");
+        loggingSystem.info("Main", "Save data loaded into managers.");
     } else {
         loggingSystem.info("Main", "No save data found. Starting a new game.");
         coreGameStateManager.setGameVersion("3.0.0");
     }
 
-    // 5. Initialize translation manager AFTER loading save data.
+    // 5. Initialize translation manager, using the language from the just-loaded settings.
     await translationManager.initialize();
 
-    // 6. Set up theme and apply it.
+    // 6. Set up and apply the visual theme.
     document.addEventListener('themeChanged', (event) => {
         if (event.detail?.name && event.detail?.mode) {
             coreUIManager.applyTheme(event.detail.name, event.detail.mode);
@@ -85,10 +84,16 @@ async function initializeGame() {
         return;
     }
 
-    // 8. Perform a final UI refresh. At this point, all data is loaded and ready.
+    // 8. MODIFICATION: Notify all loaded modules about the game load.
+    // This is the correct place, as all modules are guaranteed to exist now.
+    if (gameLoaded) {
+        moduleLoader.notifyAllModulesOfLoad();
+    }
+
+    // 9. Perform a final UI refresh.
     coreUIManager.fullUIRefresh();
 
-    // 9. Attach footer button listeners.
+    // 10. Attach footer button listeners.
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
@@ -107,19 +112,19 @@ async function initializeGame() {
         });
     }
 
-    // 10. Add a global listener for language changes DURING gameplay.
+    // 11. Add a global listener for language changes DURING gameplay.
     document.addEventListener('languagePackChanged', () => {
         loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
         coreUIManager.fullUIRefresh();
     });
     
-    // 11. Start the game loop.
+    // 12. Start the game loop.
     if (!gameLoop.isRunning()) {
         gameLoop.start();
     }
     loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
 
-    // 12. FINAL STEP: Reveal the game content.
+    // 13. FINAL STEP: Reveal the game content.
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
         loadingScreen.style.opacity = '0';

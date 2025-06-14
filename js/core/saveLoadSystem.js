@@ -1,6 +1,6 @@
-// js/core/saveLoadSystem.js (v4.1 - Initialization Fix)
-// Adds an initialize method to get a reference to all core systems.
-// Fixes a crash in resetGameData by allowing it to safely access the gameLoop.
+// js/core/saveLoadSystem.js (v4.3 - Decoupled Lifecycle)
+// Removes lifecycle and UI calls from loadGame. The main.js initialization
+// sequence is now the single source of truth for these events.
 
 import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js';
@@ -11,7 +11,7 @@ import { moduleLoader } from './moduleLoader.js';
 import { globalSettingsManager } from './globalSettingsManager.js';
 
 const SAVE_KEY = 'incrementalGameSaveData_v3';
-let coreSystemsRef = null; // Reference to all core systems
+let coreSystemsRef = null;
 
 function decimalReplacer(key, value) {
     if (decimalUtility.isDecimal(value)) {
@@ -21,7 +21,6 @@ function decimalReplacer(key, value) {
 }
 
 export const saveLoadSystem = {
-    // MODIFICATION: Added initialize function
     initialize(coreSystems) {
         coreSystemsRef = coreSystems;
         loggingSystem.info("SaveLoadSystem", "Save/Load System initialized.");
@@ -70,10 +69,12 @@ export const saveLoadSystem = {
 
             coreGameStateManager.updateLastSaveTime(loadedFullData.timestamp || Date.now());
 
-            moduleLoader.notifyAllModulesOfLoad();
-            coreUIManager.fullUIRefresh();
+            // MODIFICATION: Removed module notification and UI refresh from here.
+            // This is now controlled by the main initialization sequence.
+            // moduleLoader.notifyAllModulesOfLoad();
+            // coreUIManager.fullUIRefresh();
 
-            loggingSystem.info("SaveLoadSystem", "Game loaded successfully.");
+            loggingSystem.info("SaveLoadSystem", "Game data loaded into managers.");
             coreUIManager.showNotification('ui.notifications.game_loaded', "success");
             return true;
 
@@ -88,7 +89,6 @@ export const saveLoadSystem = {
     resetGameData(isLoadFailure = false) {
         loggingSystem.warn("SaveLoadSystem", "Initiating hard game reset...");
 
-        // MODIFICATION: Safely stop the game loop using the coreSystemsRef
         if (coreSystemsRef && coreSystemsRef.gameLoop) {
             coreSystemsRef.gameLoop.stop();
         } else {
