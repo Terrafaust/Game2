@@ -21,14 +21,54 @@
                         tw_surfaceDark_base: '#374151', tw_textPrimary_base: '#F3F4F6',
                         tw_textSecondary_base: '#9CA3AF',
                     },
-                    borderRadius: { 'lg': '0.5rem', 'xl': '0.75rem', '2xl': '1rem', 'full': '9999px' } // Added 'full' for pill-shaped buttons
+                    borderRadius: { 'lg': '0.5rem', 'xl': '0.75rem', '2xl': '1rem', 'full': '9999px' }
                 }
             }
         };
     </script>
+    <!-- MODIFICATION: Added CSS to hide content until fully loaded -->
+    <style>
+        /* By default, hide the game container and show the loading screen */
+        .content-hidden #game-container {
+            visibility: hidden;
+            opacity: 0;
+        }
+        #loading-screen {
+            position: fixed;
+            inset: 0; /* A shorthand for top, right, bottom, left = 0 */
+            background-color: #111827; /* Match your game's background color */
+            z-index: 99999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+            color: #F3F4F6;
+            font-size: 1.25rem;
+        }
+        /* A simple CSS spinner for the loading screen */
+        .spinner {
+            border: 4px solid rgba(243, 244, 246, 0.2);
+            border-left-color: #4F46E5; /* Your primary color */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
 </head>
-<body class="font-inter">
-    <!-- ADDED: This overlay is used to close the menu on mobile when tapping outside of it. -->
+<!-- MODIFICATION: Added the 'content-hidden' class to the body -->
+<body class="font-inter content-hidden">
+    <!-- MODIFICATION: Added the loading screen element -->
+    <div id="loading-screen">
+        <div class="text-center">
+            <div class="spinner mx-auto mb-4"></div>
+            <p>Loading Game...</p>
+        </div>
+    </div>
+
     <div class="menu-overlay"></div>
 
     <div id="game-container">
@@ -51,7 +91,7 @@
 
                 <main class="flex-grow flex flex-col">
                     <section id="main-content" class="rounded-xl p-6 flex-grow">
-                        <p>Loading game content...</p>
+                        <!-- This content will be replaced by the game modules -->
                     </section>
                 </main>
 

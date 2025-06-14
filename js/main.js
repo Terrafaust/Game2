@@ -1,6 +1,8 @@
-// js/main.js (v12.5 - Save System Initialization)
-// Initializes the saveLoadSystem with a reference to all core systems,
-// fixing a critical bug in the hard reset functionality.
+// js/main.js (v12.7 - The "Reveal" Pattern)
+// The most robust fix for the translation race condition.
+// The game content is hidden by default via CSS. This script removes the "hidden"
+// class at the very end of initialization, after all data, modules, and translations
+// are guaranteed to be loaded and rendered.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -22,7 +24,7 @@ import { MODULES, RESOURCES } from './core/constants.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
-    // 1. Initialize systems that have NO dependency on game state or loaded data.
+    // 1. Initialize systems that have NO dependency on other systems yet.
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
     globalSettingsManager.initialize();
     coreGameStateManager.initialize();
@@ -30,7 +32,22 @@ async function initializeGame() {
     coreUpgradeManager.initialize();
     buyMultiplierManager.initialize();
 
-    // 2. Load save data. This may overwrite initial settings (like language) in the managers.
+    // 2. Create the single `coreSystems` object to pass to all dependent systems.
+    const coreSystems = {
+        loggingSystem, decimalUtility, globalSettingsManager, translationManager,
+        coreGameStateManager, staticDataAggregator, coreResourceManager,
+        coreUIManager, saveLoadSystem, gameLoop, moduleLoader,
+        coreUpgradeManager, buyMultiplierManager, buyMultiplierUI, productionManager
+    };
+
+    // 3. Initialize the remaining systems that depend on the `coreSystems` object.
+    productionManager.initialize(coreSystems);
+    coreUIManager.initialize(coreSystems);
+    buyMultiplierUI.initialize(coreSystems);
+    moduleLoader.initialize(coreSystems);
+    saveLoadSystem.initialize(coreSystems);
+
+    // 4. Load save data.
     const gameLoaded = saveLoadSystem.loadGame();
     if (gameLoaded) {
         loggingSystem.info("Main", "Save game loaded successfully.");
@@ -39,26 +56,10 @@ async function initializeGame() {
         coreGameStateManager.setGameVersion("3.0.0");
     }
 
-    // 3. IMPORTANT: Initialize translation manager AFTER loading save data.
+    // 5. Initialize translation manager AFTER loading save data.
     await translationManager.initialize();
 
-    // 4. Create the single `coreSystems` object to pass as a dependency.
-    const coreSystems = {
-        loggingSystem, decimalUtility, globalSettingsManager, translationManager,
-        coreGameStateManager, staticDataAggregator, coreResourceManager,
-        coreUIManager, saveLoadSystem, gameLoop, moduleLoader,
-        coreUpgradeManager, buyMultiplierManager, buyMultiplierUI, productionManager
-    };
-
-    // 5. Initialize the remaining systems that depend on the `coreSystems` object.
-    productionManager.initialize(coreSystems);
-    coreUIManager.initialize(coreSystems);
-    buyMultiplierUI.initialize(coreSystems);
-    moduleLoader.initialize(coreSystems);
-    // MODIFICATION: Initialize the saveLoadSystem with the core systems reference.
-    saveLoadSystem.initialize(coreSystems);
-
-    // 6. Set up theme event listener and apply the initial theme.
+    // 6. Set up theme and apply it.
     document.addEventListener('themeChanged', (event) => {
         if (event.detail?.name && event.detail?.mode) {
             coreUIManager.applyTheme(event.detail.name, event.detail.mode);
@@ -84,9 +85,10 @@ async function initializeGame() {
         return;
     }
 
-    // 8. Perform a final UI refresh and attach footer button listeners.
+    // 8. Perform a final UI refresh. At this point, all data is loaded and ready.
     coreUIManager.fullUIRefresh();
 
+    // 9. Attach footer button listeners.
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
@@ -105,30 +107,34 @@ async function initializeGame() {
         });
     }
 
-    // Add a global listener for language changes DURING gameplay.
+    // 10. Add a global listener for language changes DURING gameplay.
     document.addEventListener('languagePackChanged', () => {
         loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
         coreUIManager.fullUIRefresh();
     });
     
-    // 9. Start the game loop.
+    // 11. Start the game loop.
     if (!gameLoop.isRunning()) {
         gameLoop.start();
     }
     loggingSystem.info("Main", "Game initialization sequence complete. Game is running.");
+
+    // 12. FINAL STEP: Reveal the game content.
+    const loadingScreen = document.getElementById('loading-screen');
+    if (loadingScreen) {
+        loadingScreen.style.opacity = '0';
+        loadingScreen.addEventListener('transitionend', () => loadingScreen.remove());
+    }
+    document.body.classList.remove('content-hidden');
+    loggingSystem.info("Main", "Game content revealed to user.");
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     initializeGame().catch(error => {
         loggingSystem.error("Main_DOMContentLoaded", "Unhandled error during game initialization:", error, error.stack);
-        try {
-            if (typeof coreUIManager !== 'undefined' && coreUIManager.showNotification) {
-                 coreUIManager.showNotification("A critical error occurred during game startup. Check console & try refreshing.", "error", 0);
-            } else {
-                document.body.innerHTML = '<div style="color: white; background-color: #333; padding: 20px; font-family: sans-serif; text-align: center; border: 2px solid red;"><h1>Critical Error</h1><p>Game failed to start. Please check the browser console (F12) for details and try refreshing the page.</p></div>';
-            }
-        } catch (e) {
-            console.error("CRITICAL FALLBACK: Error displaying startup error message.", e);
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.innerHTML = `<div class="text-center"><h1 class="text-2xl text-red-400 font-bold">Critical Error</h1><p class="text-white">Game failed to start. Please check the console (F12) and refresh.</p></div>`;
         }
     });
 });
