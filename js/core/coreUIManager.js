@@ -1,9 +1,8 @@
-// js/core/coreUIManager.js (v8.0 - Bugfix & Complete)
-// showNotification is now robust and won't fail if called before full initialization.
+// js/core/coreUIManager.js (v8.2 - Final Translation Fix)
+// This version correctly uses the translationManager to look up resource names and menu tab labels.
 
 import { loggingSystem } from './loggingSystem.js';
 
-// --- (initializeSwipeMenu function remains unchanged) ---
 function initializeSwipeMenu() {
     const body = document.body;
     let touchStartX = 0, touchStartY = 0;
@@ -49,7 +48,6 @@ let coreSystemsRef = null;
 
 export const coreUIManager = {
     initialize(systems) {
-        // THIS IS THE FIX: Set coreSystemsRef immediately.
         coreSystemsRef = systems;
 
         UIElements.resourceBar = document.getElementById('resource-bar');
@@ -75,22 +73,24 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.0).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.2).");
     },
 
-    registerMenuTab(moduleId, label, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
+    // The `labelKey` parameter now explicitly indicates it's a translation key.
+    registerMenuTab(moduleId, labelKey, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
         if (!moduleId || typeof renderCallback !== 'function') {
             loggingSystem.warn("CoreUIManager_RegisterTab", `Invalid registration for moduleId '${moduleId}'.`);
             return;
         }
-        registeredMenuTabs[moduleId] = { id: moduleId, label, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
+        // Store the key as `labelKey`
+        registeredMenuTabs[moduleId] = { id: moduleId, labelKey, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
         if (isDefaultTab && !activeTabId && isUnlockedCheck()) {
             this.setActiveTab(moduleId, true);
         }
     },
 
     renderMenu() {
-        if (!UIElements.menuList || !UIElements.body) return;
+        if (!UIElements.menuList || !UIElements.body || !coreSystemsRef) return;
         const unlockedTabDefs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
         const unlockedTabs = [...new Map(unlockedTabDefs.map(item => [item.id, item])).values()];
         
@@ -99,7 +99,9 @@ export const coreUIManager = {
 
         let activeTabIsValid = false;
         unlockedTabs.forEach(tab => {
-            const button = this.createButton(tab.label, null, ['menu-tab'], `menu-tab-${tab.id}`);
+            // **THE FIX**: Use translationManager to get the text from the stored `labelKey`.
+            const translatedLabel = coreSystemsRef.translationManager.get(tab.labelKey);
+            const button = this.createButton(translatedLabel, null, ['menu-tab'], `menu-tab-${tab.id}`);
             button.dataset.tabTarget = tab.id;
             if (tab.id === activeTabId) {
                 button.classList.add('active');
@@ -147,7 +149,7 @@ export const coreUIManager = {
 
     updateResourceDisplay() {
         if (!UIElements.resourcesDisplay || !coreSystemsRef) return;
-        const { coreResourceManager, decimalUtility } = coreSystemsRef;
+        const { coreResourceManager, decimalUtility, translationManager } = coreSystemsRef;
         const allResources = coreResourceManager.getAllResources();
         
         for (const res of Object.values(allResources)) {
@@ -163,7 +165,11 @@ export const coreUIManager = {
                 let rateHTML = (res.hasProductionRate && decimalUtility.gt(res.totalProductionRate, 0))
                     ? ` (<span class="text-green-400">${decimalUtility.format(res.totalProductionRate, 2)}</span>/s)`
                     : '';
-                displayElement.innerHTML = `<span class="font-semibold text-secondary">${res.name}:</span> <span class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
+
+                // **THE FIX**: The resource's `name` property is now a translation key.
+                const translatedName = translationManager.get(res.name); 
+                
+                displayElement.innerHTML = `<span class="font-semibold text-secondary">${translatedName}:</span> <span class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
             } else if (displayElement) {
                 displayElement.remove();
             }
@@ -247,7 +253,6 @@ export const coreUIManager = {
     },
 
     showNotification(messageKey, type = 'info', duration = 3000, options = {}) {
-        // THIS IS THE FIX: Check for both UIElements and coreSystemsRef before proceeding.
         if (!UIElements.notificationArea || !coreSystemsRef) {
             console.error("UIManager.showNotification called before it was fully initialized.");
             return;
