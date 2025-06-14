@@ -1,14 +1,14 @@
-// js/modules/core_gameplay_module/core_gameplay_data.js (v2 - Refactored)
-// Now defines the studyPoints resource it introduces.
+// js/modules/core_gameplay_module/core_gameplay_data.js (v3 - Translation Keys)
+// Uses translation keys instead of hardcoded English strings.
 
-// FIXED: Corrected the path to include the 'js' directory.
 import { RESOURCES } from '../../js/core/constants.js';
 
 export const staticModuleData = {
     resources: {
         [RESOURCES.STUDY_POINTS]: { 
             id: RESOURCES.STUDY_POINTS, 
-            name: "Study Points", 
+            // MODIFICATION: Changed "Study Points" to its translation key.
+            name: "resources.studyPoints.name", 
             initialAmount: "0", 
             isUnlocked: true, 
             showInUI: true, 
@@ -16,9 +16,7 @@ export const staticModuleData = {
         }
     },
     resourceId: RESOURCES.STUDY_POINTS,
-    clickAmount: 1, // Base amount gained per click
-    ui: {
-        mainButtonText: "Study Diligently",
-        mainButtonTooltip: (amount) => `Gain ${amount} Study Point${amount === 1 ? "" : "s"}.`
-    }
+    clickAmount: 1,
+    // The ui object is no longer needed here as the UI module will get keys directly
+    // from the translation manager.
 };

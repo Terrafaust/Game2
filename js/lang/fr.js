@@ -1,7 +1,16 @@
-// js/lang/fr.js (v4.4 - Version Complète Finale)
-// Pack de langue français avec toutes les clés requises pour l'interface utilisateur.
+// js/lang/fr.js (v4.3 - Added Resource Keys)
+// Pack de langue français avec toutes les clés requises.
 
 export default {
+    // MODIFICATION: Added resource names
+    "resources.studyPoints.name": "Points d'Étude",
+    "resources.knowledge.name": "Savoir",
+    "resources.images.name": "Images",
+    "resources.studySkillPoints.name": "Points de Compétence d'Étude",
+    "resources.prestigeSkillPoints.name": "Points de Compétence de Prestige",
+    "resources.prestigePoints.name": "Points de Prestige",
+    "resources.prestigeCount.name": "Prestiges",
+
     // UI générale et textes partagés
     "ui.buttons.save": "Sauvegarder",
     "ui.buttons.load": "Charger",
@@ -13,9 +22,6 @@ export default {
     "ui.buttons.unlock": "Déverrouiller",
     "ui.buttons.close": "Fermer",
     "ui.buttons.cancel": "Annuler",
-    "ui.buttons.not_yet": "Pas encore",
-    "ui.buttons.buy_X": "Acheter {quantity}",
-
     "ui.status.locked": "Verrouillé",
     "ui.status.completed": "Terminé !",
     "ui.status.maxed": "Max",
@@ -25,10 +31,8 @@ export default {
     "ui.generic.effect": "Effet",
     "ui.generic.level": "Niveau : {current} / {max}",
     "ui.generic.production": "Production",
-    "ui.generic.production_per_second": "Production : {value} {resourceName}/s",
     "ui.generic.reward": "Récompense : {description}",
     "ui.generic.condition": "Condition : {text}",
-    "ui.generic.starting_producers": "{count} {name} de départ",
     
     // Notifications
     "ui.notifications.game_saved": "Partie sauvegardée !",
@@ -44,14 +48,8 @@ export default {
     "ui.notifications.skill_leveled_up": "{skillName} a atteint le niveau {level} !",
     "ui.notifications.cannot_purchase_skill": "Impossible d'acheter la compétence.",
 
-    // Resources
-    "resources.studyPoints": "Points d'Étude",
-    "resources.knowledge": "Savoir",
-    "resources.prestigePoints": "Points de Prestige",
-    "resources.ssp.short": "PCÉ", // Points de Compétence d'Étude
-    "resources.psp.short": "PCP", // Points de Compétence de Prestige
-
     // Module Core Gameplay
+    "core_gameplay.ui.tab_label": "Zone d'Étude",
     "core_gameplay.ui.title": "Zone d'Étude Manuelle",
     "core_gameplay.ui.description": "Cliquez sur le bouton ci-dessous pour gagner des Points d'Étude. C'est le début de votre parcours académique !",
     "core_gameplay.ui.tip": "\"Obtenez 10 points d'étude pour débloquer les Études\"",
@@ -64,31 +62,25 @@ export default {
     "studies.ui.title": "Département des Études",
     "studies.ui.tip": "\"Obtenez 10 professeurs pour débloquer le Marché\"",
     "studies.ui.description": "Automatisez votre génération de Points d'Étude en acquérant et améliorant diverses installations académiques et personnel.",
-    "studies.ui.production_per_second": "Production : {value} {resourceName}/s",
+    "studies.ui.owned": "Possédés : {value}",
+    "studies.ui.production": "Production : {value}/s",
     "studies.ui.cost_for": "Coût pour {quantity}",
+    "studies.ui.buy_X": "Acheter {quantity} {name}",
     "studies.producers.student.name": "Étudiant",
-    "studies.producers.student.name_plural": "Étudiants",
     "studies.producers.student.description": "Un étudiant assidu, générant des Points d'Étude de base.",
     "studies.producers.classroom.name": "Salle de Classe",
-    "studies.producers.classroom.name_plural": "Salles de Classe",
     "studies.producers.classroom.description": "Un espace dédié à l'apprentissage, augmentant la génération de Points d'Étude.",
     "studies.producers.kindergarten.name": "Jardin d'Enfants",
-    "studies.producers.kindergarten.name_plural": "Jardins d'Enfants",
     "studies.producers.kindergarten.description": "Éducation précoce, posant les bases des connaissances futures.",
     "studies.producers.elementarySchool.name": "École Primaire",
-    "studies.producers.elementarySchool.name_plural": "Écoles Primaires",
     "studies.producers.elementarySchool.description": "Apprentissage fondamental, élargissant votre portée académique.",
     "studies.producers.middleSchool.name": "Collège",
-    "studies.producers.middleSchool.name_plural": "Collèges",
     "studies.producers.middleSchool.description": "Développement d'une compréhension plus profonde et de la pensée critique.",
     "studies.producers.highSchool.name": "Lycée",
-    "studies.producers.highSchool.name_plural": "Lycées",
     "studies.producers.highSchool.description": "Études avancées, préparant à l'enseignement supérieur.",
     "studies.producers.university.name": "Université",
-    "studies.producers.university.name_plural": "Universités",
     "studies.producers.university.description": "Le summum des institutions académiques, générant de vastes quantités de Points d'Étude.",
     "studies.producers.professor.name": "Professeur",
-    "studies.producers.professor.name_plural": "Professeurs",
     "studies.producers.professor.description": "Un sage mentor, produisant un Savoir précieux.",
 
     // Module Skills
@@ -99,8 +91,6 @@ export default {
     "skills.ui.prestige_skill_point_label": "Points de Compétence de Prestige :",
     "skills.ui.tier_unlock_message": "Déverrouillez le Palier {tier} en montant toutes les compétences du Palier {tier_minus_1} au niveau 1 minimum.",
     "skills.ui.prestige_tier_unlock_message": "Déverrouillez le Palier {tier} en montant toutes les compétences de Prestige du Palier {tier_minus_1} au niveau 1 minimum.",
-    "skills.ui.tier_title": "Compétences de Palier {tierNum}",
-    "skills.ui.prestige_tier_title": "Compétences de Prestige de Palier {tierNum}",
 
     // Module Market
     "market.ui.tab_label": "Marché",
@@ -111,28 +101,18 @@ export default {
     "market.ui.already_unlocked_title": "Déjà Déverrouillé",
     "market.ui.acquire_X": "Acquérir {quantity} {name}",
     "market.items.unlockSettings.name": "Déverrouiller le Menu Paramètres",
-    "market.items.unlockSettings.itemName": "Menu Paramètres",
     "market.items.unlockSettings.description": "Accédez aux paramètres du jeu et aux options de personnalisation.",
     "market.items.unlockAchievements.name": "Déverrouiller le Menu Succès",
-    "market.items.unlockAchievements.itemName": "Menu Succès",
     "market.items.unlockAchievements.description": "Suivez vos accomplissements et gagnez des récompenses.",
     "market.items.unlockThemes.name": "Déverrouiller les Thèmes",
-    "market.items.unlockThemes.itemName": "Thèmes",
     "market.items.unlockThemes.description": "Déverrouillez des thèmes visuels supplémentaires dans le menu Paramètres.",
     "market.items.unlockStats.name": "Déverrouiller les Statistiques",
-    "market.items.unlockStats.itemName": "Statistiques du Jeu",
     "market.items.unlockStats.description": "Affichez des statistiques de jeu détaillées dans le menu Paramètres.",
     "market.items.acquireImage.name": "Acquérir une Image",
-    "market.items.acquireImage.itemName": "Image",
-    "market.items.acquireImage.itemName_plural": "Images",
     "market.items.acquireImage.description": "Achetez des Images décoratives avec vos Points d'Étude. Obtenez-en 1 000 pour débloquer le Prestige.",
     "market.items.acquireSSP.name": "Acquérir un Point de Compétence d'Étude",
-    "market.items.acquireSSP.itemName": "Point de Compétence d'Étude",
-    "market.items.acquireSSP.itemName_plural": "Points de Compétence d'Étude",
     "market.items.acquireSSP.description": "Convertissez des Points d'Étude en précieux Points de Compétence d'Étude pour améliorer vos capacités.",
     "market.items.acquirePSP.name": "Acquérir un Point de Compétence de Prestige",
-    "market.items.acquirePSP.itemName": "Point de Compétence de Prestige",
-    "market.items.acquirePSP.itemName_plural": "Points de Compétence de Prestige",
     "market.items.acquirePSP.description": "Convertissez du Savoir en puissants Points de Compétence de Prestige pour débloquer des améliorations permanentes.",
 
     // Module Prestige
@@ -148,30 +128,20 @@ export default {
     "prestige.ui.modal.gain_header": "Vous allez gagner :",
     "prestige.ui.modal.keep_header": "Vous conserverez (grâce aux Compétences de Prestige) :",
     "prestige.ui.modal.reset_header": "Ce qui suit sera réinitialisé :",
-    "prestige.ui.modal.permanent_note": "Les succès, les onglets déverrouillés, les producteurs de prestige, les niveaux de l'Automate et les compétences de prestige sont conservés.",
-    "prestige.ui.modal.unlock_skills": "Débloquer les Compétences de Prestige",
-    "prestige.ui.modal.reset_list_item1": "Points d'Étude, Savoir et Images",
-    "prestige.ui.modal.reset_list_item2": "Tous les Producteurs d'Études (Étudiants, Salles de classe, etc.)",
-    "prestige.ui.modal.reset_list_item3": "Coûts des objets du Marché et Progression de l'Automate",
-    "prestige.ui.modal.reset_list_item4": "Niveaux des compétences normales et leur coût en PCÉ",
+    "prestige.ui.modal.reset_list": "Points d'Étude, Savoir et Images ; tous les Producteurs d'Études ; coûts des objets du Marché ; niveaux des compétences normales et leur coût en PCÉ.",
+    "prestige.ui.modal.permanent_note": "Les succès, les onglets déverrouillés, les producteurs de prestige et les compétences de prestige sont conservés.",
     "prestige.ui.gain_pp": "{value} Points de Prestige",
     "prestige.ui.gain_bonus": "Boost de Production Globale : {current}x -> {next}x",
-    "prestige.producers.postDoc.name": "Post-Doctorat",
-    "prestige.producers.postDoc.description": "Booste la production de tous les producteurs réguliers.",
-    "prestige.producers.researchGrant.name": "Bourse de Recherche",
-    "prestige.producers.researchGrant.description": "Génère passivement du Savoir.",
-    "prestige.producers.graduate.name": "Étudiant Diplômé",
-    "prestige.producers.graduate.description": "Génère une petite quantité de tous les producteurs réguliers par seconde.",
+    "prestige.ui.keep_knowledge": "{value} de Savoir",
+    "prestige.ui.keep_ssp": "{value} Points de Compétence d'Étude",
+    "prestige.ui.keep_producers": "{value} {name} de départ",
 
     // Module Achievements
     "achievements.ui.tab_label": "Succès",
     "achievements.ui.title": "Succès",
     "achievements.ui.bonus_tip": "Chaque succès vous donne aussi un bonus de production de 1%.",
     "achievements.ui.summary": "Terminés : {completed} / {total} | Bonus Total : {bonus}%",
-    "achievements.ui.condition.own_producers": "Posséder {count} {name}.",
-    "achievements.ui.condition.have_resource": "Avoir {amount} {name}.",
-    "achievements.ui.condition.default": "Remplir un critère spécifique en jeu.",
-
+    
     // Module Settings
     "settings.ui.tab_label": "Paramètres",
     "settings.ui.title": "Paramètres du Jeu",
@@ -182,7 +152,6 @@ export default {
     "settings.ui.debug_section": "Débogage",
     "settings.ui.language_select_label": "Choisir la langue : ",
     "settings.ui.view_logs_button": "Voir les Logs du Jeu",
-    "settings.ui.log_modal_title": "Historique des Logs du Jeu",
     "settings.ui.stats.general_header": "Général",
     "settings.ui.stats.version": "Version du jeu : {version}",
     "settings.ui.stats.last_save": "Dernière sauvegarde : {time}",
@@ -191,11 +160,4 @@ export default {
     "settings.ui.stats.time_in_prestige": "Temps dans ce Prestige : {time}",
     "settings.ui.stats.pp": "Points de Prestige : {value}",
     "settings.ui.stats.total_prestiges": "Prestiges totaux : {value}",
-    "settings.ui.themes.deep_space": "Espace Profond",
-    "settings.ui.themes.light": "Clair",
-    "settings.ui.themes.neon_city": "Cité Néon",
-    "settings.ui.themes.mode.dark": "Sombre",
-    "settings.ui.themes.mode.light": "Clair",
-    "settings.ui.themes.mode.midnight": "Minuit",
-    "settings.ui.themes.mode.sunrise": "Aurore",
 };
