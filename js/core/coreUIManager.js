@@ -1,5 +1,6 @@
 // js/core/coreUIManager.js (v8.2 - Final Translation Fix)
 // This version correctly uses the translationManager to look up resource names and menu tab labels.
+// This is the crucial link between the module data (which uses keys) and the translated text.
 
 import { loggingSystem } from './loggingSystem.js';
 
