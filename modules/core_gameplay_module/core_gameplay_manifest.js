@@ -1,17 +1,16 @@
-// modules/core_gameplay_module/core_gameplay_manifest.js (v2 - Refactored)
-// Now registers its own resource definition.
+// modules/core_gameplay_module/core_gameplay_manifest.js (v3.1 - Final Translation Key Fix)
+// This version ensures the menu tab is registered with a translation key.
 
 import { staticModuleData } from './core_gameplay_data.js';
 import { getInitialState, moduleState } from './core_gameplay_state.js';
 import { moduleLogic } from './core_gameplay_logic.js';
 import { ui } from './core_gameplay_ui.js';
-// FIXED: Corrected the import path to be two levels up.
 import { RESOURCES, MODULES } from '../../js/core/constants.js';
 
 const coreGameplayManifest = {
     id: MODULES.CORE_GAMEPLAY,
     name: "Core Gameplay",
-    version: "2.0.0",
+    version: "3.1.0",
     description: "Provides the initial manual click-to-gain resource mechanic.",
     dependencies: [],
 
@@ -20,10 +19,8 @@ const coreGameplayManifest = {
 
         loggingSystem.info(this.name, `Initializing ${this.name} v${this.version}...`);
 
-        // Register all static data from this module
         staticDataAggregator.registerStaticData(this.id, staticModuleData);
 
-        // Define the resource this module introduces
         const spDef = staticModuleData.resources[RESOURCES.STUDY_POINTS];
         if (spDef) {
             coreResourceManager.defineResource(
@@ -31,18 +28,16 @@ const coreGameplayManifest = {
             );
         }
 
-        // Initialize state
         let currentModuleState = coreGameStateManager.getModuleState(this.id) || getInitialState();
         Object.assign(moduleState, currentModuleState);
 
-        // Initialize logic and UI
         moduleLogic.initialize(coreSystems);
         ui.initialize(coreSystems, moduleLogic);
         
-        // Register UI Tab
+        // FINAL FIX: The label for the tab must be the translation key.
         coreUIManager.registerMenuTab(
             this.id,
-            "Study Area",
+            "core_gameplay.ui.tab_label",
             (parentElement) => ui.renderMainContent(parentElement),
             () => true, // Always unlocked
             () => ui.onShow(),

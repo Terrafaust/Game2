@@ -1,5 +1,5 @@
-// js/modules/core_gameplay_module/core_gameplay_data.js (v3 - Translation Keys)
-// Uses translation keys instead of hardcoded English strings.
+// js/modules/core_gameplay_module/core_gameplay_data.js (v3.1 - Final Translation Key Fix)
+// This version ensures that all hardcoded text is replaced with a proper translation key.
 
 import { RESOURCES } from '../../js/core/constants.js';
 
@@ -7,7 +7,7 @@ export const staticModuleData = {
     resources: {
         [RESOURCES.STUDY_POINTS]: { 
             id: RESOURCES.STUDY_POINTS, 
-            // MODIFICATION: Changed "Study Points" to its translation key.
+            // FINAL FIX: The name must be the translation key for the UI manager to look up.
             name: "resources.studyPoints.name", 
             initialAmount: "0", 
             isUnlocked: true, 
@@ -16,7 +16,5 @@ export const staticModuleData = {
         }
     },
     resourceId: RESOURCES.STUDY_POINTS,
-    clickAmount: 1,
-    // The ui object is no longer needed here as the UI module will get keys directly
-    // from the translation manager.
+    clickAmount: 1
 };
