@@ -1,4 +1,4 @@
-// modules/settings_ui_module/settings_ui.js (v2.0 - Final Refactor)
+// modules/settings_ui_module/settings_ui.js (v2.1 - Full Translation)
 // Fully integrated with translationManager.
 
 import { staticModuleData } from './settings_ui_data.js';
@@ -12,7 +12,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v2.0).");
+        coreSystemsRef.loggingSystem.info("SettingsUI_UI", "UI initialized (v2.1).");
         document.addEventListener('languagePackChanged', () => {
              if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.SETTINGS)) this.renderMainContent(parentElementCache);
         });
@@ -53,20 +53,24 @@ export const ui = {
     },
 
     _createThemeSection() {
-        const { globalSettingsManager, coreUIManager } = coreSystemsRef;
+        const { globalSettingsManager, coreUIManager, translationManager } = coreSystemsRef;
         const section = this._createSectionContainer('settings.ui.display_section');
         const currentTheme = globalSettingsManager.getSetting('theme');
 
         staticModuleData.themes.forEach(theme => {
             const group = document.createElement('div');
             group.className = 'mb-3 p-3 border border-gray-600 rounded';
-            group.innerHTML = `<label class="block text-md font-semibold text-textPrimary mb-2">${theme.name}</label>`;
+            // Assuming theme.id can be used to form a translation key like 'settings.ui.themes.deep_space'
+            const themeName = translationManager.get(`settings.ui.themes.${theme.id}`) || theme.name;
+            group.innerHTML = `<label class="block text-md font-semibold text-textPrimary mb-2">${themeName}</label>`;
             
             const modesContainer = document.createElement('div');
             modesContainer.className = 'flex space-x-2';
             theme.modes.forEach(modeName => { 
                 const modeId = modeName.toLowerCase(); 
-                const button = coreUIManager.createButton(modeName, () => {
+                // Assuming modeId can be used to form a key like 'settings.ui.themes.mode.dark'
+                const translatedModeName = translationManager.get(`settings.ui.themes.mode.${modeId}`) || modeName;
+                const button = coreUIManager.createButton(translatedModeName, () => {
                     moduleLogicRef.applyTheme(theme.id, modeId);
                     this.renderMainContent(parentElementCache);
                 }, ['flex-1', 'py-1.5', 'text-sm']);
@@ -126,7 +130,7 @@ export const ui = {
         const statsContent = document.createElement('div');
         statsContent.id = 'game-statistics-content';
         statsContent.className = 'text-sm text-textSecondary space-y-1';
-        statsContent.innerHTML = moduleLogicRef.getGameStatistics();
+        statsContent.innerHTML = moduleLogicRef.getGameStatistics(); // This function should also use translation keys
         section.appendChild(statsContent);
         return section;
     },
@@ -144,7 +148,7 @@ export const ui = {
                 logHTML += `<p class="${color}"><span class="font-mono">[${log.timestamp.toLocaleTimeString()}]${log.level}${log.tag ? '['+log.tag+']' : ''}:</span> ${log.messages.join(' ')}</p>`;
             });
             logHTML += "</div>";
-            coreUIManager.showModal("Game Log History", logHTML, [{label: "ui.buttons.close", callback: () => coreUIManager.closeModal()}]);
+            coreUIManager.showModal(translationManager.get('settings.ui.log_modal_title'), logHTML, [{label: "ui.buttons.close", callback: () => coreUIManager.closeModal()}]);
         });
         section.appendChild(viewLogsButton);
         return section;

@@ -1,7 +1,8 @@
-// modules/achievements_module/achievements_ui.js (v2.0 - Complete & Refactored)
-// Now uses translationManager for all UI text.
+// modules/achievements_module/achievements_ui.js (v2.1 - Full Translation)
+// Now uses translationManager for all UI text, including dynamic condition text.
 
 import { staticModuleData } from './achievements_data.js';
+import { MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
 let moduleLogicRef = null;
@@ -11,9 +12,9 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v2.0).");
+        coreSystemsRef.loggingSystem.info("AchievementsUI", "UI initialized (v2.1).");
         document.addEventListener('languagePackChanged', () => {
-             if (coreSystemsRef.coreUIManager.isActiveTab('achievements')) {
+             if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.ACHIEVEMENTS)) {
                 this.renderMainContent(parentElementCache);
             }
         });
@@ -94,7 +95,7 @@ export const ui = {
             <div class="text-4xl mb-2">${achievementDef.icon || '🏆'}</div>
             <h4 class="text-md font-semibold text-textPrimary mb-1">${achievementDef.name}</h4>
             <p class="text-xs text-textSecondary mb-2 flex-grow">${achievementDef.description}</p>
-            <p class="text-xs font-medium text-yellow-400 mb-2">${translationManager.get('achievements.ui.reward', { description: achievementDef.reward.description })}</p>
+            <p class="text-xs font-medium text-yellow-400 mb-2">${translationManager.get('ui.generic.reward', { description: achievementDef.reward.description })}</p>
             <p class="text-sm font-bold ${isCompleted ? 'text-green-300' : 'text-gray-400'}">${isCompleted ? translationManager.get('ui.status.completed') : translationManager.get('ui.status.locked')}</p>
         `;
 
@@ -108,24 +109,30 @@ export const ui = {
         let modalContent = `<div class="space-y-2">
             <p class='text-base text-textPrimary'>${achievementDef.description}</p>
             <hr class='my-2 border-gray-600'>
-            <p class='text-sm'><span class="font-semibold text-yellow-400">${translationManager.get('achievements.ui.reward', {description: ''})}</span> ${achievementDef.reward.description}</p>
-            ${!isCompleted ? `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">${translationManager.get('achievements.ui.condition', {text: ''})}</span> ${this._getConditionText(achievementDef.condition)}</p>` : ''}
+            <p class='text-sm'><span class="font-semibold text-yellow-400">${translationManager.get('ui.generic.reward', {description: ''})}</span> ${achievementDef.reward.description}</p>
+            ${!isCompleted ? `<p class='text-sm mt-1'><span class="font-semibold text-accentOne">${translationManager.get('ui.generic.condition', {text: ''})}</span> ${this._getConditionText(achievementDef.condition)}</p>` : ''}
         </div>`;
         coreUIManager.showModal(`${achievementDef.icon} ${achievementDef.name}`, modalContent, [{label: "ui.buttons.close", callback: () => coreUIManager.closeModal()}]);
     },
 
     _getConditionText(condition) {
-        // This function builds a string, so it doesn't need direct translation.
-        const { decimalUtility, staticDataAggregator } = coreSystemsRef;
+        const { decimalUtility, staticDataAggregator, translationManager } = coreSystemsRef;
         switch (condition.type) {
             case "producerOwned":
-                const producerName = staticDataAggregator.getData(`studies.producers.${condition.producerId}`)?.name || condition.producerId;
-                return `Own ${condition.count} ${producerName}.`;
+                const producerData = staticDataAggregator.getData(`studies.producers.${condition.producerId}`);
+                const isPlural = condition.count > 1;
+                const nameKey = `studies.producers.${condition.producerId}.${isPlural ? 'name_plural' : 'name'}`;
+                let producerName = translationManager.get(nameKey);
+                if (producerName.startsWith('{')) { // Fallback
+                    producerName = producerData?.name || condition.producerId;
+                    if (isPlural) producerName += 's';
+                }
+                return translationManager.get('achievements.ui.condition.own_producers', { count: condition.count, name: producerName });
             case "resourceAmount":
-                const resName = coreSystemsRef.coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId;
-                return `Have ${decimalUtility.format(condition.amount,0)} ${resName}.`;
+                const resName = translationManager.get(`resources.${condition.resourceId}`) || coreSystemsRef.coreResourceManager.getResource(condition.resourceId)?.name || condition.resourceId;
+                return translationManager.get('achievements.ui.condition.have_resource', { amount: decimalUtility.format(condition.amount,0), name: resName });
             default:
-                return `Meet a specific in-game criteria.`;
+                return translationManager.get('achievements.ui.condition.default');
         }
     },
 

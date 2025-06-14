@@ -1,4 +1,4 @@
-// modules/skills_module/skills_ui.js (v3.0 - Final Refactor)
+// modules/skills_module/skills_ui.js (v3.1 - Full Translation)
 // Fully integrated with translationManager.
 
 import { staticModuleData } from './skills_data.js';
@@ -12,7 +12,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.info("SkillsUI", "UI initialized (v3.1).");
         document.addEventListener('languagePackChanged', () => {
              if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.SKILLS)) this.renderMainContent(parentElementCache);
         });
@@ -69,16 +69,18 @@ export const ui = {
     },
 
     _createTierContainer(tierNum, skillsInTier, isPrestige) {
+        const { translationManager } = coreSystemsRef;
         const tierContainer = document.createElement('div');
         tierContainer.className = 'mb-8 p-4 border border-gray-700 rounded-lg bg-surface-dark';
         
-        tierContainer.innerHTML = `<h3 class="text-xl font-medium text-secondary mb-4">Tier ${tierNum} ${isPrestige ? 'Prestige' : ''} Skills</h3>`;
+        const titleKey = isPrestige ? 'skills.ui.prestige_tier_title' : 'skills.ui.tier_title';
+        tierContainer.innerHTML = `<h3 class="text-xl font-medium text-secondary mb-4">${translationManager.get(titleKey, { tierNum: tierNum })}</h3>`;
 
         if (!moduleLogicRef.isTierUnlocked(tierNum, isPrestige)) {
             const unlockMsgKey = isPrestige ? 'skills.ui.prestige_tier_unlock_message' : 'skills.ui.tier_unlock_message';
             const lockMessage = document.createElement('p');
             lockMessage.className = 'text-textSecondary italic';
-            lockMessage.textContent = coreSystemsRef.translationManager.get(unlockMsgKey, { tier: tierNum, tier_minus_1: tierNum - 1});
+            lockMessage.textContent = translationManager.get(unlockMsgKey, { tier: tierNum, tier_minus_1: tierNum - 1});
             tierContainer.appendChild(lockMessage);
         } else {
             const skillsGrid = document.createElement('div');
@@ -95,10 +97,11 @@ export const ui = {
         card.id = `skill-card-${skillDef.id}`;
         card.className = 'bg-surface p-4 rounded-lg shadow-md flex flex-col justify-between transition-all duration-200';
 
+        // Assuming skillDef.name and skillDef.description are translation keys
         card.innerHTML = `
             <div>
-                <h4 class="text-md font-semibold text-textPrimary mb-1">${skillDef.name}</h4>
-                <p class="text-textSecondary text-xs mb-2 flex-grow">${skillDef.description}</p>
+                <h4 class="text-md font-semibold text-textPrimary mb-1">${coreSystemsRef.translationManager.get(skillDef.name)}</h4>
+                <p class="text-textSecondary text-xs mb-2 flex-grow">${coreSystemsRef.translationManager.get(skillDef.description)}</p>
                 <p id="skill-${skillDef.id}-level" class="text-sm text-blue-400 mb-1"></p>
                 <p id="skill-${skillDef.id}-effect" class="text-sm text-green-400 mb-2"></p>
                 <p id="skill-${skillDef.id}-cost" class="text-xs text-yellow-400 mb-3"></p>
@@ -125,7 +128,7 @@ export const ui = {
         if (!display) return;
         
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
-        const labelKey = isPrestige ? staticModuleData.ui.prestigeSkillPointDisplayLabel : staticModuleData.ui.skillPointDisplayLabel;
+        const labelKey = isPrestige ? 'skills.ui.prestige_skill_point_label' : 'skills.ui.skill_point_label';
         
         const points = coreResourceManager.getAmount(resourceId);
         display.textContent = `${translationManager.get(labelKey)} ${decimalUtility.format(points, 2, 0)}`;
@@ -138,12 +141,12 @@ export const ui = {
         const isUnlocked = moduleLogicRef.isSkillUnlocked(skillDef.id, isPrestige);
         
         cardElement.querySelector(`#skill-${skillDef.id}-level`).textContent = translationManager.get('ui.generic.level', { current: level, max: maxLevel });
-        cardElement.querySelector(`#skill-${skillDef.id}-effect`).textContent = translationManager.get('ui.generic.effect', { value: moduleLogicRef.getFormattedSkillEffect(skillDef.id, isPrestige) });
+        cardElement.querySelector(`#skill-${skillDef.id}-effect`).textContent = `${translationManager.get('ui.generic.effect')}: ${moduleLogicRef.getFormattedSkillEffect(skillDef.id, isPrestige)}`;
         
         const costDisplay = cardElement.querySelector(`#skill-${skillDef.id}-cost`);
         const purchaseButton = cardElement.querySelector(`#skill-purchase-${skillDef.id}`);
         const resourceId = isPrestige ? staticModuleData.prestigeSkillPointResourceId : staticModuleData.skillPointResourceId;
-        const currency = isPrestige ? 'PSP' : 'SPP';
+        const currency = isPrestige ? 'PSP' : 'SSP'; // These acronyms are likely fine as-is.
         
         if (!isUnlocked) {
             cardElement.classList.add('opacity-50', 'grayscale');

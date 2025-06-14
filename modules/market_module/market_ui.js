@@ -1,8 +1,7 @@
-// modules/market_module/market_ui.js (v4.0 - Final Refactor)
-// Fully integrated with translationManager.
+// modules/market_module/market_ui.js (v4.1 - Full Translation & Plurals)
+// Fully integrated with translationManager, including plural support for item names.
 
 import { staticModuleData } from './market_data.js';
-// FIXED: Corrected the import path for constants.
 import { MODULES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
@@ -13,7 +12,7 @@ export const ui = {
     initialize(coreSystems, stateRef, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v4.0).");
+        coreSystemsRef.loggingSystem.info("MarketUI", "UI initialized (v4.1).");
         
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.MARKET)) this.updateDynamicElements();
@@ -104,15 +103,15 @@ export const ui = {
     },
 
     _createCard(id, def, purchaseCallback) {
-        const { coreUIManager } = coreSystemsRef;
+        const { coreUIManager, translationManager } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `market-card-${id}`;
         card.className = 'bg-surface-dark p-5 rounded-lg shadow-lg flex flex-col justify-between transition-opacity duration-300';
         
         card.innerHTML = `
             <div>
-                <h4 class="text-lg font-semibold text-textPrimary mb-2">${def.name}</h4>
-                <p class="text-textSecondary text-sm mb-3 h-12">${def.description}</p>
+                <h4 class="text-lg font-semibold text-textPrimary mb-2">${translationManager.get(def.name)}</h4>
+                <p class="text-textSecondary text-sm mb-3 h-12">${translationManager.get(def.description)}</p>
                 <p id="market-card-cost-${id}" class="text-sm text-yellow-400 mb-4 h-5"></p>
             </div>
         `;
@@ -136,14 +135,15 @@ export const ui = {
 
     _updateCardSet(dataSet, updateFunction) {
         for (const id in dataSet) {
+             // The data definition has the translation key, not the text itself.
+            const def = { ...dataSet[id], name: dataSet[id].name, description: dataSet[id].description };
             if (parentElementCache.querySelector(`#market-card-${id}`)) {
-                updateFunction.call(this, id);
+                updateFunction.call(this, id, def);
             }
         }
     },
 
-    _updateFeatureUnlockCard(unlockId) {
-        const unlockDef = staticModuleData.featureUnlocks[unlockId];
+    _updateFeatureUnlockCard(unlockId, unlockDef) {
         const card = parentElementCache.querySelector(`#market-card-${unlockId}`);
         if (!card || unlockDef.isFuture) return;
 
@@ -155,15 +155,14 @@ export const ui = {
             const costDisplay = card.querySelector(`#market-card-cost-${unlockId}`);
             const button = card.querySelector(`#market-card-button-${unlockId}`);
             const cost = decimalUtility.new(unlockDef.costAmount);
-            const resource = coreResourceManager.getResource(unlockDef.costResource);
-            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 0)} ${resource ? resource.name : unlockDef.costResource}`;
+            const resourceName = translationManager.get(`resources.${unlockDef.costResource}`) || unlockDef.costResource;
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 0)} ${resourceName}`;
             button.textContent = translationManager.get('ui.buttons.unlock');
             button.disabled = !moduleLogicRef.canAffordUnlock(unlockId);
         }
     },
     
-    _updateScalableItemCard(itemId) {
-        const itemDef = staticModuleData.consumables[itemId] || staticModuleData.skillPoints[itemId];
+    _updateScalableItemCard(itemId, itemDef) {
         const card = parentElementCache.querySelector(`#market-card-${itemId}`);
         if (!card) return;
 
@@ -179,10 +178,18 @@ export const ui = {
             const quantityToBuy = (multiplier === -1) ? moduleLogicRef.calculateMaxBuyable(itemId) : decimalUtility.new(multiplier);
             const totalCost = moduleLogicRef.calculateScalableItemCost(itemId, quantityToBuy);
 
-            const nameBase = itemDef.name.replace('Acquire ', '');
-            button.textContent = translationManager.get('market.ui.acquire_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: nameBase + (decimalUtility.gt(quantityToBuy, 1) ? 's' : '')});
-            const resource = coreResourceManager.getResource(itemDef.costResource);
-            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(totalCost, 2)} ${resource ? resource.name : itemDef.costResource}`;
+            const isPlural = decimalUtility.gt(quantityToBuy, 1);
+            const nameKey = `market.items.${itemId}.${isPlural ? 'itemName_plural' : 'itemName'}`;
+            let itemName = translationManager.get(nameKey);
+            // Fallback for languages that might not have plural keys for everything
+            if(itemName.startsWith('{')) {
+                itemName = translationManager.get(`market.items.${itemId}.itemName`);
+                if(isPlural) itemName += 's'; // English-style plural fallback
+            }
+
+            button.textContent = translationManager.get('market.ui.acquire_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: itemName });
+            const resourceName = translationManager.get(`resources.${itemDef.costResource}`) || itemDef.costResource;
+            costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(totalCost, 2)} ${resourceName}`;
             button.disabled = !coreResourceManager.canAfford(itemDef.costResource, totalCost) || decimalUtility.lte(quantityToBuy, 0);
         }
     },
@@ -192,6 +199,7 @@ export const ui = {
         const unlockedSection = parentElementCache.querySelector('#market-already-unlocked-section');
         if (!unlockedGrid || !unlockedSection) return;
 
+        const { translationManager } = coreSystemsRef;
         unlockedGrid.innerHTML = '';
         let unlockedCount = 0;
 
@@ -200,7 +208,8 @@ export const ui = {
                 unlockedCount++;
                 const item = document.createElement('div');
                 item.className = 'text-textSecondary flex items-center';
-                item.innerHTML = `<span class="text-green-400 mr-2">✓</span> ${staticModuleData.featureUnlocks[unlockId].name}`;
+                const unlockName = translationManager.get(staticModuleData.featureUnlocks[unlockId].name);
+                item.innerHTML = `<span class="text-green-400 mr-2">✓</span> ${unlockName}`;
                 unlockedGrid.appendChild(item);
             }
         }

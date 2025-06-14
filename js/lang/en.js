@@ -1,4 +1,4 @@
-// js/lang/en.js (v4.2 - Fully comprehensive)
+// js/lang/en.js (v4.3 - Full translation)
 // English language pack with all required keys for the refactored UI.
 
 export default {
@@ -13,6 +13,9 @@ export default {
     "ui.buttons.unlock": "Unlock",
     "ui.buttons.close": "Close",
     "ui.buttons.cancel": "Cancel",
+    "ui.buttons.not_yet": "Not yet",
+    "ui.buttons.buy_X": "Buy {quantity}",
+
     "ui.status.locked": "Locked",
     "ui.status.completed": "Completed!",
     "ui.status.maxed": "Maxed",
@@ -39,6 +42,10 @@ export default {
     "ui.notifications.skill_leveled_up": "{skillName} leveled up to {level}!",
     "ui.notifications.cannot_purchase_skill": "Cannot purchase skill.",
 
+    // Resources
+    "resources.study_points": "Study Points",
+    "resources.knowledge": "Knowledge",
+
     // Core Gameplay Module
     "core_gameplay.ui.title": "Manual Study Area",
     "core_gameplay.ui.description": "Click the button below to gain Study Points. This is the beginning of your academic journey!",
@@ -57,20 +64,28 @@ export default {
     "studies.ui.cost_for": "Cost for {quantity}",
     "studies.ui.buy_X": "Buy {quantity} {name}",
     "studies.producers.student.name": "Student",
+    "studies.producers.student.name_plural": "Students",
     "studies.producers.student.description": "A diligent student, generating basic Study Points.",
     "studies.producers.classroom.name": "Classroom",
+    "studies.producers.classroom.name_plural": "Classrooms",
     "studies.producers.classroom.description": "A dedicated space for learning, boosting Study Point generation.",
     "studies.producers.kindergarten.name": "Kindergarten",
+    "studies.producers.kindergarten.name_plural": "Kindergartens",
     "studies.producers.kindergarten.description": "Early education, laying the groundwork for future knowledge.",
     "studies.producers.elementarySchool.name": "Elementary School",
+    "studies.producers.elementarySchool.name_plural": "Elementary Schools",
     "studies.producers.elementarySchool.description": "Foundational learning, expanding your academic reach.",
     "studies.producers.middleSchool.name": "Middle School",
+    "studies.producers.middleSchool.name_plural": "Middle Schools",
     "studies.producers.middleSchool.description": "Developing deeper understanding and critical thinking.",
     "studies.producers.highSchool.name": "High School",
+    "studies.producers.highSchool.name_plural": "High Schools",
     "studies.producers.highSchool.description": "Advanced studies, preparing for higher education.",
     "studies.producers.university.name": "University",
+    "studies.producers.university.name_plural": "Universities",
     "studies.producers.university.description": "The pinnacle of academic institutions, generating vast Study Points.",
     "studies.producers.professor.name": "Professor",
+    "studies.producers.professor.name_plural": "Professors",
     "studies.producers.professor.description": "A wise mentor, producing valuable Knowledge.",
 
     // Skills Module
@@ -81,6 +96,8 @@ export default {
     "skills.ui.prestige_skill_point_label": "Prestige Skill Points:",
     "skills.ui.tier_unlock_message": "Unlock Tier {tier} by leveling all skills in Tier {tier_minus_1} to at least level 1.",
     "skills.ui.prestige_tier_unlock_message": "Unlock Tier {tier} by leveling all Prestige skills in Tier {tier_minus_1} to at least level 1.",
+    "skills.ui.tier_title": "Tier {tierNum} Skills",
+    "skills.ui.prestige_tier_title": "Tier {tierNum} Prestige Skills",
 
     // Market Module
     "market.ui.tab_label": "Market",
@@ -91,18 +108,28 @@ export default {
     "market.ui.already_unlocked_title": "Already Unlocked",
     "market.ui.acquire_X": "Acquire {quantity} {name}",
     "market.items.unlockSettings.name": "Unlock Settings Menu",
+    "market.items.unlockSettings.itemName": "Settings Menu",
     "market.items.unlockSettings.description": "Gain access to game settings and customization options.",
     "market.items.unlockAchievements.name": "Unlock Achievements Menu",
+    "market.items.unlockAchievements.itemName": "Achievements Menu",
     "market.items.unlockAchievements.description": "Track your accomplishments and earn rewards.",
     "market.items.unlockThemes.name": "Unlock Themes",
+    "market.items.unlockThemes.itemName": "Themes",
     "market.items.unlockThemes.description": "Unlock additional visual themes in the Settings menu.",
     "market.items.unlockStats.name": "Unlock Game Statistics",
+    "market.items.unlockStats.itemName": "Game Statistics",
     "market.items.unlockStats.description": "View detailed game statistics in the Settings menu.",
     "market.items.acquireImage.name": "Acquire Image",
+    "market.items.acquireImage.itemName": "Image",
+    "market.items.acquireImage.itemName_plural": "Images",
     "market.items.acquireImage.description": "Purchase decorative Images with your Study Points. Get 1,000 to unlock Prestige.",
     "market.items.acquireSSP.name": "Acquire Study Skill Point",
+    "market.items.acquireSSP.itemName": "Study Skill Point",
+    "market.items.acquireSSP.itemName_plural": "Study Skill Points",
     "market.items.acquireSSP.description": "Convert Study Points into valuable Study Skill Points to enhance your abilities.",
     "market.items.acquirePSP.name": "Acquire Prestige Skill Point",
+    "market.items.acquirePSP.itemName": "Prestige Skill Point",
+    "market.items.acquirePSP.itemName_plural": "Prestige Skill Points",
     "market.items.acquirePSP.description": "Convert Knowledge into powerful Prestige Skill Points to unlock permanent upgrades.",
 
     // Prestige Module
@@ -119,7 +146,12 @@ export default {
     "prestige.ui.modal.keep_header": "You will keep (from Prestige Skills):",
     "prestige.ui.modal.reset_header": "The following will be reset:",
     "prestige.ui.modal.reset_list": "Study Points, Knowledge, and Images; all Study Producers; costs of Market items; levels of normal skills and their SSP cost.",
-    "prestige.ui.modal.permanent_note": "Achievements, Unlocked Tabs, Prestige producers, and Prestige Skills are kept.",
+    "prestige.ui.modal.permanent_note": "Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.",
+    "prestige.ui.modal.unlock_skills": "Unlock Prestige Skills",
+    "prestige.ui.modal.reset_list_item1": "Study Points, Knowledge, and Images",
+    "prestige.ui.modal.reset_list_item2": "All Study Producers (Students, Classrooms, etc.)",
+    "prestige.ui.modal.reset_list_item3": "Market Item costs and Automator Progress",
+    "prestige.ui.modal.reset_list_item4": "Regular Skill levels and their SSP cost",
     "prestige.ui.gain_pp": "{value} Prestige Points",
     "prestige.ui.gain_bonus": "All Production Boost: {current}x -> {next}x",
     "prestige.ui.keep_knowledge": "{value} Knowledge",
@@ -131,6 +163,9 @@ export default {
     "achievements.ui.title": "Achievements",
     "achievements.ui.bonus_tip": "Every achievement also gives you a 1% production bonus.",
     "achievements.ui.summary": "Completed: {completed} / {total} | Total Bonus: {bonus}%",
+    "achievements.ui.condition.own_producers": "Own {count} {name}.",
+    "achievements.ui.condition.have_resource": "Have {amount} {name}.",
+    "achievements.ui.condition.default": "Meet a specific in-game criteria.",
     
     // Settings Module
     "settings.ui.tab_label": "Settings",
@@ -142,6 +177,7 @@ export default {
     "settings.ui.debug_section": "Debugging",
     "settings.ui.language_select_label": "Select Language: ",
     "settings.ui.view_logs_button": "View Game Logs",
+    "settings.ui.log_modal_title": "Game Log History",
     "settings.ui.stats.general_header": "General",
     "settings.ui.stats.version": "Game Version: {version}",
     "settings.ui.stats.last_save": "Last Save: {time}",
@@ -150,4 +186,11 @@ export default {
     "settings.ui.stats.time_in_prestige": "Time in this Prestige: {time}",
     "settings.ui.stats.pp": "Prestige Points: {value}",
     "settings.ui.stats.total_prestiges": "Total Prestiges: {value}",
+    "settings.ui.themes.deep_space": "Deep Space",
+    "settings.ui.themes.light": "Light",
+    "settings.ui.themes.neon_city": "Neon City",
+    "settings.ui.themes.mode.dark": "Dark",
+    "settings.ui.themes.mode.light": "Light",
+    "settings.ui.themes.mode.midnight": "Midnight",
+    "settings.ui.themes.mode.sunrise": "Sunrise",
 };

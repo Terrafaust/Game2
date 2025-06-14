@@ -1,4 +1,4 @@
-// /game/modules/prestige_module/prestige_ui.js (v4.1 - Bugfix)
+// /game/modules/prestige_module/prestige_ui.js (v4.2 - Full Translation)
 // FIXED: Changed import to get the exported moduleLogic object directly.
 import { moduleLogic } from './prestige_logic.js';
 import { prestigeData } from './prestige_data.js';
@@ -18,19 +18,25 @@ export const ui = {
                 this.updateDynamicElements();
             }
         });
-        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.1).");
+        document.addEventListener('languagePackChanged', () => {
+            if (coreSystemsRef && coreSystemsRef.coreUIManager.isActiveTab('prestige')) {
+                this.renderMainContent(parentElementCache);
+            }
+        });
+        coreSystemsRef.loggingSystem.info("PrestigeUI", "UI initialized (v4.2).");
     },
 
     renderMainContent(parentElement) {
         parentElementCache = parentElement;
         parentElement.innerHTML = '';
 
+        const { translationManager } = coreSystemsRef;
         const container = document.createElement('div');
         container.className = 'p-4 space-y-6';
         
         container.innerHTML = `
             <div class="mb-6 p-3 bg-surface rounded-lg border border-red-500/50 text-center">
-                <p class="text-sm text-red-300 italic">"The end already ?"</p>
+                <p class="text-sm text-red-300 italic">${translationManager.get('prestige.ui.tip')}</p>
             </div>
         `;
 
@@ -67,7 +73,7 @@ export const ui = {
         
         const sectionTitle = document.createElement('h3');
         sectionTitle.className = 'text-xl font-semibold text-primary';
-        sectionTitle.textContent = 'Prestige Upgrades';
+        sectionTitle.textContent = translationManager.get('prestige.ui.upgrades_title');
         sectionHeader.appendChild(sectionTitle);
 
         if (coreSystemsRef.buyMultiplierUI) {
@@ -95,19 +101,19 @@ export const ui = {
     },
 
     _createProducerCard(producerDef) {
-        const { coreUIManager } = coreSystemsRef;
+        const { coreUIManager, translationManager } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `prestige-card-${producerDef.id}`;
         card.className = 'bg-surface p-4 rounded-lg shadow-md flex flex-col';
 
         const name = document.createElement('h4');
         name.className = 'text-md font-semibold text-textPrimary mb-1';
-        name.textContent = producerDef.name;
+        name.textContent = producerDef.name; // This should be a translation key in a real scenario
         card.appendChild(name);
 
         const description = document.createElement('p');
         description.className = 'text-textSecondary text-xs mb-2 flex-grow';
-        description.textContent = producerDef.description;
+        description.textContent = producerDef.description; // This should be a translation key
         card.appendChild(description);
 
         const ownedDisplay = document.createElement('p');
@@ -128,8 +134,7 @@ export const ui = {
         card.appendChild(costDisplay);
         
         const purchaseButton = coreUIManager.createButton(
-            'Buy', 
-            // FIXED: Correctly call the function on the stored logic reference.
+            translationManager.get('ui.buttons.buy'), 
             () => logicRef.purchasePrestigeProducer(producerDef.id), 
             ['w-full', 'text-sm', 'py-1.5', 'mt-auto'], 
             `prestige-purchase-${producerDef.id}`
@@ -140,46 +145,42 @@ export const ui = {
     },
 
     updateDynamicElements() {
-        if (!parentElementCache || !coreSystemsRef || !logicRef) return; // Guard against missing logicRef
-        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator } = coreSystemsRef;
+        if (!parentElementCache || !coreSystemsRef || !logicRef) return;
+        const { decimalUtility, coreResourceManager, buyMultiplierManager, staticDataAggregator, translationManager } = coreSystemsRef;
 
         const ppDisplay = parentElementCache.querySelector('#pp-display');
         if (ppDisplay) {
             const pp = coreResourceManager.getAmount('prestigePoints');
-            ppDisplay.textContent = `Prestige Points: ${decimalUtility.format(pp, 2, 0)}`;
+            ppDisplay.textContent = translationManager.get('prestige.ui.pp_display', { value: decimalUtility.format(pp, 2, 0) });
         }
         
         const prestigeCountDisplay = parentElementCache.querySelector('#prestige-count-display');
         if(prestigeCountDisplay) {
-            // FIXED: Correctly call the function on the stored logic reference.
             const count = logicRef.getTotalPrestigeCount();
-            prestigeCountDisplay.textContent = `Times Prestiged: ${decimalUtility.format(count, 0)}`;
+            prestigeCountDisplay.textContent = translationManager.get('prestige.ui.count_display', { value: decimalUtility.format(count, 0) });
         }
 
         const prestigeButton = parentElementCache.querySelector('#prestige-button');
         if (prestigeButton) {
-            // FIXED: Correctly call the functions on the stored logic reference.
             const gain = logicRef.calculatePrestigeGain();
             const canPrestige = logicRef.canPrestige();
             prestigeButton.disabled = !canPrestige || decimalUtility.eq(gain, 0);
             if (canPrestige) {
-                prestigeButton.textContent = `Prestige for ${decimalUtility.format(gain, 2, 0)} PP`;
+                prestigeButton.textContent = translationManager.get('prestige.ui.button_text', { pp: decimalUtility.format(gain, 2, 0) });
             } else {
-                prestigeButton.textContent = 'Prestige Unlocked at 1k Images';
+                prestigeButton.textContent = translationManager.get('prestige.ui.button_locked');
             }
         }
         
         const currentMultiplier = buyMultiplierManager.getMultiplier();
-        // FIXED: Correctly call the function on the stored logic reference.
         const postDocMultiplier = logicRef.getPostDocMultiplier();
 
         for (const producerId in prestigeData.producers) {
             const card = parentElementCache.querySelector(`#prestige-card-${producerId}`);
             if (card) {
                 const producerDef = prestigeData.producers[producerId];
-                // FIXED: Correctly call the functions on the stored logic reference.
                 const owned = logicRef.getOwnedPrestigeProducerCount(producerId);
-                card.querySelector(`#prestige-owned-${producerId}`).textContent = `Owned: ${decimalUtility.format(owned, 0)}`;
+                card.querySelector(`#prestige-owned-${producerId}`).textContent = `${translationManager.get('ui.generic.owned')}: ${decimalUtility.format(owned, 0)}`;
 
                 const productionDisplay = card.querySelector(`#prestige-production-${producerId}`);
                 if (productionDisplay) {
@@ -194,8 +195,8 @@ export const ui = {
 
                             if (decimalUtility.gt(finalRate, 0)) {
                                 const studiesProducerData = staticDataAggregator.getData(`studies.producers.${p.producerId}`);
-                                const producerName = studiesProducerData ? studiesProducerData.name : p.producerId;
-                                productionHtml += `<div>Production: ${decimalUtility.format(finalRate, 2)} ${producerName}/s</div>`;
+                                const producerName = studiesProducerData ? studiesProducerData.name : p.producerId; // Name could be a key
+                                productionHtml += `<div>${translationManager.get('ui.generic.production')}: ${decimalUtility.format(finalRate, 2)} ${producerName}/s</div>`;
                             }
                         });
                         productionDisplay.innerHTML = productionHtml;
@@ -206,23 +207,20 @@ export const ui = {
 
                 let quantityToBuy;
                 if (currentMultiplier === -1) {
-                    // FIXED: Correctly call the function on the stored logic reference.
                     quantityToBuy = logicRef.calculateMaxBuyablePrestigeProducer(producerId);
                 } else {
                     quantityToBuy = decimalUtility.new(currentMultiplier);
                 }
-
-                // FIXED: Correctly call the function on the stored logic reference.
-                const cost = logicRef.calculatePrestigeProducerCost(producerId, quantityToBuy);
                 
-                card.querySelector(`#prestige-cost-${producerId}`).textContent = `Cost: ${decimalUtility.format(cost, 2, 0)} PP`;
+                const cost = logicRef.calculatePrestigeProducerCost(producerId, quantityToBuy);
+                card.querySelector(`#prestige-cost-${producerId}`).textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(cost, 2, 0)} PP`;
                 
                 const button = card.querySelector(`#prestige-purchase-${producerId}`);
                 button.disabled = !coreResourceManager.canAfford('prestigePoints', cost) || quantityToBuy.lte(0);
 
-                let buttonText = "Buy";
+                let buttonText = translationManager.get('ui.buttons.buy');
                 if(quantityToBuy.gt(0)) {
-                    buttonText += ` ${decimalUtility.format(quantityToBuy, 0)}`;
+                    buttonText = translationManager.get('ui.buttons.buy_X', {quantity: decimalUtility.format(quantityToBuy, 0) });
                 }
                 button.textContent = buttonText;
             }
@@ -230,8 +228,7 @@ export const ui = {
     },
 
     showPrestigeConfirmationModal() {
-        const { coreUIManager, decimalUtility } = coreSystemsRef;
-        // FIXED: Correctly call the function on the stored logic reference.
+        const { coreUIManager, decimalUtility, translationManager } = coreSystemsRef;
         const details = logicRef.getPrestigeConfirmationDetails();
 
         if (!details.canPrestige) {
@@ -240,6 +237,7 @@ export const ui = {
         }
 
         const getOrdinal = (nStr) => {
+            // This is english-specific, would need a more robust i18n solution for ordinals.
             const n = parseInt(nStr.replace(/,/g, ''), 10);
             const s = ["th", "st", "nd", "rd"];
             const v = n % 100;
@@ -249,64 +247,65 @@ export const ui = {
 
         let gainsMessage = `
             <li>
-                <span class="font-bold text-green-200">${decimalUtility.format(details.ppGains, 2, 0)}</span> Prestige Points
+                <span class="font-bold text-green-200">${translationManager.get('prestige.ui.gain_pp', { value: decimalUtility.format(details.ppGains, 2, 0)})}</span>
                 <br><span class="text-xs text-gray-400 italic">${details.ppGainsExplanation}</span>
             </li>
             <li>
-                All Production Boost: <span class="font-bold text-yellow-300">${decimalUtility.format(details.currentBonus, 2)}x</span> -> <span class="font-bold text-green-200">${decimalUtility.format(details.nextBonus, 2)}x</span>
+                ${translationManager.get('prestige.ui.gain_bonus', { current: decimalUtility.format(details.currentBonus, 2), next: decimalUtility.format(details.nextBonus, 2) })}
                 <br><span class="text-xs text-gray-400 italic">${details.bonusExplanation}</span>
             </li>`;
 
-        // FIXED: Correctly call the function on the stored logic reference.
         if (logicRef.getTotalPrestigeCount().eq(0)) {
-            gainsMessage += `<li><span class="font-bold text-green-200">Unlock Prestige Skills</span></li>`;
+            gainsMessage += `<li><span class="font-bold text-green-200">${translationManager.get('prestige.ui.modal.unlock_skills')}</span></li>`;
         }
 
         let keptResourcesMessage = '';
-        if (decimalUtility.gt(details.retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.retainedKnowledge, 2)}</span> Knowledge</li>`;
-        if (decimalUtility.gt(details.retainedSsp, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.retainedSsp, 0)}</span> Study Skill Points</li>`;
+        if (decimalUtility.gt(details.retainedKnowledge, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${translationManager.get('prestige.ui.keep_knowledge', { value: decimalUtility.format(details.retainedKnowledge, 2)})}</span></li>`;
+        if (decimalUtility.gt(details.retainedSsp, 0)) keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${translationManager.get('prestige.ui.keep_ssp', { value: decimalUtility.format(details.retainedSsp, 0)})}</span></li>`;
         if (Object.keys(details.startingProducers).length > 0) {
             for(const prodId in details.startingProducers) {
-                 keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${decimalUtility.format(details.startingProducers[prodId], 0)}</span> starting ${prodId}s</li>`;
+                const name = coreSystemsRef.staticDataAggregator.getData(`studies.producers.${prodId}`)?.name || prodId;
+                keptResourcesMessage += `<li><span class="font-bold text-yellow-300">${translationManager.get('prestige.ui.keep_producers', {value: decimalUtility.format(details.startingProducers[prodId], 0), name: name})}</span></li>`;
             }
         }
+        
+        const resetList = `
+            <li>${translationManager.get('prestige.ui.modal.reset_list_item1')}</li>
+            <li>${translationManager.get('prestige.ui.modal.reset_list_item2')}</li>
+            <li>${translationManager.get('prestige.ui.modal.reset_list_item3')}</li>
+            <li>${translationManager.get('prestige.ui.modal.reset_list_item4')}</li>
+        `;
 
         const confirmationMessage = `
             <div class="space-y-3 text-left text-textPrimary">
-                <p>Are you sure you want to proceed with your ${prestigeOrdinal} prestige?</p>
+                <p>${translationManager.get('prestige.ui.modal.confirm_intro', { ordinal: prestigeOrdinal })}</p>
                 <div class="p-3 bg-green-900 bg-opacity-50 rounded-lg border border-green-700">
-                    <p class="font-semibold text-green-300">You will gain:</p>
+                    <p class="font-semibold text-green-300">${translationManager.get('prestige.ui.modal.gain_header')}</p>
                     <ul class="list-disc list-inside text-sm mt-1 text-textSecondary space-y-2">${gainsMessage}</ul>
                 </div>
                 ${keptResourcesMessage ? `
                 <div class="p-3 bg-yellow-900 bg-opacity-50 rounded-lg border border-yellow-700">
-                    <p class="font-semibold text-yellow-300">You will keep (from Prestige Skills):</p>
+                    <p class="font-semibold text-yellow-300">${translationManager.get('prestige.ui.modal.keep_header')}</p>
                     <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">${keptResourcesMessage}</ul>
                 </div>` : ''}
                 <div class="p-3 bg-red-900 bg-opacity-50 rounded-lg border border-red-700">
-                    <p class="font-semibold text-red-300">The following will be reset:</p>
-                    <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">
-                        <li>Study Points, Knowledge, and Images</li>
-                        <li>All Study Producers (Students, Classrooms, etc.)</li>
-                        <li>Market Item costs and Automator Progress</li>
-                        <li>Regular Skill levels and their SSP cost</li>
-                    </ul>
+                    <p class="font-semibold text-red-300">${translationManager.get('prestige.ui.modal.reset_header')}</p>
+                    <ul class="list-disc list-inside text-sm mt-1 text-textSecondary">${resetList}</ul>
                 </div>
-                 <p class="text-xs text-gray-400">Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.</p>
+                 <p class="text-xs text-gray-400">${translationManager.get('prestige.ui.modal.permanent_note')}</p>
             </div>
         `;
 
-        coreUIManager.showModal("Confirm Prestige", confirmationMessage, [
+        coreUIManager.showModal(translationManager.get('prestige.ui.modal.title'), confirmationMessage, [
             {
-                label: `Prestige for ${decimalUtility.format(details.ppGains, 2, 0)} PP`,
+                label: translationManager.get('prestige.ui.button_text', {pp: decimalUtility.format(details.ppGains, 2, 0)}),
                 className: "bg-green-600 hover:bg-green-700",
                 callback: () => {
-                    // FIXED: Correctly call the function on the stored logic reference.
                     logicRef.executePrestigeReset(details.ppGains);
                     coreUIManager.closeModal();
                 }
             },
-            { label: "Not yet", className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
+            { label: translationManager.get('ui.buttons.not_yet'), className:"bg-gray-600 hover:bg-gray-700", callback: () => coreUIManager.closeModal() }
         ]);
     },
     

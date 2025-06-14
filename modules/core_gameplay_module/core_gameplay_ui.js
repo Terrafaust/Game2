@@ -1,8 +1,7 @@
-// js/modules/core_gameplay_module/core_gameplay_ui.js (v3.0 - Final Refactor)
+// js/modules/core_gameplay_module/core_gameplay_ui.js (v3.1 - Full Translation)
 // Fully integrated with translationManager.
 
 import { moduleState } from './core_gameplay_state.js';
-// FIXED: Corrected the import path to include the 'js' directory.
 import { MODULES, RESOURCES } from '../../js/core/constants.js';
 
 let coreSystemsRef = null;
@@ -13,7 +12,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("CoreGameplayUI", "UI initialized (v3.0).");
+        coreSystemsRef.loggingSystem.debug("CoreGameplayUI", "UI initialized (v3.1).");
         document.addEventListener('languagePackChanged', () => {
              if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.CORE_GAMEPLAY)) {
                 this.renderMainContent(parentElementCache);
@@ -58,7 +57,7 @@ export const ui = {
                     coreUIManager.showNotification('ui.notifications.item_acquired', 'success', 1500, {
                         replacements: {
                             quantity: coreSystemsRef.decimalUtility.format(result.amountGained, 2),
-                            itemName: "Study Points"
+                            itemName: translationManager.get('resources.study_points')
                         }
                     });
                 }

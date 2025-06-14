@@ -1,4 +1,4 @@
-// js/modules/studies_module/studies_ui.js (v4.0 - Final Refactor)
+// js/modules/studies_module/studies_ui.js (v4.1 - Full Translation & Plurals)
 // Fully integrated with translationManager and new core systems.
 
 import { staticModuleData } from './studies_data.js';
@@ -12,7 +12,7 @@ export const ui = {
     initialize(coreSystems, logicRef) {
         coreSystemsRef = coreSystems;
         moduleLogicRef = logicRef;
-        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v4.0).");
+        coreSystemsRef.loggingSystem.debug("StudiesUI", "UI initialized (v4.1).");
 
         document.addEventListener('buyMultiplierChanged', () => {
             if (coreSystemsRef.coreUIManager.isActiveTab(MODULES.STUDIES)) this.updateDynamicElements();
@@ -70,14 +70,17 @@ export const ui = {
     },
     
     _createProducerCard(producerId) {
+        const { translationManager } = coreSystemsRef;
         const producerDef = staticModuleData.producers[producerId];
         const { coreUIManager } = coreSystemsRef;
         const card = document.createElement('div');
         card.id = `producer-card-${producerId}`;
         card.className = 'bg-surface-dark p-4 rounded-lg shadow-md flex flex-col';
+        
+        // Assumes producerDef properties are translation keys
         card.innerHTML = `
-            <h3 class="text-xl font-semibold text-textPrimary mb-2">${producerDef.name}</h3>
-            <p class="text-textSecondary text-sm mb-3">${producerDef.description}</p>
+            <h3 class="text-xl font-semibold text-textPrimary mb-2">${translationManager.get(producerDef.name)}</h3>
+            <p class="text-textSecondary text-sm mb-3">${translationManager.get(producerDef.description)}</p>
             <p id="producer-${producerId}-owned" class="text-textPrimary text-lg font-bold mb-1"></p>
             <p id="producer-${producerId}-production" class="text-green-400 text-sm mb-3"></p>
             <p id="producer-${producerId}-cost" class="text-textSecondary text-sm mb-4"></p>`;
@@ -112,19 +115,28 @@ export const ui = {
                 const ownedCount = moduleLogicRef.getOwnedProducerCount(producerId);
                 const totalProduction = coreResourceManager.getTotalProductionRate(producerDef.resourceId);
                 
-                ownedDisplay.textContent = `${translationManager.get('studies.ui.owned')}: ${decimalUtility.format(ownedCount, 0)}`;
-                prodDisplay.textContent = `${translationManager.get('studies.ui.production')}: ${decimalUtility.format(totalProduction, 2)} ${producerDef.resourceId}/s`;
+                ownedDisplay.textContent = translationManager.get('studies.ui.owned', { value: decimalUtility.format(ownedCount, 0) });
+                prodDisplay.textContent = translationManager.get('studies.ui.production', { value: decimalUtility.format(totalProduction, 2) });
 
                 const multiplier = buyMultiplierManager.getMultiplier();
                 const quantityToBuy = (multiplier === -1) ? moduleLogicRef.calculateMaxBuyable(producerId) : decimalUtility.new(multiplier);
                 const costForBatch = moduleLogicRef.calculateProducerCost(producerId, quantityToBuy);
+                const resourceName = translationManager.get(`resources.${producerDef.costResource}`) || producerDef.costResource;
                 
                 if (decimalUtility.gt(quantityToBuy, 0)) {
-                    costDisplay.textContent = `${translationManager.get('studies.ui.cost_for', { quantity: decimalUtility.format(quantityToBuy, 0) })}: ${decimalUtility.format(costForBatch, 2)} ${producerDef.costResource}`;
-                    buyButton.textContent = translationManager.get('studies.ui.buy_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: producerDef.name + (decimalUtility.gt(quantityToBuy, 1) ? 's' : '') });
+                    const isPlural = decimalUtility.gt(quantityToBuy, 1);
+                    const nameKey = `${producerDef.name}${isPlural ? '_plural' : ''}`;
+                    let producerName = translationManager.get(nameKey);
+                    if (producerName.startsWith('{')) { // Fallback
+                        producerName = translationManager.get(producerDef.name);
+                        if(isPlural) producerName += 's';
+                    }
+
+                    costDisplay.textContent = `${translationManager.get('studies.ui.cost_for', { quantity: decimalUtility.format(quantityToBuy, 0) })}: ${decimalUtility.format(costForBatch, 2)} ${resourceName}`;
+                    buyButton.textContent = translationManager.get('studies.ui.buy_X', { quantity: decimalUtility.format(quantityToBuy, 0), name: producerName });
                 } else {
-                    costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
-                    buyButton.textContent = translationManager.get('studies.ui.buy_X', { quantity: 1, name: producerDef.name });
+                    costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${resourceName}`;
+                    buyButton.textContent = translationManager.get('studies.ui.buy_X', { quantity: 1, name: translationManager.get(producerDef.name) });
                 }
                 
                 buyButton.disabled = !coreResourceManager.canAfford(producerDef.costResource, costForBatch) || decimalUtility.eq(quantityToBuy, 0);
@@ -133,9 +145,10 @@ export const ui = {
                 card.classList.add('opacity-50', 'grayscale', 'cursor-not-allowed');
                 buyButton.disabled = true;
                 buyButton.textContent = translationManager.get('ui.status.locked');
-                ownedDisplay.textContent = `${translationManager.get('studies.ui.owned')}: 0`;
-                prodDisplay.textContent = `${translationManager.get('studies.ui.production')}: 0/s`;
-                costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${producerDef.costResource}`;
+                ownedDisplay.textContent = translationManager.get('studies.ui.owned', { value: 0 });
+                prodDisplay.textContent = translationManager.get('studies.ui.production', { value: 0 });
+                const resourceName = translationManager.get(`resources.${producerDef.costResource}`) || producerDef.costResource;
+                costDisplay.textContent = `${translationManager.get('ui.generic.cost')}: ${decimalUtility.format(moduleLogicRef.calculateProducerCost(producerId, 1), 2)} ${resourceName}`;
             }
         }
     },
