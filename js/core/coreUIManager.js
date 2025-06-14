@@ -1,6 +1,7 @@
-// js/core/coreUIManager.js (v8.2 - Final Translation Fix)
-// This version correctly uses the translationManager to look up resource names and menu tab labels.
-// This is the crucial link between the module data (which uses keys) and the translated text.
+// js/core/coreUIManager.js (v8.3 - Decoupled Rendering)
+// Fixes the translation race condition by decoupling tab registration from rendering.
+// registerMenuTab no longer triggers a re-render. The initial render is now
+// solely controlled by the fullUIRefresh() call in main.js.
 
 import { loggingSystem } from './loggingSystem.js';
 
@@ -74,19 +75,21 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.2).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.3).");
     },
 
-    // The `labelKey` parameter now explicitly indicates it's a translation key.
     registerMenuTab(moduleId, labelKey, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
         if (!moduleId || typeof renderCallback !== 'function') {
             loggingSystem.warn("CoreUIManager_RegisterTab", `Invalid registration for moduleId '${moduleId}'.`);
             return;
         }
-        // Store the key as `labelKey`
         registeredMenuTabs[moduleId] = { id: moduleId, labelKey, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
-        if (isDefaultTab && !activeTabId && isUnlockedCheck()) {
-            this.setActiveTab(moduleId, true);
+        
+        // **THE FIX**: Do NOT automatically set the active tab here.
+        // Let the initial fullUIRefresh in main.js handle this.
+        if (isDefaultTab && !activeTabId) {
+            // Just note it down, but don't render.
+            activeTabId = moduleId;
         }
     },
 
@@ -98,26 +101,17 @@ export const coreUIManager = {
         UIElements.menuList.innerHTML = ''; 
         UIElements.body.classList.toggle('menu-hidden', unlockedTabs.length <= 1 && window.innerWidth > 768);
 
-        let activeTabIsValid = false;
         unlockedTabs.forEach(tab => {
-            // **THE FIX**: Use translationManager to get the text from the stored `labelKey`.
             const translatedLabel = coreSystemsRef.translationManager.get(tab.labelKey);
             const button = this.createButton(translatedLabel, null, ['menu-tab'], `menu-tab-${tab.id}`);
             button.dataset.tabTarget = tab.id;
             if (tab.id === activeTabId) {
                 button.classList.add('active');
-                activeTabIsValid = true;
             }
             const listItem = document.createElement('li');
             listItem.appendChild(button);
             UIElements.menuList.appendChild(listItem);
         });
-        
-        if (!activeTabIsValid && unlockedTabs.length > 0) {
-            this.setActiveTab(unlockedTabs[0].id, true);
-        } else if (unlockedTabs.length === 0) {
-             this.clearMainContent();
-        }
     },
 
     _handleMenuClick(event) {
@@ -166,10 +160,7 @@ export const coreUIManager = {
                 let rateHTML = (res.hasProductionRate && decimalUtility.gt(res.totalProductionRate, 0))
                     ? ` (<span class="text-green-400">${decimalUtility.format(res.totalProductionRate, 2)}</span>/s)`
                     : '';
-
-                // **THE FIX**: The resource's `name` property is now a translation key.
                 const translatedName = translationManager.get(res.name); 
-                
                 displayElement.innerHTML = `<span class="font-semibold text-secondary">${translatedName}:</span> <span class="text-textPrimary font-medium ml-1">${amountFormatted}</span>${rateHTML}`;
             } else if (displayElement) {
                 displayElement.remove();
@@ -317,13 +308,18 @@ export const coreUIManager = {
     },
     
     fullUIRefresh() {
+        loggingSystem.info("CoreUIManager", "Performing full UI refresh...");
         this.updateResourceDisplay();
         this.renderMenu(); 
+
+        // **THE FIX**: This logic ensures the correct tab is displayed on the initial load.
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
             this.setActiveTab(activeTabId, true); 
         } else {
             const firstUnlocked = Object.values(registeredMenuTabs).find(t => t.isUnlocked());
-            if (firstUnlocked) this.setActiveTab(firstUnlocked.id, true);
+            if (firstUnlocked) {
+                this.setActiveTab(firstUnlocked.id, true);
+            }
         }
     },
 };
