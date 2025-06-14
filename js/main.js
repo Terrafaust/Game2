@@ -1,7 +1,6 @@
-// js/main.js (v12.2 - Global Language Refresh)
-// Adds a global event listener to refresh the entire UI when the language changes.
-// Corrects all module loading paths to match the directory structure.
-// Fixes initialization order to prevent race conditions.
+// js/main.js (v12.5 - Save System Initialization)
+// Initializes the saveLoadSystem with a reference to all core systems,
+// fixing a critical bug in the hard reset functionality.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -23,16 +22,27 @@ import { MODULES, RESOURCES } from './core/constants.js';
 
 // --- Main Game Initialization Function ---
 async function initializeGame() {
-    // 1. Initialize systems that have no dependencies on the `coreSystems` object yet.
+    // 1. Initialize systems that have NO dependency on game state or loaded data.
     loggingSystem.setLogLevel(loggingSystem.levels.DEBUG);
     globalSettingsManager.initialize();
-    await translationManager.initialize(); 
     coreGameStateManager.initialize();
     coreResourceManager.initialize();
     coreUpgradeManager.initialize();
     buyMultiplierManager.initialize();
-    
-    // 2. Create the single `coreSystems` object to pass as a dependency.
+
+    // 2. Load save data. This may overwrite initial settings (like language) in the managers.
+    const gameLoaded = saveLoadSystem.loadGame();
+    if (gameLoaded) {
+        loggingSystem.info("Main", "Save game loaded successfully.");
+    } else {
+        loggingSystem.info("Main", "No save data found. Starting a new game.");
+        coreGameStateManager.setGameVersion("3.0.0");
+    }
+
+    // 3. IMPORTANT: Initialize translation manager AFTER loading save data.
+    await translationManager.initialize();
+
+    // 4. Create the single `coreSystems` object to pass as a dependency.
     const coreSystems = {
         loggingSystem, decimalUtility, globalSettingsManager, translationManager,
         coreGameStateManager, staticDataAggregator, coreResourceManager,
@@ -40,13 +50,15 @@ async function initializeGame() {
         coreUpgradeManager, buyMultiplierManager, buyMultiplierUI, productionManager
     };
 
-    // 3. Initialize systems that depend on the `coreSystems` object.
+    // 5. Initialize the remaining systems that depend on the `coreSystems` object.
     productionManager.initialize(coreSystems);
     coreUIManager.initialize(coreSystems);
     buyMultiplierUI.initialize(coreSystems);
     moduleLoader.initialize(coreSystems);
+    // MODIFICATION: Initialize the saveLoadSystem with the core systems reference.
+    saveLoadSystem.initialize(coreSystems);
 
-    // 4. Set up the theme event listener and apply the initial theme.
+    // 6. Set up theme event listener and apply the initial theme.
     document.addEventListener('themeChanged', (event) => {
         if (event.detail?.name && event.detail?.mode) {
             coreUIManager.applyTheme(event.detail.name, event.detail.mode);
@@ -57,16 +69,7 @@ async function initializeGame() {
         coreUIManager.applyTheme(initialTheme.name, initialTheme.mode);
     }
     
-    // 5. Load Game or Start a New Game
-    const gameLoaded = saveLoadSystem.loadGame();
-    if (!gameLoaded) {
-        loggingSystem.info("Main", "No save data found. Starting a new game.");
-        coreGameStateManager.setGameVersion("3.0.0");
-    } else {
-        loggingSystem.info("Main", "Save game loaded.");
-    }
-    
-    // 6. Load all feature modules with corrected paths.
+    // 7. Load all feature modules.
     try {
         await moduleLoader.loadModule(`../../modules/${MODULES.CORE_GAMEPLAY}_module/core_gameplay_manifest.js`);
         await moduleLoader.loadModule(`../../modules/${MODULES.STUDIES}_module/studies_manifest.js`);
@@ -81,7 +84,7 @@ async function initializeGame() {
         return;
     }
 
-    // 7. Perform final UI refresh and attach footer button listeners.
+    // 8. Perform a final UI refresh and attach footer button listeners.
     coreUIManager.fullUIRefresh();
 
     const saveButton = document.getElementById('save-button');
@@ -102,13 +105,13 @@ async function initializeGame() {
         });
     }
 
-    // MODIFICATION: Add a global listener to refresh the entire UI when the language changes.
+    // Add a global listener for language changes DURING gameplay.
     document.addEventListener('languagePackChanged', () => {
         loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
         coreUIManager.fullUIRefresh();
     });
     
-    // 8. Start the game loop.
+    // 9. Start the game loop.
     if (!gameLoop.isRunning()) {
         gameLoop.start();
     }

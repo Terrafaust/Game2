@@ -1,29 +1,37 @@
-// js/core/saveLoadSystem.js (v4.0 - Final Refactor)
-// Fully integrated with new core systems.
+// js/core/saveLoadSystem.js (v4.1 - Initialization Fix)
+// Adds an initialize method to get a reference to all core systems.
+// Fixes a crash in resetGameData by allowing it to safely access the gameLoop.
 
 import { loggingSystem } from './loggingSystem.js';
 import { decimalUtility } from './decimalUtility.js';
 import { coreGameStateManager } from './coreGameStateManager.js';
 import { coreResourceManager } from './coreResourceManager.js';
-import { coreUIManager } from './coreUIManager.js'; 
+import { coreUIManager } from './coreUIManager.js';
 import { moduleLoader } from './moduleLoader.js';
 import { globalSettingsManager } from './globalSettingsManager.js';
 
-const SAVE_KEY = 'incrementalGameSaveData_v3'; // Increment save key to avoid conflicts with old saves
+const SAVE_KEY = 'incrementalGameSaveData_v3';
+let coreSystemsRef = null; // Reference to all core systems
 
 function decimalReplacer(key, value) {
     if (decimalUtility.isDecimal(value)) {
-        return value.toString(); 
+        return value.toString();
     }
     return value;
 }
 
 export const saveLoadSystem = {
+    // MODIFICATION: Added initialize function
+    initialize(coreSystems) {
+        coreSystemsRef = coreSystems;
+        loggingSystem.info("SaveLoadSystem", "Save/Load System initialized.");
+    },
+
     saveGame() {
         loggingSystem.info("SaveLoadSystem", "Attempting to save game...");
         try {
-            const gameStateToSave = coreGameStateManager.getGameState(); 
-            const resourceState = coreResourceManager.getSaveData(); 
+            const gameStateToSave = coreGameStateManager.getGameState();
+            const resourceState = coreResourceManager.getSaveData();
             const fullSaveData = {
                 version: coreGameStateManager.getGameVersion(),
                 timestamp: Date.now(),
@@ -37,7 +45,7 @@ export const saveLoadSystem = {
             return true;
         } catch (error) {
             loggingSystem.error("SaveLoadSystem", "Error saving game:", error);
-            coreUIManager.showNotification('ui.notifications.error_saving', "error", 5000, { replacements: { error: error.message }});
+            coreUIManager.showNotification('ui.notifications.error_saving', "error", 5000, { replacements: { error: error.message } });
             return false;
         }
     },
@@ -51,21 +59,18 @@ export const saveLoadSystem = {
                 return false;
             }
 
-            const loadedFullData = JSON.parse(serializedData); 
+            const loadedFullData = JSON.parse(serializedData);
 
             if (loadedFullData.gameState) {
                 coreGameStateManager.setFullGameState(loadedFullData.gameState);
             }
             if (loadedFullData.resourceState) {
-                coreResourceManager.loadSaveData(loadedFullData.resourceState); 
+                coreResourceManager.loadSaveData(loadedFullData.resourceState);
             }
-            
+
             coreGameStateManager.updateLastSaveTime(loadedFullData.timestamp || Date.now());
-            
-            // AFTER loading state, notify all modules to update themselves
+
             moduleLoader.notifyAllModulesOfLoad();
-            
-            // Then do a full UI refresh
             coreUIManager.fullUIRefresh();
 
             loggingSystem.info("SaveLoadSystem", "Game loaded successfully.");
@@ -75,37 +80,32 @@ export const saveLoadSystem = {
         } catch (error) {
             loggingSystem.error("SaveLoadSystem", "Error loading game:", error);
             coreUIManager.showNotification("Error loading game. Save may be corrupted.", "error", 7000);
-            this.resetGameData(true); // Force a reset on corrupted data
+            this.resetGameData(true);
             return false;
         }
     },
-    
+
     resetGameData(isLoadFailure = false) {
         loggingSystem.warn("SaveLoadSystem", "Initiating hard game reset...");
-        
-        // 1. Stop the game loop to prevent race conditions
-        coreSystemsRef.gameLoop.stop();
 
-        // 2. Delete the save file
+        // MODIFICATION: Safely stop the game loop using the coreSystemsRef
+        if (coreSystemsRef && coreSystemsRef.gameLoop) {
+            coreSystemsRef.gameLoop.stop();
+        } else {
+            loggingSystem.error("SaveLoadSystem", "Cannot stop game loop: coreSystemsRef not initialized.");
+        }
+
         localStorage.removeItem(SAVE_KEY);
 
-        // 3. Reset all core systems to their default state
         coreGameStateManager.resetState();
         coreResourceManager.resetState();
-        globalSettingsManager.resetToDefaults(); // This will dispatch theme/language events
+        globalSettingsManager.resetToDefaults();
         
-        // 4. THIS IS KEY: Reset all modules to their initial state.
-        // This will call `onResetState` for every module.
         moduleLoader.resetAllModules();
-        
-        // 5. AFTER modules have reset, re-define their initial resources.
-        // The manifests will handle this. We just need to reload them. This is complex.
-        // A simpler, safer approach is to reload the page.
         
         coreUIManager.showNotification('ui.notifications.game_reset', "warning", 5000);
         loggingSystem.info("SaveLoadSystem", "Game data has been reset. Reloading page for clean state.");
 
-        // Reload the page to ensure a completely clean start from the new default state
         setTimeout(() => window.location.reload(), 1000);
     }
 };
