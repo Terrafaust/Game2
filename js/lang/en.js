@@ -1,4 +1,4 @@
-// js/lang/en.js (v4.3 - Full translation)
+// js/lang/en.js (v4.4 - Final Translation)
 // English language pack with all required keys for the refactored UI.
 
 export default {
@@ -25,8 +25,10 @@ export default {
     "ui.generic.effect": "Effect",
     "ui.generic.level": "Level: {current} / {max}",
     "ui.generic.production": "Production",
+    "ui.generic.production_per_second": "Production: {value} {resourceName}/s",
     "ui.generic.reward": "Reward: {description}",
     "ui.generic.condition": "Condition: {text}",
+    "ui.generic.starting_producers": "{count} starting {name}",
     
     // Notifications
     "ui.notifications.game_saved": "Game Saved!",
@@ -43,8 +45,11 @@ export default {
     "ui.notifications.cannot_purchase_skill": "Cannot purchase skill.",
 
     // Resources
-    "resources.study_points": "Study Points",
+    "resources.studyPoints": "Study Points",
     "resources.knowledge": "Knowledge",
+    "resources.prestigePoints": "Prestige Points",
+    "resources.ssp.short": "SSP",
+    "resources.psp.short": "PSP",
 
     // Core Gameplay Module
     "core_gameplay.ui.title": "Manual Study Area",
@@ -59,10 +64,8 @@ export default {
     "studies.ui.title": "Studies Department",
     "studies.ui.tip": "\"Get 10 professors to unlock Market\"",
     "studies.ui.description": "Automate your Study Point generation by acquiring and upgrading various academic facilities and personnel.",
-    "studies.ui.owned": "Owned: {value}",
-    "studies.ui.production": "Production: {value}/s",
+    "studies.ui.production_per_second": "Production: {value} {resourceName}/s",
     "studies.ui.cost_for": "Cost for {quantity}",
-    "studies.ui.buy_X": "Buy {quantity} {name}",
     "studies.producers.student.name": "Student",
     "studies.producers.student.name_plural": "Students",
     "studies.producers.student.description": "A diligent student, generating basic Study Points.",
@@ -134,7 +137,7 @@ export default {
 
     // Prestige Module
     "prestige.ui.tab_label": "Prestige",
-    "prestige.ui.tip": "\"The end already ?\"",
+    "prestige.ui.tip": "\"The end already?\"",
     "prestige.ui.upgrades_title": "Prestige Upgrades",
     "prestige.ui.pp_display": "Prestige Points: {value}",
     "prestige.ui.count_display": "Times Prestiged: {value}",
@@ -145,7 +148,6 @@ export default {
     "prestige.ui.modal.gain_header": "You will gain:",
     "prestige.ui.modal.keep_header": "You will keep (from Prestige Skills):",
     "prestige.ui.modal.reset_header": "The following will be reset:",
-    "prestige.ui.modal.reset_list": "Study Points, Knowledge, and Images; all Study Producers; costs of Market items; levels of normal skills and their SSP cost.",
     "prestige.ui.modal.permanent_note": "Achievements, Unlocked Tabs, Prestige producers, Automator Levels, and Prestige Skills are kept.",
     "prestige.ui.modal.unlock_skills": "Unlock Prestige Skills",
     "prestige.ui.modal.reset_list_item1": "Study Points, Knowledge, and Images",
@@ -154,9 +156,12 @@ export default {
     "prestige.ui.modal.reset_list_item4": "Regular Skill levels and their SSP cost",
     "prestige.ui.gain_pp": "{value} Prestige Points",
     "prestige.ui.gain_bonus": "All Production Boost: {current}x -> {next}x",
-    "prestige.ui.keep_knowledge": "{value} Knowledge",
-    "prestige.ui.keep_ssp": "{value} Study Skill Points",
-    "prestige.ui.keep_producers": "{value} starting {name}",
+    "prestige.producers.postDoc.name": "Post-Doctorate",
+    "prestige.producers.postDoc.description": "Boosts the production of all regular producers.",
+    "prestige.producers.researchGrant.name": "Research Grant",
+    "prestige.producers.researchGrant.description": "Passively generates Knowledge.",
+    "prestige.producers.graduate.name": "Graduate Student",
+    "prestige.producers.graduate.description": "Generates a small amount of all regular producers per second.",
 
     // Achievements Module
     "achievements.ui.tab_label": "Achievements",

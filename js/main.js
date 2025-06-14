@@ -1,4 +1,5 @@
-// js/main.js (v12.1 - Path & Bugfix)
+// js/main.js (v12.2 - Global Language Refresh)
+// Adds a global event listener to refresh the entire UI when the language changes.
 // Corrects all module loading paths to match the directory structure.
 // Fixes initialization order to prevent race conditions.
 
@@ -66,7 +67,6 @@ async function initializeGame() {
     }
     
     // 6. Load all feature modules with corrected paths.
-    // THIS IS THE FIX: The paths now correctly point from `/js/` to `/modules`
     try {
         await moduleLoader.loadModule(`../../modules/${MODULES.CORE_GAMEPLAY}_module/core_gameplay_manifest.js`);
         await moduleLoader.loadModule(`../../modules/${MODULES.STUDIES}_module/studies_manifest.js`);
@@ -101,6 +101,12 @@ async function initializeGame() {
             coreUIManager.showNotification('Developer Boost: Added resources!', "warning", 5000);
         });
     }
+
+    // MODIFICATION: Add a global listener to refresh the entire UI when the language changes.
+    document.addEventListener('languagePackChanged', () => {
+        loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
+        coreUIManager.fullUIRefresh();
+    });
     
     // 8. Start the game loop.
     if (!gameLoop.isRunning()) {

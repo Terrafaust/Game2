@@ -1,4 +1,4 @@
-// js/lang/fr.js (v4.3 - Version complète)
+// js/lang/fr.js (v4.4 - Version Complète Finale)
 // Pack de langue français avec toutes les clés requises pour l'interface utilisateur.
 
 export default {
@@ -25,8 +25,10 @@ export default {
     "ui.generic.effect": "Effet",
     "ui.generic.level": "Niveau : {current} / {max}",
     "ui.generic.production": "Production",
+    "ui.generic.production_per_second": "Production : {value} {resourceName}/s",
     "ui.generic.reward": "Récompense : {description}",
     "ui.generic.condition": "Condition : {text}",
+    "ui.generic.starting_producers": "{count} {name} de départ",
     
     // Notifications
     "ui.notifications.game_saved": "Partie sauvegardée !",
@@ -43,8 +45,11 @@ export default {
     "ui.notifications.cannot_purchase_skill": "Impossible d'acheter la compétence.",
 
     // Resources
-    "resources.study_points": "Points d'Étude",
+    "resources.studyPoints": "Points d'Étude",
     "resources.knowledge": "Savoir",
+    "resources.prestigePoints": "Points de Prestige",
+    "resources.ssp.short": "PCÉ", // Points de Compétence d'Étude
+    "resources.psp.short": "PCP", // Points de Compétence de Prestige
 
     // Module Core Gameplay
     "core_gameplay.ui.title": "Zone d'Étude Manuelle",
@@ -59,10 +64,8 @@ export default {
     "studies.ui.title": "Département des Études",
     "studies.ui.tip": "\"Obtenez 10 professeurs pour débloquer le Marché\"",
     "studies.ui.description": "Automatisez votre génération de Points d'Étude en acquérant et améliorant diverses installations académiques et personnel.",
-    "studies.ui.owned": "Possédés : {value}",
-    "studies.ui.production": "Production : {value}/s",
+    "studies.ui.production_per_second": "Production : {value} {resourceName}/s",
     "studies.ui.cost_for": "Coût pour {quantity}",
-    "studies.ui.buy_X": "Acheter {quantity} {name}",
     "studies.producers.student.name": "Étudiant",
     "studies.producers.student.name_plural": "Étudiants",
     "studies.producers.student.description": "Un étudiant assidu, générant des Points d'Étude de base.",
@@ -145,7 +148,6 @@ export default {
     "prestige.ui.modal.gain_header": "Vous allez gagner :",
     "prestige.ui.modal.keep_header": "Vous conserverez (grâce aux Compétences de Prestige) :",
     "prestige.ui.modal.reset_header": "Ce qui suit sera réinitialisé :",
-    "prestige.ui.modal.reset_list": "Points d'Étude, Savoir et Images ; tous les Producteurs d'Études ; coûts des objets du Marché ; niveaux des compétences normales et leur coût en PCÉ.",
     "prestige.ui.modal.permanent_note": "Les succès, les onglets déverrouillés, les producteurs de prestige, les niveaux de l'Automate et les compétences de prestige sont conservés.",
     "prestige.ui.modal.unlock_skills": "Débloquer les Compétences de Prestige",
     "prestige.ui.modal.reset_list_item1": "Points d'Étude, Savoir et Images",
@@ -154,9 +156,12 @@ export default {
     "prestige.ui.modal.reset_list_item4": "Niveaux des compétences normales et leur coût en PCÉ",
     "prestige.ui.gain_pp": "{value} Points de Prestige",
     "prestige.ui.gain_bonus": "Boost de Production Globale : {current}x -> {next}x",
-    "prestige.ui.keep_knowledge": "{value} de Savoir",
-    "prestige.ui.keep_ssp": "{value} Points de Compétence d'Étude",
-    "prestige.ui.keep_producers": "{value} {name} de départ",
+    "prestige.producers.postDoc.name": "Post-Doctorat",
+    "prestige.producers.postDoc.description": "Booste la production de tous les producteurs réguliers.",
+    "prestige.producers.researchGrant.name": "Bourse de Recherche",
+    "prestige.producers.researchGrant.description": "Génère passivement du Savoir.",
+    "prestige.producers.graduate.name": "Étudiant Diplômé",
+    "prestige.producers.graduate.description": "Génère une petite quantité de tous les producteurs réguliers par seconde.",
 
     // Module Achievements
     "achievements.ui.tab_label": "Succès",

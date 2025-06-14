@@ -1,5 +1,6 @@
-// js/core/translationManager.js (v2.1 - Path Correction)
-// Corrects the dynamic import path to go up one level from /core/ to /js/.
+// js/core/translationManager.js (v2.2 - Robust Language Handling)
+// Pre-loads English as a fallback and ensures the entire UI can react to language changes.
+// Handles asynchronous events correctly and provides better fallbacks for missing keys.
 
 import { globalSettingsManager } from './globalSettingsManager.js';
 import { loggingSystem } from './loggingSystem.js';
@@ -9,8 +10,13 @@ let currentLanguage = 'en';
 
 const translationManager = {
     async loadLanguagePack(lang = 'en') {
+        // Prevent re-loading if the pack already exists
+        if (languagePacks[lang]) {
+            loggingSystem.debug("TranslationManager", `Language pack for '${lang}' already loaded.`);
+            return;
+        }
         try {
-            // THIS IS THE FIX: Path is now relative to this file's location in /core/
+            // Path is relative to this file's location in /core/
             const packModule = await import(`../lang/${lang}.js`);
             if (packModule.default) {
                 languagePacks[lang] = packModule.default;
@@ -20,16 +26,24 @@ const translationManager = {
             }
         } catch (error) {
             loggingSystem.error("TranslationManager", `Failed to load language pack for '${lang}'. Defaulting to 'en'.`, error);
-            if (lang !== 'en') await this.loadLanguagePack('en');
+            // If the failed language wasn't 'en', attempt to load 'en' as a fallback.
+            if (lang !== 'en') {
+                await this.loadLanguagePack('en');
+            }
         }
     },
 
     async initialize() {
+        // Load English first to ensure there's always a base fallback.
+        await this.loadLanguagePack('en');
+
         const savedLang = globalSettingsManager.getSetting('language', 'en');
+        // This will set the language, load the pack if it's not 'en', and fire the event.
         await this.setLanguage(savedLang); 
         
-        document.addEventListener('languageChanged', (event) => {
-            this.setLanguage(event.detail);
+        // MODIFICATION: Make the listener async to properly wait for the language pack to load.
+        document.addEventListener('languageChanged', async (event) => {
+            await this.setLanguage(event.detail);
         });
     },
 
@@ -37,7 +51,15 @@ const translationManager = {
         if (!languagePacks[lang]) {
             await this.loadLanguagePack(lang);
         }
-        currentLanguage = lang;
+
+        // After attempting to load, set language to what's available (desired lang or 'en' fallback)
+        if (languagePacks[lang]) {
+            currentLanguage = lang;
+        } else {
+            currentLanguage = 'en'; // Fallback to english if desired lang failed to load
+        }
+
+        loggingSystem.info("TranslationManager", `Language set to '${currentLanguage}'. Dispatching languagePackChanged event.`);
         document.dispatchEvent(new CustomEvent('languagePackChanged'));
     },
 
@@ -45,15 +67,25 @@ const translationManager = {
         const pack = languagePacks[currentLanguage] || languagePacks['en'] || {};
         let text = key.split('.').reduce((obj, i) => obj && obj[i], pack);
 
+        // MODIFICATION: If key not found in current language, explicitly try English as a fallback.
+        if (text === undefined && currentLanguage !== 'en' && languagePacks['en']) {
+             text = key.split('.').reduce((obj, i) => obj && obj[i], languagePacks['en']);
+        }
+
         if (text === undefined) {
             loggingSystem.warn("TranslationManager", `Translation key not found: '${key}' for language '${currentLanguage}'.`);
             return `{${key}}`;
         }
-
+        
+        // MODIFICATION: Use a global regex for replacement to handle multiple identical placeholders.
         for (const placeholder in replacements) {
-            text = text.replace(`{${placeholder}}`, replacements[placeholder]);
+            text = text.replace(new RegExp(`\\{${placeholder}\\}`, 'g'), replacements[placeholder]);
         }
         return text;
+    },
+
+    getCurrentLanguage() {
+        return currentLanguage;
     }
 };
 
