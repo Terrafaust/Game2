@@ -1,7 +1,6 @@
-// js/main.js (v12.8 - Correct Lifecycle Order)
-// Fixes the module loading lifecycle by notifying modules of a game load
-// *after* all modules have been loaded, not before. This ensures they can
-// correctly initialize their state from the save data before the UI is drawn.
+// js/main.js (v12.9 - Simplified Lifecycle)
+// Simplifies the startup sequence to rely on the translationManager's ready state.
+// Removes the languagePackChanged listener from the startup sequence.
 
 // --- Core System Imports ---
 import { loggingSystem } from './core/loggingSystem.js';
@@ -55,7 +54,7 @@ async function initializeGame() {
         coreGameStateManager.setGameVersion("3.0.0");
     }
 
-    // 5. Initialize translation manager, using the language from the just-loaded settings.
+    // 5. Initialize translation manager. We await it to ensure it completes before any rendering happens.
     await translationManager.initialize();
 
     // 6. Set up and apply the visual theme.
@@ -84,16 +83,21 @@ async function initializeGame() {
         return;
     }
 
-    // 8. MODIFICATION: Notify all loaded modules about the game load.
-    // This is the correct place, as all modules are guaranteed to exist now.
+    // 8. Notify all loaded modules about the game load.
     if (gameLoaded) {
         moduleLoader.notifyAllModulesOfLoad();
     }
 
-    // 9. Perform a final UI refresh.
+    // 9. Add the listener for mid-game language changes.
+    document.addEventListener('languagePackChanged', () => {
+        loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
+        coreUIManager.fullUIRefresh();
+    });
+
+    // 10. Perform the first and only full UI refresh now that everything is loaded.
     coreUIManager.fullUIRefresh();
 
-    // 10. Attach footer button listeners.
+    // 11. Attach footer button listeners.
     const saveButton = document.getElementById('save-button');
     const loadButton = document.getElementById('load-button');
     const resetButton = document.getElementById('reset-button');
@@ -111,12 +115,6 @@ async function initializeGame() {
             coreUIManager.showNotification('Developer Boost: Added resources!', "warning", 5000);
         });
     }
-
-    // 11. Add a global listener for language changes DURING gameplay.
-    document.addEventListener('languagePackChanged', () => {
-        loggingSystem.info("Main", "Language pack changed event detected. Triggering full UI refresh.");
-        coreUIManager.fullUIRefresh();
-    });
     
     // 12. Start the game loop.
     if (!gameLoop.isRunning()) {
