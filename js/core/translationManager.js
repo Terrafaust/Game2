@@ -1,49 +1,55 @@
-// js/core/translationManager.js (v2.2 - Robust Language Handling)
-// Pre-loads English as a fallback and ensures the entire UI can react to language changes.
-// Handles asynchronous events correctly and provides better fallbacks for missing keys.
+// js/core/translationManager.js (v2.4 - Final Guard Fix)
+// Adds an isReady flag and function to be used by the UI manager.
 
 import { globalSettingsManager } from './globalSettingsManager.js';
 import { loggingSystem } from './loggingSystem.js';
 
 let languagePacks = {};
 let currentLanguage = 'en';
+let ready = false; // The new readiness flag
 
 const translationManager = {
+    // **THE FIX**: New function for the UI manager to check.
+    isReady() {
+        return ready;
+    },
+
     async loadLanguagePack(lang = 'en') {
-        // Prevent re-loading if the pack already exists
         if (languagePacks[lang]) {
-            loggingSystem.debug("TranslationManager", `Language pack for '${lang}' already loaded.`);
             return;
         }
         try {
-            // Path is relative to this file's location in /core/
             const packModule = await import(`../lang/${lang}.js`);
             if (packModule.default) {
                 languagePacks[lang] = packModule.default;
-                loggingSystem.info("TranslationManager", `Language pack for '${lang}' loaded.`);
+                loggingSystem.info("TranslationManager", `Language pack for '${lang}' loaded successfully.`);
             } else {
                  throw new Error(`Default export missing in language pack: ${lang}.js`);
             }
         } catch (error) {
-            loggingSystem.error("TranslationManager", `Failed to load language pack for '${lang}'. Defaulting to 'en'.`, error);
-            // If the failed language wasn't 'en', attempt to load 'en' as a fallback.
-            if (lang !== 'en') {
-                await this.loadLanguagePack('en');
-            }
+            loggingSystem.error("TranslationManager", `Failed to load language pack for '${lang}'.`, error);
+            if (lang !== 'en') await this.loadLanguagePack('en');
         }
     },
 
     async initialize() {
-        // Load English first to ensure there's always a base fallback.
+        // Ensure ready is false at the start
+        ready = false; 
+        
         await this.loadLanguagePack('en');
-
         const savedLang = globalSettingsManager.getSetting('language', 'en');
-        // This will set the language, load the pack if it's not 'en', and fire the event.
         await this.setLanguage(savedLang); 
         
-        // MODIFICATION: Make the listener async to properly wait for the language pack to load.
+        // **THE FIX**: Set the ready flag to true at the very end of initialization.
+        ready = true;
+        loggingSystem.info("TranslationManager", "Translation system is now ready.");
+        
+        // Dispatch the event *after* setting ready to true, so listeners can proceed.
+        document.dispatchEvent(new CustomEvent('languagePackChanged'));
+
         document.addEventListener('languageChanged', async (event) => {
             await this.setLanguage(event.detail);
+            document.dispatchEvent(new CustomEvent('languagePackChanged'));
         });
     },
 
@@ -52,32 +58,27 @@ const translationManager = {
             await this.loadLanguagePack(lang);
         }
 
-        // After attempting to load, set language to what's available (desired lang or 'en' fallback)
         if (languagePacks[lang]) {
             currentLanguage = lang;
         } else {
-            currentLanguage = 'en'; // Fallback to english if desired lang failed to load
+            currentLanguage = 'en';
+            loggingSystem.warn("TranslationManager", `Could not set language to '${lang}', falling back to 'en'.`);
         }
-
-        loggingSystem.info("TranslationManager", `Language set to '${currentLanguage}'. Dispatching languagePackChanged event.`);
-        document.dispatchEvent(new CustomEvent('languagePackChanged'));
     },
 
     get(key, replacements = {}) {
-        const pack = languagePacks[currentLanguage] || languagePacks['en'] || {};
+        const pack = languagePacks[currentLanguage] || {};
         let text = key.split('.').reduce((obj, i) => obj && obj[i], pack);
 
-        // MODIFICATION: If key not found in current language, explicitly try English as a fallback.
         if (text === undefined && currentLanguage !== 'en' && languagePacks['en']) {
              text = key.split('.').reduce((obj, i) => obj && obj[i], languagePacks['en']);
         }
 
         if (text === undefined) {
-            loggingSystem.warn("TranslationManager", `Translation key not found: '${key}' for language '${currentLanguage}'.`);
+            loggingSystem.warn("TranslationManager_Get", `Translation key not found: '${key}' in '${currentLanguage}'.`);
             return `{${key}}`;
         }
         
-        // MODIFICATION: Use a global regex for replacement to handle multiple identical placeholders.
         for (const placeholder in replacements) {
             text = text.replace(new RegExp(`\\{${placeholder}\\}`, 'g'), replacements[placeholder]);
         }

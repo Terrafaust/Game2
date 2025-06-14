@@ -1,7 +1,6 @@
-// js/core/coreUIManager.js (v8.3 - Decoupled Rendering)
-// Fixes the translation race condition by decoupling tab registration from rendering.
-// registerMenuTab no longer triggers a re-render. The initial render is now
-// solely controlled by the fullUIRefresh() call in main.js.
+// js/core/coreUIManager.js (v8.4 - Final Guard Fix)
+// Fixes the race condition by adding guards to the rendering functions.
+// These functions now check if the translationManager is ready before drawing.
 
 import { loggingSystem } from './loggingSystem.js';
 
@@ -75,7 +74,7 @@ export const coreUIManager = {
         }
         
         initializeSwipeMenu();
-        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.3).");
+        loggingSystem.info("CoreUIManager", "UI Manager initialized (v8.4).");
     },
 
     registerMenuTab(moduleId, labelKey, renderCallback, isUnlockedCheck = () => true, onShowCallback, onHideCallback, isDefaultTab = false) {
@@ -85,16 +84,16 @@ export const coreUIManager = {
         }
         registeredMenuTabs[moduleId] = { id: moduleId, labelKey, renderCallback, isUnlocked: isUnlockedCheck, onShowCallback, onHideCallback };
         
-        // **THE FIX**: Do NOT automatically set the active tab here.
-        // Let the initial fullUIRefresh in main.js handle this.
         if (isDefaultTab && !activeTabId) {
-            // Just note it down, but don't render.
             activeTabId = moduleId;
         }
     },
 
     renderMenu() {
-        if (!UIElements.menuList || !UIElements.body || !coreSystemsRef) return;
+        // **THE FIX**: Add a guard to prevent rendering before translations are ready.
+        if (!UIElements.menuList || !coreSystemsRef || !coreSystemsRef.translationManager.isReady()) {
+            return;
+        }
         const unlockedTabDefs = Object.values(registeredMenuTabs).filter(tab => tab.isUnlocked());
         const unlockedTabs = [...new Map(unlockedTabDefs.map(item => [item.id, item])).values()];
         
@@ -143,7 +142,10 @@ export const coreUIManager = {
     clearMainContent() { if (UIElements.mainContent) UIElements.mainContent.innerHTML = ''; },
 
     updateResourceDisplay() {
-        if (!UIElements.resourcesDisplay || !coreSystemsRef) return;
+        // **THE FIX**: Add a guard to prevent rendering before translations are ready.
+        if (!UIElements.resourcesDisplay || !coreSystemsRef || !coreSystemsRef.translationManager.isReady()) {
+            return;
+        }
         const { coreResourceManager, decimalUtility, translationManager } = coreSystemsRef;
         const allResources = coreResourceManager.getAllResources();
         
@@ -312,7 +314,6 @@ export const coreUIManager = {
         this.updateResourceDisplay();
         this.renderMenu(); 
 
-        // **THE FIX**: This logic ensures the correct tab is displayed on the initial load.
         if (activeTabId && registeredMenuTabs[activeTabId] && registeredMenuTabs[activeTabId].isUnlocked()) {
             this.setActiveTab(activeTabId, true); 
         } else {
